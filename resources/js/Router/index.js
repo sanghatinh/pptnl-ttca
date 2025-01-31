@@ -2,6 +2,15 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Home from '../Pages/Dashboard.vue';
 import Taohoso from '../Pages/Taomoihoso.vue';
 import Danhsachhoso from '../Pages/DanhsachHoso.vue';
+import login from '../Pages/Login.vue';
+
+//สรา้ง middleware สำหรับตรวจสอบการ login
+const auth = (to, from, next) => {
+    if (!localStorage.getItem('token')) {
+        return next('/login');
+    }
+    next();
+}
 
 
 const routes = [
@@ -20,6 +29,12 @@ const routes = [
             path: '/Danhsachhoso',
             component: Danhsachhoso
         },
+        {
+            name: 'login',
+            path: '/login',
+            component: login
+        },
+
     ];
 
     const router = createRouter({

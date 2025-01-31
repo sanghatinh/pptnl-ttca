@@ -8,16 +8,15 @@
     <meta name="author" content="ParkerThemes">
     <title>Attapeu sugar</title>  
     @vite('resources/css/app.css')
-    <!-- Bootstrap css -->
- 	<!-- Bootstrap css -->
-     <link rel="stylesheet" href="css/bootstrap.min.css">
-		<!-- Icomoon Font Icons css -->
-		<link rel="stylesheet" href="fonts/style.css">
-		<!-- Main css -->
-		<link rel="stylesheet" href="css/main.css">
 
-		<!-- DateRange css -->
-		<link rel="stylesheet" href="vendor/daterange/daterange.css" />
+            <link rel="stylesheet" href="{{ url('css/bootstrap.min.css') }}">
+            <!-- Icomoon Font Icons css -->
+            <link rel="stylesheet" href="{{ url('fonts/style.css') }}">
+            <!-- Main css -->
+            <link rel="stylesheet" href="{{ url('css/main.css') }}">
+            <!-- DateRange css -->
+            <link rel="stylesheet" href="{{ url('vendor/daterange/daterange.css') }}" />
+            
 </head>
 <body >
 
@@ -26,30 +25,30 @@
     @vite('resources/js/app.js')
 
     <!-- Required jQuery first, then Bootstrap Bundle JS -->
-		<script src="js/jquery.min.js"></script>
-		<script src="js/bootstrap.bundle.min.js"></script>
-		<script src="js/moment.js"></script>
+<script src="{{ url('js/jquery.min.js') }}"></script>
+<script src="{{ url('js/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url('js/moment.js') }}"></script>
 
-		<!-- Slimscroll JS -->
-		<script src="vendor/slimscroll/slimscroll.min.js"></script>
-		<script src="vendor/slimscroll/custom-scrollbar.js"></script>
+<!-- Slimscroll JS -->
+<script src="{{ url('vendor/slimscroll/slimscroll.min.js') }}"></script>
+<script src="{{ url('vendor/slimscroll/custom-scrollbar.js') }}"></script>
 
-		<!-- Daterange -->
-		<script src="vendor/daterange/daterange.js"></script>
-		<script src="vendor/daterange/custom-daterange.js"></script>
+<!-- Daterange -->
+<script src="{{ url('vendor/daterange/daterange.js') }}"></script>
+<script src="{{ url('vendor/daterange/custom-daterange.js') }}"></script>
 
-		<!-- Polyfill JS -->
-		<script src="vendor/polyfill/polyfill.min.js"></script>
+<!-- Polyfill JS -->
+<script src="{{ url('vendor/polyfill/polyfill.min.js') }}"></script>
 
-		<!-- Apex Charts -->
-		<script src="vendor/apex/apexcharts.min.js"></script>
-		<script src="vendor/apex/admin/visitors.js"></script>
-		<script src="vendor/apex/admin/deals.js"></script>
-		<script src="vendor/apex/admin/income.js"></script>
-		<script src="vendor/apex/admin/customers.js"></script>
+<!-- Apex Charts -->
+<script src="{{ url('vendor/apex/apexcharts.min.js') }}"></script>
+<script src="{{ url('vendor/apex/admin/visitors.js') }}"></script>
+<script src="{{ url('vendor/apex/admin/deals.js') }}"></script>
+<script src="{{ url('vendor/apex/admin/income.js') }}"></script>
+<script src="{{ url('vendor/apex/admin/customers.js') }}"></script>
 
-		<!-- Main JS -->
-		<script src="js/main.js"></script>
+<!-- Main JS -->
+<script src="{{ url('js/main.js') }}"></script>
 
 
 </body>
