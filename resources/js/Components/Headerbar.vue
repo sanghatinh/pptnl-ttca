@@ -125,7 +125,8 @@
 										</div>
 										<a href="user-profile.html"><i class="icon-user1"></i> My Profile</a>
 										<a href="account-settings.html"><i class="icon-settings1"></i> Account Settings</a>
-										<a href="login.html"><i class="icon-log-out1"></i> Sign Out</a>
+										<a href="#" @click="Logout()"><i class="icon-log-out1"></i> Sign Out</a>
+								
 									</div>
 								</div>
 							</li>
@@ -142,19 +143,57 @@
 						<li class="breadcrumb-item active">Admin Dashboard</li>
 					</ol>
 
-				
 				</div>
 				<!-- Page header end -->
 				
 </template>
 <script>
+import { useStore } from '../Store/Auth';
+import axios from 'axios';
+
 export default {
-    data() {
+  data() {
     return {
       url: window.location.origin,
     }
-  }
+  },
+  setup() {
+	const store = useStore();
+	return {
+	  store
+	}
+  },
+  methods: {
+      Logout(){
+		
+          axios.get(`${this.url}/api/logout`,{ headers: { Authorization: 'Bearer ' + this.store.getToken } }).then((res)=>{
+           
+              if(res.data.success){
+                // clear local storage
+                localStorage.removeItem('web_token');
+                localStorage.removeItem('web_user');
+
+                // clear store
+                this.store.logout();
+
+                // got to login page
+                this.$router.push('/login');
+              }
+          }).catch((err)=>{
+              console.log(err);
+          });
+      }
+    }
 }
+
+   
+ 
+
+
+  
+  
+
+
 </script>
 <style lang="">
     

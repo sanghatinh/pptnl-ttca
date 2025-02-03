@@ -2,79 +2,106 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Role;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+use JWTAuth;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    public function index()
+
+    public function register(Request $request)
     {
-        $users = User::with('role')->get();
-        return response()->json($users);
-    }
+        // created a new user with the request data = user_name, email, password. use try catch 
+        try {
+            $user = new User();
+            $user->username = $request->username;
+            $user->password = $request->password;
+            $user->email = $request->email;
+           
+            $user->full_name = $request->full_name;
+            $user->phone = $request->phone;
+            $user->position = $request->position;
+            $user->department = $request->department;
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'username' => 'required|unique:users',
-            'password' => 'required',
-            'full_name' => 'required',
-            'position' => 'required',
-            'department' => 'required',
-            'email' => 'required|email|unique:users',
-            'role_id' => 'required|exists:roles,id',
-        ]);
+            $user->save();
 
-        $user = User::create([
-            'username' => $request->username,
-            'password' => Hash::make($request->password),
-            'full_name' => $request->full_name,
-            'position' => $request->position,
-            'department' => $request->department,
-            'phone' => $request->phone,
-            'email' => $request->email,
-            'role_id' => $request->role_id,
-        ]);
-
-        return response()->json($user, 201);
-    }
-
-    public function show($id)
-    {
-        $user = User::with('role')->findOrFail($id);
-        return response()->json($user);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $user = User::findOrFail($id);
-
-        $request->validate([
-            'username' => 'sometimes|unique:users,username,' . $user->id,
-            'password' => 'sometimes',
-            'full_name' => 'sometimes',
-            'position' => 'sometimes',
-            'department' => 'sometimes',
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
-            'role_id' => 'sometimes|exists:roles,id',
-        ]);
-
-        if ($request->has('password')) {
-            $request->merge(['password' => Hash::make($request->password)]);
+            $success = true;
+            $message = "ບັນທຶກຂໍ້ມູນສຳເລັດ!";
+            
+        } catch (\Illuminate\Database\QueryException $ex) {
+            $success = false;
+            $message = $ex->getMessage();
+            
         }
 
-        $user->update($request->all());
+        $response = [
+            'success' => $success,
+            'message' => $message
+        ];
 
-        return response()->json($user);
+        return response()->json($response);
+
     }
 
-    public function destroy($id)
-    {
-        $user = User::findOrFail($id);
-        $user->delete();
+public function login(Request $request)
+{
+    try {
+        $credentials = [
+            'username' => $request->username,
+            'password' => $request->password
+        ];
 
-        return response()->json(null, 204);
+        if($request->remember_me) {
+            JWTAuth::factory()->setTTL(60*24*7);
+        }
+
+        if (!$token = JWTAuth::attempt($credentials)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ'
+            ], 401);
+        }
+
+        $user = Auth::user();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ເຂົ້າສູ່ລະບົບສຳເລັດ',
+            'token' => $token,
+            'user' => $user
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'ເກີດຂໍ້ຜິດພາດ: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+    public function logout(Request $request)
+    {
+        try {
+
+            $token = JWTAuth::getToken();
+            JWTAuth::invalidate($token);
+
+            $success = true;
+            $message = "ອອກຈາກລະບົບສຳເລັດ!";
+
+        } catch (\Illuminate\Database\QueryException $ex) {
+            $success = false;
+            $message = $ex->getMessage();
+        }
+
+        $response = [
+            'success' => $success,
+            'message' => $message
+        ];
+
+        return response()->json($response);
     }
 }

@@ -7,7 +7,7 @@
 				<!-- Sidebar brand start  -->
 				<div class="sidebar-brand">
 					<a href="index.html" class="logo">
-                        <img :src="`${url}/img/logo.png`" alt="Le Rouge Admin Dashboard" />
+                        <img :src="`${url}/img/Logo/TTC LOGO FFF.png`" alt="Le Rouge Admin Dashboard" /> 
 					</a>
 				</div>
 				<!-- Sidebar brand end  -->
