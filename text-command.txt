@@ -4,6 +4,7 @@ Larvel
     - composer install           = ຄຳສັ່ງຕິດຕັ້ງ Ribrary ຂອງ Laravel
     - php artisan migrate         = ຄຳສັ່ງສ້າງ ຕາຕະລາງຖານຂໍ້ມູນ
     - php artisan install:api    = ຄຳສັ່ງສ້າງ-ຕິດຕັ້ງ api 
+    - php artisan route:cache  : ຄຳສັ່ງເຄຼຍ Route Cache
 
 VueJS
     - npm install                = ເປັນຄຳສັ່ງຕິດຕັ້ງ Package ຂອງ ​Vue

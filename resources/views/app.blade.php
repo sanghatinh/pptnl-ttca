@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Responsive Bootstrap4 Dashboard Template">
     <meta name="author" content="ParkerThemes">
-    <title>Attapeu sugar</title>  
+    <title>TTCA PTNL WEBSITE</title>  
     @vite('resources/css/app.css')
 
             <link rel="stylesheet" href="{{ url('css/bootstrap.min.css') }}">

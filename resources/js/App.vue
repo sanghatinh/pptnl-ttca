@@ -53,34 +53,7 @@ export default {
     return {
       url: window.location.origin,
     }
-  },
-
-  //สร้าง Funtion Logout Authorization: 'Bearer ' + this.store.getToken,  Clear Local Storage, Clear store
-//   methods: {
-// 	Logout() {
-// 		console.log('Logout teststst');
-// 	  axios.get(`${this.url}/api/logout`,{ headers: { Authorization: 'Bearer ' + this.store.getToken } }).then((res)=>{
-// 		// console.log(res.data);
-// 		if (res.data.success) {
-// 			//
-// 			localStorage.removeItem('web_token');
-// 			localStorage.removeItem('web_user');
-// 			// 
-// 			this.store.logout();
-// 			// Go to Login Page
-// 			this.$router.push({ name: 'Login' });
-// 			}
-
-// 	  }).catch((err) => {
-// 		console.log(err);
-// 	  });
-// 	}
-// }
-
-
-
-  
-
+  }
 
   }
 </script>

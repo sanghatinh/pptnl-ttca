@@ -6,6 +6,12 @@ import login from '../Pages/Login.vue';
 import Nopage from '../Pages/404.vue';
 import Register from '../Pages/Register.vue';
 import { useStore } from '../Store/Auth';
+import ListUser from '../Pages/Admin/User.vue';
+import Permission from '../Pages/Admin/Permission.vue'; 
+import Role from '../Pages/Admin/Role.vue';
+
+
+
 
 // created middleware
 const authMiddleware = (to, from, next) => {
@@ -21,6 +27,7 @@ const authMiddleware = (to, from, next) => {
         store.setUser(user);
         next();
         // console.log('middleware next');
+
     } else {
         // console.log('middleware no ');
         next({
@@ -32,6 +39,7 @@ const authMiddleware = (to, from, next) => {
 };
 
 const routes = [
+    
         {
             name: 'Home',
             path: '/',
@@ -39,7 +47,9 @@ const routes = [
             meta: {
                 middleware: [authMiddleware]
             }
+            
         },
+       
         {
             name: 'Taohoso',
             path: '/Taohoso',
@@ -75,9 +85,37 @@ const routes = [
             meta: {
                 middleware: [authMiddleware]
             }
-        }
+        },
+        {
+            name: 'User',
+            path: '/User',
+            component: ListUser,
+            meta: {
+                middleware: [authMiddleware]
+            }
+            
+        },
+        {
+            name: 'Permission',
+            path: '/Permission',
+            component: Permission,
+            meta: {
+                middleware: [authMiddleware]
+            }
+        },
+        {
+            name: 'Role',
+            path: '/Role',
+            component: Role,
+            meta: {
+                middleware: [authMiddleware]
+            }
+        },
+        
     
     ];
+
+
 
     const router = createRouter({
         history: createWebHistory(),

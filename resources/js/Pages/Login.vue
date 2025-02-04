@@ -6,10 +6,10 @@
 						<div class="login-screen">
 							<div class="login-box">
 								<a href="#" class="login-logo">
-									<img :src="`${url}/img/logo-dark.png`" alt="Le Rouge Admin Dashboard" />
+									<img :src="`${url}/img/Logo/TTC LOGO FFF.png`"  alt="Le Rouge Admin Dashboard" />
 									
 								</a>
-								<h5>Welcome back,<br />Please Login to your Account.</h5>
+								<h5>Xin chào !,<br />Vui lòng đăng nhập vào tài khoản của bạn.</h5>
 								<div class="form-group">
 									<input type="text" v-model="username" class="form-control" placeholder="Username" />
 								</div>
@@ -23,7 +23,7 @@
 										<input type="checkbox" class="custom-control-input">
 										<label class="custom-control-label" for="remember_pwd">Remember me</label>
 									</div>
-									<button type="submit" :disabled="checkFromLogin" @click="Login()" class="btn btn-primary">Login</button>
+									<button type="submit" :disabled="checkFromLogin" @click="Login()" class="btn btn-primary">Đăng nhập</button>
 								</div>
 								<div class="forgot-pwd">
 									<a class="link" href="">Forgot password?</a>
@@ -119,6 +119,10 @@ axios.post(`${this.url}/api/login`,{
 }
 
 </script>
-<style lang="">
-    
+<style scoped>
+    .row.d-flex.justify-content-center {
+    position: absolute;
+    right: 0;
+    left: 0;
+}
 </style>
