@@ -72,6 +72,11 @@
 												<span>Nhóm nhân viên</span>
 											</router-link>
 										</li>
+										<li>
+											<router-link to="/Profile" :class="$route.path=='/Profile'?'current-page':''">
+												<span>Profile</span>
+											</router-link>
+										</li>
 										
 									</ul>
 								</div>

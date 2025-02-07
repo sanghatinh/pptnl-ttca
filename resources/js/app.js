@@ -6,6 +6,7 @@ import router from './Router';
 import sidebarmenu from './components/Sidebarmenu.vue';
 import headerbar from './components/Headerbar.vue';
 import RegisterPage from './Pages/Register.vue';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 import { createPinia } from 'pinia'
 const pinia = createPinia();

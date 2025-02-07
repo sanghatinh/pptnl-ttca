@@ -1,120 +1,456 @@
 <template>
-  <div>
-    <h3>User Management</h3>
-    <!-- Add your user management UI here -->
-    <div class="row gutters">
-						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+	<div> 
+		
+		<div class="row align-items-center mb-3">
+			<div class="col">
+				<h3>User Management</h3>
+			</div>
+      <div class="col text-end mb-2" v-if="!ShowFormUser">
+      <button type="button"  @click="Adduser" class="btn btn-success btn-rounded"><i class='bx bxs-user-plus'></i>Tạo mới</button>
+      </div>
+      <div class="col text-end mb-2" v-if="ShowFormUser">
+        <button type="button" @click="Saveuser" :disabled="FormValid" class="btn btn-success btn-rounded me-2"><i class='bx bxs-save'></i>Save</button>
+        <button type="button" @click="Canneluser" class="btn btn-secondary btn-rounded"><i class='bx bx-x'></i>Cancel</button>
+      </div>
 
-							<div class="card">
-								<div class="card-body">
-									<div class="table-responsive">
-										<table class="table table-hover table-bordered">
-											<thead>
-												<tr>
-													<th>#</th>
-													<th>Title</th>
-													<th>Comment</th>
-													<th>Module</th>
-													<th>Reporter</th>
-													<th>Status</th>
-													<th>Owner</th>
-													<th>Severity</th>
-													<th class="text-right">Created</th>
-													<th class="text-right">Updated</th>
-													<th class="text-right">Due</th>
-												</tr>
-											</thead>
-											<tbody>
-												<tr>
-													<td>1</td>
-													<td>App crashes</td>
-													<td>Kelly, can you please take a look.</td>
-													<td>Main App</td>
-													<td>Lewis</td>
-													<td><span class="badge badge-danger">Open</span></td>
-													<td>Micheal</td>
-													<td class="text-danger">High</td>
-													<td class="text-right">Aug-10, 2019</td>
-													<td class="text-right">Sep-14, 2019</td>
-													<td class="text-right">Oct-20, 2019</td>
-												</tr>
-												<tr>
-													<td>2</td>
-													<td>Saving file</td>
-													<td>Let me take this up.</td>
-													<td>Form Screen</td>
-													<td>James</td>
-													<td><span class="badge badge-success">In Progress</span></td>
-													<td>Donald</td>
-													<td class="text-success">Low</td>
-													<td class="text-right">Aug-10, 2019</td>
-													<td class="text-right">Sep-14, 2019</td>
-													<td class="text-right">Oct-20, 2019</td>
-												</tr>
-												<tr>
-													<td>3</td>
-													<td>Login fail</td>
-													<td>Hey, critical issue.</td>
-													<td>Main App</td>
-													<td>Powell</td>
-													<td><span class="badge badge-danger">Open</span></td>
-													<td>Glory</td>
-													<td class="text-danger">High</td>
-													<td class="text-right">Aug-10, 2019</td>
-													<td class="text-right">Sep-14, 2019</td>
-													<td class="text-right">Oct-20, 2019</td>
-												</tr>
-												<tr>
-													<td>4</td>
-													<td>Saving file</td>
-													<td>Let me take this up.</td>
-													<td>Form Screen</td>
-													<td>James</td>
-													<td><span class="badge badge-success">In Progress</span></td>
-													<td>Donald</td>
-													<td class="text-success">Low</td>
-													<td class="text-right">Aug-10, 2019</td>
-													<td class="text-right">Sep-14, 2019</td>
-													<td class="text-right">Oct-20, 2019</td>
-												</tr>
-												<tr>
-													<td>5</td>
-													<td>Login fail</td>
-													<td>Hey, critical issue.</td>
-													<td>Main App</td>
-													<td>Powell</td>
-													<td><span class="badge badge-success">In Progress</span></td>
-													<td>Glory</td>
-													<td class="text-danger">High</td>
-													<td class="text-right">Aug-10, 2019</td>
-													<td class="text-right">Sep-14, 2019</td>
-													<td class="text-right">Oct-20, 2019</td>
-												</tr>
-											</tbody>
-										</table>
-									</div>
-								</div>
-							</div>
+		</div>
 
-						</div>
-					</div>
+
+	  <div class="row">
+		<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+
+			<!-- แสดง From เพี่ม และ แก้ไข User -->
+       <div v-if="ShowFormUser">
+     
+			<div class="row d-flex">
+    <div class="col-12 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
+                        <div class="form-group mb-3">
+                            <label for="inputName">Username<span v-if="errors.username" class="text-danger">*</span></label>
+                            <input type="text" class="form-control" v-model="FormUser.username"  placeholder="username" required>
+                            
+                        </div>
+                    </div>
+                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
+                        <div class="form-group mb-3">
+                            <label for="inputPwd">Password<span v-if="errors.password" class="text-danger">*</span></label>
+                            <input type="password" class="form-control" v-model="FormUser.password" placeholder="Password">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group mb-3">
+                            <label for="inputName">Họ và tên<span v-if="errors.full_name" class="text-danger">*</span></label>
+                            <input type="text" class="form-control" v-model="FormUser.full_name" placeholder="Họ và tên">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group mb-3">
+                            <label for="inputEmail">Email<span v-if="errors.email" class="text-danger">*</span></label>
+                            <input type="email" class="form-control" v-model="FormUser.email" placeholder="Enter email">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+   
+    <div class="col-12 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
+                        <div class="form-group mb-3">
+                            <label for="inputPosition" class="form-label">Chức vụ<span v-if="errors.position" class="text-danger">*</span></label>
+                            <select v-model="FormUser.position" id="position" class="form-control">
+                              
+                       <option v-for="position in positions" :key="position" :value="position.position">{{ position.position }}</option>
+                    </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
+						<div class="form-group mb-3">
+                            <label for="inputStation" class="form-label">Trạm nông vụ<span v-if="errors.station" class="text-danger">*</span></label>
+                            <select v-model="FormUser.station" id="inputStation" class="form-control">
+                                <option v-for="station in stations" :key="station" :value="station.name">
+                                {{ station.name }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-group mb-3">
+                            <label for="inputName">SĐT</label>
+                            <input type="text" class="form-control" v-model="FormUser.phone" placeholder="Số điện thoại">
+                        </div>
+                    </div>
+                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
+                        <div class="form-group mb-3">
+                          <label for="inputRole">Role<span v-if="errors.role_id" class="text-danger">*</span></label>
+                          <select v-model="FormUser.role_id" id="role_id" class="form-control">
+          <option value="" disabled>Select Role</option>
+          <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</option>
+        </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
+                      <div class="form-group mb-3 ">
+                        <label for="inputStatus">Status<span v-if="errors.status" class="text-danger">*</span></label>
+                        <select v-model="FormUser.status" id="status" class="form-control">
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                      </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<div v-else>
+
+
+		<!-- แสดงตาลาง User ที่เราสร้างขึ้นมา -->
+		  <div class="card">
+			<div class="card-body">
+			  <div class="table-responsive">
+				<table class="table table-hover table-bordered">
+				  <thead>
+					<tr>
+					  <th>#</th>
+					  <th>ID</th>
+					  <th>Username</th>
+            
+					  <th>Họ và tên</th>
+					  <th>Chức vụ</th>
+					  <th>Trạm nông vụ</th>
+					  <th>Email</th>
+					  <th>Phone</th>
+					  <th>Role</th>
+            <th>Status</th>
+					  <th>Actions</th>
+					</tr>
+				  </thead>
+				  <tbody>
+            <tr v-for="(user, index) in users" :key="user.id">
+                    <td>{{ index + 1 }}</td>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.full_name }}</td>
+                    <td>{{ user.position }}</td>
+                    <td>{{ user.station }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.phone }}</td>
+                    <td>{{ getRoleName(user.role_id) }}</td>
+                    <td>{{ user.status }}</td>
+                   
+                        <td class="text-center">
+                        <div class="dropdown">
+                          <button type="button"  data-bs-toggle="dropdown" aria-expanded="false"><i class="bx bx-dots-vertical-rounded"></i></button>
+                          <ul class="dropdown-menu">
+                          <li><a class="dropdown-item" href="#" @click="EditUser(user.id)"><i class="bx bx-edit-alt me-1"></i>Edit</a></li>
+                          <li><a class="dropdown-item" href="#" @click="DelUser(user.id)"><i class="bx bx-trash me-1"></i>Del</a></li>
+                          </ul>
+                        </div>
+                        </td>
+
+
+                  </tr> 
+
+                 
+				  </tbody>
+				</table>
+			  </div>
+			</div>
+		  </div>
+		</div>
+	  </div>
+  
+
   </div>
-</template>
-
+	</div>
+  {{ FormUser }}
+  </template>
+  
 <script>
+import axios from 'axios';
+import { useStore } from '../../Store/Auth';
+
+
+
 export default {
-  name: 'User',
+  setup() {
+	const store = useStore();
+	return {
+	  store
+	}
+  },
+
+
+ 
   data() {
     return {
-      // Add your data properties here
+      ShowFormUser: false,
+      users: [],
+      positions: [],
+      stations: [],
+      roles: [],
+      FormUser: {
+        username: '',
+        password: '',
+        full_name: '',
+        email: '',
+        phone: '',
+        position: '',
+        station: '',
+        role_id: null,
+        status: 'active' // เพิ่มค่าเริ่มต้นของ status
+      },
+      FormType: true, // ตัวแปรเพื่อเช็คว่าเป็นการเพิ่มหรือแก้ไข ถ้าเป็น true คือเพิ่ม ถ้าเป็น false คือแก้ไข
+      EditID: '', // ตัวแปรเพื่อเก็บ ID ของ User ที่ต้องการแก้ไข
     };
   },
+  //สร้างการตรวจสอบฟอร์มใส่ลูกเล่นเมื่อผู้ใช้กรอกข้อมูลไม่ครบหรือเป็นถ้าว่างให้ขึ้นข้อความแสดงใน input นั้น
+  computed: {
+  errors() {
+    const errors = {};
+    if (!this.FormUser  .username) {
+      errors.username = 'Username is required';
+    }
+    if (!this.FormUser  .password) {
+      errors.password = 'Password is required';
+    }
+    if (!this.FormUser  .full_name) {
+      errors.full_name = 'Full name is required';
+    }
+    // if (!this.FormUser  .email) {
+    //   errors.email = 'Email is required';
+    // }
+    // if (!this.FormUser  .phone) {
+    //   errors.phone = 'Phone is required';
+    // }
+    if (!this.FormUser  .position) {
+      errors.position = 'Position is required';
+    }
+    if (!this.FormUser  .station) {
+      errors.station = 'Station is required';
+    }
+    if (!this.FormUser  .role_id) {
+      errors.role_id = 'Role is required';
+    }
+    if (!this.FormUser.status) {
+        errors.status = 'Status is required';
+      }
+      return errors;
+    },
+    FormValid() {
+      return Object.keys(this.errors).length > 0;
+    }
+  },
+
+  mounted() {
+    this.fetchRoles(); // เรียกใช้งานฟังก์ชัน fetchRoles
+  },
+  created() {
+    this.fetchUsers();
+    this.fetchPositions();
+    this.fetchStations();
+    this.fetchRoles();
+  },
   methods: {
-    // Add your methods here
-  }
+   //add user
+   Adduser() {
+      this.ShowFormUser = true;
+      this.FormType = true; // กำหนดค่าให้ FormType เป็น true เพื่อบอกว่าเป็นการเพิ่ม
+      this.FormUser = {
+        username: '',
+        password: '',
+        full_name: '',
+        email: '',
+        phone: '',
+        position: '',
+        station: '',
+        role_id: null
+      };
+    },
+    //Edit user From headers:{ Authorization: 'Bearer '+this.store.getToken }
+    EditUser(id) {
+      this.FormType = false; // กำหนดค่าให้ FormType เป็น false เพื่อบอกว่าเป็นการแก้ไข
+      this.EditID = id;
+      console.log(id);
+
+      axios.get(`/api/user/edit/${id}`, {
+        headers: {
+          Authorization: 'Bearer ' + this.store.getToken
+        }
+      }).then(res => {
+        this.FormUser = res.data;
+        this.ShowFormUser = true;
+      }).catch(err => {
+        console.log(err);
+        if (err.response && err.response.status === 401) {
+          localStorage.removeItem('web_token');
+          localStorage.removeItem('web_user');
+          this.store.logout();
+          this.$router.push('/login');
+        }
+      });
+    },
+
+   
+    //Save add new user
+    Saveuser() {
+      if(this.FormType) {
+
+        axios.post('/api/user/add', this.FormUser, {
+          headers: { 
+            Authorization: 'Bearer ' + this.store.getToken 
+          }
+        }).then(res => {
+          if(res.data.message === 'success') {
+            this.ShowFormUser = false;
+            this.fetchUsers();
+            
+            this.FormUser = {
+              username: '',
+              password: '',
+              full_name: '',
+              email: '',
+              phone: '',
+              position: '',
+              station: '',
+              role_id: null,
+              status: 'active'
+            };
+          } else {
+            console.log('User creation failed:', res.data); // Log failure message
+          }
+        }).catch(err => {
+          console.log(err);
+          if(err.response){
+                    if(err.response.status == 401){
+
+                        // clear localstorage
+                        localStorage.removeItem('web_token');
+                        localStorage.removeItem('web_user');
+
+                        // clear store
+                        this.store.logout();
+
+                        // redirect to login
+                        this.$router.push('/login');
+                    }   
+                }
+                   
+        });
+     
+      }else{
+        axios.put(`/api/user/update/${this.EditID}`, this.FormUser, {
+          headers: { Authorization: 'Bearer ' + this.store.getToken }
+        }).then(res => {
+          if(res.data.message === 'success') {
+            this.fetchUsers();
+            this.ShowFormUser = false;
+            this.FormUser = {
+              username: '',
+              password: '',
+              full_name: '',
+              email: '',
+              phone: '',
+              position: '',
+              station: '',
+              role_id: null,
+              status: 'active'
+            };
+            } else {
+              console.log('User update failed:', res.data); // Log failure message
+            }
+        }).catch(err => {
+          console.log(err);
+          if(err.response){
+            if(err.response.status == 401){
+              // clear localstorage
+              localStorage.removeItem('web_token');
+              localStorage.removeItem('web_user');
+              // clear store
+              this.store.logout();
+              // redirect to login
+              this.$router.push('/login');
+            }
+          }
+        });
+      }
+
+    },
+    //cannel user
+    Canneluser() {
+      this.ShowFormUser = false;
+      this.fetchUsers();
+
+    },
+  
+    fetchUsers() {
+      axios.get('/api/users')
+        .then(response => {
+          this.users = response.data;
+        })
+        .catch(error => {
+          console.error('Error fetching users:', error);
+        });
+    },
+    fetchPositions() {
+      axios.get('/api/positions')
+        .then(response => {
+          this.positions = response.data;
+        })
+        .catch(error => {
+          console.error('Error fetching positions:', error);
+        });
+    },
+    fetchStations() {
+      axios.get('/api/stations')
+        .then(response => {
+          this.stations = response.data;
+          
+        })
+        .catch(error => {
+          console.error('Error fetching stations:', error);
+        });
+    },
+    fetchRoles() {
+            axios.get('/api/roles')
+                .then(response => {
+                    this.roles = response.data;
+                })
+                .catch(error => {
+                    console.error('Error fetching roles:', error);
+                });
+        },
+        getRoleName(roleId) {
+      const role = this.roles.find(role => role.id === roleId);
+      return role ? role.name : 'Unknown';
+    }
+  },
+ 
+ 
+
 };
 </script>
+  
 
-<style scoped>
-/* Add your styles here */
-</style>
+  
+  <style scoped>
+  .text-danger {
+  color: #dc3545;
+  font-size: 18px;
+  font-weight: bold;
+  vertical-align: middle;
+}
+ 
+  </style>

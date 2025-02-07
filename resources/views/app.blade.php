@@ -16,6 +16,8 @@
             <link rel="stylesheet" href="{{ url('css/main.css') }}">
             <!-- DateRange css -->
             <link rel="stylesheet" href="{{ url('vendor/daterange/daterange.css') }}" />
+            <!-- Icon css -->
+          <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
             
 </head>
 <body >

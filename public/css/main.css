@@ -1011,6 +1011,7 @@ ul.header-tasks:last-child {
   min-width: 320px;
   max-width: 320px; }
   .login-screen .login-logo {
+    justify-content: center;
     margin: 1rem 0 2rem 0;
     display: flex;
     font-size: 2rem;

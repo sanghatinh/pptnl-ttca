@@ -27,7 +27,7 @@
 					<div class="main-container">
 						
 						<router-view></router-view>
-						{{ store.getToken }}
+						<!-- {{ store.getToken }} -->
 					<!-- Main container end -->
 	
 				</div>
@@ -51,7 +51,7 @@ export default {
 	} ,
     data() {
     return {
-      url: window.location.origin,
+		url: window.location.href,
     }
   }
 

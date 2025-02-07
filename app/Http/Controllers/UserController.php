@@ -1,11 +1,14 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use App\Models\User;
 use JWTAuth;
 use Illuminate\Support\Facades\Auth;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
+
 
 class UserController extends Controller
 {
@@ -82,17 +85,30 @@ public function login(Request $request)
 
 
 
-    public function logout(Request $request)
+public function logout(Request $request)
     {
         try {
-
             $token = JWTAuth::getToken();
-            JWTAuth::invalidate($token);
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token not provided'
+                ], 401);
+            }
+
+            try {
+                JWTAuth::invalidate($token);
+            } catch (TokenExpiredException $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token has expired'
+                ], 401);
+            }
 
             $success = true;
             $message = "ອອກຈາກລະບົບສຳເລັດ!";
 
-        } catch (\Illuminate\Database\QueryException $ex) {
+        } catch (\Exception $ex) {
             $success = false;
             $message = $ex->getMessage();
         }
@@ -104,4 +120,129 @@ public function login(Request $request)
 
         return response()->json($response);
     }
+
+    //ดึงข้อมูลจากตาราง listposition และ liststation
+    public function getPositions()
+    {
+        try {
+            $positions = DB::table('listposition')->select('position')->get();
+            return response()->json($positions);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getStations()
+    {
+        try {
+            $stations = DB::table('liststation')->select('name')->get();
+            return response()->json($stations);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+   
+//เพิ่มฟังก์ชันใน UserController เพื่อดึงข้อมูล roles
+public function getRoles()
+{
+    try {
+        $roles = DB::table('roles')->select('id', 'name')->get();
+        return response()->json($roles);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+//ดืงข้อมูลจากตาราง users
+
+
+public function getUsers()
+{
+    try {
+        $users = User::with('roles')->get();
+        return response()->json($users);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+
+// เพิ่มฟังก์ชันใน UserController Add new user
+public function addnewuser(Request $request)
+{
+    try {
+        $request->validate([
+            'username' => 'required|unique:users',
+            'password' => 'required',
+            'full_name' => 'required',
+            'email' => 'nullable|email|unique:users',
+            'phone' => 'nullable|string',
+            'position' => 'required|string',
+            'station' => 'required|string',
+            'role_id' => 'required|exists:roles,id',
+            'status' => 'required|in:active,inactive',
+        ]);
+
+        $user = new User();
+        $user->username = $request->username;
+        $user->password = Hash::make($request->password);
+        $user->full_name = $request->full_name;
+        $user->email = $request->email;
+        $user->phone = $request->phone;
+        $user->position = $request->position;
+        $user->station = $request->station;
+        $user->role_id = $request->role_id;
+        $user->status = $request->status;
+        $user->save();
+
+        return response()->json(['message' => 'success'], 201);
+    } catch (\Illuminate\Database\QueryException $ex) {
+        return response()->json(['error' => $ex->getMessage()], 500);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+
+public function edituser($id)
+{
+    try {
+        $user = User::find($id);
+        return response()->json($user);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+
+public function updateuser(Request $request, $id)
+{
+    try {
+        $request->validate([
+            'username' => 'required|unique:users,username,' . $id,
+            'full_name' => 'required',
+            'email' => 'nullable|email|unique:users,email,' . $id,
+            'phone' => 'nullable|string',
+            'position' => 'required|string',
+            'station' => 'required|string',
+            'role_id' => 'required|exists:roles,id',
+            'status' => 'required|in:active,inactive',
+        ]);
+
+        $user = User::find($id);
+        $user->username = $request->username;
+        $user->full_name = $request->full_name;
+        $user->email = $request->email;
+        $user->phone = $request->phone;
+        $user->position = $request->position;
+        $user->station = $request->station;
+        $user->role_id = $request->role_id;
+        $user->status = $request->status;
+        $user->save();
+
+        return response()->json(['message' => 'success'], 200);
+    } catch (\Illuminate\Database\QueryException $ex) {
+        return response()->json(['error' => $ex->getMessage()], 500);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+
+}
+
 }

@@ -5,7 +5,7 @@
 						<div class="login-screen">
 							<div class="login-box">
 								<a href="#" class="login-logo">
-									<img :src="`${url}/img/logo-dark.png`" alt="Le Rouge Admin Dashboard" />
+									<img src="/public/img/Logo/TTC LOGO.png"  alt="Le Rouge Admin Dashboard" />
 									
 								</a>
 								<h5>Welcome back,<br />Create Account.</h5>
@@ -62,7 +62,7 @@ import axios from 'axios';
 export default {
 	data() {
 		return {
-			url: window.location.origin,
+			url: window.location.href,
 			username: '',
 			password: '',
 			password_confrim: '',
@@ -78,7 +78,7 @@ export default {
 	methods: {
 		Register() {
 			// console.log('Test 1234');
-			axios.post(`${this.url}/api/register`, {
+			axios.post('api/register', {
 				username: this.username,
 				password: this.password,
 				password_confrim: this.password_confrim,

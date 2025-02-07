@@ -69,7 +69,7 @@
 										<li>
 											<a href="#">
 												<div class="user-img away">
-                                                    <img :src="`${url}/img/user21.png`" alt="User">
+                                                    <img src="/public/img/bg2.jpeg" alt="User">
                                                    
 												</div>
 												<div class="details">
@@ -82,7 +82,7 @@
 										<li>
 											<a href="#">
 												<div class="user-img busy">
-													<img :src="`${url}/img/user10.png`" alt="User">
+													<img src="/public/img/bg4.jpeg" alt="User">
 												</div>
 												<div class="details">
 													<div class="user-title">Braxten</div>
@@ -91,18 +91,7 @@
 												</div>
 											</a>
 										</li>
-										<li>
-											<a href="#">
-												<div class="user-img online">
-													<img :src="`${url}/img/user6.png`" alt="User">
-												</div>
-												<div class="details">
-													<div class="user-title">Larkyn</div>
-													<div class="noti-details">Check out every table in detail.</div>
-													<div class="noti-date">Oct 15, 04:00 pm</div>
-												</div>
-											</a>
-										</li>
+										
 									</ul>
 								</div>
 							</li>
@@ -110,7 +99,7 @@
 								<a href="#" id="userSettings" class="user-settings" data-toggle="dropdown" aria-haspopup="true">
 									<span class="user-name">Julie Sweet</span>
 									<span class="avatar">
-										<img :src="`${url}/img/user24.png`" alt="avatar">
+										<!-- <img :src="`${url}/img/user24.png`" alt="avatar"> -->
 										<span class="status busy"></span>
 									</span>
 								</a>
@@ -118,7 +107,7 @@
 									<div class="header-profile-actions">
 										<div class="header-user-profile">
 											<div class="header-user">
-												<img :src="`${url}/img/user24.png`" alt="Admin Template">
+												<img src="/public/img/user24.png" alt="Admin Template">
 											</div>
 											<h5>Julie Sweet</h5>
 											<p>Admin</p>
@@ -154,7 +143,7 @@ import axios from 'axios';
 export default {
   data() {
     return {
-      url: window.location.origin,
+		url: window.location.href,
     }
   },
   setup() {
@@ -166,7 +155,7 @@ export default {
   methods: {
       Logout(){
 		
-          axios.get(`${this.url}/api/logout`,{ headers: { Authorization: 'Bearer ' + this.store.getToken } }).then((res)=>{
+          axios.get('api/logout',{ headers: { Authorization: 'Bearer ' + this.store.getToken } }).then((res)=>{
            
               if(res.data.success){
                 // clear local storage
@@ -181,6 +170,17 @@ export default {
               }
           }).catch((err)=>{
               console.log(err);
+			  if(err.response.status == 401){
+				// clear local storage
+				localStorage.removeItem('web_token');
+				localStorage.removeItem('web_user');
+
+				// clear store
+				this.store.logout();
+
+				// got to login page
+				this.$router.push('/login');
+				}
           });
       }
     }

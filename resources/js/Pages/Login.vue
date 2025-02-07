@@ -6,7 +6,7 @@
 						<div class="login-screen">
 							<div class="login-box">
 								<a href="#" class="login-logo">
-									<img :src="`${url}/img/Logo/TTC LOGO FFF.png`"  alt="Le Rouge Admin Dashboard" />
+									<img src="/public/img/Logo/TTC LOGO.png"  alt="Le Rouge Admin Dashboard" />
 									
 								</a>
 								<h5>Xin chào !,<br />Vui lòng đăng nhập vào tài khoản của bạn.</h5>
@@ -48,7 +48,7 @@ import axios from 'axios';
 export default {
     data() {
     return {
-      url: window.location.origin,
+		url: window.location.href,
 	  username: '',
 	  password: '',
 	  message_error: '',
@@ -82,7 +82,7 @@ export default {
   methods:{
 	Login(){
 
-axios.post(`${this.url}/api/login`,{
+axios.post('api/login',{
 	username:this.username,
   	password:this.password,
   	remember_me:this.remember_me
