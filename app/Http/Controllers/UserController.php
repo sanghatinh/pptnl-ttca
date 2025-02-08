@@ -205,6 +205,7 @@ public function edituser($id)
 {
     try {
         $user = User::find($id);
+        $user->password = ''; // เคลียร์ฟิลด์รหัสผ่านเพื่อความปลอดภัย
         return response()->json($user);
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()], 500);
@@ -234,6 +235,12 @@ public function updateuser(Request $request, $id)
         $user->station = $request->station;
         $user->role_id = $request->role_id;
         $user->status = $request->status;
+
+        // อัพเดทรหัสผ่านเฉพาะเมื่อมีการกรอกข้อมูล
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
         $user->save();
 
         return response()->json(['message' => 'success'], 200);
@@ -242,7 +249,24 @@ public function updateuser(Request $request, $id)
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()], 500);
     }
-
 }
+//Delete user
+public function deleteuser($id)
+{
+    try {
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+        $user->delete();
+        return response()->json(['message' => 'success'], 200);
+    } catch (\Exception $e) {
+        \Log::error('Error deleting user: ' . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+
+
+
 
 }

@@ -13,7 +13,7 @@
             <!-- Icomoon Font Icons css -->
             <link rel="stylesheet" href="{{ url('fonts/style.css') }}">
             <!-- Main css -->
-            <link rel="stylesheet" href="{{ url('css/main.css') }}">
+            <link rel="stylesheet" href="{{ asset('css/main.css') }}">
             <!-- DateRange css -->
             <link rel="stylesheet" href="{{ url('vendor/daterange/daterange.css') }}" />
             <!-- Icon css -->

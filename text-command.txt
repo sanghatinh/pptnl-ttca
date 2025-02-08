@@ -21,3 +21,7 @@ Git
 
 
     -cls = ຄຳສັ່ງ clear cmd
+    -git commit -a -m "Update code"     วิธีนี้จะไม่รวมไฟล์ใหม่ที่ยังไม่เคยถูก git add มาก่อน ดังนั้น ถ้ามีไฟล์ใหม่ต้องใช้ git add ก่อน commit ครั้งแรก
+
+    -Ctrl + Shift + P => Format Document แบบนี้โค้ดของคุณจะสวยงามและเป็นระเบียบทุกครั้ง
+    -Ctrl + Shift + W หากต้องการปิด VS Code ทั้งหมด
