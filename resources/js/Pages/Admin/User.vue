@@ -1,4 +1,11 @@
 <template>
+    <!-- Loading starts -->
+    <div id="loading-wrapper" v-if="isLoading">
+        <div class="spinner-border" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+
     <div>
         <div class="row align-items-center mb-3">
             <div class="col">
@@ -290,12 +297,54 @@
                                             <td>{{ user.station }}</td>
                                             <td>{{ user.email }}</td>
                                             <td>{{ user.phone }}</td>
-                                            <td>
+                                            <td
+                                                :class="[
+                                                    roleClasses(
+                                                        getRoleName(
+                                                            user.role_id
+                                                        )
+                                                    ),
+                                                    'text-center',
+                                                ]"
+                                            >
+                                                <i
+                                                    :class="{
+                                                        'bx bx-user':
+                                                            getRoleName(
+                                                                user.role_id
+                                                            ) === 'User',
+                                                        'bx bx-shield-quarter':
+                                                            getRoleName(
+                                                                user.role_id
+                                                            ) === 'Admin',
+                                                        'bx bx-briefcase-alt':
+                                                            getRoleName(
+                                                                user.role_id
+                                                            ) === 'Manager',
+                                                        'bx bx-crown':
+                                                            getRoleName(
+                                                                user.role_id
+                                                            ) === 'Super Admin',
+                                                    }"
+                                                ></i>
                                                 {{ getRoleName(user.role_id) }}
                                             </td>
-                                            <td>{{ user.status }}</td>
+                                            <td
+                                                :class="{
+                                                    'text-success':
+                                                        user.status ===
+                                                        'active',
+                                                    'text-danger':
+                                                        user.status ===
+                                                        'inactive',
+                                                }"
+                                            >
+                                                {{ user.status }}
+                                            </td>
 
-                                            <td class="text-center">
+                                            <td
+                                                class="text-center actions-column"
+                                            >
                                                 <div class="dropdown">
                                                     <button
                                                         type="button"
@@ -343,6 +392,43 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                                <div class="card-body">
+                                    <nav aria-label="Page navigation example">
+                                        <ul
+                                            class="pagination rounded success justify-content-center"
+                                        >
+                                            <li class="page-item disabled">
+                                                <a class="page-link" href="#">
+                                                    <i
+                                                        class="icon-chevron-left"
+                                                    ></i
+                                                ></a>
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="#"
+                                                    >1</a
+                                                >
+                                            </li>
+                                            <li class="page-item active">
+                                                <a class="page-link" href="#"
+                                                    >2</a
+                                                >
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="#"
+                                                    >3</a
+                                                >
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="#"
+                                                    ><i
+                                                        class="icon-chevron-right"
+                                                    ></i
+                                                ></a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -385,6 +471,7 @@ export default {
             },
             FormType: true, // ตัวแปรเพื่อเช็คว่าเป็นการเพิ่มหรือแก้ไข ถ้าเป็น true คือเพิ่ม ถ้าเป็น false คือแก้ไข
             EditID: "", // ตัวแปรเพื่อเก็บ ID ของ User ที่ต้องการแก้ไข
+            isLoading: false, // เพิ่มตัวแปร isLoading
         };
     },
     //สร้างการตรวจสอบฟอร์มใส่ลูกเล่นเมื่อผู้ใช้กรอกข้อมูลไม่ครบหรือเป็นถ้าว่างให้ขึ้นข้อความแสดงใน input นั้น
@@ -422,6 +509,22 @@ export default {
         },
         FormValid() {
             return Object.keys(this.errors).length > 0;
+        },
+        roleClasses() {
+            return (roleName) => {
+                switch (roleName) {
+                    case "User":
+                        return "badge bg-label-primary";
+                    case "Admin":
+                        return "badge bg-label-success";
+                    case "Manager":
+                        return "badge bg-label-warning";
+                    case "Super Admin":
+                        return "badge bg-label-danger";
+                    default:
+                        return "";
+                }
+            };
         },
     },
 
@@ -481,6 +584,7 @@ export default {
 
         //Save add new user
         Saveuser() {
+            this.isLoading = true; // เริ่มการแสดงผล loading
             if (this.FormType) {
                 axios
                     .post("/api/user/add", this.FormUser, {
@@ -489,6 +593,7 @@ export default {
                         },
                     })
                     .then((res) => {
+                        this.isLoading = false; // หยุดการแสดงผล loading
                         if (res.data.message === "success") {
                             this.ShowFormUser = false;
                             this.fetchUsers();
@@ -526,6 +631,7 @@ export default {
                         }
                     })
                     .catch((err) => {
+                        this.isLoading = false; // หยุดการแสดงผล loading
                         console.log(err);
                         if (err.response) {
                             if (err.response.status == 401) {
@@ -553,6 +659,7 @@ export default {
                         },
                     })
                     .then((res) => {
+                        this.isLoading = false; // หยุดการแสดงผล loading
                         if (res.data.message === "success") {
                             this.fetchUsers();
                             this.ShowFormUser = false;
@@ -589,6 +696,7 @@ export default {
                         }
                     })
                     .catch((err) => {
+                        this.isLoading = false; // หยุดการแสดงผล loading
                         console.log(err);
                         if (err.response) {
                             if (err.response.status == 401) {
@@ -669,17 +777,34 @@ export default {
 
         fetchUsers() {
             axios
-                .get("/api/users")
-                .then((response) => {
-                    this.users = response.data;
+                .get("/api/users", {
+                    headers: { Authorization: "Bearer " + this.store.getToken },
                 })
-                .catch((error) => {
-                    console.error("Error fetching users:", error);
+                .then((res) => {
+                    this.users = res.data;
+                })
+                .catch((err) => {
+                    console.log(err);
+                    if (err.response) {
+                        if (err.response.status == 401) {
+                            // clear localstorage
+                            localStorage.removeItem("web_token");
+                            localStorage.removeItem("web_user");
+
+                            // clear store
+                            this.store.logout();
+
+                            // redirect to login
+                            this.$router.push("/login");
+                        }
+                    }
                 });
         },
         fetchPositions() {
             axios
-                .get("/api/positions")
+                .get("/api/positions", {
+                    headers: { Authorization: "Bearer " + this.store.getToken },
+                })
                 .then((response) => {
                     this.positions = response.data;
                 })
@@ -689,7 +814,9 @@ export default {
         },
         fetchStations() {
             axios
-                .get("/api/stations")
+                .get("/api/stations", {
+                    headers: { Authorization: "Bearer " + this.store.getToken },
+                })
                 .then((response) => {
                     this.stations = response.data;
                 })
@@ -699,7 +826,9 @@ export default {
         },
         fetchRoles() {
             axios
-                .get("/api/roles")
+                .get("/api/roles", {
+                    headers: { Authorization: "Bearer " + this.store.getToken },
+                })
                 .then((response) => {
                     this.roles = response.data;
                 })
@@ -716,10 +845,62 @@ export default {
 </script>
 
 <style scoped>
+.table td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .text-danger {
     color: #dc3545;
-    font-size: 18px;
+    font-size: 14px;
     font-weight: bold;
     vertical-align: middle;
+}
+.text-success {
+    color: #28a745;
+    font-size: 14px;
+    font-weight: bold;
+    vertical-align: middle;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25em 0.4em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.375rem;
+    margin: auto; /* Center horizontally */
+}
+.bg-label-primary {
+    color: #fff;
+    background-color: #007bff;
+}
+.bg-label-success {
+    color: #fff;
+    background-color: #28a745;
+}
+.bg-label-warning {
+    color: #212529;
+    background-color: #ffc107;
+}
+.bg-label-danger {
+    color: #fff;
+    background-color: #dc3545;
+}
+.table td.text-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* ยกเว้นการตัดเนื้อหาและชอบเนื้อหาในคอลัมน์ Actions */
+.table td.actions-column {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
 }
 </style>

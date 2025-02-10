@@ -10,18 +10,18 @@ use App\Http\Controllers\PermissionController;
 Route::apiResource('roles', RoleController::class);
 Route::apiResource('permissions', PermissionController::class);
 
-
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 Route::get('/logout', [UserController::class, 'logout']);
 
 
-//สร้าง กลุ่มของ 
-Route::get('/positions', [UserController::class, 'getPositions']);
-Route::get('/stations', [UserController::class, 'getStations']);
-Route::get('/roles', [UserController::class, 'getRoles']);
-Route::get('/users', [UserController::class, 'getUsers']);
-Route::post('/user/add', [UserController::class, 'addnewuser']);
-Route::put('/user/update/{id}', [UserController::class, 'updateuser']);
-Route::get('/user/edit/{id}', [UserController::class, 'edituser']);
-Route::delete('/user/delete/{id}', [UserController::class, 'deleteuser']);
+Route::group(['middleware' => 'auth:api'], function () {
+    Route::get('/positions', [UserController::class, 'getPositions']);
+    Route::get('/stations', [UserController::class, 'getStations']);
+    Route::get('/roles', [UserController::class, 'getRoles']);
+    Route::get('/users', [UserController::class, 'getUsers']);
+    Route::post('/user/add', [UserController::class, 'addnewuser']);
+    Route::put('/user/update/{id}', [UserController::class, 'updateuser']);
+    Route::get('/user/edit/{id}', [UserController::class, 'edituser']);
+    Route::delete('/user/delete/{id}', [UserController::class, 'deleteuser']);
+});

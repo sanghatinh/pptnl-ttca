@@ -1,5 +1,5 @@
 <template lang="">
-    <div class="row d-flex justify-content-center">
+    <div class="row d-flex justify-content-center background">
         <div class="col-xl-4 col-lg-5 col-md-6 col-sm-12">
             <div class="login-screen">
                 <div class="login-box">
@@ -143,5 +143,12 @@ export default {
     position: absolute;
     right: 0;
     left: 0;
+}
+.background {
+    background-image: url("/public/img/Logo/AdobeStock431936490Preview.JPG");
+    background-size: cover;
+    background-position: center;
+    width: 100%;
+    height: 100vh; /* หรือขนาดที่คุณต้องการ */
 }
 </style>
