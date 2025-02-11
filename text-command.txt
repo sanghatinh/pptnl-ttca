@@ -5,6 +5,9 @@ Larvel
     - php artisan migrate         = ຄຳສັ່ງສ້າງ ຕາຕະລາງຖານຂໍ້ມູນ
     - php artisan install:api    = ຄຳສັ່ງສ້າງ-ຕິດຕັ້ງ api 
     - php artisan route:cache  : ຄຳສັ່ງເຄຼຍ Route Cache
+    -php artisan make:controller MyController  เพื่อสร้าง Controller 
+    -php artisan make:model Component
+
 
 VueJS
     - npm install                = ເປັນຄຳສັ່ງຕິດຕັ້ງ Package ຂອງ ​Vue
@@ -17,11 +20,11 @@ Git
     - git push                   = ຄຳສັ່ງ ອັບໂຫຼດໂປຼເຈັກຂື້ນ github 
     - git pull                   = ຄຳສັ່ງ ອັບເດດ ໂຄດລ່າສຸດຈາກ github
 
-    - git add . && git commit -m "v1.2.1" && git push
+    - git add . && git commit -m "v1.2.3" && git push
 
 
     -cls = ຄຳສັ່ງ clear cmd
-    -git commit -a -m "Update code"     วิธีนี้จะไม่รวมไฟล์ใหม่ที่ยังไม่เคยถูก git add มาก่อน ดังนั้น ถ้ามีไฟล์ใหม่ต้องใช้ git add ก่อน commit ครั้งแรก
+    -git commit -a -m "Update code 1.1"     วิธีนี้จะไม่รวมไฟล์ใหม่ที่ยังไม่เคยถูก git add มาก่อน ดังนั้น ถ้ามีไฟล์ใหม่ต้องใช้ git add ก่อน commit ครั้งแรก
 
     -Ctrl + Shift + P => Format Document แบบนี้โค้ดของคุณจะสวยงามและเป็นระเบียบทุกครั้ง
     -Ctrl + Shift + W หากต้องการปิด VS Code ทั้งหมด

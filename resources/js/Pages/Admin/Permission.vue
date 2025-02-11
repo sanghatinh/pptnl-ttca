@@ -1,7 +1,28 @@
 <template>
     <div>
         <div v-if="PermissionFromshow">
-            <h4>Permission Management</h4>
+            <div class="row align-items-center mb-3">
+                <div class="col">
+                    <h4>Permission Management</h4>
+                </div>
+
+                <div class="col text-end mb-2">
+                    <button
+                        type="button"
+                        class="btn btn-success btn-rounded me-2"
+                        @click="savePermissions"
+                    >
+                        <i class="bx bxs-save"></i>Save
+                    </button>
+                    <button
+                        type="button"
+                        @click="cancel"
+                        class="btn btn-secondary btn-rounded"
+                    >
+                        <i class="bx bx-x"></i>Cancel
+                    </button>
+                </div>
+            </div>
             <div class="row gutters">
                 <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
                     <div class="card">
@@ -9,64 +30,22 @@
                             <div class="card-title">Permission Checkbox</div>
                         </div>
                         <div class="card-body">
-                            <div class="custom-control custom-switch">
-                                <input
-                                    type="checkbox"
-                                    class="custom-control-input check-all"
-                                    id="checkAll"
-                                    @change="toggleAll"
-                                />
-                                <label
-                                    class="custom-control-label"
-                                    for="checkAll"
-                                    >Select All</label
-                                >
-                            </div>
-
-                            <div class="mb-3"></div>
-
-                            <div class="custom-control custom-switch">
+                            <div
+                                v-for="permission in permissions"
+                                :key="permission.id"
+                                class="custom-control custom-switch"
+                            >
                                 <input
                                     type="checkbox"
                                     class="custom-control-input"
-                                    id="customSwitch1"
+                                    :id="'permission-' + permission.id"
+                                    v-model="selectedPermissions"
+                                    :value="permission.id"
                                 />
                                 <label
                                     class="custom-control-label"
-                                    for="customSwitch1"
-                                    >Toggle this switch element</label
-                                >
-                            </div>
-
-                            <div class="mb-3"></div>
-
-                            <div class="custom-control custom-switch">
-                                <input
-                                    type="checkbox"
-                                    class="custom-control-input"
-                                    checked=""
-                                    id="customSwitch3"
-                                />
-                                <label
-                                    class="custom-control-label"
-                                    for="customSwitch3"
-                                    >Enabled switch element</label
-                                >
-                            </div>
-
-                            <div class="mb-3"></div>
-
-                            <div class="custom-control custom-switch">
-                                <input
-                                    type="checkbox"
-                                    class="custom-control-input"
-                                    disabled=""
-                                    id="customSwitch2"
-                                />
-                                <label
-                                    class="custom-control-label"
-                                    for="customSwitch2"
-                                    >Disabled switch element</label
+                                    :for="'permission-' + permission.id"
+                                    >{{ permission.name }}</label
                                 >
                             </div>
                         </div>
@@ -81,48 +60,22 @@
                             <div class="card-title">Can view component</div>
                         </div>
                         <div class="card-body">
-                            <div class="custom-control custom-switch">
+                            <div
+                                v-for="component in components"
+                                :key="component.id"
+                                class="custom-control custom-switch"
+                            >
                                 <input
                                     type="checkbox"
                                     class="custom-control-input"
-                                    id="customSwitch1"
+                                    :id="'component-' + component.id"
+                                    v-model="selectedComponents"
+                                    :value="component.id"
                                 />
                                 <label
                                     class="custom-control-label"
-                                    for="customSwitch1"
-                                    >Toggle this switch element</label
-                                >
-                            </div>
-
-                            <div class="mb-3"></div>
-
-                            <div class="custom-control custom-switch">
-                                <input
-                                    type="checkbox"
-                                    class="custom-control-input"
-                                    checked=""
-                                    id="customSwitch3"
-                                />
-                                <label
-                                    class="custom-control-label"
-                                    for="customSwitch3"
-                                    >Enabled switch element</label
-                                >
-                            </div>
-
-                            <div class="mb-3"></div>
-
-                            <div class="custom-control custom-switch">
-                                <input
-                                    type="checkbox"
-                                    class="custom-control-input"
-                                    disabled=""
-                                    id="customSwitch2"
-                                />
-                                <label
-                                    class="custom-control-label"
-                                    for="customSwitch2"
-                                    >Disabled switch element</label
+                                    :for="'component-' + component.id"
+                                    >{{ component.name }}</label
                                 >
                             </div>
                         </div>
@@ -133,7 +86,6 @@
 
         <div v-else>
             <h4>Role Management</h4>
-            <!-- Add your permission management UI here -->
             <div class="row gutters">
                 <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
                     <div class="card">
@@ -149,7 +101,6 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <!-- Add your data here -->
                                         <tr
                                             v-for="(role, index) in roles"
                                             :key="role.id"
@@ -213,32 +164,22 @@ export default {
     data() {
         return {
             PermissionFromshow: false,
-            roles: [],
+            permissions: [],
+            components: [],
+            selectedPermissions: [],
+            selectedComponents: [],
             updatePermissionID: null,
+            roles: [], // Add roles data
         };
-    },
-    mounted() {
-        this.fetchRoles();
     },
     methods: {
         updatePermission(roleID) {
             this.updatePermissionID = roleID;
             this.PermissionFromshow = true;
-            console.log("Update permission for role ID: ", roleID);
-        },
-
-        fetchRoles() {
-            axios
-                .get("/api/roles")
-                .then((response) => {
-                    this.roles = response.data;
-                })
-                .catch((error) => {
-                    console.error(
-                        "There was an error fetching the roles!",
-                        error
-                    );
-                });
+            this.fetchPermissions();
+            this.fetchComponents();
+            this.fetchRolePermissions(roleID);
+            this.fetchRoleComponents(roleID);
         },
         roleClasses(roleName) {
             switch (roleName) {
@@ -254,6 +195,95 @@ export default {
                     return "";
             }
         },
+        fetchPermissions() {
+            axios
+                .get("/api/permissions")
+                .then((response) => {
+                    this.permissions = response.data;
+                })
+                .catch((error) => {
+                    console.error(
+                        "There was an error fetching the permissions!",
+                        error
+                    );
+                });
+        },
+        fetchComponents() {
+            axios
+                .get("/api/components")
+                .then((response) => {
+                    this.components = response.data;
+                })
+                .catch((error) => {
+                    console.error(
+                        "There was an error fetching the components!",
+                        error
+                    );
+                });
+        },
+        fetchRolePermissions(roleID) {
+            axios
+                .get(`/api/role/${roleID}/permissions`)
+                .then((response) => {
+                    this.selectedPermissions = response.data.map(
+                        (permission) => permission.permission_id
+                    );
+                })
+                .catch((error) => {
+                    console.error(
+                        "There was an error fetching the role permissions!",
+                        error
+                    );
+                });
+        },
+        fetchRoleComponents(roleID) {
+            axios
+                .get(`/api/role/${roleID}/components`)
+                .then((response) => {
+                    this.selectedComponents = response.data.map(
+                        (component) => component.component_id
+                    );
+                })
+                .catch((error) => {
+                    console.error(
+                        "There was an error fetching the role components!",
+                        error
+                    );
+                });
+        },
+        savePermissions() {
+            const data = {
+                role_id: this.updatePermissionID,
+                permissions: this.selectedPermissions,
+                components: this.selectedComponents,
+            };
+            axios
+                .post("/api/role/permissions", data)
+                .then((response) => {
+                    this.PermissionFromshow = false;
+                    console.log("Permissions saved successfully!");
+                })
+                .catch((error) => {
+                    console.error(
+                        "There was an error saving the permissions!",
+                        error
+                    );
+                });
+        },
+        cancel() {
+            this.PermissionFromshow = false;
+        },
+    },
+    mounted() {
+        // Fetch roles data when the component is mounted
+        axios
+            .get("/api/roles")
+            .then((response) => {
+                this.roles = response.data;
+            })
+            .catch((error) => {
+                console.error("There was an error fetching the roles!", error);
+            });
     },
 };
 </script>

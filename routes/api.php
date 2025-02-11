@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\ComponentController;
+
 
 
 Route::apiResource('roles', RoleController::class);
@@ -29,5 +32,9 @@ Route::group(['middleware' => ['auth:api']], function () {
 });
 
 
-
+Route::post('/role/permissions', [RolePermissionController::class, 'store']);
 Route::get('/roles', [RoleController::class, 'index']);
+Route::get('/permissions', [PermissionController::class, 'index']);
+Route::get('/components', [ComponentController::class, 'index']);
+Route::get('/role/{role}/permissions', [RolePermissionController::class, 'getPermissions']);
+Route::get('/role/{role}/components', [RolePermissionController::class, 'getComponents']);
