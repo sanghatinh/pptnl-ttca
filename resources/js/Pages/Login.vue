@@ -131,8 +131,12 @@ export default {
                 })
                 .catch((err) => {
                     console.log(err);
-                    this.message_error =
-                        "Không tìm thấy tài khoản hoặc mật khẩu không đúng";
+                    if (err.response && err.response.status === 403) {
+                        this.message_error = "tài khoản bạn đã bị khóa 🔒";
+                    } else {
+                        this.message_error =
+                            "Không tìm thấy tài khoản hoặc mật khẩu không đúng";
+                    }
                 });
         },
     },

@@ -7,15 +7,17 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 
+
 Route::apiResource('roles', RoleController::class);
 Route::apiResource('permissions', PermissionController::class);
+
 
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 Route::get('/logout', [UserController::class, 'logout']);
 
 
-Route::group(['middleware' => 'auth:api'], function () {
+Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/positions', [UserController::class, 'getPositions']);
     Route::get('/stations', [UserController::class, 'getStations']);
     Route::get('/roles', [UserController::class, 'getRoles']);
@@ -25,3 +27,4 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('/user/edit/{id}', [UserController::class, 'edituser']);
     Route::delete('/user/delete/{id}', [UserController::class, 'deleteuser']);
 });
+

@@ -47,41 +47,45 @@ class UserController extends Controller
 
     }
 
-public function login(Request $request)
-{
-    try {
-        $credentials = [
-            'username' => $request->username,
-            'password' => $request->password
-        ];
-
-        if($request->remember_me) {
-            JWTAuth::factory()->setTTL(60*24*7);
-        }
-
-        if (!$token = JWTAuth::attempt($credentials)) {
+    public function login(Request $request)
+    {
+        try {
+            $credentials = [
+                'username' => $request->username,
+                'password' => $request->password
+            ];
+    
+            if ($request->remember_me) {
+                JWTAuth::factory()->setTTL(60 * 24 * 7);
+            }
+    
+            if (!$token = JWTAuth::attempt($credentials)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid credentials'
+                ], 401);
+            }
+    
+            $user = auth()->user();
+            if ($user->status !== 'active') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your account is inactive'
+                ], 403);
+            }
+    
+            return response()->json([
+                'success' => true,
+                'token' => $token,
+                'user' => $user
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ'
-            ], 401);
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        $user = Auth::user();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'ເຂົ້າສູ່ລະບົບສຳເລັດ',
-            'token' => $token,
-            'user' => $user
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'ເກີດຂໍ້ຜິດພາດ: ' . $e->getMessage()
-        ], 500);
     }
-}
 
 
 
