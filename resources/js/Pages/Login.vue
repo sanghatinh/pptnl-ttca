@@ -155,4 +155,7 @@ export default {
     width: 100%;
     height: 100vh; /* หรือขนาดที่คุณต้องการ */
 }
+.alert.alert-warning {
+    background: #ffdf98;
+}
 </style>

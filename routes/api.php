@@ -28,3 +28,6 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::delete('/user/delete/{id}', [UserController::class, 'deleteuser']);
 });
 
+
+
+Route::get('/roles', [RoleController::class, 'index']);

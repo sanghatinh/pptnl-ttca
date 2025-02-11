@@ -7,10 +7,10 @@ use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
-    public function index()
-    {
-        return Role::with('permissions')->get();
-    }
+    // public function index()
+    // {
+    //     return Role::with('permissions')->get();
+    // }
 
     public function store(Request $request)
     {
@@ -31,4 +31,13 @@ class RoleController extends Controller
         $role->delete();
         return response()->noContent();
     }
+
+    //ดืงข้อมูลจากตาราง roles
+    public function index()
+    {
+        $roles = Role::all();
+        return response()->json($roles);
+    }
+
+
 }
