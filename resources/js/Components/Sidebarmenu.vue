@@ -1,4 +1,4 @@
-<template lang="">
+<template>
     <!-- Sidebar wrapper start -->
     <nav id="sidebar" class="sidebar-wrapper">
         <!-- Sidebar brand start  -->
@@ -8,9 +8,9 @@
                     :src="`${url}/img/Logo/TTC LOGO FFF.png`"
                     alt="Le Rouge Admin Dashboard"
                 />
-                <span class="text-logo-company"
-                    >TTC ATTAPEU SUGAR CANE SOLE CO.,LTD</span
-                >
+                <span class="text-logo-company">
+                    TTC ATTAPEU SUGAR CANE SOLE CO.,LTD
+                </span>
             </router-link>
         </div>
         <!-- Sidebar brand end  -->
@@ -21,26 +21,47 @@
             <div class="sidebar-menu">
                 <ul>
                     <li class="header-menu">General</li>
-                    <li class="sidebar-dropdown active">
+                    <li
+                        class="sidebar-dropdown active"
+                        v-if="userCanViewComponent('Dashboards')"
+                    >
                         <a href="#">
                             <i class="icon-devices_other"></i>
                             <span class="menu-text">Dashboards</span>
                         </a>
                         <div class="sidebar-submenu">
                             <ul>
-                                <li>
-                                    <router-link to="/">
+                                <!-- Assuming permission check for each dashboard if needed -->
+                                <li
+                                    v-if="
+                                        userCanViewComponent('Admin Dashboard')
+                                    "
+                                >
+                                    <router-link
+                                        to="/"
+                                        :class="
+                                            $route.path === '/'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                    >
                                         <span class="menu-text"
                                             >Admin Dashboard</span
                                         >
                                     </router-link>
                                 </li>
-                                <li>
+                                <li
+                                    v-if="
+                                        userCanViewComponent('Sales Dashboard')
+                                    "
+                                >
                                     <a href="sales-dashboard.html"
                                         >Sales Dashboard</a
                                     >
                                 </li>
-                                <li>
+                                <li
+                                    v-if="userCanViewComponent('CRM Dashboard')"
+                                >
                                     <a href="crm-dashboard.html"
                                         >CRM Dashboard</a
                                     >
@@ -49,21 +70,28 @@
                         </div>
                     </li>
                 </ul>
-                <!-- Quan Ly He thong -->
+
+                <!-- Quản lý hệ thống -->
                 <ul>
-                    <!-- <li class="header-menu">Quản lý hệ thống</li> -->
-                    <li class="sidebar-dropdown active">
+                    <li
+                        class="sidebar-dropdown active"
+                        v-if="userCanViewComponent('Quản lý hệ thống')"
+                    >
                         <a href="#">
                             <i class="icon-devices_other"></i>
                             <span class="menu-text">Quản lý hệ thống</span>
                         </a>
                         <div class="sidebar-submenu">
                             <ul>
-                                <li>
+                                <li
+                                    v-if="
+                                        userCanViewComponent('Danh sách User')
+                                    "
+                                >
                                     <router-link
                                         to="/user"
                                         :class="
-                                            $route.path == '/user'
+                                            $route.path === '/user'
                                                 ? 'current-page'
                                                 : ''
                                         "
@@ -71,11 +99,11 @@
                                         <span>Danh sách User</span>
                                     </router-link>
                                 </li>
-                                <li>
+                                <li v-if="userCanViewComponent('Cấp quyền')">
                                     <router-link
                                         to="/permission"
                                         :class="
-                                            $route.path == '/permission'
+                                            $route.path === '/permission'
                                                 ? 'current-page'
                                                 : ''
                                         "
@@ -83,11 +111,15 @@
                                         <span>Cấp quyền</span>
                                     </router-link>
                                 </li>
-                                <li>
+                                <li
+                                    v-if="
+                                        userCanViewComponent('Nhóm Cấp quyền')
+                                    "
+                                >
                                     <router-link
                                         to="/role"
                                         :class="
-                                            $route.path == '/role'
+                                            $route.path === '/role'
                                                 ? 'current-page'
                                                 : ''
                                         "
@@ -99,7 +131,7 @@
                                     <router-link
                                         to="/Profile"
                                         :class="
-                                            $route.path == '/Profile'
+                                            $route.path === '/Profile'
                                                 ? 'current-page'
                                                 : ''
                                         "
@@ -118,15 +150,64 @@
     </nav>
     <!-- Sidebar wrapper end -->
 </template>
+
 <script>
+import axios from "axios";
+import { useStore } from "../Store/Auth";
 export default {
+    setup() {
+        const store = useStore();
+        return {
+            store,
+        };
+    },
     data() {
         return {
             url: window.location.origin,
+            userPermissions: [],
+            userComponents: [],
         };
+    },
+    methods: {
+        fetchUserData() {
+            // Fetch user permissions
+            axios
+                .get("/api/user/permissions", {
+                    headers: { Authorization: "Bearer " + this.store.getToken },
+                })
+
+                .then((response) => {
+                    this.userPermissions = response.data;
+                })
+                .catch((error) =>
+                    console.error("Error fetching permissions:", error)
+                );
+
+            // Fetch user components
+            axios
+                .get("/api/user/components", {
+                    headers: { Authorization: "Bearer " + this.store.getToken },
+                })
+                .then((response) => {
+                    this.userComponents = response.data;
+                })
+                .catch((error) =>
+                    console.error("Error fetching components:", error)
+                );
+        },
+        userHasPermission(permissionName) {
+            return this.userPermissions.includes(permissionName);
+        },
+        userCanViewComponent(componentName) {
+            return this.userComponents.includes(componentName);
+        },
+    },
+    mounted() {
+        this.fetchUserData();
     },
 };
 </script>
+
 <style scoped>
 .text-logo-company {
     font-size: 12px;
@@ -134,9 +215,9 @@ export default {
     margin-left: 10px;
     color: #fff;
     font-weight: bold;
-    /* กลื่งกางแนวตั้ง */
+    /* For vertical alignment */
     transform: rotate(90deg);
-    /* กลื่งกางแนวนอน */
+    /* For horizontal alignment */
     transform: rotate(0deg);
 }
 </style>

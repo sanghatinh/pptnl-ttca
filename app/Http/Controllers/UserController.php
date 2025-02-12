@@ -271,6 +271,75 @@ public function deleteuser($id)
 }
 
 
+public function getUserPermissions()
+{
+    try {
+        $user = Auth::user();
+        $permissions = [];
+
+        // Attempt to load roles from the relationship (user_role)
+        $userRoles = $user->roles;
+
+        // If no roles are found through user_role but role_id exists, load that role
+        if ($userRoles->isEmpty() && $user->role_id) {
+            $role = \App\Models\Role::with('permissions')->find($user->role_id);
+            if ($role) {
+                $userRoles = collect([$role]);
+            }
+        }
+
+        // Loop through each role and collect permission names
+        foreach ($userRoles as $role) {
+            // Ensure permissions relationship is loaded
+            $rolePermissions = $role->permissions;
+            foreach ($rolePermissions as $permission) {
+                $permissions[] = $permission->name;
+            }
+        }
+
+        $permissions = array_values(array_unique($permissions));
+        return response()->json($permissions);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+
+public function getUserComponents()
+{
+    try {
+        $user = Auth::user();
+        $components = [];
+        
+        // พยายามโหลด roles ที่เชื่อมโยงผ่านตาราง user_role
+        $userRoles = $user->roles;
+        
+        // หากไม่มีข้อมูลใน user_role แต่มี role_id ในตาราง users ให้ดึง role เดียวจาก role_id
+        if ($userRoles->isEmpty() && $user->role_id) {
+            $role = \App\Models\Role::with('components')->find($user->role_id);
+            if ($role) {
+                $userRoles = collect([$role]);
+            }
+        }
+        
+        // ตรวจสอบและดึง component ที่มี can_view = 1 ของแต่ละ role
+        foreach ($userRoles as $role) {
+            $roleComponents = $role->components()->wherePivot('can_view', 1)->get();
+            foreach ($roleComponents as $component) {
+                $components[] = $component->name;
+            }
+        }
+        
+        $components = array_values(array_unique($components));
+        return response()->json($components);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+
+
+
+
+
 
 
 }

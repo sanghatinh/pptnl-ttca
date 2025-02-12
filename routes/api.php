@@ -29,6 +29,9 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::put('/user/update/{id}', [UserController::class, 'updateuser']);
     Route::get('/user/edit/{id}', [UserController::class, 'edituser']);
     Route::delete('/user/delete/{id}', [UserController::class, 'deleteuser']);
+    Route::get('/user/permissions', [UserController::class, 'getUserPermissions']);
+    Route::get('/user/components', [UserController::class, 'getUserComponents']);
+
 });
 
 
@@ -38,3 +41,7 @@ Route::get('/permissions', [PermissionController::class, 'index']);
 Route::get('/components', [ComponentController::class, 'index']);
 Route::get('/role/{role}/permissions', [RolePermissionController::class, 'getPermissions']);
 Route::get('/role/{role}/components', [RolePermissionController::class, 'getComponents']);
+
+// Route::middleware('auth:sanctum')->group(function () {
+
+// });

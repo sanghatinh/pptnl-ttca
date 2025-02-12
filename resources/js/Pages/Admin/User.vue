@@ -11,7 +11,11 @@
             <div class="col">
                 <h3>User Management</h3>
             </div>
-            <div class="col text-end mb-2" v-if="!ShowFormUser">
+            <!-- แสดงปุ่ม Tạo mới เฉพาะเมื่อผู้ใช้มี permission 'create' -->
+            <div
+                class="col text-end mb-2"
+                v-if="!ShowFormUser && userHasPermission('create')"
+            >
                 <button
                     type="button"
                     @click="Adduser"
@@ -355,9 +359,25 @@
                                                             class="bx bx-dots-vertical-rounded"
                                                         ></i>
                                                     </button>
-                                                    <ul class="dropdown-menu">
+                                                    <!-- แสดงเมนู dropdown ถ้าผู้ใช้มีสิทธิ์แก้ไขหรือลบ -->
+                                                    <ul
+                                                        class="dropdown-menu"
+                                                        v-if="
+                                                            userHasPermission(
+                                                                'update'
+                                                            ) ||
+                                                            userHasPermission(
+                                                                'delete'
+                                                            )
+                                                        "
+                                                    >
                                                         <li>
                                                             <a
+                                                                v-if="
+                                                                    userHasPermission(
+                                                                        'update'
+                                                                    )
+                                                                "
                                                                 class="dropdown-item"
                                                                 href="#"
                                                                 @click="
@@ -371,7 +391,13 @@
                                                                 >Edit</a
                                                             >
                                                         </li>
-                                                        <li>
+                                                        <li
+                                                            v-if="
+                                                                userHasPermission(
+                                                                    'delete'
+                                                                )
+                                                            "
+                                                        >
                                                             <a
                                                                 class="dropdown-item"
                                                                 href="#"
@@ -458,6 +484,7 @@ export default {
             positions: [],
             stations: [],
             roles: [],
+            userPermissions: [], // เก็บสิทธิ์ของผู้ใช้
             FormUser: {
                 username: "",
                 password: "",
@@ -536,8 +563,26 @@ export default {
         this.fetchPositions();
         this.fetchStations();
         this.fetchRoles();
+        this.fetchUserPermissions(); // เรียกอ่าน permission เมื่อสร้าง component
     },
     methods: {
+        // ฟังก์ชันสำหรับ fetch data permissionName ของผู้ใช้
+        fetchUserPermissions() {
+            axios
+                .get("/api/user/permissions", {
+                    headers: { Authorization: "Bearer " + this.store.getToken },
+                })
+                .then((response) => {
+                    this.userPermissions = response.data;
+                })
+                .catch((error) => {
+                    console.error("Error fetching user permissions:", error);
+                });
+        },
+        userHasPermission(permissionName) {
+            return this.userPermissions.includes(permissionName);
+        },
+
         //add user
         Adduser() {
             this.ShowFormUser = true;

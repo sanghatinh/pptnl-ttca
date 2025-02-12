@@ -162,6 +162,10 @@
                         <span class="user-name">Julie Sweet</span>
                         <span class="avatar">
                             <!-- <img :src="`${url}/img/user24.png`" alt="avatar"> -->
+                            <img
+                                src="https://img.icons8.com/?size=100&id=z-JBA_KtSkxG&format=png&color=000000"
+                                alt="avatar"
+                            />
                             <span class="status busy"></span>
                         </span>
                     </a>

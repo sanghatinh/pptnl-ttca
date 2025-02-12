@@ -94,6 +94,18 @@ class User extends Authenticatable implements JWTSubject
         })->exists();
     }
 
+    public function userCanViewComponent($componentName)
+    {
+        foreach ($this->roles as $role) {
+            if ($role->components()->where('name', $componentName)
+                ->wherePivot('can_view', true)
+                ->exists()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
  
 
 }

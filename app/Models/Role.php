@@ -20,4 +20,12 @@ class Role extends Model
 {
     return $this->belongsToMany(User::class, 'user_role');
 }
+public function components()
+{
+    return $this->belongsToMany(Component::class, 'role_component')
+                ->withPivot('can_view');
+}
+
+
+
 }
