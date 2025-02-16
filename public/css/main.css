@@ -16,6 +16,15 @@
 											Body Css							
 	************************************************
 ************************************************/
+/* Remove underline from all links */
+/* เปลี่ยนแปลง: เพิ่มความเฉพาะเจาะจงและ !important */
+a,
+a:visited,
+a:hover,
+a:active {
+    text-decoration: none !important;
+}
+
 html {
     height: 100%;
     font-size: 100%;
@@ -616,7 +625,7 @@ a.bg-pink:focus {
     border: 3px solid #ffffff;
 }
 .header-actions > li > a.user-settings .avatar .status.busy {
-    background: #e40000;
+    background: #18800c;
 }
 .header-actions > li > a.user-settings .avatar .status.online {
     background: #18800c;

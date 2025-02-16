@@ -2,7 +2,7 @@
     <!-- Header start -->
     <header class="header">
         <div class="toggle-btns">
-            <a id="toggle-sidebar" href="#">
+            <a id="toggle-sidebar" href="#" @click.prevent="toggleSidebar">
                 <i class="icon-list"></i>
             </a>
             <a id="pin-sidebar" href="#">
@@ -159,7 +159,7 @@
                         data-toggle="dropdown"
                         aria-haspopup="true"
                     >
-                        <span class="user-name">Julie Sweet</span>
+                        <span class="user-name">{{ full_name }}</span>
                         <span class="avatar">
                             <!-- <img :src="`${url}/img/user24.png`" alt="avatar"> -->
                             <img
@@ -177,12 +177,12 @@
                             <div class="header-user-profile">
                                 <div class="header-user">
                                     <img
-                                        src="/public/img/user24.png"
-                                        alt="Admin Template"
+                                        src="https://img.icons8.com/?size=100&id=z-JBA_KtSkxG&format=png&color=000000"
+                                        alt="avatar"
                                     />
                                 </div>
-                                <h5>Julie Sweet</h5>
-                                <p>Admin</p>
+                                <h5>{{ full_name }}</h5>
+                                <p>{{ role }}</p>
                             </div>
                             <a href="user-profile.html"
                                 ><i class="icon-user1"></i> My Profile</a
@@ -220,13 +220,48 @@ export default {
     data() {
         return {
             url: window.location.href,
+            full_name: "",
+            role: "",
         };
+    },
+    created() {
+        const user = localStorage.getItem("web_user");
+        if (user) {
+            try {
+                const parsedUser = JSON.parse(user);
+                this.full_name = parsedUser.full_name;
+                const roleId = parsedUser.role_id; // ได้รับ role_id จาก login
+
+                // เรียก API เพื่อนำข้อมูล Role ทั้งหมดมา แล้ว map role ที่ตรงกับ role_id
+                axios
+                    .get("/api/roles", {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    })
+                    .then((response) => {
+                        const roles = response.data;
+                        const matchedRole = roles.find(
+                            (roleItem) => roleItem.id == roleId
+                        );
+                        if (matchedRole) {
+                            this.role = matchedRole.name;
+                        } else {
+                            this.role = "Unknown";
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("Error fetching roles:", err);
+                        this.role = "Unknown";
+                    });
+            } catch (e) {
+                console.error("Error parsing user data", e);
+            }
+        }
     },
     setup() {
         const store = useStore();
-        return {
-            store,
-        };
+        return { store };
     },
     methods: {
         Logout() {
@@ -236,28 +271,18 @@ export default {
                 })
                 .then((res) => {
                     if (res.data.success) {
-                        // clear local storage
                         localStorage.removeItem("web_token");
                         localStorage.removeItem("web_user");
-
-                        // clear store
                         this.store.logout();
-
-                        // got to login page
                         this.$router.push("/login");
                     }
                 })
                 .catch((err) => {
-                    console.log(err.res);
-                    if (err.response.status == 401) {
-                        // clear local storage
+                    console.log(err);
+                    if (err.response && err.response.status === 401) {
                         localStorage.removeItem("web_token");
                         localStorage.removeItem("web_user");
-
-                        // clear store
                         this.store.logout();
-
-                        // got to login page
                         this.$router.push("/login");
                     }
                 });

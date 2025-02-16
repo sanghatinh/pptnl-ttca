@@ -10,12 +10,19 @@ import "bootstrap/dist/css/bootstrap.min.css";
 //sweetalert2
 import VueSweetalert2 from "vue-sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
-
+//laravel-vue-pagination
+// import * as LaravelVuePagination from "laravel-vue-pagination";
 import { createPinia } from "pinia";
 const pinia = createPinia();
 
 const app = createApp(App);
+
 app.use(VueSweetalert2);
+
+// app.component(
+//     "Pagination",
+//     LaravelVuePagination.default || LaravelVuePagination
+// );
 app.component("header-bar", headerbar);
 app.component("side-barmenu", sidebarmenu);
 app.component("Register-Page", RegisterPage);

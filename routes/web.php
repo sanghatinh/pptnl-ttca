@@ -11,6 +11,6 @@ Route::get('{any}', function () {
     return view('app');
 })->where('any','.*');
 
-Route::group(['middleware' => ['auth', 'permission:read']], function () {
-    Route::get('/dashboard', [DashboardController::class, 'index']);
-});
+// Route::group(['middleware' => ['auth', 'permission:read']], function () {
+//     Route::get('/dashboard', [DashboardController::class, 'index']);
+// });

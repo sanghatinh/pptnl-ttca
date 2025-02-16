@@ -28,3 +28,7 @@ Git
 
     -Ctrl + Shift + P => Format Document แบบนี้โค้ดของคุณจะสวยงามและเป็นระเบียบทุกครั้ง
     -Ctrl + Shift + W หากต้องการปิด VS Code ทั้งหมด
+
+
+    #SQL
+- DESCRIBE tb_chitiet_dichvu_nt;    ตรวจสอบโครงสร้างของตาราง 

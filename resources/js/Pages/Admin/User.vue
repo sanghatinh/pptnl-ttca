@@ -25,21 +25,23 @@
                 </button>
             </div>
             <div class="col text-end mb-2" v-if="ShowFormUser">
-                <button
-                    type="button"
-                    @click="Saveuser"
-                    :disabled="FormValid"
-                    class="btn btn-success btn-rounded me-2"
-                >
-                    <i class="bx bxs-save"></i>Save
-                </button>
-                <button
-                    type="button"
-                    @click="Canneluser"
-                    class="btn btn-secondary btn-rounded"
-                >
-                    <i class="bx bx-x"></i>Cancel
-                </button>
+                <div class="d-flex justify-content-end">
+                    <button
+                        type="button"
+                        @click="Saveuser"
+                        :disabled="FormValid"
+                        class="btn btn-success btn-rounded me-2"
+                    >
+                        <i class="bx bxs-save"></i>Save
+                    </button>
+                    <button
+                        type="button"
+                        @click="Canneluser"
+                        class="btn btn-secondary btn-rounded"
+                    >
+                        <i class="bx bx-x"></i>Cancel
+                    </button>
+                </div>
             </div>
         </div>
 

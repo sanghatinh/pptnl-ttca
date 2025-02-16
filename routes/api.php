@@ -8,7 +8,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\ComponentController;
-
+use App\Http\Controllers\DocumentDeliveryController;
 
 
 Route::apiResource('roles', RoleController::class);
@@ -42,6 +42,8 @@ Route::get('/components', [ComponentController::class, 'index']);
 Route::get('/role/{role}/permissions', [RolePermissionController::class, 'getPermissions']);
 Route::get('/role/{role}/components', [RolePermissionController::class, 'getComponents']);
 
+
+Route::get('/document-deliveries', [DocumentDeliveryController::class, 'index']);
 // Route::middleware('auth:sanctum')->group(function () {
 
 // });

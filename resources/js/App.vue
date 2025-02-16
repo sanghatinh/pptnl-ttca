@@ -42,6 +42,7 @@ export default {
             url: window.location.href,
         };
     },
+    name: "Sidebarmenu",
 };
 </script>
 <style lang=""></style>

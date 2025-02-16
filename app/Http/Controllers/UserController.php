@@ -13,39 +13,39 @@ use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
 class UserController extends Controller
 {
 
-    public function register(Request $request)
-    {
-        // created a new user with the request data = user_name, email, password. use try catch 
-        try {
-            $user = new User();
-            $user->username = $request->username;
-            $user->password = $request->password;
-            $user->email = $request->email;
+    // public function register(Request $request)
+    // {
+    //     // created a new user with the request data = user_name, email, password. use try catch 
+    //     try {
+    //         $user = new User();
+    //         $user->username = $request->username;
+    //         $user->password = $request->password;
+    //         $user->email = $request->email;
            
-            $user->full_name = $request->full_name;
-            $user->phone = $request->phone;
-            $user->position = $request->position;
-            $user->department = $request->department;
+    //         $user->full_name = $request->full_name;
+    //         $user->phone = $request->phone;
+    //         $user->position = $request->position;
+    //         $user->department = $request->department;
 
-            $user->save();
+    //         $user->save();
 
-            $success = true;
-            $message = "ບັນທຶກຂໍ້ມູນສຳເລັດ!";
+    //         $success = true;
+    //         $message = "ບັນທຶກຂໍ້ມູນສຳເລັດ!";
             
-        } catch (\Illuminate\Database\QueryException $ex) {
-            $success = false;
-            $message = $ex->getMessage();
+    //     } catch (\Illuminate\Database\QueryException $ex) {
+    //         $success = false;
+    //         $message = $ex->getMessage();
             
-        }
+    //     }
 
-        $response = [
-            'success' => $success,
-            'message' => $message
-        ];
+    //     $response = [
+    //         'success' => $success,
+    //         'message' => $message
+    //     ];
 
-        return response()->json($response);
+    //     return response()->json($response);
 
-    }
+    // }
 
     public function login(Request $request)
     {
@@ -172,36 +172,40 @@ public function getUsers()
 // เพิ่มฟังก์ชันใน UserController Add new user
 public function addnewuser(Request $request)
 {
-    try {
-        $request->validate([
-            'username' => 'required|unique:users',
-            'password' => 'required',
-            'full_name' => 'required',
-            'email' => 'nullable|email|unique:users',
-            'phone' => 'nullable|string',
-            'position' => 'required|string',
-            'station' => 'required|string',
-            'role_id' => 'required|exists:roles,id',
-            'status' => 'required|in:active,inactive',
-        ]);
+    $request->validate([
+        'username'   => 'required|unique:users',
+        'password'   => 'required',
+        'full_name'  => 'required',
+        'email'      => 'nullable|email|unique:users',
+        'phone'      => 'nullable|string',
+        'position'   => 'required|string',
+        'station'    => 'required|string',
+        'role_id'    => 'required|exists:roles,id',
+        'status'     => 'required|in:active,inactive',
+    ]);
 
+    try {
         $user = new User();
-        $user->username = $request->username;
-        $user->password = Hash::make($request->password);
-        $user->full_name = $request->full_name;
-        $user->email = $request->email;
-        $user->phone = $request->phone;
-        $user->position = $request->position;
-        $user->station = $request->station;
-        $user->role_id = $request->role_id;
-        $user->status = $request->status;
+        $user->username    = $request->username;
+        $user->password    = Hash::make($request->password);
+        $user->full_name   = $request->full_name;
+        $user->email       = $request->email;
+        $user->phone       = $request->phone;
+        $user->position    = $request->position;
+        $user->station     = $request->station;
+        $user->role_id     = $request->role_id;
+        $user->status      = $request->status;
+
+        // Set created_user from currently logged in user
+        $user->created_user = Auth::id();
         $user->save();
+
+        // Sync join table user_role. Assumes User model defines a roles() relationship.
+        $user->roles()->sync([$request->role_id]);
 
         return response()->json(['message' => 'success'], 201);
     } catch (\Illuminate\Database\QueryException $ex) {
         return response()->json(['error' => $ex->getMessage()], 500);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
     }
 }
 
@@ -218,42 +222,49 @@ public function edituser($id)
 
 public function updateuser(Request $request, $id)
 {
+    $request->validate([
+        'username'   => 'required',
+        'full_name'  => 'required',
+        'email'      => 'nullable|email|unique:users,email,'.$id,
+        'phone'      => 'nullable|string',
+        'position'   => 'required|string',
+        'station'    => 'required|string',
+        'role_id'    => 'required|exists:roles,id',
+        'status'     => 'required|in:active,inactive',
+    ]);
+
     try {
-        $request->validate([
-            'username' => 'required|unique:users,username,' . $id,
-            'full_name' => 'required',
-            'email' => 'nullable|email|unique:users,email,' . $id,
-            'phone' => 'nullable|string',
-            'position' => 'required|string',
-            'station' => 'required|string',
-            'role_id' => 'required|exists:roles,id',
-            'status' => 'required|in:active,inactive',
-        ]);
-
         $user = User::find($id);
-        $user->username = $request->username;
-        $user->full_name = $request->full_name;
-        $user->email = $request->email;
-        $user->phone = $request->phone;
-        $user->position = $request->position;
-        $user->station = $request->station;
-        $user->role_id = $request->role_id;
-        $user->status = $request->status;
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
 
-        // อัพเดทรหัสผ่านเฉพาะเมื่อมีการกรอกข้อมูล
+        $user->username   = $request->username;
+        $user->full_name  = $request->full_name;
+        $user->email      = $request->email;
+        $user->phone      = $request->phone;
+        $user->position   = $request->position;
+        $user->station    = $request->station;
+        $user->role_id    = $request->role_id;
+        $user->status     = $request->status;
+
+        // Update password only if provided
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
         }
 
         $user->save();
 
+        // Sync join table user_role
+        $user->roles()->sync([$request->role_id]);
+
         return response()->json(['message' => 'success'], 200);
     } catch (\Illuminate\Database\QueryException $ex) {
         return response()->json(['error' => $ex->getMessage()], 500);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
     }
 }
+
+
 //Delete user
 public function deleteuser($id)
 {
@@ -262,7 +273,11 @@ public function deleteuser($id)
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
         }
+
+        // Detach associated roles in user_role join table
+        $user->roles()->detach();
         $user->delete();
+
         return response()->json(['message' => 'success'], 200);
     } catch (\Exception $e) {
         \Log::error('Error deleting user: ' . $e->getMessage());
@@ -270,7 +285,7 @@ public function deleteuser($id)
     }
 }
 
-
+//เพิ่มฟังก์ชันใน UserController เพื่อดึงข้อมูล permissions
 public function getUserPermissions()
 {
     try {
@@ -303,7 +318,7 @@ public function getUserPermissions()
         return response()->json(['error' => $e->getMessage()], 500);
     }
 }
-
+//เพิ่มฟังก์ชันใน UserController เพื่อดึงข้อมูล components
 public function getUserComponents()
 {
     try {

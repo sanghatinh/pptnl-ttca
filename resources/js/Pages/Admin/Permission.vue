@@ -30,6 +30,20 @@
                             <div class="card-title">Permission Checkbox</div>
                         </div>
                         <div class="card-body">
+                            <!-- Select All Permissions Checkbox -->
+                            <div class="custom-control custom-switch mb-3">
+                                <input
+                                    type="checkbox"
+                                    class="custom-control-input"
+                                    id="select-all-permissions"
+                                    v-model="allPermissionsSelected"
+                                />
+                                <label
+                                    class="custom-control-label"
+                                    for="select-all-permissions"
+                                    >Select All Permissions</label
+                                >
+                            </div>
                             <div
                                 v-for="permission in permissions"
                                 :key="permission.id"
@@ -60,6 +74,20 @@
                             <div class="card-title">Can view component</div>
                         </div>
                         <div class="card-body">
+                            <!-- Select All Components Checkbox -->
+                            <div class="custom-control custom-switch mb-3">
+                                <input
+                                    type="checkbox"
+                                    class="custom-control-input"
+                                    id="select-all-components"
+                                    v-model="allComponentsSelected"
+                                />
+                                <label
+                                    class="custom-control-label"
+                                    for="select-all-components"
+                                    >Select All Components</label
+                                >
+                            </div>
                             <div
                                 v-for="component in components"
                                 :key="component.id"
@@ -171,6 +199,34 @@ export default {
             updatePermissionID: null,
             roles: [], // Add roles data
         };
+    },
+    computed: {
+        allPermissionsSelected: {
+            get() {
+                return (
+                    this.permissions.length > 0 &&
+                    this.selectedPermissions.length === this.permissions.length
+                );
+            },
+            set(value) {
+                this.selectedPermissions = value
+                    ? this.permissions.map((permission) => permission.id)
+                    : [];
+            },
+        },
+        allComponentsSelected: {
+            get() {
+                return (
+                    this.components.length > 0 &&
+                    this.selectedComponents.length === this.components.length
+                );
+            },
+            set(value) {
+                this.selectedComponents = value
+                    ? this.components.map((component) => component.id)
+                    : [];
+            },
+        },
     },
     methods: {
         updatePermission(roleID) {

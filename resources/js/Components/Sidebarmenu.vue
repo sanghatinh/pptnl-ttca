@@ -21,10 +21,7 @@
             <div class="sidebar-menu">
                 <ul>
                     <li class="header-menu">General</li>
-                    <li
-                        class="sidebar-dropdown active"
-                        v-if="userCanViewComponent('Dashboards')"
-                    >
+                    <li class="sidebar-dropdown active">
                         <a href="#">
                             <i class="icon-devices_other"></i>
                             <span class="menu-text">Dashboards</span>
@@ -46,7 +43,7 @@
                                         "
                                     >
                                         <span class="menu-text"
-                                            >Admin Dashboard</span
+                                            >Tạo giao nhận hồ sơ</span
                                         >
                                     </router-link>
                                 </li>
@@ -55,9 +52,18 @@
                                         userCanViewComponent('Sales Dashboard')
                                     "
                                 >
-                                    <a href="sales-dashboard.html"
-                                        >Sales Dashboard</a
+                                    <router-link
+                                        to="/DanhsachHoso"
+                                        :class="
+                                            $route.path === '/DanhsachHoso'
+                                                ? 'current-page'
+                                                : ''
+                                        "
                                     >
+                                        <span class="menu-text"
+                                            >Danh sách giao nhận hồ sơ</span
+                                        >
+                                    </router-link>
                                 </li>
                                 <li
                                     v-if="userCanViewComponent('CRM Dashboard')"
@@ -73,10 +79,7 @@
 
                 <!-- Quản lý hệ thống -->
                 <ul>
-                    <li
-                        class="sidebar-dropdown active"
-                        v-if="userCanViewComponent('Quản lý hệ thống')"
-                    >
+                    <li class="sidebar-dropdown active">
                         <a href="#">
                             <i class="icon-devices_other"></i>
                             <span class="menu-text">Quản lý hệ thống</span>
@@ -219,5 +222,8 @@ export default {
     transform: rotate(90deg);
     /* For horizontal alignment */
     transform: rotate(0deg);
+}
+.sidebar-menu ul {
+    padding-left: 0;
 }
 </style>

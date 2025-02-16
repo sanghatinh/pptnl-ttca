@@ -123,8 +123,10 @@ export default {
                         this.username = "";
                         this.password = "";
 
-                        // go to root page
-                        this.$router.push("/");
+                        // go to root page สำหรับ Vue Router คุณสามารถใช้คำสั่งนี้เพื่อ “กด refresh” หน้าในระดับ router ได้โดยตรง
+                        this.$router.push("/").then(() => {
+                            this.$router.go(0);
+                        });
                     } else {
                         this.message_error = res.data.message;
                     }
