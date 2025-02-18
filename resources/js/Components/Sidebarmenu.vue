@@ -35,9 +35,9 @@
                                     "
                                 >
                                     <router-link
-                                        to="/"
+                                        to="/Taonewhoso"
                                         :class="
-                                            $route.path === '/'
+                                            $route.path === '/Taonewhoso'
                                                 ? 'current-page'
                                                 : ''
                                         "
@@ -64,13 +64,6 @@
                                             >Danh sách giao nhận hồ sơ</span
                                         >
                                     </router-link>
-                                </li>
-                                <li
-                                    v-if="userCanViewComponent('CRM Dashboard')"
-                                >
-                                    <a href="crm-dashboard.html"
-                                        >CRM Dashboard</a
-                                    >
                                 </li>
                             </ul>
                         </div>
