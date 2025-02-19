@@ -3,14 +3,14 @@
         <div class="row align-items-center mb-2" v-if="!isMobile">
             <div class="col d-flex justify-content-start gap-3">
                 <router-link to="/taonewhoso">
-                    <button type="button" class="btn btn-success btn-sm">
+                    <button type="button" class="button-30-save">
                         <i class="fa-solid fa-plus"></i>Tạo mới
                     </button>
                 </router-link>
-                <button type="button" class="btn btn-danger btn-sm">
+                <button type="button" class="button-30">
                     <i class="fa-solid fa-trash-can"></i>Xóa
                 </button>
-                <button type="button" class="btn btn-warning btn-sm">
+                <button type="button" class="button-30">
                     <i class="fa-solid fa-xmark"></i>Hủy
                 </button>
             </div>

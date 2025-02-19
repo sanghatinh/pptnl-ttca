@@ -15,6 +15,7 @@
             <link rel="stylesheet" href="{{ url('fonts/style.css') }}">
             <!-- Main css -->
             <link rel="stylesheet" href="{{ asset('css/main.css') }}">
+            <link rel="stylesheet" href="{{ asset('css/buttons_custom.css') }}">
             <!-- DateRange css -->
             <link rel="stylesheet" href="{{ url('vendor/daterange/daterange.css') }}" />
 

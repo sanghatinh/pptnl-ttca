@@ -1,21 +1,20 @@
 <template lang="">
     <div class="row align-items-center mb-2">
         <div class="col d-flex gap-3">
-            <router-link to="/taonewhoso">
-                <button type="button" class="btn btn-success btn-sm">
-                    <i class="bx bxs-save"></i>Save
-                </button>
-            </router-link>
-            <button type="button" class="btn btn-info btn-sm">
+            <button type="button" class="button-30">
+                <i class="bx bxs-save"></i>Save
+            </button>
+
+            <button class="button-30" role="button">
                 <i class="bx bx-calendar-check"></i>Nộp
             </button>
-            <button type="button" class="btn btn-secondary btn-sm">
+            <button type="button" class="button-30">
                 <i class="bx bx-calendar-x"></i>Không duyệt
             </button>
-            <button type="button" class="btn btn-primary btn-sm">
+            <button type="button" class="button-30">
                 <i class="bx bx-check-square"></i>Duyệt
             </button>
-            <button type="button" class="btn btn-warning btn-sm">
+            <button type="button" class="button-30">
                 <i class="fa-solid fa-xmark"></i>Hủy
             </button>
         </div>
@@ -191,6 +190,8 @@
                             <button
                                 type="button"
                                 class="btn btn-success btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#extraLargeModal"
                             >
                                 <i class="fa-solid fa-plus"></i>
                             </button>
@@ -200,6 +201,7 @@
                         <table class="table table-bordered table-hover">
                             <thead>
                                 <tr>
+                                    <th>Action</th>
                                     <th>Trạm</th>
                                     <th>Cán bộ nông vụ</th>
                                     <th>Mã nghiệm thu</th>
@@ -258,6 +260,129 @@
                             </thead>
                             <tbody></tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal -->
+    <div
+        class="modal fade"
+        id="extraLargeModal"
+        tabindex="-1"
+        aria-labelledby="extraLargeModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-lg modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="extraLargeModalLabel">
+                        ADD BIÊN BẢN NGHIỆM THU DỊCH VỤ
+                    </h6>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                    ></button>
+                </div>
+                <div class="modal-body justify-content-center">
+                    <div class="col d-flex gap-3">
+                        <button type="button" class="button-30-save">
+                            <i class="fa-solid fa-plus"></i>Add & Close
+                        </button>
+                    </div>
+                    <!-- thong tin bien ban nghiem thu dich vu -->
+                    <div class="col mt-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Thông tin chung</h5>
+                                <div class="row gutters">
+                                    <div class="col-12">
+                                        <label for=""
+                                            >Tìm kiếm Mã nghiệm thu</label
+                                        >
+                                        <div class="input-group">
+                                            <div
+                                                class="form-outline"
+                                                data-mdb-input-init
+                                            >
+                                                <input
+                                                    type="search"
+                                                    id="form1"
+                                                    class="form-control"
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                class="btn btn btn-success"
+                                                data-mdb-ripple-init
+                                            >
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <label for=""
+                                                >Hợp đồng đầu tư mía</label
+                                            >
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                placeholder="Tiều đề"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <label for=""
+                                                >Khách hàng đầu tư mía</label
+                                            >
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                placeholder="Loại hồ sơ"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <label for=""
+                                                >Hình thức thực hiện DV</label
+                                            >
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                placeholder="Số lượng hồ sơ"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <label for=""
+                                                >Đối tác cung cấp dịch vụ</label
+                                            >
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                placeholder="Số lượng hồ sơ"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <label for="">Tổng tiền</label>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                placeholder="Số lượng hồ sơ"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
