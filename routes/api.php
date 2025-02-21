@@ -46,7 +46,7 @@ Route::get('/role/{role}/components', [RolePermissionController::class, 'getComp
 
 
 // Route::get('/document-deliveries', [DocumentDeliveryController::class, 'index']);
-
+Route::get('/bienban-nghiemthu-search', [DocumentDeliveryController::class, 'searchBienBanNgheThu']);
 Route::get('/investment-projects', [InvestmentProjectController::class, 'index']);
 Route::get('/document-types', [DocumentTypeController::class, 'index']);
 
@@ -55,4 +55,6 @@ Route::post('/document-deliveries', [DocumentDeliveryController::class, 'store']
 Route::patch('/document-deliveries/{id}/status', [DocumentDeliveryController::class, 'updateStatus']);
 Route::get('/bienban/search', [DocumentDeliveryController::class, 'searchBienBan']);
 Route::post('/document-mappings', [DocumentDeliveryController::class, 'addMapping']);
+Route::get('/document-mappings/{documentCode}', [DocumentDeliveryController::class, 'getMappings']);
+Route::delete('/document-mappings/{id}', [DocumentDeliveryController::class, 'deleteMapping']);
 Route::delete('/document-deliveries', [DocumentDeliveryController::class, 'delete']);

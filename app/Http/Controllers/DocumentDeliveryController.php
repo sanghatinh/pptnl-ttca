@@ -54,27 +54,58 @@ class DocumentDeliveryController extends Controller
         return response()->json($document);
     }
 
-    public function searchBienBan(Request $request) {
+    public function searchBienBanNgheThu(Request $request)
+    {
+        $search = $request->input('search');
         $investmentProject = $request->input('investment_project');
-        $creator = $request->input('creator');
+        $station = $request->input('station');
+        
         $query = \DB::table('tb_bien_ban_nghiemthu_dv')
             ->where('vu_dau_tu', $investmentProject)
-            ->where('can_bo_nong_vu', $creator)
-            ->limit(10);
-        $results = $query->get();
+            ->where('tram', $station);
+    
+        if ($search) {
+            $query->where('ma_nghiem_thu', 'LIKE', "%{$search}%");
+        }
+            
+        $results = $query->limit(10)->get();
+        
+        \Log::info('Search params:', [
+            'search' => $search,
+            'investment_project' => $investmentProject,
+            'station' => $station
+        ]);
+        \Log::info('Results:', ['count' => $results->count(), 'data' => $results]);
+        
         return response()->json($results);
     }
 
     public function addMapping(Request $request) {
-        $mapping = DocumentMapping::create([
+        $mapping = \App\Models\DocumentMapping::create([
             'document_code'   => $request->input('document_code'),
-            'ma_nghiem_thu_bb'=> $request->input('ma_nghiem_thu_bb')
+            'ma_nghiem_thu_bb'   => $request->input('ma_nghiem_thu')
         ]);
         return response()->json($mapping);
     }
 
 
-
-
+    public function getMappings($documentCode) {
+        $mappings = \DB::table('document_mapping')
+            ->join('tb_bien_ban_nghiemthu_dv', 'document_mapping.ma_nghiem_thu_bb', '=', 'tb_bien_ban_nghiemthu_dv.ma_nghiem_thu')
+            ->where('document_mapping.document_code', $documentCode)
+            ->select(
+                'tb_bien_ban_nghiemthu_dv.*', 
+                'document_mapping.id as mapping_id'
+            )
+            ->get();
+        
+        return response()->json($mappings);
+    }
+    
+    public function deleteMapping($id) {
+        $mapping = DocumentMapping::findOrFail($id);
+        $mapping->delete();
+        return response()->json(['message' => 'Mapping deleted successfully']);
+    }
 
 }

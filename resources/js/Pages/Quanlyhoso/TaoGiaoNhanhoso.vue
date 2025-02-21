@@ -17,6 +17,9 @@
             <button type="button" class="button-30" @click="cancelDocument">
                 <i class="fa-solid fa-xmark"></i>Hủy
             </button>
+            <button type="button" class="button-30">
+                <i class="fa-solid fa-trash-can"></i>Xóa
+            </button>
         </div>
     </div>
 
@@ -79,7 +82,12 @@
                         <div class="row gutters">
                             <div class="col-12">
                                 <div class="form-group">
-                                    <label for="">Mã số phiếu</label>
+                                    <label for=""
+                                        >Mã số phiếu&nbsp;<span
+                                            ><i
+                                                class="bx bx-lock-alt"
+                                            ></i></span
+                                    ></label>
                                     <input
                                         type="text"
                                         class="form-control"
@@ -102,7 +110,12 @@
                             </div>
                             <div class="col-12">
                                 <div class="form-group">
-                                    <label for="">Tiều đề</label>
+                                    <label for=""
+                                        >Tiều đề&nbsp;<span
+                                            ><i
+                                                class="bx bx-lock-alt"
+                                            ></i></span
+                                    ></label>
                                     <input
                                         type="text"
                                         class="form-control"
@@ -122,7 +135,7 @@
                                         <option
                                             v-for="project in investmentProjects"
                                             :key="project.id"
-                                            :value="project.Ma_Vudautu"
+                                            :value="project.Ten_Vudautu"
                                         >
                                             {{ project.Ten_Vudautu }}
                                         </option>
@@ -131,7 +144,12 @@
                             </div>
                             <div class="col-12">
                                 <div class="form-group">
-                                    <label for="">Người tạo</label>
+                                    <label for=""
+                                        >Người tạo&nbsp;<span
+                                            ><i
+                                                class="bx bx-lock-alt"
+                                            ></i></span
+                                    ></label>
                                     <input
                                         type="text"
                                         class="form-control"
@@ -152,7 +170,12 @@
                             </div>
                             <div class="col-12">
                                 <div class="form-group">
-                                    <label for="">Trạm</label>
+                                    <label for=""
+                                        >Trạm&nbsp;<span
+                                            ><i
+                                                class="bx bx-lock-alt"
+                                            ></i></span
+                                    ></label>
                                     <input
                                         type="text"
                                         class="form-control"
@@ -189,7 +212,12 @@
                         <div class="row gutters">
                             <div class="col-12">
                                 <div class="form-group">
-                                    <label for="">Số lượng hồ sơ</label>
+                                    <label for=""
+                                        >Số lượng hồ sơ&nbsp;<span
+                                            ><i
+                                                class="bx bx-lock-alt"
+                                            ></i></span
+                                    ></label>
                                     <input
                                         type="text"
                                         class="form-control"
@@ -212,7 +240,12 @@
                             </div>
                             <div class="col-12">
                                 <div class="form-group">
-                                    <label for="">Người nhận</label>
+                                    <label for=""
+                                        >Người nhận&nbsp;<span
+                                            ><i
+                                                class="bx bx-lock-alt"
+                                            ></i></span
+                                    ></label>
                                     <input
                                         type="text"
                                         class="form-control"
@@ -226,7 +259,7 @@
                 </div>
             </div>
             <!-- ส่วนที่ 3 ของการสร้าง รายละเอียดตาลาง -->
-            <div class="card">
+            <div v-if="showNghiemThu" class="card add-bienban-nghiemthu-dichvu">
                 <div class="card-body">
                     <div class="row">
                         <h5 class="col card-title">
@@ -268,13 +301,49 @@
                                     <th>Ngày cập nhật</th>
                                 </tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody>
+                                <tr
+                                    v-for="item in mappedDocuments"
+                                    :key="item.mapping_id"
+                                >
+                                    <td>
+                                        <button
+                                            @click="
+                                                deleteMapping(item.mapping_id)
+                                            "
+                                            class="btn btn-danger btn-sm"
+                                        >
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </td>
+                                    <td>{{ item.ma_nghiem_thu }}</td>
+                                    <td>{{ item.station }}</td>
+                                    <td>{{ item.vu_dau_tu }}</td>
+                                    <td>{{ item.title }}</td>
+                                    <td>{{ item.khach_hang_ca_nhan }}</td>
+                                    <td>{{ item.khach_hang_doanh_nghiep }}</td>
+                                    <td>{{ item.hop_dong_dau_tu_mia }}</td>
+                                    <td>{{ item.hinh_thuc_thuc_hien_dv }}</td>
+                                    <td>
+                                        {{ item.hop_dong_cung_ung_dich_vu }}
+                                    </td>
+                                    <td>{{ item.tong_tien }}</td>
+                                    <td>{{ item.tong_tien_dich_vu }}</td>
+                                    <td>{{ item.tong_tien_tam_giu }}</td>
+                                    <td>{{ item.tong_tien_thanh_toan }}</td>
+                                    <td>{{ item.can_bo_nong_vu }}</td>
+                                    <td>{{ item.tinh_trang }}</td>
+                                    <td>{{ item.tinh_trang_duyet }}</td>
+                                    <td>{{ item.created_at }}</td>
+                                    <td>{{ item.updated_at }}</td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
             </div>
             <!-- ส่วนที่ 4 ของการสร้าง รายละเอียดตาลาง -->
-            <div class="card">
+            <div v-if="showHomGiong" class="card add-bienban-hom-giong">
                 <div class="card-body">
                     <div class="row">
                         <h5 class="col card-title">ADD BIÊN BẢN HOM GIỐNG</h5>
@@ -329,101 +398,105 @@
                     ></button>
                 </div>
                 <div class="modal-body justify-content-center">
-                    <div class="col d-flex gap-3">
-                        <button type="button" class="button-30-save">
-                            <i class="fa-solid fa-plus"></i>Add & Close
-                        </button>
-                    </div>
-                    <!-- thong tin bien ban nghiem thu dich vu -->
-                    <div class="col mt-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">Thông tin chung</h5>
-                                <div class="row gutters">
-                                    <div class="col-12">
-                                        <label for=""
-                                            >Tìm kiếm Mã nghiệm thu</label
-                                        >
-                                        <div class="input-group">
-                                            <div
-                                                class="form-outline"
-                                                data-mdb-input-init
-                                            >
-                                                <input
-                                                    type="search"
-                                                    id="form1"
-                                                    class="form-control"
-                                                />
-                                            </div>
-                                            <button
-                                                type="button"
-                                                class="btn btn btn-success"
-                                                data-mdb-ripple-init
-                                            >
-                                                <i class="fas fa-search"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for=""
-                                                >Hợp đồng đầu tư mía</label
-                                            >
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                placeholder="Tiều đề"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for=""
-                                                >Khách hàng đầu tư mía</label
-                                            >
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                placeholder="Loại hồ sơ"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for=""
-                                                >Hình thức thực hiện DV</label
-                                            >
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                placeholder="Số lượng hồ sơ"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for=""
-                                                >Đối tác cung cấp dịch vụ</label
-                                            >
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                placeholder="Số lượng hồ sơ"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for="">Tổng tiền</label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                placeholder="Số lượng hồ sơ"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="col">
+                        <div class="form-group">
+                            <label for="bienBanSearch"
+                                >Tìm kiếm Mã nghiệm thu + Chọn Mã nghiệm
+                                thu</label
+                            >
+                            <input
+                                type="search"
+                                class="form-control"
+                                v-model="searchQuery"
+                                @input="searchBienBan"
+                                :placeholder="
+                                    selectedBienBan
+                                        ? selectedBienBan.ma_nghiem_thu
+                                        : 'Nhập mã nghiệm thu...'
+                                "
+                            />
+                            <ul
+                                v-if="bienBanResults.length"
+                                class="dropdown-menu show"
+                            >
+                                <li
+                                    v-for="item in bienBanResults"
+                                    :key="item.ma_nghiem_thu"
+                                    @click="selectBienBan(item)"
+                                    class="dropdown-item"
+                                >
+                                    {{ item.ma_nghiem_thu }}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="hopDongDauTuMia"
+                                >Hợp đồng đầu tư mía</label
+                            >
+                            <input
+                                type="text"
+                                class="form-control"
+                                :value="
+                                    selectedBienBan
+                                        ? selectedBienBan.hop_dong_dau_tu_mia
+                                        : ''
+                                "
+                                disabled
+                            />
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="hinhThucThucHienDV"
+                                >Hình thức thực hiện DV</label
+                            >
+                            <input
+                                type="text"
+                                class="form-control"
+                                :value="
+                                    selectedBienBan
+                                        ? selectedBienBan.hinh_thuc_thuc_hien_dv
+                                        : ''
+                                "
+                                disabled
+                            />
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="hopDongCungUngDV"
+                                >Hợp đồng cung ứng dịch vụ</label
+                            >
+                            <input
+                                type="text"
+                                class="form-control"
+                                :value="
+                                    selectedBienBan
+                                        ? selectedBienBan.hop_dong_cung_ung_dich_vu
+                                        : ''
+                                "
+                                disabled
+                            />
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="tongTienDichVu"
+                                >Tổng tiền dịch vụ</label
+                            >
+                            <input
+                                type="text"
+                                class="form-control"
+                                :value="
+                                    selectedBienBan
+                                        ? selectedBienBan.tong_tien_dich_vu
+                                        : ''
+                                "
+                                disabled
+                            />
+                        </div>
+                        <div class="col d-flex gap-3 mt-3">
+                            <button
+                                type="button"
+                                class="button-30-save"
+                                @click="addMapping(selectedBienBan)"
+                            >
+                                <i class="fa-solid fa-plus"></i>Add & Close
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -441,7 +514,7 @@ export default {
                 created_date: "",
                 title: "",
                 investment_project: "",
-                document_type: "",
+                document_type: "", // will hold one of: 'Nghiệm thu dịch vụ', 'Hom giống', 'Chọn cả 2'
                 file_count: 0,
                 received_date: "",
                 status: "creating",
@@ -449,17 +522,42 @@ export default {
                 receiver_id: null,
                 creator_name: "",
                 station: "",
+                searchQuery: "",
             },
             investmentProjects: [],
-            documentTypes: [],
+            mappedDocuments: [],
+
+            // Use a static array for demo purposes. You may later fetch these from #TABLE tb_loaihoso.
+            documentTypes: [
+                { id: 1, Ten_LoaiHoso: "Nghiệm thu dịch vụ" },
+                { id: 2, Ten_LoaiHoso: "Hom giống" },
+                { id: 3, Ten_LoaiHoso: "Chọn cả 2" },
+            ],
             user: null,
             receiver: null,
+            bienBanResults: [],
+            selectedBienBan: null,
         };
+    },
+    computed: {
+        showNghiemThu() {
+            return (
+                this.document.document_type === "Nghiệm thu dịch vụ" ||
+                this.document.document_type === "Chọn cả 2"
+            );
+        },
+        showHomGiong() {
+            return (
+                this.document.document_type === "Hom giống" ||
+                this.document.document_type === "Chọn cả 2"
+            );
+        },
     },
     mounted() {
         this.fetchUserData();
         this.fetchInvestmentProjects();
-        this.fetchDocumentTypes();
+
+        // still fetchDocumentTypes if needed or use static one above
     },
     methods: {
         fetchUserData() {
@@ -471,7 +569,6 @@ export default {
                 this.document.creator_name = parsedUser.full_name;
                 this.document.station = parsedUser.station;
                 this.document.receiver_id = parsedUser.id;
-                this.document.receiver_name = parsedUser.full_name;
             }
         },
         fetchInvestmentProjects() {
@@ -479,16 +576,6 @@ export default {
                 .get("/api/investment-projects")
                 .then((response) => {
                     this.investmentProjects = response.data;
-                })
-                .catch((error) => {
-                    console.error(error);
-                });
-        },
-        fetchDocumentTypes() {
-            axios
-                .get("/api/document-types")
-                .then((response) => {
-                    this.documentTypes = response.data;
                 })
                 .catch((error) => {
                     console.error(error);
@@ -505,6 +592,7 @@ export default {
                     console.error(error);
                 });
         },
+        // The existing status update methods...
         sendDocument() {
             this.updateDocumentStatus("sending");
         },
@@ -531,6 +619,102 @@ export default {
                 .catch((error) => {
                     console.error(error);
                 });
+        },
+        // NEW: Search for ma_nghiem_thu when the modal shows up.
+        searchBienBan() {
+            axios
+                .get("/api/bienban-nghiemthu-search", {
+                    params: {
+                        search: this.searchQuery,
+                        investment_project: this.document.investment_project,
+                        station: this.user.station,
+                    },
+                })
+                .then((response) => {
+                    this.bienBanResults = response.data;
+                    console.log("Search results:", response.data);
+                })
+                .catch((error) => {
+                    console.error(error);
+                    console.error("Search error:", error);
+                });
+        },
+        selectBienBan(item) {
+            this.selectedBienBan = item;
+            this.searchQuery = item.ma_nghiem_thu; // Set the search input value to selected ma_nghiem_thu
+            this.showBienBanDetails();
+            this.bienBanResults = []; // Clear the dropdown after selection
+        },
+        showBienBanDetails() {
+            // This method will be triggered when a bien ban is selected
+            // It will automatically bind the selectedBienBan details to the form fields
+            if (this.selectedBienBan) {
+                this.document.hop_dong_dau_tu_mia =
+                    this.selectedBienBan.hop_dong_dau_tu_mia;
+                this.document.hinh_thuc_thuc_hien_dv =
+                    this.selectedBienBan.hinh_thuc_thuc_hien_dv;
+                this.document.hop_dong_cung_ung_dich_vu =
+                    this.selectedBienBan.hop_dong_cung_ung_dich_vu;
+                this.document.tong_tien_dich_vu =
+                    this.selectedBienBan.tong_tien_dich_vu;
+            }
+        },
+        addMapping(selected) {
+            axios
+                .post("/api/document-mappings", {
+                    document_code: this.document.document_code,
+                    ma_nghiem_thu: selected.ma_nghiem_thu,
+                })
+                .then((response) => {
+                    alert("Mapping added");
+                    this.fetchMappedDocuments(); // Refresh the table
+                    // Close modal
+                    const modal = document.getElementById("extraLargeModal");
+                    const modalInstance = bootstrap.Modal.getInstance(modal);
+                    modalInstance.hide();
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        },
+        fetchMappedDocuments() {
+            if (!this.document.document_code) return;
+
+            axios
+                .get(`/api/document-mappings/${this.document.document_code}`)
+                .then((response) => {
+                    this.mappedDocuments = response.data;
+                })
+                .catch((error) => {
+                    console.error("Error fetching mapped documents:", error);
+                });
+        },
+
+        deleteMapping(mappingId) {
+            if (confirm("Are you sure you want to delete this mapping?")) {
+                axios
+                    .delete(`/api/document-mappings/${mappingId}`)
+                    .then((response) => {
+                        alert("Mapping deleted");
+                        this.fetchMappedDocuments(); // Refresh the table
+                    })
+                    .catch((error) => {
+                        console.error(error);
+                    });
+            }
+        },
+    },
+    // Add mounted or watch hook to load data when document_code changes:
+    watch: {
+        "document.document_code": {
+            handler(newVal) {
+                if (newVal) {
+                    this.fetchMappedDocuments();
+                } else {
+                    this.mappedDocuments = [];
+                }
+            },
+            immediate: true,
         },
     },
 };
