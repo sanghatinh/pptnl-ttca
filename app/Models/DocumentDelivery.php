@@ -24,4 +24,10 @@ class DocumentDelivery extends Model
     {
         return $this->belongsTo(User::class, 'receiver_id');
     }
+
+    public static function generateDocumentCode($investmentCode) {
+        $latest = static::orderBy('id', 'desc')->first();
+        $number = $latest ? sprintf("%06d", $latest->id + 1) : '000001';
+        return 'PGNHS-' . $investmentCode . '-' . $number;
+    }
 }

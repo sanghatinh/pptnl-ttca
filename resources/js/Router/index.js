@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import Home from "../Pages/Dashboard.vue";
 import Taohoso from "../Pages/Quanlyhoso/TaoGiaoNhanhoso.vue";
 import Danhsachhoso from "../Pages/Quanlyhoso/DanhsachHoso.vue";
+import EditGiaoNhanhoso from "../Pages/Quanlyhoso/EditGiaoNhanhoso.vue";
 import login from "../Pages/Login.vue";
 import Nopage from "../Pages/404.vue";
 import Register from "../Pages/Register.vue";
@@ -41,6 +42,14 @@ const routes = [
         name: "Taohoso",
         path: "/Taonewhoso",
         component: Taohoso,
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
+        name: "EditGiaoNhanhoso",
+        path: "/EditGiaoNhanhoso/:id",
+        component: EditGiaoNhanhoso,
         meta: {
             middleware: [authMiddleware],
         },

@@ -1,20 +1,20 @@
 <template lang="">
     <div class="row align-items-center mb-2">
         <div class="col d-flex gap-3">
-            <button type="button" class="button-30">
+            <button type="button" class="button-30" @click="saveDocument">
                 <i class="bx bxs-save"></i>Save
             </button>
 
-            <button class="button-30" role="button">
+            <button class="button-30" role="button" @click="sendDocument">
                 <i class="bx bx-calendar-check"></i>Nộp
             </button>
-            <button type="button" class="button-30">
+            <button type="button" class="button-30" @click="rejectDocument">
                 <i class="bx bx-calendar-x"></i>Không duyệt
             </button>
-            <button type="button" class="button-30">
+            <button type="button" class="button-30" @click="receiveDocument">
                 <i class="bx bx-check-square"></i>Duyệt
             </button>
-            <button type="button" class="button-30">
+            <button type="button" class="button-30" @click="cancelDocument">
                 <i class="fa-solid fa-xmark"></i>Hủy
             </button>
         </div>
@@ -24,9 +24,12 @@
         <div class="card-body">
             <!-- progress-tracker-container -->
             <div class="col-12">
-                <div class="progress-tracker">
+                <div class="progress-tracker" :class="document.status">
                     <!-- Creating Step -->
-                    <div class="track-step active">
+                    <div
+                        class="track-step"
+                        :class="{ active: document.status === 'creating' }"
+                    >
                         <div class="step-icon status-creating">
                             <i class="fas fa-spinner fa-spin"></i>
                         </div>
@@ -34,7 +37,10 @@
                     </div>
 
                     <!-- Sending Step -->
-                    <div class="track-step">
+                    <div
+                        class="track-step"
+                        :class="{ active: document.status === 'sending' }"
+                    >
                         <div class="step-icon status-sending">
                             <i class="fas fa-shipping-fast"></i>
                         </div>
@@ -42,7 +48,10 @@
                     </div>
 
                     <!-- Received Step -->
-                    <div class="track-step">
+                    <div
+                        class="track-step"
+                        :class="{ active: document.status === 'received' }"
+                    >
                         <div class="step-icon status-received">
                             <i class="fas fa-check-circle"></i>
                         </div>
@@ -50,7 +59,10 @@
                     </div>
 
                     <!-- Cancelled Step -->
-                    <div class="track-step">
+                    <div
+                        class="track-step"
+                        :class="{ active: document.status === 'cancelled' }"
+                    >
                         <div class="step-icon status-cancelled">
                             <i class="fas fa-times-circle"></i>
                         </div>
@@ -71,8 +83,20 @@
                                     <input
                                         type="text"
                                         class="form-control"
+                                        v-model="document.document_code"
                                         placeholder="Mã số phiếu"
-                                        disabled=""
+                                        disabled
+                                    />
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="">Ngày lập</label>
+                                    <input
+                                        type="date"
+                                        class="form-control"
+                                        v-model="document.created_date"
+                                        placeholder="Ngày lập"
                                     />
                                 </div>
                             </div>
@@ -82,38 +106,76 @@
                                     <input
                                         type="text"
                                         class="form-control"
+                                        v-model="document.title"
                                         placeholder="Tiều đề"
+                                        disabled
+                                    />
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="">Vụ đầu tư</label>
+                                    <select
+                                        class="form-control"
+                                        v-model="document.investment_project"
+                                    >
+                                        <option
+                                            v-for="project in investmentProjects"
+                                            :key="project.id"
+                                            :value="project.Ma_Vudautu"
+                                        >
+                                            {{ project.Ten_Vudautu }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="">Người tạo</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        :value="user ? user.full_name : ''"
+                                        disabled
+                                    />
+                                </div>
+
+                                <!-- <div class="form-group">
+                                    <label for="">ID Người tạo</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        :value="document.creator_id"
+                                        disabled
+                                    />
+                                </div> -->
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="">Trạm</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        :value="user ? user.station : ''"
+                                        disabled
                                     />
                                 </div>
                             </div>
                             <div class="col-12">
                                 <div class="form-group">
                                     <label for="">Loại hồ sơ</label>
-                                    <input
-                                        type="text"
+                                    <select
                                         class="form-control"
-                                        placeholder="Loại hồ sơ"
-                                    />
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="form-group">
-                                    <label for="">Số lượng hồ sơ</label>
-                                    <input
-                                        type="text"
-                                        class="form-control"
-                                        placeholder="Số lượng hồ sơ"
-                                    />
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="form-group">
-                                    <label for="">Tình trạng thanh toán</label>
-                                    <input
-                                        type="text"
-                                        class="form-control"
-                                        placeholder="Số lượng hồ sơ"
-                                    />
+                                        v-model="document.document_type"
+                                    >
+                                        <option
+                                            v-for="type in documentTypes"
+                                            :key="type.id"
+                                            :value="type.Ten_LoaiHoso"
+                                        >
+                                            {{ type.Ten_LoaiHoso }}
+                                        </option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -127,41 +189,13 @@
                         <div class="row gutters">
                             <div class="col-12">
                                 <div class="form-group">
-                                    <label for="">Người tạo</label>
+                                    <label for="">Số lượng hồ sơ</label>
                                     <input
                                         type="text"
                                         class="form-control"
-                                        placeholder="Người tạo"
-                                    />
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="form-group">
-                                    <label for="">Trạm</label>
-                                    <input
-                                        type="text"
-                                        class="form-control"
-                                        placeholder="Trạm"
-                                    />
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="form-group">
-                                    <label for="">Ngày lập</label>
-                                    <input
-                                        type="date"
-                                        class="form-control"
-                                        placeholder="Ngày lập"
-                                    />
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="form-group">
-                                    <label for="">Người nhận</label>
-                                    <input
-                                        type="text"
-                                        class="form-control"
-                                        placeholder="Người nhận"
+                                        v-model="document.file_count"
+                                        placeholder="Số lượng hồ sơ"
+                                        disabled
                                     />
                                 </div>
                             </div>
@@ -171,7 +205,19 @@
                                     <input
                                         type="date"
                                         class="form-control"
+                                        v-model="document.received_date"
                                         placeholder="Ngày nhận"
+                                    />
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="">Người nhận</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        :value="user ? user.full_name : ''"
+                                        disabled
                                     />
                                 </div>
                             </div>
@@ -202,28 +248,24 @@
                             <thead>
                                 <tr>
                                     <th>Action</th>
-                                    <th>Trạm</th>
-                                    <th>Cán bộ nông vụ</th>
                                     <th>Mã nghiệm thu</th>
-                                    <th>Tiêu đề</th>
-                                    <th>Khách hàng doanh nghiệp</th>
-                                    <th>Khách hàng cá nhân</th>
-                                    <th>Đối tác cá nhân cung cấp dịch vụ</th>
-                                    <th>Đối tác cung cấp dịch vụ (KHDN)</th>
-                                    <th>Mã số thửa</th>
-                                    <th>Hình thức thực hiện</th>
-                                    <th>Dịch vụ</th>
-                                    <th>Nghiệm thu dịch vụ</th>
-                                    <th>Đơn vị tính</th>
-                                    <th>Khối lượng thực hiện</th>
-                                    <th>Đơn giá</th>
-                                    <th>Thành tiền</th>
-                                    <th>Tiền thanh toán</th>
-                                    <th>Tiền thanh toán còn lại</th>
-                                    <th>Số lần thực hiện</th>
-                                    <th>Đã thanh toán</th>
+                                    <th>Trạm</th>
                                     <th>Vụ đầu tư</th>
+                                    <th>Tiêu đề</th>
+                                    <th>Khách hàng cá nhân ĐT mía</th>
+                                    <th>Khách hàng doanh nghiệp ĐT mía</th>
+                                    <th>Hợp đồng đầu tư mía</th>
+                                    <th>Hình thức thực hiện DV</th>
+                                    <th>Hợp đồng cung ứng dịch vụ</th>
+                                    <th>Tổng tiền</th>
+                                    <th>Tổng tiền dịch vụ</th>
+                                    <th>Tổng tiền tạm giữ</th>
+                                    <th>Tổng tiền thanh toán</th>
+                                    <th>Cán bộ nông vụ</th>
+                                    <th>Tình trạng</th>
                                     <th>Tình trạng duyệt</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Ngày cập nhật</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -235,7 +277,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="row">
-                        <h5 class="col card-title">BIÊN BẢN HOM GIỐNG</h5>
+                        <h5 class="col card-title">ADD BIÊN BẢN HOM GIỐNG</h5>
                         <div class="col text-end">
                             <button
                                 type="button"
@@ -389,9 +431,111 @@
         </div>
     </div>
 </template>
+
 <script>
-export default {};
+export default {
+    data() {
+        return {
+            document: {
+                document_code: "",
+                created_date: "",
+                title: "",
+                investment_project: "",
+                document_type: "",
+                file_count: 0,
+                received_date: "",
+                status: "creating",
+                creator_id: null,
+                receiver_id: null,
+                creator_name: "",
+                station: "",
+            },
+            investmentProjects: [],
+            documentTypes: [],
+            user: null,
+            receiver: null,
+        };
+    },
+    mounted() {
+        this.fetchUserData();
+        this.fetchInvestmentProjects();
+        this.fetchDocumentTypes();
+    },
+    methods: {
+        fetchUserData() {
+            const user = localStorage.getItem("web_user");
+            if (user) {
+                const parsedUser = JSON.parse(user);
+                this.user = parsedUser;
+                this.document.creator_id = parsedUser.id;
+                this.document.creator_name = parsedUser.full_name;
+                this.document.station = parsedUser.station;
+                this.document.receiver_id = parsedUser.id;
+                this.document.receiver_name = parsedUser.full_name;
+            }
+        },
+        fetchInvestmentProjects() {
+            axios
+                .get("/api/investment-projects")
+                .then((response) => {
+                    this.investmentProjects = response.data;
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        },
+        fetchDocumentTypes() {
+            axios
+                .get("/api/document-types")
+                .then((response) => {
+                    this.documentTypes = response.data;
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        },
+        saveDocument() {
+            axios
+                .post("/api/document-deliveries", this.document)
+                .then((response) => {
+                    this.document = response.data;
+                    alert("Document saved successfully");
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        },
+        sendDocument() {
+            this.updateDocumentStatus("sending");
+        },
+        rejectDocument() {
+            this.updateDocumentStatus("creating");
+        },
+        receiveDocument() {
+            this.updateDocumentStatus("received");
+        },
+        cancelDocument() {
+            this.updateDocumentStatus("cancelled");
+        },
+        updateDocumentStatus(status) {
+            axios
+                .patch(`/api/document-deliveries/${this.document.id}/status`, {
+                    status: status,
+                    received_date: new Date().toISOString().split("T")[0],
+                    receiver_id: this.user.id,
+                })
+                .then((response) => {
+                    this.document = response.data;
+                    alert(`Document status updated to ${status}`);
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        },
+    },
+};
 </script>
+
 <style scoped>
 .table th,
 .table td {

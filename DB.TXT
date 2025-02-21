@@ -1,0 +1,112 @@
+# TABLE users;
+id	bigint(20) unsigned	NO	PRI	NULL	auto_increment	
+username	varchar(255)	NO	UNI	NULL		
+password	varchar(255)	NO		NULL		
+full_name	varchar(255)	NO		NULL		
+position	varchar(255)	NO		NULL		
+station	varchar(255)	NO		NULL		
+phone	varchar(255)	YES		NULL		
+email	varchar(255)	YES	UNI	NULL		
+role_id	bigint(20) unsigned	NO	MUL	NULL		
+status	enum('active','inactive')	NO		active		
+created_at	timestamp	YES		NULL		
+updated_at	timestamp	YES		NULL		
+created_user	varchar(11)	YES		NULL	
+
+# TABLE document_delivery;
+
+id	int(11)	NO	PRI	NULL	auto_increment	
+document_code	varchar(50)	NO	UNI	NULL		
+created_date	date	NO		NULL		
+title	varchar(255)	NO		NULL		
+investment_project	varchar(255)	YES		NULL		
+creator_id	bigint(20) unsigned	NO	MUL	NULL		
+station	varchar(100)	YES		NULL		
+document_type	varchar(100)	YES		NULL		
+file_count	int(11)	YES		0		
+received_date	date	YES		NULL		
+receiver_id	bigint(20) unsigned	YES	MUL	NULL		
+status	enum('creating','sending','received','cancelled')	YES		creating		
+loan_status	enum('processing','to_accounting','disbursed')	YES		processing		
+	
+
+# TABLE document_logs;
+
+id	int(11)	NO	PRI	NULL	auto_increment	
+document_id	int(11)	NO	MUL	NULL		
+action	varchar(50)	NO		NULL		
+action_by	bigint(20) unsigned	NO	MUL	NULL		
+action_date	datetime	YES		current_timestamp()		
+comments	text	YES		NULL		
+
+#TABLE tb_vudautu;
+
+id	int(11)	NO	PRI	NULL	auto_increment	
+Ma_Vudautu	varchar(20)	NO		NULL		
+Ten_Vudautu	varchar(100)	NO		NULL		
+
+#TABLE tb_loaihoso;
+
+id	int(11)	NO	PRI	NULL	auto_increment	
+Ten_LoaiHoso	varchar(100)	NO		NULL		
+
+#TABLE tb_chitiet_dichvu_nt;
+
+id	int(11)	NO	PRI	NULL	auto_increment	
+tram	varchar(255)	YES		NULL		
+ma_nghiem_thu	varchar(50)	YES		NULL		
+chi_tiet_hd_mia	text	YES		NULL		
+khach_hang_doanh_nghiep	varchar(255)	YES		NULL		
+khach_hang_ca_nhan	varchar(255)	YES		NULL		
+doi_tac_ca_nhan_dv	varchar(255)	YES		NULL		
+doi_tac_cung_cap_dv	varchar(255)	YES		NULL		
+ma_so_thua	varchar(50)	YES		NULL		
+hinh_thuc_thuc_hien_dv	varchar(255)	YES		NULL		
+dich_vu	varchar(255)	YES		NULL		
+nghiem_thu_dich_vu	varchar(255)	YES		NULL		
+don_vi_tinh	varchar(50)	YES		NULL		
+khoi_luong_thuc_hien	decimal(10,2)	YES		NULL		
+don_gia	decimal(10,2)	YES		NULL		
+thanh_tien	decimal(10,2)	YES		NULL		
+tien_thanh_toan	decimal(10,2)	YES		NULL		
+tien_con_lai	decimal(10,2)	YES		NULL		
+so_lan_thuc_hien	int(11)	YES		NULL		
+da_thanh_toan	varchar(255)	YES		NULL		
+vu_dau_tu	varchar(255)	YES		NULL		
+tinh_trang_duyet	varchar(50)	YES		NULL		
+can_bo_nong_vu	varchar(255)	YES		NULL			
+
+
+    #TABLE tb_bien_ban_nghiemthu_dv;
+
+id	int(11)	NO	PRI	NULL	auto_increment	
+ma_nghiem_thu	varchar(50)	NO		NULL		
+tram	varchar(100)	NO		NULL		
+vu_dau_tu	varchar(100)	NO		NULL		
+tieu_de	varchar(255)	NO		NULL		
+khach_hang_ca_nhan_dt_mia	varchar(255)	YES		NULL		
+khach_hang_doanh_nghiep_dt_mia	varchar(255)	YES		NULL		
+hop_dong_dau_tu_mia	varchar(50)	YES		NULL		
+hinh_thuc_thuc_hien_dv	varchar(255)	YES		NULL		
+hop_dong_cung_ung_dich_vu	varchar(50)	YES		NULL		
+tong_tien	decimal(15,2)	NO		0.00		
+tong_tien_dich_vu	decimal(15,2)	NO		0.00		
+tong_tien_tam_giu	decimal(15,2)	NO		0.00		
+tong_tien_thanh_toan	decimal(15,2)	NO		0.00		
+can_bo_nong_vu	varchar(255)	YES		NULL		
+tinh_trang	varchar(50)	YES		NULL		
+tinh_trang_duyet	varchar(50)	YES		NULL		
+created_at	timestamp	NO		current_timestamp()		
+updated_at	timestamp	NO		current_timestamp()	on update current_timestamp()	
+
+#TABLE document_mapping;
+
+id	int(11)	NO	PRI	NULL	auto_increment	
+document_code	varchar(50)	NO	MUL	NULL		
+ma_nghiem_thu_bb	varchar(50)	NO	MUL	NULL		
+created_at	timestamp	NO		current_timestamp()		
+updated_at	timestamp	NO		current_timestamp()	on update current_timestamp()	
+
+
+
+

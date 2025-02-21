@@ -7,7 +7,7 @@
                         <i class="fa-solid fa-plus"></i>Tạo mới
                     </button>
                 </router-link>
-                <button type="button" class="button-30">
+                <button type="button" class="button-30" @click="deleteSelected">
                     <i class="fa-solid fa-trash-can"></i>Xóa
                 </button>
                 <button type="button" class="button-30">
@@ -71,6 +71,7 @@
                                     v-for="item in paginatedDeliveries.data"
                                     :key="item.id"
                                     class="desktop-row"
+                                    @click="goToEditPage(item.id)"
                                 >
                                     <!-- New checkbox column for each row -->
                                     <td class="border px-4 py-2">
@@ -154,6 +155,7 @@
                 v-for="item in paginatedDeliveries.data"
                 :key="item.id"
                 class="card border p-4 mb-4 rounded shadow hover:shadow-green-500 transition-shadow duration-300"
+                @click="goToEditPage(item.id)"
             >
                 <div class="flex">
                     <!-- ห้องแรก: แสดงแค่สถานะ logo -->
@@ -348,6 +350,31 @@ export default {
                 );
             } else {
                 this.selectedItems = [];
+            }
+        },
+        goToEditPage(id) {
+            this.$router.push(`/editgiaonhanhoso/${id}`);
+        },
+        deleteSelected() {
+            if (this.selectedItems.length === 0) {
+                alert("Please select items to delete.");
+                return;
+            }
+
+            if (
+                confirm("Are you sure you want to delete the selected items?")
+            ) {
+                axios
+                    .delete("/api/document-deliveries", {
+                        data: { ids: this.selectedItems },
+                    })
+                    .then(() => {
+                        this.fetchData();
+                        this.selectedItems = [];
+                    })
+                    .catch((error) => {
+                        console.error(error);
+                    });
             }
         },
     },
