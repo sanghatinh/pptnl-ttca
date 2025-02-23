@@ -1,23 +1,66 @@
 <template lang="">
     <div class="row align-items-center mb-2">
         <div class="col d-flex gap-3">
-            <button type="button" class="button-30" @click="saveDocument">
+            <button
+                v-if="showSaveButton"
+                type="button"
+                class="button-30"
+                @click="saveOrUpdateDocument"
+            >
                 <i class="bx bxs-save"></i>Save
             </button>
 
-            <button class="button-30" role="button" @click="sendDocument">
+            <button
+                v-if="showCreateNewButton"
+                type="button"
+                class="button-30-save"
+                @click="createNew"
+            >
+                <i class="fa-solid fa-plus"></i>Tạo mới
+            </button>
+
+            <button
+                v-if="showSubmitButton"
+                class="button-30"
+                role="button"
+                @click="sendDocument"
+            >
                 <i class="bx bx-calendar-check"></i>Nộp
             </button>
-            <button type="button" class="button-30" @click="rejectDocument">
+
+            <button
+                v-if="showRejectButton"
+                type="button"
+                class="button-30"
+                @click="rejectDocument"
+            >
                 <i class="bx bx-calendar-x"></i>Không duyệt
             </button>
-            <button type="button" class="button-30" @click="receiveDocument">
+
+            <button
+                v-if="showApproveButton"
+                type="button"
+                class="button-30"
+                @click="receiveDocument"
+            >
                 <i class="bx bx-check-square"></i>Duyệt
             </button>
-            <button type="button" class="button-30" @click="cancelDocument">
+
+            <button
+                v-if="showCancelButton"
+                type="button"
+                class="button-30"
+                @click="cancelDocument"
+            >
                 <i class="fa-solid fa-xmark"></i>Hủy
             </button>
-            <button type="button" class="button-30">
+
+            <button
+                v-if="showDeleteButton"
+                type="button"
+                class="button-30"
+                @click="deleteDocument"
+            >
                 <i class="fa-solid fa-trash-can"></i>Xóa
             </button>
         </div>
@@ -63,6 +106,7 @@
 
                     <!-- Cancelled Step -->
                     <div
+                        v-if="showCancelledStep"
                         class="track-step"
                         :class="{ active: document.status === 'cancelled' }"
                     >
@@ -76,7 +120,7 @@
 
             <div class="d-flex flex-column flex-md-row gap-1">
                 <!-- ส่วนที่ 1 ของการสร้างหน้าจอ -->
-                <div class="card">
+                <div class="card col-12 col-md-6">
                     <div class="card-body">
                         <h5 class="card-title">Thông tin phiếu</h5>
                         <div class="row gutters">
@@ -99,13 +143,35 @@
                             </div>
                             <div class="col-12">
                                 <div class="form-group">
-                                    <label for="">Ngày lập</label>
+                                    <label for=""
+                                        >Ngày lập<span
+                                            v-if="
+                                                formValidation.createdDate
+                                                    .required
+                                            "
+                                            class="text-danger"
+                                            >*</span
+                                        ></label
+                                    >
                                     <input
                                         type="date"
                                         class="form-control"
                                         v-model="document.created_date"
                                         placeholder="Ngày lập"
+                                        :class="{
+                                            'is-invalid':
+                                                formValidation.createdDate
+                                                    .required,
+                                        }"
                                     />
+                                    <div
+                                        v-if="
+                                            formValidation.createdDate.required
+                                        "
+                                        class="invalid-feedback"
+                                    >
+                                        {{ formValidation.createdDate.message }}
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-12">
@@ -127,10 +193,24 @@
                             </div>
                             <div class="col-12">
                                 <div class="form-group">
-                                    <label for="">Vụ đầu tư</label>
+                                    <label for=""
+                                        >Vụ đầu tư<span
+                                            v-if="
+                                                formValidation.investmentProject
+                                                    .required
+                                            "
+                                            class="text-danger"
+                                            >*</span
+                                        ></label
+                                    >
                                     <select
                                         class="form-control"
                                         v-model="document.investment_project"
+                                        :class="{
+                                            'is-invalid':
+                                                formValidation.investmentProject
+                                                    .required,
+                                        }"
                                     >
                                         <option
                                             v-for="project in investmentProjects"
@@ -140,6 +220,18 @@
                                             {{ project.Ten_Vudautu }}
                                         </option>
                                     </select>
+                                    <div
+                                        v-if="
+                                            formValidation.investmentProject
+                                                .required
+                                        "
+                                        class="invalid-feedback"
+                                    >
+                                        {{
+                                            formValidation.investmentProject
+                                                .message
+                                        }}
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-12">
@@ -186,11 +278,28 @@
                             </div>
                             <div class="col-12">
                                 <div class="form-group">
-                                    <label for="">Loại hồ sơ</label>
+                                    <label for=""
+                                        >Loại hồ sơ<span
+                                            v-if="
+                                                formValidation.documentType
+                                                    .required
+                                            "
+                                            class="text-danger"
+                                            >*</span
+                                        ></label
+                                    >
                                     <select
                                         class="form-control"
                                         v-model="document.document_type"
+                                        :class="{
+                                            'is-invalid':
+                                                formValidation.documentType
+                                                    .required,
+                                        }"
                                     >
+                                        <option value="">
+                                            Chọn loại hồ sơ
+                                        </option>
                                         <option
                                             v-for="type in documentTypes"
                                             :key="type.id"
@@ -199,6 +308,16 @@
                                             {{ type.Ten_LoaiHoso }}
                                         </option>
                                     </select>
+                                    <div
+                                        v-if="
+                                            formValidation.documentType.required
+                                        "
+                                        class="invalid-feedback"
+                                    >
+                                        {{
+                                            formValidation.documentType.message
+                                        }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -206,7 +325,7 @@
                 </div>
 
                 <!-- ส่วนที่ 2 ของการสร้างหน้าจอ -->
-                <div class="card">
+                <div class="card col-12 col-md-6">
                     <div class="card-body">
                         <h5 class="card-title">Thông tin giao nhận</h5>
                         <div class="row gutters">
@@ -221,25 +340,55 @@
                                     <input
                                         type="text"
                                         class="form-control"
-                                        v-model="document.file_count"
+                                        :value="documentCount"
                                         placeholder="Số lượng hồ sơ"
                                         disabled
                                     />
                                 </div>
                             </div>
                             <div class="col-12">
-                                <div class="form-group">
-                                    <label for="">Ngày nhận</label>
+                                <div
+                                    class="form-group"
+                                    v-if="showReceiverField"
+                                >
+                                    <label for=""
+                                        >Ngày nhận<span
+                                            v-if="
+                                                formValidation.receivedDate
+                                                    .required
+                                            "
+                                            class="text-danger"
+                                            >*</span
+                                        ></label
+                                    >
                                     <input
                                         type="date"
                                         class="form-control"
                                         v-model="document.received_date"
                                         placeholder="Ngày nhận"
+                                        :class="{
+                                            'is-invalid':
+                                                formValidation.receivedDate
+                                                    .required,
+                                        }"
                                     />
+                                    <div
+                                        v-if="
+                                            formValidation.receivedDate.required
+                                        "
+                                        class="invalid-feedback"
+                                    >
+                                        {{
+                                            formValidation.receivedDate.message
+                                        }}
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-12">
-                                <div class="form-group">
+                                <div
+                                    class="form-group"
+                                    v-if="showReceiverField"
+                                >
                                     <label for=""
                                         >Người nhận&nbsp;<span
                                             ><i
@@ -267,6 +416,7 @@
                         </h5>
                         <div class="col text-end">
                             <button
+                                v-if="canModifyMappings"
                                 type="button"
                                 class="btn btn-success btn-sm"
                                 data-bs-toggle="modal"
@@ -308,6 +458,7 @@
                                 >
                                     <td>
                                         <button
+                                            v-if="canModifyMappings"
                                             @click="
                                                 deleteMapping(item.mapping_id)
                                             "
@@ -552,6 +703,68 @@ export default {
                 this.document.document_type === "Chọn cả 2"
             );
         },
+
+        // Add these computed properties
+        showSaveButton() {
+            return !this.document.id || this.document.status === "creating";
+        },
+        showCreateNewButton() {
+            return this.document.id; // Show when document exists
+        },
+        showSubmitButton() {
+            return this.document.status === "creating";
+        },
+        showApproveButton() {
+            return this.document.status === "sending";
+        },
+        showRejectButton() {
+            return this.document.status === "sending";
+        },
+        showCancelButton() {
+            return this.document.status === "received";
+        },
+        showDeleteButton() {
+            return this.document.id; // Show when document exists
+        },
+        showCancelledStep() {
+            return this.document.status === "cancelled";
+        },
+
+        formValidation() {
+            return {
+                createdDate: {
+                    required: !this.document.created_date,
+                    message: "Vui lòng nhập ngày lập",
+                },
+                receivedDate: {
+                    required:
+                        this.document.status === "sending" &&
+                        !this.document.received_date,
+                    message: "Vui lòng nhập ngày nhận",
+                },
+                investmentProject: {
+                    required: !this.document.investment_project,
+                    message: "Vui lòng chọn vụ đầu tư",
+                },
+                documentType: {
+                    required: !this.document.document_type,
+                    message: "Vui lòng chọn loại hồ sơ",
+                },
+            };
+        },
+        showReceiverField() {
+            return ["sending", "received", "cancelled"].includes(
+                this.document.status
+            );
+        },
+        canModifyMappings() {
+            return !["sending", "received", "cancelled"].includes(
+                this.document.status
+            );
+        },
+        documentCount() {
+            return this.mappedDocuments.length;
+        },
     },
     mounted() {
         this.fetchUserData();
@@ -560,6 +773,66 @@ export default {
         // still fetchDocumentTypes if needed or use static one above
     },
     methods: {
+        // Add these new methods
+        saveOrUpdateDocument() {
+            if (this.document.id) {
+                // Update existing document
+                axios
+                    .put(
+                        `/api/document-deliveries/${this.document.id}`,
+                        this.document
+                    )
+                    .then((response) => {
+                        this.document = response.data;
+                        alert("Document updated successfully");
+                    })
+                    .catch((error) => {
+                        console.error(error);
+                    });
+            } else {
+                // Create new document
+                this.saveDocument();
+            }
+        },
+
+        createNew() {
+            // Reset form data
+            this.document = {
+                document_code: "",
+                created_date: "",
+                title: "",
+                investment_project: "",
+                document_type: "",
+                file_count: 0,
+                received_date: "",
+                status: "creating",
+                creator_id: this.user?.id,
+                receiver_id: this.user?.id,
+                creator_name: this.user?.full_name,
+                station: this.user?.station,
+                searchQuery: "",
+            };
+            this.selectedBienBan = null;
+            this.mappedDocuments = [];
+            this.bienBanResults = [];
+        },
+
+        deleteDocument() {
+            if (!this.document.id) return;
+
+            if (confirm("Are you sure you want to delete this document?")) {
+                axios
+                    .delete(`/api/document-deliveries/${this.document.id}`)
+                    .then(() => {
+                        alert("Document deleted successfully");
+                        this.createNew(); // Reset form after delete
+                    })
+                    .catch((error) => {
+                        console.error(error);
+                    });
+            }
+        },
+
         fetchUserData() {
             const user = localStorage.getItem("web_user");
             if (user) {
@@ -581,7 +854,33 @@ export default {
                     console.error(error);
                 });
         },
+        // Update saveDocument method
         saveDocument() {
+            // Check validation before saving
+
+            if (this.formValidation.createdDate.required) {
+                alert("Vui lòng nhập ngày lập trước khi lưu");
+                return;
+            }
+
+            if (this.formValidation.receivedDate.required) {
+                alert("Vui lòng nhập ngày nhận trước khi lưu");
+                return;
+            }
+
+            if (this.formValidation.investmentProject.required) {
+                alert("Vui lòng chọn vụ đầu tư trước khi lưu");
+                return;
+            }
+
+            if (this.formValidation.documentType.required) {
+                alert("Vui lòng chọn loại hồ sơ trước khi lưu");
+                return;
+            }
+
+            // Update file count before saving
+            this.document.file_count = this.documentCount;
+
             axios
                 .post("/api/document-deliveries", this.document)
                 .then((response) => {
@@ -666,7 +965,7 @@ export default {
                     ma_nghiem_thu: selected.ma_nghiem_thu,
                 })
                 .then((response) => {
-                    alert("Mapping added");
+                    alert("Mapping added successfully");
                     this.fetchMappedDocuments(); // Refresh the table
                     // Close modal
                     const modal = document.getElementById("extraLargeModal");
@@ -674,7 +973,15 @@ export default {
                     modalInstance.hide();
                 })
                 .catch((error) => {
-                    console.error(error);
+                    if (error.response && error.response.status === 422) {
+                        alert(
+                            "Cannot add this mapping: " +
+                                error.response.data.error
+                        );
+                    } else {
+                        console.error("Error adding mapping:", error);
+                        alert("An error occurred while adding the mapping");
+                    }
                 });
         },
         fetchMappedDocuments() {
@@ -739,7 +1046,7 @@ export default {
     content: "";
     position: absolute;
     top: 20px;
-    width: 100%;
+    width: 98%;
     height: 3px;
     background-color: #e9ecef;
     z-index: 0;

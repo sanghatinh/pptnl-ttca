@@ -57,4 +57,5 @@ Route::get('/bienban/search', [DocumentDeliveryController::class, 'searchBienBan
 Route::post('/document-mappings', [DocumentDeliveryController::class, 'addMapping']);
 Route::get('/document-mappings/{documentCode}', [DocumentDeliveryController::class, 'getMappings']);
 Route::delete('/document-mappings/{id}', [DocumentDeliveryController::class, 'deleteMapping']);
-Route::delete('/document-deliveries', [DocumentDeliveryController::class, 'delete']);
+Route::delete('document-deliveries/{id}', [DocumentDeliveryController::class, 'destroy']);
+Route::put('/document-deliveries/{id}', [DocumentDeliveryController::class, 'update']);

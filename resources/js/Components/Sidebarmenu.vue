@@ -24,7 +24,7 @@
                     <li class="sidebar-dropdown active">
                         <a href="#">
                             <i class="icon-devices_other"></i>
-                            <span class="menu-text">Dashboards</span>
+                            <span class="menu-text">Quản lý hồ sơ</span>
                         </a>
                         <div class="sidebar-submenu">
                             <ul>

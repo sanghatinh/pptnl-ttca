@@ -54,6 +54,37 @@ class DocumentDeliveryController extends Controller
         return response()->json($document);
     }
 
+    public function update(Request $request, $id)
+{
+    $document = DocumentDelivery::findOrFail($id);
+    $document->update($request->all());
+    return response()->json($document);
+}
+
+public function destroy($id)
+{
+    try {
+        // Find the document
+        $document = DocumentDelivery::findOrFail($id);
+        
+        // Delete any associated mappings first
+        DocumentMapping::where('document_code', $document->document_code)->delete();
+        
+        // Delete the document
+        $document->delete();
+        
+        return response()->json([
+            'message' => 'Document deleted successfully'
+        ], 200);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Error deleting document',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
     public function searchBienBanNgheThu(Request $request)
     {
         $search = $request->input('search');
@@ -81,10 +112,27 @@ class DocumentDeliveryController extends Controller
     }
 
     public function addMapping(Request $request) {
+        // Check if mapping already exists
+        $existingMapping = \App\Models\DocumentMapping::where('ma_nghiem_thu_bb', $request->input('ma_nghiem_thu'))->first();
+        
+        if ($existingMapping) {
+            // If mapping exists, check if the document is cancelled
+            $document = DocumentDelivery::where('document_code', $existingMapping->document_code)
+                ->first();
+                
+            if (!$document || $document->status !== 'cancelled') {
+                return response()->json([
+                    'error' => 'Mapping already exists and associated document is not cancelled'
+                ], 422);
+            }
+        }
+    
+        // If we get here, either the mapping doesn't exist or the associated document is cancelled
         $mapping = \App\Models\DocumentMapping::create([
-            'document_code'   => $request->input('document_code'),
-            'ma_nghiem_thu_bb'   => $request->input('ma_nghiem_thu')
+            'document_code' => $request->input('document_code'),
+            'ma_nghiem_thu_bb' => $request->input('ma_nghiem_thu')
         ]);
+    
         return response()->json($mapping);
     }
 
@@ -107,5 +155,7 @@ class DocumentDeliveryController extends Controller
         $mapping->delete();
         return response()->json(['message' => 'Mapping deleted successfully']);
     }
+
+
 
 }
