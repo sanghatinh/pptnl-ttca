@@ -29,4 +29,7 @@ class DocumentMapping extends Model
     {
         return $this->belongsTo(DocumentDelivery::class, 'document_code', 'document_code');
     }
+
+    
 }
+

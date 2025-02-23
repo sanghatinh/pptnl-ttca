@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\DocumentDelivery;
 use App\Models\DocumentMapping;
+use App\Models\DocumentMappingHomGiong;
+use App\Models\BienBanNghiemThuHomGiong;
 use Illuminate\Http\Request;
 
 class DocumentDeliveryController extends Controller
@@ -24,23 +26,32 @@ class DocumentDeliveryController extends Controller
 
 
     public function store(Request $request) {
-        $investmentCode = $request->input('investment_project');
-        $documentCode = DocumentDelivery::generateDocumentCode($investmentCode);
-        $document = DocumentDelivery::create([
-            'document_code'      => $documentCode,
-            'created_date'       => $request->input('created_date'),
-            'title'              => 'PGNHS-' . $request->input('creator_name') . '-' . $request->input('document_type') . '-' . $documentCode,
-            'investment_project' => $investmentCode,
-            'creator_id'         => $request->input('creator_id'),
-            'station'            => $request->input('station'),
-            'document_type'      => $request->input('document_type'),
-            'receiver_id'        => $request->input('receiver_id'),
-            'received_date'      => $request->input('received_date'),
-            'file_count'         => $request->input('file_count'),
-            'loan_status'        => $request->input('loan_status'),
-            'status'             => 'creating'
-        ]);
-        return response()->json($document);
+        try {
+            $investmentName = $request->input('investment_project');
+            $documentCode = DocumentDelivery::generateDocumentCode($investmentName);
+            
+            $document = DocumentDelivery::create([
+                'document_code'      => $documentCode,
+                'created_date'       => $request->input('created_date'),
+                'title'             => 'PGNHS-'  . $request->input('document_type') . '-' . $documentCode,
+                'investment_project' => $investmentName, // ยังเก็บชื่อเต็มไว้
+                'creator_id'         => $request->input('creator_id'),
+                'station'           => $request->input('station'),
+                'document_type'      => $request->input('document_type'),
+                'receiver_id'        => $request->input('receiver_id'),
+                'received_date'      => $request->input('received_date'),
+                'file_count'        => $request->input('file_count'),
+                'loan_status'       => $request->input('loan_status'),
+                'status'            => 'creating'
+            ]);
+    
+            return response()->json($document);
+    
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error creating document: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
 
@@ -69,6 +80,10 @@ public function destroy($id)
         
         // Delete any associated mappings first
         DocumentMapping::where('document_code', $document->document_code)->delete();
+
+        // Delete any associated mappings first for hom giong
+        DocumentMappingHomGiong::where('document_code', $document->document_code)->delete();
+        
         
         // Delete the document
         $document->delete();
@@ -155,6 +170,82 @@ public function destroy($id)
         $mapping->delete();
         return response()->json(['message' => 'Mapping deleted successfully']);
     }
+
+    //Modal add hom giong tao phieu giao nhan
+    public function searchBienBanHomGiong(Request $request)
+    {
+        try {
+            $investment_project = $request->input('investment_project');
+    
+            $query = \DB::table('bien_ban_nghiem_thu_hom_giong');
+    
+            // Filter by investment project if provided
+            if ($investment_project) {
+                $query->where('vu_dau_tu', $investment_project);
+            }
+            
+            // Search by ma_so_phieu แค่ 10 รายการ
+            $results = $query->limit(10)->get();
+    
+            \Log::info('HomGiong Search:', [
+                'investment_project' => $investment_project,
+                'results_count' => $results->count()
+            ]);
+    
+            return response()->json($results);
+    
+        } catch (\Exception $e) {
+            \Log::error('Error in searchBienBanHomGiong: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+public function addMappingHomGiong(Request $request)
+{
+    // Check if mapping already exists
+    $existingMapping = DocumentMappingHomGiong::where('ma_so_phieu', $request->input('ma_so_phieu'))->first();
+    
+    if ($existingMapping) {
+        // If mapping exists, check if the document is cancelled
+        $document = DocumentDelivery::where('document_code', $existingMapping->document_code)
+            ->first();
+            
+        if (!$document || $document->status !== 'cancelled') {
+            return response()->json([
+                'error' => 'Mapping already exists and associated document is not cancelled'
+            ], 422);
+        }
+    }
+
+    // If we get here, either the mapping doesn't exist or the associated document is cancelled
+    $mapping = DocumentMappingHomGiong::create([
+        'document_code' => $request->input('document_code'),
+        'ma_so_phieu' => $request->input('ma_so_phieu')
+    ]);
+
+    return response()->json($mapping);
+}
+
+public function getMappingsHomGiong($documentCode)
+{
+    $mappings = \DB::table('document_mapping_homgiong')
+        ->join('bien_ban_nghiem_thu_hom_giong', 'document_mapping_homgiong.ma_so_phieu', '=', 'bien_ban_nghiem_thu_hom_giong.ma_so_phieu')
+        ->where('document_mapping_homgiong.document_code', $documentCode)
+        ->select(
+            'bien_ban_nghiem_thu_hom_giong.*', 
+            'document_mapping_homgiong.id as mapping_id'
+        )
+        ->get();
+    
+    return response()->json($mappings);
+}
+
+public function deleteMappingHomGiong($id)
+{
+    $mapping = DocumentMappingHomGiong::findOrFail($id);
+    $mapping->delete();
+    return response()->json(['message' => 'Mapping deleted successfully']);
+}
 
 
 

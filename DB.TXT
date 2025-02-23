@@ -109,4 +109,42 @@ updated_at	timestamp	NO		current_timestamp()	on update current_timestamp()
 
 
 
+#table bien_ban_nghiem_thu_hom_giong;
+
+id	int(11)	NO	PRI	NULL	auto_increment	
+tram	varchar(255)	NO		NULL		
+ma_so_phieu	varchar(255)	NO		NULL		
+can_bo_nong_vu	varchar(255)	YES		NULL		
+ten_phieu	varchar(255)	YES		NULL		
+hop_dong_dau_tu_mia	varchar(255)	YES		NULL		
+hop_dong_dau_tu_mia_ben_giao_hom	varchar(255)	YES		NULL		
+ma_hop_dong	varchar(255)	YES		NULL		
+khach_hang_ca_nhan	varchar(255)	YES		NULL		
+ma_khach_hang_CN	varchar(255)	YES		NULL		
+khach_hang_doanh_nghiep	varchar(255)	YES		NULL		
+ma_khach_hang_DN	varchar(255)	YES		NULL		
+doi_tac_giao_hom	varchar(255)	YES		NULL		
+ma_khach_hang_giao_hom	varchar(255)	YES		NULL		
+doi_tac_giao_hom_DN	varchar(255)	YES		NULL		
+ma_khach_hang_giao_hom_DN	varchar(255)	YES		NULL		
+tong_thuc_nhan	decimal(15,2)	YES		NULL		
+tong_so_tien_HL	decimal(15,2)	YES		NULL		
+tong_tien_hom	decimal(15,2)	YES		NULL		
+tong_tien	decimal(15,2)	YES		NULL		
+tong_tien_boc_xep	decimal(15,2)	YES		NULL		
+tong_tien_cong_don	decimal(15,2)	YES		NULL		
+tong_tien_van_chuyen	decimal(15,2)	YES		NULL		
+vu_dau_tu	varchar(255)	YES		NULL		
+tinh_trang_duyet	varchar(255)	YES		NULL		
+
+# table document_mapping_homgiong;
+
+id	int(11)	NO	PRI	NULL	auto_increment	
+document_code	varchar(50)	YES	MUL	NULL		
+ma_so_phieu	varchar(50)	YES	MUL	NULL		
+created_at	timestamp	NO		current_timestamp()		
+updated_at	timestamp	NO		current_timestamp()	on update current_timestamp()	
+
+
+
 

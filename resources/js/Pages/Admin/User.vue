@@ -186,10 +186,12 @@
                                                 >
                                                     <option
                                                         v-for="station in stations"
-                                                        :key="station"
-                                                        :value="station.name"
+                                                        :key="station.id"
+                                                        :value="
+                                                            station.ma_don_vi
+                                                        "
                                                     >
-                                                        {{ station.name }}
+                                                        {{ station.Name }}
                                                     </option>
                                                 </select>
                                             </div>
@@ -300,7 +302,11 @@
                                             <td>{{ user.username }}</td>
                                             <td>{{ user.full_name }}</td>
                                             <td>{{ user.position }}</td>
-                                            <td>{{ user.station }}</td>
+                                            <td>
+                                                {{
+                                                    getStationName(user.station)
+                                                }}
+                                            </td>
                                             <td>{{ user.email }}</td>
                                             <td>{{ user.phone }}</td>
                                             <td
@@ -858,6 +864,12 @@ export default {
                 .catch((error) => {
                     console.error("Error fetching positions:", error);
                 });
+        },
+        getStationName(stationCode) {
+            const station = this.stations.find(
+                (s) => s.ma_don_vi === stationCode
+            );
+            return station ? station.Name : stationCode;
         },
         fetchStations() {
             axios

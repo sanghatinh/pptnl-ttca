@@ -25,7 +25,16 @@ class DocumentDelivery extends Model
         return $this->belongsTo(User::class, 'receiver_id');
     }
 
-    public static function generateDocumentCode($investmentCode) {
+    public static function generateDocumentCode($investmentName) {
+        // หา Ma_Vudautu จาก Ten_Vudautu
+        $investmentCode = \DB::table('tb_vudautu')
+            ->where('Ten_Vudautu', $investmentName)
+            ->value('Ma_Vudautu');
+    
+        if (!$investmentCode) {
+            throw new \Exception("Investment code not found for: " . $investmentName);
+        }
+    
         $latest = static::orderBy('id', 'desc')->first();
         $number = $latest ? sprintf("%06d", $latest->id + 1) : '000001';
         return 'PGNHS-' . $investmentCode . '-' . $number;

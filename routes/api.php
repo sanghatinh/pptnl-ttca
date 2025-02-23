@@ -47,7 +47,11 @@ Route::get('/role/{role}/components', [RolePermissionController::class, 'getComp
 
 // Route::get('/document-deliveries', [DocumentDeliveryController::class, 'index']);
 Route::get('/bienban-nghiemthu-search', [DocumentDeliveryController::class, 'searchBienBanNgheThu']);
-Route::get('/investment-projects', [InvestmentProjectController::class, 'index']);
+Route::get('/investment-projects', function () {
+    return DB::table('tb_vudautu')
+        ->select('id', 'Ma_Vudautu', 'Ten_Vudautu')
+        ->get();
+});
 Route::get('/document-types', [DocumentTypeController::class, 'index']);
 
 Route::get('/document-deliveries', [DocumentDeliveryController::class, 'index']);
@@ -59,3 +63,10 @@ Route::get('/document-mappings/{documentCode}', [DocumentDeliveryController::cla
 Route::delete('/document-mappings/{id}', [DocumentDeliveryController::class, 'deleteMapping']);
 Route::delete('document-deliveries/{id}', [DocumentDeliveryController::class, 'destroy']);
 Route::put('/document-deliveries/{id}', [DocumentDeliveryController::class, 'update']);
+
+
+// Add routes for hom giong page tao new hoso
+Route::get('/bienban-homgiong-search', [DocumentDeliveryController::class, 'searchBienBanHomGiong']);
+Route::post('/document-mappings-homgiong', [DocumentDeliveryController::class, 'addMappingHomGiong']);
+Route::get('/document-mappings-homgiong/{documentCode}', [DocumentDeliveryController::class, 'getMappingsHomGiong']);
+Route::delete('/document-mappings-homgiong/{id}', [DocumentDeliveryController::class, 'deleteMappingHomGiong']);

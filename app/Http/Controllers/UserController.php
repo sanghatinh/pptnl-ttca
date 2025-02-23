@@ -136,14 +136,12 @@ public function logout(Request $request)
         }
     }
 
-    public function getStations()
-    {
-        try {
-            $stations = DB::table('liststation')->select('name')->get();
-            return response()->json($stations);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
+    public function getStations() {
+        $stations = DB::table('liststation')
+            ->select('id', 'Name', 'ma_don_vi')
+            ->get();
+        
+        return response()->json($stations);
     }
    
 //เพิ่มฟังก์ชันใน UserController เพื่อดึงข้อมูล roles

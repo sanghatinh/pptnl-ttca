@@ -347,10 +347,7 @@
                                 </div>
                             </div>
                             <div class="col-12">
-                                <div
-                                    class="form-group"
-                                    v-if="showReceiverField"
-                                >
+                                <div class="form-group" v-if="showreceivedate">
                                     <label for=""
                                         >Ngày nhận<span
                                             v-if="
@@ -497,11 +494,14 @@
             <div v-if="showHomGiong" class="card add-bienban-hom-giong">
                 <div class="card-body">
                     <div class="row">
-                        <h5 class="col card-title">ADD BIÊN BẢN HOM GIỐNG</h5>
+                        <h5 class="col card-title">BIÊN BẢN HOM GIỐNG</h5>
                         <div class="col text-end">
                             <button
+                                v-if="canModifyMappings"
                                 type="button"
                                 class="btn btn-success btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#homGiongModal"
                             >
                                 <i class="fa-solid fa-plus"></i>
                             </button>
@@ -511,23 +511,58 @@
                         <table class="table table-bordered table-hover">
                             <thead>
                                 <tr>
-                                    <th>STT</th>
+                                    <th>Action</th>
                                     <th>Mã số phiếu</th>
-                                    <th>Ngày lập</th>
-                                    <th>Người tạo</th>
-                                    <th>Trạm</th>
-                                    <th>Loại hồ sơ</th>
-                                    <th>Thao tác</th>
+                                    <th>Cán bộ nông vụ</th>
+                                    <th>Tên phiếu</th>
+                                    <th>Hợp đồng đầu tư mía bên giao</th>
+                                    <th>Hợp đồng đầu tư mía bên nhận</th>
+                                    <th>Tổng thực nhận</th>
+                                    <th>Tổng tiền</th>
+                                    <th>Vụ đầu tư</th>
+                                    <th>Tình trạng duyệt</th>
                                 </tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody>
+                                <tr
+                                    v-for="item in mappedHomGiongDocuments"
+                                    :key="item.mapping_id"
+                                >
+                                    <td>
+                                        <button
+                                            v-if="canModifyMappings"
+                                            @click="
+                                                deleteHomGiongMapping(
+                                                    item.mapping_id
+                                                )
+                                            "
+                                            class="btn btn-danger btn-sm"
+                                        >
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </td>
+                                    <td>{{ item.ma_so_phieu }}</td>
+                                    <td>{{ item.can_bo_nong_vu }}</td>
+                                    <td>{{ item.ten_phieu }}</td>
+                                    <td>
+                                        {{ item.hop_dong_dau_tu_mia_ben_giao }}
+                                    </td>
+                                    <td>
+                                        {{ item.hop_dong_dau_tu_mia_ben_nhan }}
+                                    </td>
+                                    <td>{{ item.tong_thuc_nhan }}</td>
+                                    <td>{{ item.tong_tien }}</td>
+                                    <td>{{ item.vu_dau_tu }}</td>
+                                    <td>{{ item.tinh_trang_duyet }}</td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Modal -->
+    <!-- Modal add nghiem thu dich vu -->
     <div
         class="modal fade"
         id="extraLargeModal"
@@ -654,6 +689,111 @@
             </div>
         </div>
     </div>
+    <!--modal  Add bien ban nghiem thu hom giong -->
+    <div
+        class="modal fade"
+        id="homGiongModal"
+        tabindex="-1"
+        aria-labelledby="homGiongModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-lg modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="homGiongModalLabel">
+                        ADD BIÊN BẢN HOM GIỐNG
+                    </h6>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                    ></button>
+                </div>
+                <div class="modal-body justify-content-center">
+                    <div class="col">
+                        <div class="form-group">
+                            <label for="homGiongSearch"
+                                >Tìm kiếm Mã số phiếu</label
+                            >
+                            <input
+                                type="search"
+                                class="form-control"
+                                v-model="searchHomGiongQuery"
+                                @input="searchHomGiong"
+                                :placeholder="
+                                    selectedHomGiong
+                                        ? selectedHomGiong.ma_so_phieu
+                                        : 'Nhập mã số phiếu...'
+                                "
+                            />
+                            <ul
+                                v-if="homGiongResults.length"
+                                class="dropdown-menu show"
+                            >
+                                <li
+                                    v-for="item in homGiongResults"
+                                    :key="item.ma_so_phieu"
+                                    @click="selectHomGiong(item)"
+                                    class="dropdown-item"
+                                >
+                                    {{ item.ma_so_phieu }}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="form-group mt-2">
+                            <label>Cán bộ nông vụ</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                :value="
+                                    selectedHomGiong
+                                        ? selectedHomGiong.can_bo_nong_vu
+                                        : ''
+                                "
+                                disabled
+                            />
+                        </div>
+                        <div class="form-group mt-2">
+                            <label>Tên phiếu</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                :value="
+                                    selectedHomGiong
+                                        ? selectedHomGiong.ten_phieu
+                                        : ''
+                                "
+                                disabled
+                            />
+                        </div>
+                        <div class="form-group mt-2">
+                            <label>Tổng thực nhận</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                :value="
+                                    selectedHomGiong
+                                        ? selectedHomGiong.tong_thuc_nhan
+                                        : ''
+                                "
+                                disabled
+                            />
+                        </div>
+                        <div class="col d-flex gap-3 mt-3">
+                            <button
+                                type="button"
+                                class="button-30-save"
+                                @click="addHomGiongMapping(selectedHomGiong)"
+                            >
+                                <i class="fa-solid fa-plus"></i>Add & Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -674,6 +814,7 @@ export default {
                 creator_name: "",
                 station: "",
                 searchQuery: "",
+                searchHomGiongQuery: "",
             },
             investmentProjects: [],
             mappedDocuments: [],
@@ -688,6 +829,9 @@ export default {
             receiver: null,
             bienBanResults: [],
             selectedBienBan: null,
+            homGiongResults: [],
+            selectedHomGiong: null,
+            mappedHomGiongDocuments: [],
         };
     },
     computed: {
@@ -753,6 +897,9 @@ export default {
             };
         },
         showReceiverField() {
+            return ["received", "cancelled"].includes(this.document.status);
+        },
+        showreceivedate() {
             return ["sending", "received", "cancelled"].includes(
                 this.document.status
             );
@@ -763,7 +910,10 @@ export default {
             );
         },
         documentCount() {
-            return this.mappedDocuments.length;
+            // Count both nghiem thu and hom giong documents
+            const nghiemThuCount = this.mappedDocuments.length;
+            const homGiongCount = this.mappedHomGiongDocuments.length;
+            return nghiemThuCount + homGiongCount;
         },
     },
     mounted() {
@@ -811,10 +961,14 @@ export default {
                 creator_name: this.user?.full_name,
                 station: this.user?.station,
                 searchQuery: "",
+                searchHomGiongQuery: "",
             };
             this.selectedBienBan = null;
             this.mappedDocuments = [];
             this.bienBanResults = [];
+            this.selectedHomGiong = null;
+            this.mappedHomGiongDocuments = [];
+            this.homGiongResults = [];
         },
 
         deleteDocument() {
@@ -851,7 +1005,7 @@ export default {
                     this.investmentProjects = response.data;
                 })
                 .catch((error) => {
-                    console.error(error);
+                    console.error("Error fetching investment projects:", error);
                 });
         },
         // Update saveDocument method
@@ -1010,15 +1164,99 @@ export default {
                     });
             }
         },
+        //modal add hom giong
+        searchHomGiong() {
+            axios
+                .get("/api/bienban-homgiong-search", {
+                    params: {
+                        search: this.searchHomGiongQuery,
+                        investment_project: this.document.investment_project,
+                        station: this.user.station,
+                    },
+                })
+                .then((response) => {
+                    this.homGiongResults = response.data;
+                })
+                .catch((error) => {
+                    console.error("Search error:", error);
+                });
+        },
+
+        selectHomGiong(item) {
+            this.selectedHomGiong = item;
+            this.searchHomGiongQuery = item.ma_so_phieu;
+            this.homGiongResults = [];
+        },
+
+        addHomGiongMapping(selected) {
+            if (!selected) return;
+
+            axios
+                .post("/api/document-mappings-homgiong", {
+                    document_code: this.document.document_code,
+                    ma_so_phieu: selected.ma_so_phieu,
+                })
+                .then((response) => {
+                    alert("Hom Giong mapping added successfully");
+                    this.fetchMappedHomGiongDocuments();
+                    // Close modal
+                    const modal = document.getElementById("homGiongModal");
+                    const modalInstance = bootstrap.Modal.getInstance(modal);
+                    modalInstance.hide();
+                })
+                .catch((error) => {
+                    if (error.response && error.response.status === 422) {
+                        alert(
+                            "Cannot add this mapping: " +
+                                error.response.data.error
+                        );
+                    } else {
+                        console.error("Error adding mapping:", error);
+                        alert("An error occurred while adding the mapping");
+                    }
+                });
+        },
+        deleteHomGiongMapping(mappingId) {
+            if (confirm("Are you sure you want to delete this mapping?")) {
+                axios
+                    .delete(`/api/document-mappings-homgiong/${mappingId}`)
+                    .then((response) => {
+                        alert("Hom Giong mapping deleted successfully");
+                        this.fetchMappedHomGiongDocuments(); // Refresh the table
+                    })
+                    .catch((error) => {
+                        console.error("Error deleting mapping:", error);
+                        alert("An error occurred while deleting the mapping");
+                    });
+            }
+        },
+
+        fetchMappedHomGiongDocuments() {
+            if (!this.document.document_code) return;
+
+            axios
+                .get(
+                    `/api/document-mappings-homgiong/${this.document.document_code}`
+                )
+                .then((response) => {
+                    this.mappedHomGiongDocuments = response.data;
+                })
+                .catch((error) => {
+                    console.error("Error fetching mapped documents:", error);
+                });
+        },
     },
+
     // Add mounted or watch hook to load data when document_code changes:
     watch: {
         "document.document_code": {
             handler(newVal) {
                 if (newVal) {
                     this.fetchMappedDocuments();
+                    this.fetchMappedHomGiongDocuments(); // Add this line to fetch Hom Giong documents
                 } else {
                     this.mappedDocuments = [];
+                    this.mappedHomGiongDocuments = [];
                 }
             },
             immediate: true,
