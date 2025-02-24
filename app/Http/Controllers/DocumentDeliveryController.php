@@ -175,23 +175,24 @@ public function destroy($id)
     public function searchBienBanHomGiong(Request $request)
     {
         try {
-            $investment_project = $request->input('investment_project');
-    
-            $query = \DB::table('bien_ban_nghiem_thu_hom_giong');
-    
-            // Filter by investment project if provided
-            if ($investment_project) {
-                $query->where('vu_dau_tu', $investment_project);
-            }
+            $search = $request->input('search');
+            $investmentProject = $request->input('investment_project');
             
-            // Search by ma_so_phieu แค่ 10 รายการ
+            $query = \DB::table('bien_ban_nghiem_thu_hom_giong')
+                ->where('vu_dau_tu', $investmentProject);
+    
+            if ($search) {
+                $query->where('ma_so_phieu', 'LIKE', "%{$search}%");
+            }
+                
             $results = $query->limit(10)->get();
-    
-            \Log::info('HomGiong Search:', [
-                'investment_project' => $investment_project,
-                'results_count' => $results->count()
+            
+            \Log::info('Search params:', [
+                'search' => $search,
+                'investment_project' => $investmentProject
             ]);
-    
+            \Log::info('Results:', ['count' => $results->count(), 'data' => $results]);
+            
             return response()->json($results);
     
         } catch (\Exception $e) {

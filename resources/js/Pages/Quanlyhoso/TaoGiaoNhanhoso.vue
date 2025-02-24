@@ -430,22 +430,13 @@
                                     <th>Action</th>
                                     <th>Mã nghiệm thu</th>
                                     <th>Trạm</th>
+                                    <th>Cán bộ nông vụ</th>
                                     <th>Vụ đầu tư</th>
                                     <th>Tiêu đề</th>
-                                    <th>Khách hàng cá nhân ĐT mía</th>
-                                    <th>Khách hàng doanh nghiệp ĐT mía</th>
                                     <th>Hợp đồng đầu tư mía</th>
                                     <th>Hình thức thực hiện DV</th>
                                     <th>Hợp đồng cung ứng dịch vụ</th>
                                     <th>Tổng tiền</th>
-                                    <th>Tổng tiền dịch vụ</th>
-                                    <th>Tổng tiền tạm giữ</th>
-                                    <th>Tổng tiền thanh toán</th>
-                                    <th>Cán bộ nông vụ</th>
-                                    <th>Tình trạng</th>
-                                    <th>Tình trạng duyệt</th>
-                                    <th>Ngày tạo</th>
-                                    <th>Ngày cập nhật</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -465,25 +456,17 @@
                                         </button>
                                     </td>
                                     <td>{{ item.ma_nghiem_thu }}</td>
-                                    <td>{{ item.station }}</td>
+                                    <td>{{ item.tram }}</td>
+                                    <td>{{ item.can_bo_nong_vu }}</td>
                                     <td>{{ item.vu_dau_tu }}</td>
-                                    <td>{{ item.title }}</td>
-                                    <td>{{ item.khach_hang_ca_nhan }}</td>
-                                    <td>{{ item.khach_hang_doanh_nghiep }}</td>
+                                    <td>{{ item.tieu_de }}</td>
+
                                     <td>{{ item.hop_dong_dau_tu_mia }}</td>
                                     <td>{{ item.hinh_thuc_thuc_hien_dv }}</td>
                                     <td>
                                         {{ item.hop_dong_cung_ung_dich_vu }}
                                     </td>
                                     <td>{{ item.tong_tien }}</td>
-                                    <td>{{ item.tong_tien_dich_vu }}</td>
-                                    <td>{{ item.tong_tien_tam_giu }}</td>
-                                    <td>{{ item.tong_tien_thanh_toan }}</td>
-                                    <td>{{ item.can_bo_nong_vu }}</td>
-                                    <td>{{ item.tinh_trang }}</td>
-                                    <td>{{ item.tinh_trang_duyet }}</td>
-                                    <td>{{ item.created_at }}</td>
-                                    <td>{{ item.updated_at }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -514,13 +497,12 @@
                                     <th>Action</th>
                                     <th>Mã số phiếu</th>
                                     <th>Cán bộ nông vụ</th>
+                                    <th>Vụ đầu tư</th>
                                     <th>Tên phiếu</th>
                                     <th>Hợp đồng đầu tư mía bên giao</th>
                                     <th>Hợp đồng đầu tư mía bên nhận</th>
                                     <th>Tổng thực nhận</th>
                                     <th>Tổng tiền</th>
-                                    <th>Vụ đầu tư</th>
-                                    <th>Tình trạng duyệt</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -543,17 +525,18 @@
                                     </td>
                                     <td>{{ item.ma_so_phieu }}</td>
                                     <td>{{ item.can_bo_nong_vu }}</td>
+                                    <td>{{ item.vu_dau_tu }}</td>
                                     <td>{{ item.ten_phieu }}</td>
                                     <td>
-                                        {{ item.hop_dong_dau_tu_mia_ben_giao }}
+                                        {{ item.hop_dong_dau_tu_mia }}
                                     </td>
                                     <td>
-                                        {{ item.hop_dong_dau_tu_mia_ben_nhan }}
+                                        {{
+                                            item.hop_dong_dau_tu_mia_ben_giao_hom
+                                        }}
                                     </td>
                                     <td>{{ item.tong_thuc_nhan }}</td>
                                     <td>{{ item.tong_tien }}</td>
-                                    <td>{{ item.vu_dau_tu }}</td>
-                                    <td>{{ item.tinh_trang_duyet }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -742,26 +725,26 @@
                             </ul>
                         </div>
                         <div class="form-group mt-2">
-                            <label>Cán bộ nông vụ</label>
+                            <label>Hợp đồng đầu tư mía bên giao</label>
                             <input
                                 type="text"
                                 class="form-control"
                                 :value="
                                     selectedHomGiong
-                                        ? selectedHomGiong.can_bo_nong_vu
+                                        ? selectedHomGiong.hop_dong_dau_tu_mia_ben_giao_hom
                                         : ''
                                 "
                                 disabled
                             />
                         </div>
                         <div class="form-group mt-2">
-                            <label>Tên phiếu</label>
+                            <label> Hợp đồng đầu tư mía bên nhận</label>
                             <input
                                 type="text"
                                 class="form-control"
                                 :value="
                                     selectedHomGiong
-                                        ? selectedHomGiong.ten_phieu
+                                        ? selectedHomGiong.hop_dong_dau_tu_mia
                                         : ''
                                 "
                                 disabled
@@ -775,6 +758,19 @@
                                 :value="
                                     selectedHomGiong
                                         ? selectedHomGiong.tong_thuc_nhan
+                                        : ''
+                                "
+                                disabled
+                            />
+                        </div>
+                        <div class="form-group mt-2">
+                            <label>Tổng tiền</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                :value="
+                                    selectedHomGiong
+                                        ? selectedHomGiong.tong_tien
                                         : ''
                                 "
                                 disabled
