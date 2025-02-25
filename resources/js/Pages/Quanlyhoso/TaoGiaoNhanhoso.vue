@@ -21,7 +21,7 @@
 
             <button
                 v-if="showSubmitButton"
-                class="button-30"
+                class="button-30-text-green"
                 role="button"
                 @click="sendDocument"
             >
@@ -40,7 +40,7 @@
             <button
                 v-if="showApproveButton"
                 type="button"
-                class="button-30"
+                class="button-30-text-green"
                 @click="receiveDocument"
             >
                 <i class="bx bx-check-square"></i>Duyệt
@@ -58,10 +58,18 @@
             <button
                 v-if="showDeleteButton"
                 type="button"
-                class="button-30"
+                class="button-30-del"
                 @click="deleteDocument"
             >
                 <i class="fa-solid fa-trash-can"></i>Xóa
+            </button>
+            <button
+                v-if="showSaveButton"
+                type="button"
+                class="button-30"
+                @click=""
+            >
+                <i class="bx bxs-printer"></i>Print
             </button>
         </div>
     </div>
@@ -793,6 +801,7 @@
 </template>
 
 <script>
+import Swal from "sweetalert2";
 export default {
     data() {
         return {
@@ -930,7 +939,14 @@ export default {
                     )
                     .then((response) => {
                         this.document = response.data;
-                        alert("Document updated successfully");
+                        Swal.fire({
+                            toast: true,
+                            position: "top-end",
+                            title: "Updated successfully",
+                            icon: "success",
+                            showConfirmButton: false,
+                            timer: 2000,
+                        });
                     })
                     .catch((error) => {
                         console.error(error);
@@ -967,18 +983,51 @@ export default {
             this.homGiongResults = [];
         },
 
-        deleteDocument() {
+        async deleteDocument() {
             if (!this.document.id) return;
 
-            if (confirm("Are you sure you want to delete this document?")) {
+            const result = await Swal.fire({
+                title: "Xác nhận xóa",
+                text: "Bạn có chắc chắn muốn xóa hồ sơ này?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "OK",
+                cancelButtonText: "Cancel",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-success",
+                },
+            });
+
+            if (result.isConfirmed) {
                 axios
                     .delete(`/api/document-deliveries/${this.document.id}`)
                     .then(() => {
-                        alert("Document deleted successfully");
+                        Swal.fire({
+                            title: "Thành công!",
+                            text: "Hồ sơ đã được xóa",
+                            icon: "success",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        });
                         this.createNew(); // Reset form after delete
                     })
                     .catch((error) => {
                         console.error(error);
+                        Swal.fire({
+                            title: "Lỗi!",
+                            text: "Đã xảy ra lỗi khi xóa hồ sơ",
+                            icon: "error",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        });
                     });
             }
         },
@@ -1035,25 +1084,115 @@ export default {
                 .post("/api/document-deliveries", this.document)
                 .then((response) => {
                     this.document = response.data;
-                    alert("Document saved successfully");
+                    Swal.fire({
+                        toast: true,
+                        position: "top-end",
+                        title: "Saved successfully",
+                        icon: "success",
+                        showConfirmButton: false,
+                        timer: 3000,
+                    });
                 })
                 .catch((error) => {
                     console.error(error);
+                    Swal.fire({
+                        title: "Lỗi!",
+                        text: "Có lỗi xảy ra khi lưu tài liệu",
+                        icon: "error",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
                 });
         },
         // The existing status update methods...
-        sendDocument() {
-            this.updateDocumentStatus("sending");
+        async sendDocument() {
+            const result = await Swal.fire({
+                title: "Xác nhận nộp",
+                text: "Bạn có chắc chắn muốn nộp hồ sơ này?",
+                icon: "question",
+                showCancelButton: true,
+
+                confirmButtonText: "OK",
+                cancelButtonText: "Cancel",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-success",
+                },
+            });
+
+            if (result.isConfirmed) {
+                this.updateDocumentStatus("sending");
+            }
         },
-        rejectDocument() {
-            this.updateDocumentStatus("creating");
+
+        async receiveDocument() {
+            const result = await Swal.fire({
+                title: "Xác nhận duyệt",
+                text: "Bạn có chắc chắn muốn duyệt hồ sơ này?",
+                icon: "question",
+                showCancelButton: true,
+
+                confirmButtonText: "OK",
+                cancelButtonText: "Cancel",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-success",
+                },
+            });
+
+            if (result.isConfirmed) {
+                this.updateDocumentStatus("received");
+            }
         },
-        receiveDocument() {
-            this.updateDocumentStatus("received");
+
+        async cancelDocument() {
+            const result = await Swal.fire({
+                title: "Xác nhận hủy",
+                text: "Bạn có chắc chắn muốn hủy hồ sơ này?",
+                icon: "warning",
+                showCancelButton: true,
+
+                confirmButtonText: "OK",
+                cancelButtonText: "Cancel",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-success",
+                },
+            });
+
+            if (result.isConfirmed) {
+                this.updateDocumentStatus("cancelled");
+            }
         },
-        cancelDocument() {
-            this.updateDocumentStatus("cancelled");
+
+        async rejectDocument() {
+            const result = await Swal.fire({
+                title: "Xác nhận không duyệt",
+                text: "Bạn có chắc chắn không duyệt hồ sơ này?",
+                icon: "warning",
+                showCancelButton: true,
+
+                confirmButtonText: "OK",
+                cancelButtonText: "Cancel",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-success",
+                },
+            });
+
+            if (result.isConfirmed) {
+                this.updateDocumentStatus("creating");
+            }
         },
+
+        // Update the updateDocumentStatus method to use SweetAlert2 for success/error messages
         updateDocumentStatus(status) {
             axios
                 .patch(`/api/document-deliveries/${this.document.id}/status`, {
@@ -1063,10 +1202,28 @@ export default {
                 })
                 .then((response) => {
                     this.document = response.data;
-                    alert(`Document status updated to ${status}`);
+                    Swal.fire({
+                        toast: true,
+                        position: "top-end",
+                        title: "Thành công!",
+                        text: `Trạng thái hồ sơ đã được cập nhật thành ${status}`,
+                        icon: "success",
+                        showConfirmButton: false,
+                        timer: 3000,
+                    });
                 })
                 .catch((error) => {
                     console.error(error);
+                    Swal.fire({
+                        title: "Lỗi!",
+                        text: "Đã xảy ra lỗi khi cập nhật trạng thái hồ sơ",
+                        icon: "error",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
                 });
         },
         // NEW: Search for ma_nghiem_thu when the modal shows up.
@@ -1115,22 +1272,61 @@ export default {
                     ma_nghiem_thu: selected.ma_nghiem_thu,
                 })
                 .then((response) => {
-                    alert("Mapping added successfully");
-                    this.fetchMappedDocuments(); // Refresh the table
-                    // Close modal
-                    const modal = document.getElementById("extraLargeModal");
-                    const modalInstance = bootstrap.Modal.getInstance(modal);
-                    modalInstance.hide();
+                    if (response.status === 200) {
+                        Swal.fire({
+                            toast: true,
+                            position: "top-end",
+                            title: "Mapping added successfully",
+                            icon: "success",
+                            showConfirmButton: false,
+                            timer: 2000,
+                        });
+                        this.fetchMappedDocuments();
+                        // Close modal
+                        const modal =
+                            document.getElementById("extraLargeModal");
+                        const modalInstance =
+                            bootstrap.Modal.getInstance(modal);
+                        modalInstance.hide();
+                    }
                 })
                 .catch((error) => {
-                    if (error.response && error.response.status === 422) {
-                        alert(
-                            "Cannot add this mapping: " +
-                                error.response.data.error
-                        );
+                    if (error.response.status === 422) {
+                        Swal.fire({
+                            title: "Lỗi!",
+                            text:
+                                "Cannot add this mapping: " +
+                                error.response.data.error,
+                            icon: "error",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        });
+                    } else if (error.response.status === 500) {
+                        Swal.fire({
+                            title: "Lỗi!",
+                            text: "Internal server error occurred",
+                            icon: "error",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        });
                     } else {
                         console.error("Error adding mapping:", error);
-                        alert("An error occurred while adding the mapping");
+                        Swal.fire({
+                            title: "Lỗi!",
+                            text: "An error occurred while adding the mapping",
+                            icon: "error",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        });
                     }
                 });
         },
@@ -1148,17 +1344,16 @@ export default {
         },
 
         deleteMapping(mappingId) {
-            if (confirm("Are you sure you want to delete this mapping?")) {
-                axios
-                    .delete(`/api/document-mappings/${mappingId}`)
-                    .then((response) => {
-                        alert("Mapping deleted");
-                        this.fetchMappedDocuments(); // Refresh the table
-                    })
-                    .catch((error) => {
-                        console.error(error);
-                    });
-            }
+            axios
+                .delete(`/api/document-mappings/${mappingId}`)
+                .then((response) => {
+                    // alert("Mapping deleted");
+                    this.fetchMappedDocuments(); // Refresh the table
+                })
+                .catch((error) => {
+                    console.error(error);
+                    console.error("Error deleting mapping:", error);
+                });
         },
         //modal add hom giong
         searchHomGiong() {
@@ -1193,38 +1388,76 @@ export default {
                     ma_so_phieu: selected.ma_so_phieu,
                 })
                 .then((response) => {
-                    alert("Hom Giong mapping added successfully");
-                    this.fetchMappedHomGiongDocuments();
-                    // Close modal
-                    const modal = document.getElementById("homGiongModal");
-                    const modalInstance = bootstrap.Modal.getInstance(modal);
-                    modalInstance.hide();
+                    if (response.status === 200) {
+                        Swal.fire({
+                            toast: true,
+                            position: "top-end",
+                            title: "Hom Giong mapping added successfully",
+                            icon: "success",
+                            showConfirmButton: false,
+                            timer: 2000,
+                        });
+                        console.log("Hom Giong mapping added successfully");
+                        this.fetchMappedHomGiongDocuments();
+                        // Close modal
+                        const modal = document.getElementById("homGiongModal");
+                        const modalInstance =
+                            bootstrap.Modal.getInstance(modal);
+                        modalInstance.hide();
+                    }
                 })
                 .catch((error) => {
-                    if (error.response && error.response.status === 422) {
-                        alert(
-                            "Cannot add this mapping: " +
-                                error.response.data.error
-                        );
-                    } else {
-                        console.error("Error adding mapping:", error);
-                        alert("An error occurred while adding the mapping");
+                    if (error.response) {
+                        if (error.response.status === 422) {
+                            Swal.fire({
+                                title: "Lỗi!",
+                                text:
+                                    "Cannot add this mapping: " +
+                                    error.response.data.error,
+                                icon: "error",
+                                confirmButtonText: "OK",
+                                buttonsStyling: false,
+                                customClass: {
+                                    confirmButton: "btn btn-success",
+                                },
+                            });
+                        } else if (error.response.status === 500) {
+                            Swal.fire({
+                                title: "Lỗi!",
+                                text: "Internal server error occurred",
+                                icon: "error",
+                                confirmButtonText: "OK",
+                                buttonsStyling: false,
+                                customClass: {
+                                    confirmButton: "btn btn-success",
+                                },
+                            });
+                        } else {
+                            Swal.fire({
+                                title: "Lỗi!",
+                                text: "An error occurred while adding the mapping",
+                                icon: "error",
+                                confirmButtonText: "OK",
+                                buttonsStyling: false,
+                                customClass: {
+                                    confirmButton: "btn btn-success",
+                                },
+                            });
+                        }
                     }
                 });
         },
         deleteHomGiongMapping(mappingId) {
-            if (confirm("Are you sure you want to delete this mapping?")) {
-                axios
-                    .delete(`/api/document-mappings-homgiong/${mappingId}`)
-                    .then((response) => {
-                        alert("Hom Giong mapping deleted successfully");
-                        this.fetchMappedHomGiongDocuments(); // Refresh the table
-                    })
-                    .catch((error) => {
-                        console.error("Error deleting mapping:", error);
-                        alert("An error occurred while deleting the mapping");
-                    });
-            }
+            axios
+                .delete(`/api/document-mappings-homgiong/${mappingId}`)
+                .then((response) => {
+                    // alert("Hom Giong mapping deleted successfully");
+                    this.fetchMappedHomGiongDocuments(); // Refresh the table
+                })
+                .catch((error) => {
+                    console.error("Error deleting mapping:", error);
+                    // alert("An error occurred while deleting the mapping");
+                });
         },
 
         fetchMappedHomGiongDocuments() {

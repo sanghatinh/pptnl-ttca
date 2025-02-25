@@ -772,10 +772,14 @@ export default {
                 text: "Bạn có chắc chắn muốn xóa dữ liệu này!",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
+
                 confirmButtonText: "Ok",
                 cancelButtonText: "Cancel",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-success",
+                },
             }).then((result) => {
                 if (result.isConfirmed) {
                     axios

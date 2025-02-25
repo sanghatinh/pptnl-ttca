@@ -1,11 +1,13 @@
 <?php
 
 namespace App\Http\Controllers;
+use Illuminate\Support\Facades\DB;
 
 use App\Models\DocumentDelivery;
 use App\Models\DocumentMapping;
 use App\Models\DocumentMappingHomGiong;
 use App\Models\BienBanNghiemThuHomGiong;
+
 use Illuminate\Http\Request;
 
 class DocumentDeliveryController extends Controller
@@ -64,6 +66,7 @@ class DocumentDeliveryController extends Controller
         ]);
         return response()->json($document);
     }
+
 
     public function update(Request $request, $id)
 {
@@ -127,28 +130,40 @@ public function destroy($id)
     }
 
     public function addMapping(Request $request) {
-        // Check if mapping already exists
-        $existingMapping = \App\Models\DocumentMapping::where('ma_nghiem_thu_bb', $request->input('ma_nghiem_thu'))->first();
-        
-        if ($existingMapping) {
-            // If mapping exists, check if the document is cancelled
-            $document = DocumentDelivery::where('document_code', $existingMapping->document_code)
-                ->first();
-                
-            if (!$document || $document->status !== 'cancelled') {
-                return response()->json([
-                    'error' => 'Mapping already exists and associated document is not cancelled'
-                ], 422);
+        try {
+            // Check if mapping already exists
+            $existingMapping = \App\Models\DocumentMapping::where('ma_nghiem_thu_bb', $request->input('ma_nghiem_thu'))->first();
+            
+            if ($existingMapping) {
+                // If mapping exists, check if the document is cancelled
+                $document = DocumentDelivery::where('document_code', $existingMapping->document_code)
+                    ->first();
+                    
+                if (!$document || $document->status !== 'cancelled') {
+                    return response()->json([
+                        'status' => 'error',
+                        'error' => 'biên bản đã tồn tại'
+                    ], 422);
+                }
             }
+        
+            // If we get here, either the mapping doesn't exist or the associated document is cancelled
+            $mapping = \App\Models\DocumentMapping::create([
+                'document_code' => $request->input('document_code'),
+                'ma_nghiem_thu_bb' => $request->input('ma_nghiem_thu')
+            ]);
+        
+            return response()->json([
+                'status' => 'success',
+                'data' => $mapping,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'error' => $e->getMessage()
+            ], 500);
         }
-    
-        // If we get here, either the mapping doesn't exist or the associated document is cancelled
-        $mapping = \App\Models\DocumentMapping::create([
-            'document_code' => $request->input('document_code'),
-            'ma_nghiem_thu_bb' => $request->input('ma_nghiem_thu')
-        ]);
-    
-        return response()->json($mapping);
     }
 
 
@@ -203,28 +218,36 @@ public function destroy($id)
 
 public function addMappingHomGiong(Request $request)
 {
-    // Check if mapping already exists
-    $existingMapping = DocumentMappingHomGiong::where('ma_so_phieu', $request->input('ma_so_phieu'))->first();
-    
-    if ($existingMapping) {
-        // If mapping exists, check if the document is cancelled
-        $document = DocumentDelivery::where('document_code', $existingMapping->document_code)
-            ->first();
-            
-        if (!$document || $document->status !== 'cancelled') {
-            return response()->json([
-                'error' => 'Mapping already exists and associated document is not cancelled'
-            ], 422);
+    try {
+        // Check if mapping already exists
+        $existingMapping = DocumentMappingHomGiong::where('ma_so_phieu', $request->input('ma_so_phieu'))->first();
+
+        if ($existingMapping) {
+            // If mapping exists, check if the document is cancelled
+            $document = DocumentDelivery::where('document_code', $existingMapping->document_code)->first();
+
+            if (!$document || $document->status !== 'cancelled') {
+                return response()->json([
+                    'error' => 'biên bản đã tồn tại'
+                ], 422);
+            }
         }
+
+        // If we get here, either the mapping doesn't exist or the associated document is cancelled
+        $mapping = DocumentMappingHomGiong::create([
+            'document_code' => $request->input('document_code'),
+            'ma_so_phieu'   => $request->input('ma_so_phieu')
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $mapping
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage()
+        ], 500);
     }
-
-    // If we get here, either the mapping doesn't exist or the associated document is cancelled
-    $mapping = DocumentMappingHomGiong::create([
-        'document_code' => $request->input('document_code'),
-        'ma_so_phieu' => $request->input('ma_so_phieu')
-    ]);
-
-    return response()->json($mapping);
 }
 
 public function getMappingsHomGiong($documentCode)
