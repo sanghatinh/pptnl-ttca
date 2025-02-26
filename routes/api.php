@@ -11,6 +11,7 @@ use App\Http\Controllers\ComponentController;
 use App\Http\Controllers\DocumentDeliveryController;
 use App\Http\Controllers\InvestmentProjectController;
 use App\Http\Controllers\DocumentTypeController;
+use App\Http\Controllers\Print\PrintGiaoNhanHSController;
 
 
 Route::apiResource('roles', RoleController::class);
@@ -70,3 +71,6 @@ Route::get('/bienban-homgiong-search', [DocumentDeliveryController::class, 'sear
 Route::post('/document-mappings-homgiong', [DocumentDeliveryController::class, 'addMappingHomGiong']);
 Route::get('/document-mappings-homgiong/{documentCode}', [DocumentDeliveryController::class, 'getMappingsHomGiong']);
 Route::delete('/document-mappings-homgiong/{id}', [DocumentDeliveryController::class, 'deleteMappingHomGiong']);
+
+
+Route::get('/print/giaonhan-hoso/{document_code}', [PrintGiaoNhanHSController::class, 'print']);

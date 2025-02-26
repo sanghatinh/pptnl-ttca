@@ -39,4 +39,19 @@ class DocumentDelivery extends Model
         $number = $latest ? sprintf("%06d", $latest->id + 1) : '000001';
         return 'PGNHS-' . $investmentCode . '-' . $number;
     }
+
+    // Add relationship for document mappings
+    public function documentMappings()
+    {
+        return $this->hasMany(DocumentMapping::class, 'document_code', 'document_code');
+    }
+
+    // Add relationship for document mappings hom giong
+    public function documentMappingsHomgiong()
+    {
+        return $this->hasMany(DocumentMappingHomgiong::class, 'document_code', 'document_code');
+    }
+
+
+
 }

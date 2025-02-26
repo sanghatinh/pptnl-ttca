@@ -30,6 +30,11 @@ class DocumentMapping extends Model
         return $this->belongsTo(DocumentDelivery::class, 'document_code', 'document_code');
     }
 
+    // Add relationship to BienBanNghiemThu
+    public function bienBanNghiemThu()
+    {
+        return $this->belongsTo(BienBanNghiemThu::class, 'ma_nghiem_thu_bb', 'ma_nghiem_thu');
+    }
     
 }
 

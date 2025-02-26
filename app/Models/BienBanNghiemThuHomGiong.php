@@ -49,4 +49,8 @@ class BienBanNghiemThuHomGiong extends Model
     {
         return $this->hasMany(DocumentMappingHomGiong::class, 'ma_so_phieu', 'ma_so_phieu');
     }
+    public function bienBanHomGiong()
+    {
+        return $this->belongsTo(BienBanNghiemThuHomGiong::class, 'ma_so_phieu', 'ma_so_phieu');
+    }
 }

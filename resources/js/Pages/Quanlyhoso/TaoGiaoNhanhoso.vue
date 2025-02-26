@@ -67,7 +67,7 @@
                 v-if="showSaveButton"
                 type="button"
                 class="button-30"
-                @click=""
+                @click="printDocument"
             >
                 <i class="bx bxs-printer"></i>Print
             </button>
@@ -1473,6 +1473,29 @@ export default {
                 .catch((error) => {
                     console.error("Error fetching mapped documents:", error);
                 });
+        },
+        // Add to methods in TaoGiaoNhanhoso.vue
+        printDocument() {
+            if (!this.document.document_code) {
+                Swal.fire({
+                    title: "Error",
+                    text: "Please save the document first",
+                    icon: "error",
+                });
+                return;
+            }
+
+            const printUrl = `${window.location.origin}/api/print/giaonhan-hoso/${this.document.document_code}`;
+            const printWindow = window.open(printUrl, "_blank");
+
+            if (printWindow) {
+                printWindow.onload = () => {
+                    setTimeout(() => {
+                        printWindow.print();
+                        setTimeout(() => printWindow.close(), 3000);
+                    }, 1000);
+                };
+            }
         },
     },
 
