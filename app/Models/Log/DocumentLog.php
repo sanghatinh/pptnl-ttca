@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Models\log;
-
+use App\Models\User; // Add this line to properly import the User model
+use App\Models\DocumentDelivery; // Also add this for the document relationship
 use Illuminate\Database\Eloquent\Model;
 
 class DocumentLog extends Model
@@ -24,7 +25,7 @@ class DocumentLog extends Model
 
     public function actionUser()
     {
-        return $this->belongsTo(User::class, 'action_by');
+        return $this->belongsTo(User::class, 'action_user_id');
     }
 
     public function creator()

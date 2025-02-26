@@ -7,13 +7,15 @@ use Illuminate\Http\Request;
 use App\Models\DocumentDelivery;
 use App\Models\DocumentMapping;
 use App\Models\DocumentMappingHomgiong;
+use App\Models\Log\DocumentLog;
+use App\Models\User;  // Make sure this points to the correct User model namespace
 
 class PrintGiaoNhanHSController extends Controller
 {
     public function print($document_code)
     {
         try {
-            // ดึงข้อมูลเอกสารพร้อมความสัมพันธ์ที่เกี่ยวข้อง
+            // Get document with related data
             $document = DocumentDelivery::with([
                 'creator',
                 'receiver',
@@ -28,10 +30,24 @@ class PrintGiaoNhanHSController extends Controller
                 ], 404);
             }
     
+            // Get receiver info from DocumentLog
+            $receiverInfo = DocumentLog::where('document_id', $document->id)
+                ->where('action', 'received')
+                ->with('actionUser')
+                ->latest()
+                ->first();
+    
+            // Add receiver information to document
+            $document->receiver_info = [
+                'name' => $document->receiver ? $document->receiver->full_name : 
+                         ($receiverInfo ? $receiverInfo->actionUser->full_name : null),
+                'date' => $document->received_date ?? 
+                         ($receiverInfo ? $receiverInfo->created_at : null)
+            ];
+    
             $nghiemThuDocuments = $document->documentMappings;
             $homGiongDocuments = $document->documentMappingsHomgiong;
     
-            // ส่งข้อมูลไปยัง view
             return view('Print.PrintgiaonhanHS', compact('document', 'nghiemThuDocuments', 'homGiongDocuments'));
     
         } catch (\Exception $e) {

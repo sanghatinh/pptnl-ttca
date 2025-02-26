@@ -34,10 +34,13 @@ loan_status	enum('processing','to_accounting','disbursed')	YES		processing
 
 id	int(11)	NO	PRI	NULL	auto_increment	
 document_id	int(11)	NO	MUL	NULL		
-action	varchar(50)	NO		NULL		
+action	enum('creating','sending','received','cancelled')	NO		NULL		
 action_by	bigint(20) unsigned	NO	MUL	NULL		
 action_date	datetime	YES		current_timestamp()		
 comments	text	YES		NULL		
+created_at	timestamp	NO		current_timestamp()		
+updated_at	timestamp	NO		current_timestamp()	on update current_timestamp()	
+	
 
 #TABLE tb_vudautu;
 

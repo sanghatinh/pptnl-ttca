@@ -7,6 +7,7 @@ use App\Models\DocumentDelivery;
 use App\Models\DocumentMapping;
 use App\Models\DocumentMappingHomGiong;
 use App\Models\BienBanNghiemThuHomGiong;
+use App\Models\Log\DocumentLog; // Add this import
 
 use Illuminate\Http\Request;
 
@@ -46,6 +47,15 @@ class DocumentDeliveryController extends Controller
                 'loan_status'       => $request->input('loan_status'),
                 'status'            => 'creating'
             ]);
+
+            // Log the create action
+            // Log the create action - action_by จะเป็น creator_id
+        DocumentLog::create([
+            'document_id' => $document->id,
+            'action' => 'creating',
+            'action_by' => $request->input('creator_id'), // ID ของ user ที่สร้างเอกสาร
+            'action_date' => now(),
+        ]);
     
             return response()->json($document);
     
@@ -59,21 +69,40 @@ class DocumentDeliveryController extends Controller
 
     public function updateStatus(Request $request, $id) {
         $document = DocumentDelivery::findOrFail($id);
+        
+        // Update document status
         $document->update([
             'status' => $request->input('status'),
-            'received_date' => $request->input('received_date'),
+            'received_date' => $request->input('received_date'), 
             'receiver_id' => $request->input('receiver_id'),
         ]);
+    
+        // Log the status change - action_by จะเป็น ID ของ user ที่ทำการเปลี่ยนสถานะ
+        DocumentLog::create([
+            'document_id' => $document->id,
+            'action' => $request->input('status'),
+            'action_by' => $request->input('receiver_id'), // ID ของ user ที่เปลี่ยนสถานะ
+            'action_date' => now(),
+        ]);
+    
         return response()->json($document);
     }
 
 
-    public function update(Request $request, $id)
-{
-    $document = DocumentDelivery::findOrFail($id);
-    $document->update($request->all());
-    return response()->json($document);
-}
+    public function update(Request $request, $id) {
+        $document = DocumentDelivery::findOrFail($id);
+        $document->update($request->all());
+    
+        // Log the update action - action_by จะเป็น creator_id
+        DocumentLog::create([
+            'document_id' => $document->id,
+            'action' => $document->status,
+            'action_by' => $request->input('creator_id'), // ID ของ user ที่แก้ไขเอกสาร
+            'action_date' => now(),
+        ]);
+    
+        return response()->json($document);
+    }
 
 public function destroy($id)
 {

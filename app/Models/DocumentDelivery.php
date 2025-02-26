@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB; // Add this import
 
 class DocumentDelivery extends Model
 {
@@ -27,7 +28,7 @@ class DocumentDelivery extends Model
 
     public static function generateDocumentCode($investmentName) {
         // หา Ma_Vudautu จาก Ten_Vudautu
-        $investmentCode = \DB::table('tb_vudautu')
+        $investmentCode = DB::table('tb_vudautu')
             ->where('Ten_Vudautu', $investmentName)
             ->value('Ma_Vudautu');
     
@@ -35,8 +36,18 @@ class DocumentDelivery extends Model
             throw new \Exception("Investment code not found for: " . $investmentName);
         }
     
-        $latest = static::orderBy('id', 'desc')->first();
-        $number = $latest ? sprintf("%06d", $latest->id + 1) : '000001';
+        // Get next ID using DB transaction to ensure accuracy
+        $nextId = DB::transaction(function () {
+            // Lock the document_delivery table to prevent race conditions
+            $maxId = static::lockForUpdate()->max('id');
+            
+            // Handle case when table is empty
+            return ($maxId ?? 0) + 1;
+        });
+    
+        // Format the number with leading zeros
+        $number = sprintf("%06d", $nextId);
+        
         return 'PGNHS-' . $investmentCode . '-' . $number;
     }
 

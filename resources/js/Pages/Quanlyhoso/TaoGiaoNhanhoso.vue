@@ -64,7 +64,7 @@
                 <i class="fa-solid fa-trash-can"></i>Xóa
             </button>
             <button
-                v-if="showSaveButton"
+                
                 type="button"
                 class="button-30"
                 @click="printDocument"
