@@ -185,9 +185,11 @@
         <p>Trạm: {{ $document->creator->station }}</p>
     </div>
     <div class="info-right">
-    <p>Người nhận: {{ $document->receiver_info['name'] ?? 'Chưa có người nhận' }}</p>
-    <p>Ngày nhận: {{ $document->receiver_info['date'] ? date('d/m/Y', strtotime($document->receiver_info['date'])) : 'Chưa nhận' }}</p>
-    </div>
+    @if (!in_array($document->status, ['creating', 'sending']))
+        <p>Người nhận: {{ $document->receiver_info['name'] ?? 'Chưa có người nhận' }}</p>
+        <p>Ngày nhận: {{ $document->receiver_info['date'] ? date('d/m/Y', strtotime($document->receiver_info['date'])) : 'Chưa nhận' }}</p>
+    @endif
+</div>
 </div>
 
 <h3>I.BIÊN BẢN NGHIỆM THU DỊCH VỤ :</h3>
@@ -204,6 +206,7 @@
                
                 <th>Hợp đồng đầu tư mía</th>
                 <th>Hình thức thực hiện DV</th>
+                <th>Hợp đồng cung ứng dịch vụ</th>
                 <th>Tổng tiền</th>
             </tr>
         </thead>
@@ -218,6 +221,7 @@
               
                 <td>{{ $doc->bienBanNghiemThu->hop_dong_dau_tu_mia }}</td>
                 <td>{{ $doc->bienBanNghiemThu->hinh_thuc_thuc_hien_dv }}</td>
+                <td>{{ $doc->bienBanNghiemThu->hop_dong_cung_ung_dich_vu }}</td>
                 <td>{{ number_format($doc->bienBanNghiemThu->tong_tien, 0, ',', '.') }}</td>
             </tr>
             @endforeach
@@ -259,6 +263,15 @@
         </tbody>
     </table>
 </div>
+<hr>
+<div class="container-footer">
+        <div class="item">
+          <span>BÊN GIAO</span>
+        </div>
+        <div class="item">
+          <span>BÊN NHẬN</span>
+        </div>
+      </div>
 
  
     </div>

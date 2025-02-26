@@ -63,12 +63,7 @@
             >
                 <i class="fa-solid fa-trash-can"></i>Xóa
             </button>
-            <button
-                
-                type="button"
-                class="button-30"
-                @click="printDocument"
-            >
+            <button type="button" class="button-30" @click="printDocument">
                 <i class="bx bxs-printer"></i>Print
             </button>
         </div>
@@ -474,7 +469,7 @@
                                     <td>
                                         {{ item.hop_dong_cung_ung_dich_vu }}
                                     </td>
-                                    <td>{{ item.tong_tien }}</td>
+                                    <td>{{ formatNumber(item.tong_tien) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -544,7 +539,7 @@
                                         }}
                                     </td>
                                     <td>{{ item.tong_thuc_nhan }}</td>
-                                    <td>{{ item.tong_tien }}</td>
+                                    <td>{{ formatNumber(item.tong_tien) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -660,7 +655,9 @@
                                 class="form-control"
                                 :value="
                                     selectedBienBan
-                                        ? selectedBienBan.tong_tien_dich_vu
+                                        ? formatNumber(
+                                              selectedBienBan.tong_tien_dich_vu
+                                          )
                                         : ''
                                 "
                                 disabled
@@ -778,7 +775,9 @@
                                 class="form-control"
                                 :value="
                                     selectedHomGiong
-                                        ? selectedHomGiong.tong_tien
+                                        ? formatNumber(
+                                              selectedHomGiong.tong_tien
+                                          )
                                         : ''
                                 "
                                 disabled
@@ -805,6 +804,7 @@ import Swal from "sweetalert2";
 export default {
     data() {
         return {
+            url: window.location.origin,
             document: {
                 document_code: "",
                 created_date: "",
@@ -818,9 +818,10 @@ export default {
                 receiver_id: null,
                 creator_name: "",
                 station: "",
-                searchQuery: "",
-                searchHomGiongQuery: "",
             },
+
+            searchQuery: "",
+            searchHomGiongQuery: "",
             investmentProjects: [],
             mappedDocuments: [],
 
@@ -928,6 +929,15 @@ export default {
         // still fetchDocumentTypes if needed or use static one above
     },
     methods: {
+        // formatNumber method
+        formatNumber(value) {
+            if (!value) return "";
+            return new Intl.NumberFormat("en-US", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+            }).format(value);
+        },
+
         // Add these new methods
         saveOrUpdateDocument() {
             if (this.document.id) {
@@ -1479,7 +1489,7 @@ export default {
             if (!this.document.document_code) {
                 Swal.fire({
                     title: "Error",
-                    text: "Please save the document first",
+                    text: "Vui lòng lưu tài liệu trước",
                     icon: "error",
                 });
                 return;

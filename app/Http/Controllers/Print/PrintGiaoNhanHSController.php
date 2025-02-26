@@ -12,6 +12,7 @@ use App\Models\User;  // Make sure this points to the correct User model namespa
 
 class PrintGiaoNhanHSController extends Controller
 {
+    
     public function print($document_code)
     {
         try {
@@ -30,20 +31,29 @@ class PrintGiaoNhanHSController extends Controller
                 ], 404);
             }
     
-            // Get receiver info from DocumentLog
-            $receiverInfo = DocumentLog::where('document_id', $document->id)
-                ->where('action', 'received')
-                ->with('actionUser')
-                ->latest()
-                ->first();
+            // Only add receiver info if status is not 'creating' or 'sending'
+            if (!in_array($document->status, ['creating', 'sending'])) {
+                // Get receiver info from DocumentLog
+                $receiverInfo = DocumentLog::where('document_id', $document->id)
+                    ->where('action', 'received')
+                    ->with('actionUser')
+                    ->latest()
+                    ->first();
     
-            // Add receiver information to document
-            $document->receiver_info = [
-                'name' => $document->receiver ? $document->receiver->full_name : 
-                         ($receiverInfo ? $receiverInfo->actionUser->full_name : null),
-                'date' => $document->received_date ?? 
-                         ($receiverInfo ? $receiverInfo->created_at : null)
-            ];
+                // Add receiver information to document
+                $document->receiver_info = [
+                    'name' => $document->receiver ? $document->receiver->full_name : 
+                             ($receiverInfo ? $receiverInfo->actionUser->full_name : null),
+                    'date' => $document->received_date ?? 
+                             ($receiverInfo ? $receiverInfo->created_at : null)
+                ];
+            } else {
+                // Set empty receiver info for creating/sending status
+                $document->receiver_info = [
+                    'name' => null,
+                    'date' => null
+                ];
+            }
     
             $nghiemThuDocuments = $document->documentMappings;
             $homGiongDocuments = $document->documentMappingsHomgiong;
