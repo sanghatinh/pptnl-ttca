@@ -45,8 +45,8 @@ Route::get('/components', [ComponentController::class, 'index']);
 Route::get('/role/{role}/permissions', [RolePermissionController::class, 'getPermissions']);
 Route::get('/role/{role}/components', [RolePermissionController::class, 'getComponents']);
 
-
-// Route::get('/document-deliveries', [DocumentDeliveryController::class, 'index']);
+//PAGE TAO BIEN BAN GIAO NHAN HO SO
+Route::group(['middleware' => ['auth:api']], function () {
 Route::get('/bienban-nghiemthu-search', [DocumentDeliveryController::class, 'searchBienBanNgheThu']);
 Route::get('/investment-projects', function () {
     return DB::table('tb_vudautu')
@@ -54,7 +54,6 @@ Route::get('/investment-projects', function () {
         ->get();
 });
 Route::get('/document-types', [DocumentTypeController::class, 'index']);
-
 Route::get('/document-deliveries', [DocumentDeliveryController::class, 'index']);
 Route::post('/document-deliveries', [DocumentDeliveryController::class, 'store']);
 Route::patch('/document-deliveries/{id}/status', [DocumentDeliveryController::class, 'updateStatus']);
@@ -64,13 +63,9 @@ Route::get('/document-mappings/{documentCode}', [DocumentDeliveryController::cla
 Route::delete('/document-mappings/{id}', [DocumentDeliveryController::class, 'deleteMapping']);
 Route::delete('document-deliveries/{id}', [DocumentDeliveryController::class, 'destroy']);
 Route::put('/document-deliveries/{id}', [DocumentDeliveryController::class, 'update']);
-
-
-// Add routes for hom giong page tao new hoso
 Route::get('/bienban-homgiong-search', [DocumentDeliveryController::class, 'searchBienBanHomGiong']);
 Route::post('/document-mappings-homgiong', [DocumentDeliveryController::class, 'addMappingHomGiong']);
 Route::get('/document-mappings-homgiong/{documentCode}', [DocumentDeliveryController::class, 'getMappingsHomGiong']);
 Route::delete('/document-mappings-homgiong/{id}', [DocumentDeliveryController::class, 'deleteMappingHomGiong']);
-
-
 Route::get('/print/giaonhan-hoso/{document_code}', [PrintGiaoNhanHSController::class, 'print']);
+});

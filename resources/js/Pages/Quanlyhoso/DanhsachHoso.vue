@@ -217,8 +217,15 @@
 <script>
 import axios from "axios";
 import { Bootstrap5Pagination } from "laravel-vue-pagination";
+import { useStore } from "../../Store/Auth";
 
 export default {
+    setup() {
+        const store = useStore();
+        return {
+            store,
+        };
+    },
     name: "DanhsachHoso",
     components: {
         Pagination: Bootstrap5Pagination,
@@ -299,6 +306,9 @@ export default {
                     params: {
                         search: this.search,
                         per_page: 1000,
+                    },
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
                     },
                 })
                 .then((response) => {

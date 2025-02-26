@@ -801,7 +801,15 @@
 
 <script>
 import Swal from "sweetalert2";
+import axios from "axios";
+import { useStore } from "../../Store/Auth";
 export default {
+    setup() {
+        const store = useStore();
+        return {
+            store,
+        };
+    },
     data() {
         return {
             url: window.location.origin,
@@ -945,7 +953,12 @@ export default {
                 axios
                     .put(
                         `/api/document-deliveries/${this.document.id}`,
-                        this.document
+                        this.document,
+                        {
+                            headers: {
+                                Authorization: "Bearer " + this.store.getToken,
+                            },
+                        }
                     )
                     .then((response) => {
                         this.document = response.data;
@@ -960,6 +973,9 @@ export default {
                     })
                     .catch((error) => {
                         console.error(error);
+                        if (error.response && error.response.status === 401) {
+                            this.handleAuthError();
+                        }
                     });
             } else {
                 // Create new document
@@ -1012,7 +1028,11 @@ export default {
 
             if (result.isConfirmed) {
                 axios
-                    .delete(`/api/document-deliveries/${this.document.id}`)
+                    .delete(`/api/document-deliveries/${this.document.id}`, {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    })
                     .then(() => {
                         Swal.fire({
                             title: "Thành công!",
@@ -1028,16 +1048,20 @@ export default {
                     })
                     .catch((error) => {
                         console.error(error);
-                        Swal.fire({
-                            title: "Lỗi!",
-                            text: "Đã xảy ra lỗi khi xóa hồ sơ",
-                            icon: "error",
-                            confirmButtonText: "OK",
-                            buttonsStyling: false,
-                            customClass: {
-                                confirmButton: "btn btn-success",
-                            },
-                        });
+                        if (error.response && error.response.status === 401) {
+                            this.handleAuthError();
+                        } else {
+                            Swal.fire({
+                                title: "Lỗi!",
+                                text: "Đã xảy ra lỗi khi xóa hồ sơ",
+                                icon: "error",
+                                confirmButtonText: "OK",
+                                buttonsStyling: false,
+                                customClass: {
+                                    confirmButton: "btn btn-success",
+                                },
+                            });
+                        }
                     });
             }
         },
@@ -1055,12 +1079,19 @@ export default {
         },
         fetchInvestmentProjects() {
             axios
-                .get("/api/investment-projects")
+                .get("/api/investment-projects", {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                })
                 .then((response) => {
                     this.investmentProjects = response.data;
                 })
-                .catch((error) => {
-                    console.error("Error fetching investment projects:", error);
+                .catch((err) => {
+                    console.log(err);
+                    if (err.response && err.response.status === 401) {
+                        this.handleAuthError();
+                    }
                 });
         },
         // Update saveDocument method
@@ -1091,7 +1122,11 @@ export default {
             this.document.file_count = this.documentCount;
 
             axios
-                .post("/api/document-deliveries", this.document)
+                .post("/api/document-deliveries", this.document, {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                })
                 .then((response) => {
                     this.document = response.data;
                     Swal.fire({
@@ -1103,18 +1138,18 @@ export default {
                         timer: 3000,
                     });
                 })
-                .catch((error) => {
-                    console.error(error);
-                    Swal.fire({
-                        title: "Lỗi!",
-                        text: "Có lỗi xảy ra khi lưu tài liệu",
-                        icon: "error",
-                        confirmButtonText: "OK",
-                        buttonsStyling: false,
-                        customClass: {
-                            confirmButton: "btn btn-success",
-                        },
-                    });
+                .catch((err) => {
+                    console.log(err);
+                    if (err.response && err.response.status === 401) {
+                        this.handleAuthError();
+                    } else {
+                        Swal.fire({
+                            title: "Lỗi!",
+                            text: "Có lỗi xảy ra khi lưu tài liệu",
+                            icon: "error",
+                            confirmButtonText: "OK",
+                        });
+                    }
                 });
         },
         // The existing status update methods...
@@ -1205,11 +1240,19 @@ export default {
         // Update the updateDocumentStatus method to use SweetAlert2 for success/error messages
         updateDocumentStatus(status) {
             axios
-                .patch(`/api/document-deliveries/${this.document.id}/status`, {
-                    status: status,
-                    received_date: new Date().toISOString().split("T")[0],
-                    receiver_id: this.user.id,
-                })
+                .patch(
+                    `/api/document-deliveries/${this.document.id}/status`,
+                    {
+                        status: status,
+                        received_date: new Date().toISOString().split("T")[0],
+                        receiver_id: this.user.id,
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                )
                 .then((response) => {
                     this.document = response.data;
                     Swal.fire({
@@ -1222,18 +1265,17 @@ export default {
                         timer: 3000,
                     });
                 })
-                .catch((error) => {
-                    console.error(error);
-                    Swal.fire({
-                        title: "Lỗi!",
-                        text: "Đã xảy ra lỗi khi cập nhật trạng thái hồ sơ",
-                        icon: "error",
-                        confirmButtonText: "OK",
-                        buttonsStyling: false,
-                        customClass: {
-                            confirmButton: "btn btn-success",
-                        },
-                    });
+                .catch((err) => {
+                    console.error(err);
+                    if (err.response && err.response.status === 401) {
+                        this.handleAuthError();
+                    } else {
+                        Swal.fire({
+                            title: "Lỗi!",
+                            text: "Đã xảy ra lỗi khi cập nhật trạng thái hồ sơ",
+                            icon: "error",
+                        });
+                    }
                 });
         },
         // NEW: Search for ma_nghiem_thu when the modal shows up.
@@ -1245,14 +1287,18 @@ export default {
                         investment_project: this.document.investment_project,
                         station: this.user.station,
                     },
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
                 })
                 .then((response) => {
                     this.bienBanResults = response.data;
-                    console.log("Search results:", response.data);
                 })
-                .catch((error) => {
-                    console.error(error);
-                    console.error("Search error:", error);
+                .catch((err) => {
+                    console.log(err);
+                    if (err.response && err.response.status === 401) {
+                        this.handleAuthError();
+                    }
                 });
         },
         selectBienBan(item) {
@@ -1277,10 +1323,18 @@ export default {
         },
         addMapping(selected) {
             axios
-                .post("/api/document-mappings", {
-                    document_code: this.document.document_code,
-                    ma_nghiem_thu: selected.ma_nghiem_thu,
-                })
+                .post(
+                    "/api/document-mappings",
+                    {
+                        document_code: this.document.document_code,
+                        ma_nghiem_thu: selected.ma_nghiem_thu,
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                )
                 .then((response) => {
                     if (response.status === 200) {
                         Swal.fire({
@@ -1292,50 +1346,20 @@ export default {
                             timer: 2000,
                         });
                         this.fetchMappedDocuments();
-                        // Close modal
-                        const modal =
-                            document.getElementById("extraLargeModal");
-                        const modalInstance =
-                            bootstrap.Modal.getInstance(modal);
-                        modalInstance.hide();
+                        // Close modal...
                     }
                 })
-                .catch((error) => {
-                    if (error.response.status === 422) {
+                .catch((err) => {
+                    console.log(err);
+                    if (err.response && err.response.status === 401) {
+                        this.handleAuthError();
+                    } else if (err.response.status === 422) {
                         Swal.fire({
                             title: "Lỗi!",
                             text:
                                 "Cannot add this mapping: " +
-                                error.response.data.error,
+                                err.response.data.error,
                             icon: "error",
-                            confirmButtonText: "OK",
-                            buttonsStyling: false,
-                            customClass: {
-                                confirmButton: "btn btn-success",
-                            },
-                        });
-                    } else if (error.response.status === 500) {
-                        Swal.fire({
-                            title: "Lỗi!",
-                            text: "Internal server error occurred",
-                            icon: "error",
-                            confirmButtonText: "OK",
-                            buttonsStyling: false,
-                            customClass: {
-                                confirmButton: "btn btn-success",
-                            },
-                        });
-                    } else {
-                        console.error("Error adding mapping:", error);
-                        Swal.fire({
-                            title: "Lỗi!",
-                            text: "An error occurred while adding the mapping",
-                            icon: "error",
-                            confirmButtonText: "OK",
-                            buttonsStyling: false,
-                            customClass: {
-                                confirmButton: "btn btn-success",
-                            },
                         });
                     }
                 });
@@ -1344,25 +1368,50 @@ export default {
             if (!this.document.document_code) return;
 
             axios
-                .get(`/api/document-mappings/${this.document.document_code}`)
+                .get(`/api/document-mappings/${this.document.document_code}`, {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                })
                 .then((response) => {
                     this.mappedDocuments = response.data;
                 })
-                .catch((error) => {
-                    console.error("Error fetching mapped documents:", error);
+                .catch((err) => {
+                    console.error(err);
+                    if (err.response && err.response.status === 401) {
+                        this.handleAuthError();
+                    }
                 });
         },
-
         deleteMapping(mappingId) {
             axios
-                .delete(`/api/document-mappings/${mappingId}`)
-                .then((response) => {
-                    // alert("Mapping deleted");
-                    this.fetchMappedDocuments(); // Refresh the table
+                .delete(`/api/document-mappings/${mappingId}`, {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
                 })
-                .catch((error) => {
-                    console.error(error);
-                    console.error("Error deleting mapping:", error);
+                .then((response) => {
+                    this.fetchMappedDocuments();
+                    Swal.fire({
+                        toast: true,
+                        position: "top-end",
+                        title: "Mapping deleted successfully",
+                        icon: "success",
+                        showConfirmButton: false,
+                        timer: 2000,
+                    });
+                })
+                .catch((err) => {
+                    console.error(err);
+                    if (err.response && err.response.status === 401) {
+                        this.handleAuthError();
+                    } else {
+                        Swal.fire({
+                            title: "Error!",
+                            text: "Failed to delete mapping",
+                            icon: "error",
+                        });
+                    }
                 });
         },
         //modal add hom giong
@@ -1374,12 +1423,18 @@ export default {
                         investment_project: this.document.investment_project,
                         station: this.user.station,
                     },
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
                 })
                 .then((response) => {
                     this.homGiongResults = response.data;
                 })
-                .catch((error) => {
-                    console.error("Search error:", error);
+                .catch((err) => {
+                    console.error(err);
+                    if (err.response && err.response.status === 401) {
+                        this.handleAuthError();
+                    }
                 });
         },
 
@@ -1393,10 +1448,18 @@ export default {
             if (!selected) return;
 
             axios
-                .post("/api/document-mappings-homgiong", {
-                    document_code: this.document.document_code,
-                    ma_so_phieu: selected.ma_so_phieu,
-                })
+                .post(
+                    "/api/document-mappings-homgiong",
+                    {
+                        document_code: this.document.document_code,
+                        ma_so_phieu: selected.ma_so_phieu,
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                )
                 .then((response) => {
                     if (response.status === 200) {
                         Swal.fire({
@@ -1418,7 +1481,9 @@ export default {
                 })
                 .catch((error) => {
                     if (error.response) {
-                        if (error.response.status === 422) {
+                        if (error.response.status === 401) {
+                            this.handleAuthError();
+                        } else if (error.response.status === 422) {
                             Swal.fire({
                                 title: "Lỗi!",
                                 text:
@@ -1459,14 +1524,33 @@ export default {
         },
         deleteHomGiongMapping(mappingId) {
             axios
-                .delete(`/api/document-mappings-homgiong/${mappingId}`)
-                .then((response) => {
-                    // alert("Hom Giong mapping deleted successfully");
-                    this.fetchMappedHomGiongDocuments(); // Refresh the table
+                .delete(`/api/document-mappings-homgiong/${mappingId}`, {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
                 })
-                .catch((error) => {
-                    console.error("Error deleting mapping:", error);
-                    // alert("An error occurred while deleting the mapping");
+                .then((response) => {
+                    this.fetchMappedHomGiongDocuments();
+                    Swal.fire({
+                        toast: true,
+                        position: "top-end",
+                        title: "Mapping deleted successfully",
+                        icon: "success",
+                        showConfirmButton: false,
+                        timer: 2000,
+                    });
+                })
+                .catch((err) => {
+                    console.error(err);
+                    if (err.response && err.response.status === 401) {
+                        this.handleAuthError();
+                    } else {
+                        Swal.fire({
+                            title: "Error!",
+                            text: "Failed to delete mapping",
+                            icon: "error",
+                        });
+                    }
                 });
         },
 
@@ -1475,13 +1559,21 @@ export default {
 
             axios
                 .get(
-                    `/api/document-mappings-homgiong/${this.document.document_code}`
+                    `/api/document-mappings-homgiong/${this.document.document_code}`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
                 )
                 .then((response) => {
                     this.mappedHomGiongDocuments = response.data;
                 })
-                .catch((error) => {
-                    console.error("Error fetching mapped documents:", error);
+                .catch((err) => {
+                    console.error(err);
+                    if (err.response && err.response.status === 401) {
+                        this.handleAuthError();
+                    }
                 });
         },
         // Add to methods in TaoGiaoNhanhoso.vue
@@ -1495,7 +1587,22 @@ export default {
                 return;
             }
 
-            const printUrl = `${window.location.origin}/api/print/giaonhan-hoso/${this.document.document_code}`;
+            // Get token from store
+            const token = this.store.getToken;
+
+            // Check for valid auth token
+            if (!token) {
+                Swal.fire({
+                    title: "Error",
+                    text: "Unauthorized - Please login first",
+                    icon: "error",
+                });
+                return;
+            }
+
+            // Create print URL with token
+            const printUrl = `${window.location.origin}/api/print/giaonhan-hoso/${this.document.document_code}?token=${token}`;
+
             const printWindow = window.open(printUrl, "_blank");
 
             if (printWindow) {
@@ -1506,6 +1613,19 @@ export default {
                     }, 1000);
                 };
             }
+        },
+
+        // Add a common method to handle authentication errors
+        handleAuthError() {
+            // Clear localStorage
+            localStorage.removeItem("web_token");
+            localStorage.removeItem("web_user");
+
+            // Clear store
+            this.store.logout();
+
+            // Redirect to login
+            this.$router.push("/login");
         },
     },
 
