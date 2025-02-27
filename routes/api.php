@@ -24,6 +24,9 @@ Route::get('/logout', [UserController::class, 'logout']);
 
 
 Route::group(['middleware' => ['auth:api']], function () {
+
+    
+
     Route::get('/positions', [UserController::class, 'getPositions']);
     Route::get('/stations', [UserController::class, 'getStations']);
     Route::get('/roles', [UserController::class, 'getRoles']);
@@ -53,7 +56,11 @@ Route::get('/investment-projects', function () {
         ->select('id', 'Ma_Vudautu', 'Ten_Vudautu')
         ->get();
 });
+
+
 Route::get('/document-types', [DocumentTypeController::class, 'index']);
+// ลบ ได้หลายรายการ ในหน้ารายการเอกสาร
+Route::delete('/document-deliveries', [DocumentDeliveryController::class, 'bulkDelete']);
 Route::get('/document-deliveries', [DocumentDeliveryController::class, 'index']);
 Route::post('/document-deliveries', [DocumentDeliveryController::class, 'store']);
 Route::patch('/document-deliveries/{id}/status', [DocumentDeliveryController::class, 'updateStatus']);
@@ -68,4 +75,8 @@ Route::post('/document-mappings-homgiong', [DocumentDeliveryController::class, '
 Route::get('/document-mappings-homgiong/{documentCode}', [DocumentDeliveryController::class, 'getMappingsHomGiong']);
 Route::delete('/document-mappings-homgiong/{id}', [DocumentDeliveryController::class, 'deleteMappingHomGiong']);
 Route::get('/print/giaonhan-hoso/{document_code}', [PrintGiaoNhanHSController::class, 'print']);
+
+Route::get('/document-deliveries/{id}', [DocumentDeliveryController::class, 'show']);
+
+
 });

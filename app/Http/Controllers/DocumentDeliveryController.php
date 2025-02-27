@@ -28,6 +28,16 @@ class DocumentDeliveryController extends Controller
     }
 
 
+    public function show($id)
+{
+    try {
+        $document = DocumentDelivery::with(['creator', 'receiver'])->findOrFail($id);
+        return response()->json($document);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+
     public function store(Request $request) {
         try {
             $investmentName = $request->input('investment_project');
@@ -300,6 +310,42 @@ public function deleteMappingHomGiong($id)
     return response()->json(['message' => 'Mapping deleted successfully']);
 }
 
+// ลบ ได้หลายรายการ ในหน้ารายการเอกสาร
+public function bulkDelete(Request $request) 
+{
+    try {
+        $ids = $request->input('ids');
+        
+        // Start transaction
+        DB::beginTransaction();
+        
+        // Get all document codes that will be deleted
+        $documentCodes = DocumentDelivery::whereIn('id', $ids)
+            ->pluck('document_code')
+            ->toArray();
+            
+        // Delete associated mappings
+        DocumentMapping::whereIn('document_code', $documentCodes)->delete();
+        DocumentMappingHomGiong::whereIn('document_code', $documentCodes)->delete();
+        
+        // Delete the documents
+        DocumentDelivery::whereIn('id', $ids)->delete();
+        
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Documents deleted successfully',
+            'count' => count($ids)
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'message' => 'Error deleting documents',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 
 
 }

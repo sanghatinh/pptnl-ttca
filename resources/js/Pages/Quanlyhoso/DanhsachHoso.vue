@@ -7,11 +7,12 @@
                         <i class="fa-solid fa-plus"></i>Tạo mới
                     </button>
                 </router-link>
-                <button type="button" class="button-30" @click="deleteSelected">
+                <button
+                    type="button"
+                    class="button-30-del"
+                    @click="deleteSelected"
+                >
                     <i class="fa-solid fa-trash-can"></i>Xóa
-                </button>
-                <button type="button" class="button-30">
-                    <i class="fa-solid fa-xmark"></i>Hủy
                 </button>
             </div>
             <div class="col text-end">
@@ -47,6 +48,8 @@
                                         <input
                                             type="checkbox"
                                             @click="toggleSelectAll($event)"
+                                            :checked="isAllSelected"
+                                            class="form-checkbox h-4 w-4 text-green-600"
                                         />
                                     </th>
                                     <th class="px-4 py-2">Mã số phiếu</th>
@@ -71,7 +74,6 @@
                                     v-for="item in paginatedDeliveries.data"
                                     :key="item.id"
                                     class="desktop-row"
-                                    @click="goToEditPage(item.id)"
                                 >
                                     <!-- New checkbox column for each row -->
                                     <td class="border px-4 py-2">
@@ -79,48 +81,85 @@
                                             type="checkbox"
                                             v-model="selectedItems"
                                             :value="item.id"
+                                            class="form-checkbox h-4 w-4 text-green-600"
                                         />
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         {{ item.document_code }}
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         {{ item.station }}
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         {{ item.created_date }}
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         {{ item.title }}
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         {{ item.investment_project }}
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         {{ item.file_count }}
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         {{ item.document_type }}
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         {{ item.created_date }}
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         <i
                                             class="fas fa-user text-blue-500"
                                         ></i>
                                         {{ item.creator?.full_name || "N/A" }}
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         <i
                                             class="fas fa-user text-green-500"
                                         ></i>
                                         {{ item.receiver?.full_name || "N/A" }}
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         {{ item.received_date }}
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         <span :class="statusClass(item.status)">
                                             <i
                                                 :class="statusIcon(item.status)"
@@ -129,7 +168,10 @@
                                             {{ item.status }}
                                         </span>
                                     </td>
-                                    <td class="border px-4 py-2">
+                                    <td
+                                        class="border px-4 py-2"
+                                        @click="goToEditPage(item.id)"
+                                    >
                                         {{ item.loan_status }}
                                     </td>
                                 </tr>
@@ -218,6 +260,7 @@
 import axios from "axios";
 import { Bootstrap5Pagination } from "laravel-vue-pagination";
 import { useStore } from "../../Store/Auth";
+import Swal from "sweetalert2";
 
 export default {
     setup() {
@@ -248,6 +291,13 @@ export default {
         };
     },
     computed: {
+        isAllSelected() {
+            return (
+                this.paginatedDeliveries.data.length > 0 &&
+                this.selectedItems.length ===
+                    this.paginatedDeliveries.data.length
+            );
+        },
         filteredDeliveries() {
             return this.documentDeliveries.filter((item) => {
                 return (
@@ -300,6 +350,103 @@ export default {
         },
     },
     methods: {
+        toggleSelectAll(event) {
+            if (event.target.checked) {
+                // Select all items on current page
+                this.selectedItems = this.paginatedDeliveries.data.map(
+                    (item) => item.id
+                );
+            } else {
+                // Deselect all items
+                this.selectedItems = [];
+            }
+        },
+        // In the methods section
+
+        async deleteSelected() {
+            try {
+                // Check if any items are selected
+                if (this.selectedItems.length === 0) {
+                    await Swal.fire({
+                        title: "Thông báo",
+                        text: "Vui lòng chọn ít nhất một hồ sơ để xóa",
+                        icon: "warning",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success px-4",
+                        },
+                    });
+                    return;
+                }
+
+                // Confirm deletion
+                const confirmResult = await Swal.fire({
+                    title: "Xác nhận xóa",
+                    text: `Bạn muốn xóa dữ liệu đã chọn. ${this.selectedItems.length} danh sách có hay không?`,
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "OK",
+                    cancelButtonText: "Cancel",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-danger me-2",
+                        cancelButton: "btn btn-outline-secondary",
+                    },
+                });
+
+                if (!confirmResult.isConfirmed) {
+                    return;
+                }
+
+                // Send delete request
+                await axios.delete("/api/document-deliveries", {
+                    data: { ids: this.selectedItems },
+                    headers: {
+                        Authorization: `Bearer ${this.store.getToken}`,
+                    },
+                });
+
+                // Show success message
+                await Swal.fire({
+                    title: "Thành công",
+                    text: "Đã được xóa thành công.",
+                    icon: "success",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success px-4",
+                    },
+                });
+
+                // Reset selection and refresh data
+                this.selectedItems = [];
+                await this.fetchData();
+            } catch (error) {
+                console.error("Delete error:", error);
+
+                if (error.response?.status === 401) {
+                    // Handle unauthorized access
+                    localStorage.removeItem("web_token");
+                    localStorage.removeItem("web_user");
+                    this.store.logout();
+                    this.$router.push("/login");
+                } else {
+                    await Swal.fire({
+                        title: "Lỗi",
+                        text: "Không thể xóa tài liệu. Vui lòng thử lại.",
+
+                        icon: "error",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success px-4",
+                        },
+                    });
+                }
+            }
+        },
+
         fetchData() {
             axios
                 .get("/api/document-deliveries", {
@@ -365,28 +512,6 @@ export default {
         goToEditPage(id) {
             this.$router.push(`/editgiaonhanhoso/${id}`);
         },
-        deleteSelected() {
-            if (this.selectedItems.length === 0) {
-                alert("Please select items to delete.");
-                return;
-            }
-
-            if (
-                confirm("Are you sure you want to delete the selected items?")
-            ) {
-                axios
-                    .delete("/api/document-deliveries", {
-                        data: { ids: this.selectedItems },
-                    })
-                    .then(() => {
-                        this.fetchData();
-                        this.selectedItems = [];
-                    })
-                    .catch((error) => {
-                        console.error(error);
-                    });
-            }
-        },
     },
     mounted() {
         this.fetchData();
@@ -447,5 +572,29 @@ export default {
     max-height: 50px;
     display: flex;
     justify-content: center;
+}
+
+/* Add to <style> section */
+
+.desktop-row.selected {
+    background-color: #e6f4ea;
+}
+
+.form-checkbox {
+    cursor: pointer;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid #d1d5db;
+    transition: all 0.2s ease;
+}
+
+.form-checkbox:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+
+.form-checkbox:hover {
+    border-color: #10b981;
 }
 </style>
