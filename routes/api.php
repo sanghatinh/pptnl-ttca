@@ -57,7 +57,7 @@ Route::get('/investment-projects', function () {
         ->get();
 });
 
-
+Route::get('/document-deliveries/{id}/info', [DocumentDeliveryController::class, 'getDocumentInfo']);
 Route::get('/document-types', [DocumentTypeController::class, 'index']);
 // ลบ ได้หลายรายการ ในหน้ารายการเอกสาร
 Route::delete('/document-deliveries', [DocumentDeliveryController::class, 'bulkDelete']);

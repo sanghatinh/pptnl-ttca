@@ -1,4 +1,5 @@
 <template lang="">
+    <breadcrumb-vue />
     <div class="card shadow">
         <div class="card-body p-0">
             <!-- button  -->

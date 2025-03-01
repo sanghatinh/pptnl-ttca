@@ -4,6 +4,7 @@ import App from "./App.vue";
 import router from "./Router";
 import sidebarmenu from "./components/Sidebarmenu.vue";
 import headerbar from "./components/Headerbar.vue";
+import breadcrumbVue from "./Components/breadcrumb.Vue";
 import RegisterPage from "./Pages/Register.vue";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -22,6 +23,7 @@ app.use(VueSweetalert2);
 app.use(VueNumberFormat);
 app.component("header-bar", headerbar);
 app.component("side-barmenu", sidebarmenu);
+app.component("breadcrumb-vue", breadcrumbVue);
 app.component("Register-Page", RegisterPage);
 app.use(pinia);
 app.use(router); // <--- Add this line

@@ -18,6 +18,11 @@ class DocumentLog extends Model
         'comments'
     ];
 
+    protected $casts = [
+        'action_date' => 'datetime:Y-m-d'
+    ];
+
+
     public function document()
     {
         return $this->belongsTo(DocumentDelivery::class, 'document_id');
@@ -25,7 +30,7 @@ class DocumentLog extends Model
 
     public function actionUser()
     {
-        return $this->belongsTo(User::class, 'action_user_id');
+        return $this->belongsTo(User::class, 'action_by');
     }
 
     public function creator()

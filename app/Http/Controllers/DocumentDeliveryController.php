@@ -29,14 +29,14 @@ class DocumentDeliveryController extends Controller
 
 
     public function show($id)
-{
-    try {
-        $document = DocumentDelivery::with(['creator', 'receiver'])->findOrFail($id);
-        return response()->json($document);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
+    {
+        try {
+            $document = DocumentDelivery::with(['creator', 'receiver'])->findOrFail($id);
+            return response()->json($document);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
-}
 
     public function store(Request $request) {
         try {
@@ -77,42 +77,84 @@ class DocumentDeliveryController extends Controller
     }
 
 
-    public function updateStatus(Request $request, $id) {
+    public function updateStatus(Request $request, $id)
+{
+    try {
         $document = DocumentDelivery::findOrFail($id);
         
+        $status = $request->input('status');
+        $receiverId = $request->input('receiver_id');
+        $actionDate = $request->input('action_date');
+
         // Update document status
-        $document->update([
-            'status' => $request->input('status'),
-            'received_date' => $request->input('received_date'), 
-            'receiver_id' => $request->input('receiver_id'),
-        ]);
-    
-        // Log the status change - action_by จะเป็น ID ของ user ที่ทำการเปลี่ยนสถานะ
+        $document->status = $status;
+        
+        // Set receiver_id when status is 'received'
+        if ($status === 'received') {
+            $document->receiver_id = $receiverId;
+            $document->received_date = $actionDate;
+        }
+        
+        $document->save();
+
+        // Create log entry
         DocumentLog::create([
             'document_id' => $document->id,
-            'action' => $request->input('status'),
-            'action_by' => $request->input('receiver_id'), // ID ของ user ที่เปลี่ยนสถานะ
-            'action_date' => now(),
+            'action' => $status,
+            'action_by' => $receiverId,
+            'action_date' => $actionDate,
+            'comments' => "Document status changed to {$status}"
         ]);
-    
-        return response()->json($document);
+
+        // Return updated document with relationships
+        return response()->json(
+            DocumentDelivery::with(['creator', 'receiver'])
+                ->findOrFail($document->id)
+        );
+
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
 
 
-    public function update(Request $request, $id) {
+public function update(Request $request, $id) {
+    try {
         $document = DocumentDelivery::findOrFail($id);
         $document->update($request->all());
-    
-        // Log the update action - action_by จะเป็น creator_id
-        DocumentLog::create([
-            'document_id' => $document->id,
-            'action' => $document->status,
-            'action_by' => $request->input('creator_id'), // ID ของ user ที่แก้ไขเอกสาร
-            'action_date' => now(),
-        ]);
-    
+
+        // Find existing log entry and update it
+        $documentLog = DocumentLog::where('document_id', $document->id)
+            ->where('action', 'creating')
+            ->first();
+
+        if ($documentLog) {
+            // Update existing log entry
+            $documentLog->update([
+                'action' => $request->input('action'),
+                'action_by' => $request->input('action_by'),
+                'action_date' => $request->input('action_date'),
+                'comments' => "Document was updated"
+            ]);
+        } else {
+            // Create new log entry if none exists (fallback)
+            DocumentLog::create([
+                'document_id' => $document->id,
+                'action' => $request->input('action'),
+                'action_by' => $request->input('action_by'),
+                'action_date' => $request->input('action_date'),
+                'comments' => "Document was updated"
+            ]);
+        }
+
         return response()->json($document);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Error updating document: ' . $e->getMessage()
+        ], 500);
     }
+}
 
 public function destroy($id)
 {
@@ -344,6 +386,34 @@ public function bulkDelete(Request $request)
             'message' => 'Error deleting documents',
             'error' => $e->getMessage()
         ], 500);
+    }
+}
+
+
+public function getDocumentInfo($id)
+{
+    try {
+        $document = DocumentDelivery::with(['creator', 'receiver'])->findOrFail($id);
+        
+        // Get logs
+        $creatorLog = DocumentLog::where('document_id', $document->id)
+            ->where('action', 'creating')
+            ->first();
+            
+        $receiverLog = DocumentLog::where('document_id', $document->id)
+            ->whereIn('action', ['received', 'cancelled'])
+            ->latest()
+            ->first();
+
+        return response()->json([
+            'creator' => $document->creator,
+            'receiver' => $document->receiver,
+            'created_date' => $creatorLog ? $creatorLog->action_date : $document->created_date,
+            'received_date' => $receiverLog ? $receiverLog->action_date : $document->received_date
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
     }
 }
 

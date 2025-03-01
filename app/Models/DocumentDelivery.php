@@ -63,6 +63,12 @@ class DocumentDelivery extends Model
         return $this->hasMany(DocumentMappingHomgiong::class, 'document_code', 'document_code');
     }
 
+     // เพิ่ม relationship กับ User model
+     public function actionUser()
+     {
+         return $this->belongsTo(User::class, 'action_by', 'id');
+     }
+
 
 
 }
