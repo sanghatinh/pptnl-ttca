@@ -398,16 +398,18 @@ public function getDocumentInfo($id)
         // Get logs
         $creatorLog = DocumentLog::where('document_id', $document->id)
             ->where('action', 'creating')
+            ->with('actionUser')
             ->first();
             
         $receiverLog = DocumentLog::where('document_id', $document->id)
-            ->whereIn('action', ['received', 'cancelled'])
+            ->whereIn('action', ['received', 'cancelled']) 
+            ->with('actionUser')
             ->latest()
             ->first();
 
         return response()->json([
-            'creator' => $document->creator,
-            'receiver' => $document->receiver,
+            'creator' => $creatorLog ? $creatorLog->actionUser : $document->creator,
+            'receiver' => $receiverLog ? $receiverLog->actionUser : $document->receiver,
             'created_date' => $creatorLog ? $creatorLog->action_date : $document->created_date,
             'received_date' => $receiverLog ? $receiverLog->action_date : $document->received_date
         ]);
@@ -416,6 +418,5 @@ public function getDocumentInfo($id)
         return response()->json(['error' => $e->getMessage()], 500);
     }
 }
-
 
 }

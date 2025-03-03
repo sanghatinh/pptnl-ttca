@@ -186,26 +186,15 @@
                                         <input
                                             type="date"
                                             class="form-control"
-                                            v-model="document.created_date"
+                                            v-model="documentDates.created_date"
                                             placeholder="Ngày lập"
                                             :class="{
                                                 'is-invalid':
                                                     formValidation.createdDate
                                                         .required,
                                             }"
+                                            :disabled="!canModifyDates.created"
                                         />
-                                        <div
-                                            v-if="
-                                                formValidation.createdDate
-                                                    .required
-                                            "
-                                            class="invalid-feedback"
-                                        >
-                                            {{
-                                                formValidation.createdDate
-                                                    .message
-                                            }}
-                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -283,21 +272,12 @@
                                         <input
                                             type="text"
                                             class="form-control"
-                                            :value="user ? user.full_name : ''"
+                                            :value="creatorName"
                                             disabled
                                         />
                                     </div>
-
-                                    <!-- <div class="form-group">
-                                    <label for="">ID Người tạo</label>
-                                    <input
-                                        type="text"
-                                        class="form-control"
-                                        :value="document.creator_id"
-                                        disabled
-                                    />
-                                </div> -->
                                 </div>
+
                                 <div class="col-12">
                                     <div class="form-group">
                                         <label for=""
@@ -404,26 +384,17 @@
                                         <input
                                             type="date"
                                             class="form-control"
-                                            v-model="document.received_date"
+                                            v-model="
+                                                documentDates.received_date
+                                            "
                                             placeholder="Ngày nhận"
                                             :class="{
                                                 'is-invalid':
                                                     formValidation.receivedDate
                                                         .required,
                                             }"
+                                            :disabled="!canModifyDates.received"
                                         />
-                                        <div
-                                            v-if="
-                                                formValidation.receivedDate
-                                                    .required
-                                            "
-                                            class="invalid-feedback"
-                                        >
-                                            {{
-                                                formValidation.receivedDate
-                                                    .message
-                                            }}
-                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -440,7 +411,7 @@
                                         <input
                                             type="text"
                                             class="form-control"
-                                            :value="user ? user.full_name : ''"
+                                            :value="receiverName"
                                             disabled
                                         />
                                     </div>
@@ -870,8 +841,6 @@ export default {
     },
     data() {
         return {
-            isLoading: false,
-            isSaving: false,
             url: window.location.origin,
             document: {
                 document_code: "",
@@ -886,6 +855,16 @@ export default {
                 receiver_id: null,
                 creator_name: "",
                 station: "",
+            },
+            documentInfo: {
+                creator: null,
+                receiver: null,
+                created_date: null,
+                received_date: null,
+            },
+            documentDates: {
+                created_date: null,
+                received_date: null,
             },
 
             searchQuery: "",
@@ -945,6 +924,22 @@ export default {
         },
 
         // Add these computed properties
+        creatorName() {
+            return this.documentInfo.creator?.full_name || "";
+        },
+
+        receiverName() {
+            return this.documentInfo.receiver?.full_name || "";
+        },
+
+        canModifyDates() {
+            return {
+                created: this.document.status === "creating",
+                received: this.document.status === "sending",
+            };
+        },
+
+        // Add these computed properties
         showSaveButton() {
             return !this.document.id || this.document.status === "creating";
         },
@@ -973,13 +968,13 @@ export default {
         formValidation() {
             return {
                 createdDate: {
-                    required: !this.document.created_date,
+                    required: !this.documentDates.created_date,
                     message: "Vui lòng nhập ngày lập",
                 },
                 receivedDate: {
                     required:
                         this.document.status === "sending" &&
-                        !this.document.received_date,
+                        !this.documentDates.received_date,
                     message: "Vui lòng nhập ngày nhận",
                 },
                 investmentProject: {
@@ -1017,6 +1012,7 @@ export default {
         this.fetchUserData();
         this.fetchInvestmentProjects();
         this.fetchDocument(); // Add this line
+        this.fetchDocumentInfo();
         // Add scroll event listener
         window.addEventListener("scroll", this.handleScroll);
         // still fetchDocumentTypes if needed or use static one above
@@ -1028,11 +1024,9 @@ export default {
     methods: {
         // Add this new method
         handleScroll() {
-            const container = document.querySelector(".container-fluid");
-            if (window.scrollY > 0) {
-                container.classList.add("scrolled");
-            } else {
-                container.classList.remove("scrolled");
+            const container = document.querySelector(".sticky-wrapper");
+            if (container) {
+                window.addEventListener("scroll", this.handleScroll);
             }
         },
         // formatNumber method
@@ -1048,10 +1042,16 @@ export default {
         saveOrUpdateDocument() {
             if (this.document.id) {
                 // Update existing document
+                const updateData = {
+                    ...this.document,
+                    action: "creating", // Add action for log
+                    action_by: this.user.id, // Add action_by for log
+                    action_date: this.documentDates.created_date, // Add action_date for log
+                };
                 axios
                     .put(
                         `/api/document-deliveries/${this.document.id}`,
-                        this.document,
+                        updateData,
                         {
                             headers: {
                                 Authorization: "Bearer " + this.store.getToken,
@@ -1071,16 +1071,12 @@ export default {
                     })
                     .catch((error) => {
                         console.error(error);
-                        if (error.response?.status === 401) {
+                        if (error.response && error.response.status === 401) {
                             this.handleAuthError();
                         }
-                        Swal.fire({
-                            title: "Error!",
-                            text: "Failed to update document",
-                            icon: "error",
-                        });
                     });
             } else {
+                // Create new document
                 this.saveDocument();
             }
         },
@@ -1339,14 +1335,23 @@ export default {
 
         // Update the updateDocumentStatus method to use SweetAlert2 for success/error messages
         updateDocumentStatus(status) {
+            const currentDate = new Date().toISOString().split("T")[0];
+            const payload = {
+                status: status,
+                receiver_id: this.user.id,
+                action_date: currentDate,
+            };
+
+            // Set received_date when transitioning to received status
+            if (status === "received") {
+                this.documentDates.received_date = currentDate;
+                payload.received_date = currentDate;
+            }
+
             axios
                 .patch(
                     `/api/document-deliveries/${this.document.id}/status`,
-                    {
-                        status: status,
-                        received_date: new Date().toISOString().split("T")[0],
-                        receiver_id: this.user.id,
-                    },
+                    payload,
                     {
                         headers: {
                             Authorization: "Bearer " + this.store.getToken,
@@ -1355,6 +1360,19 @@ export default {
                 )
                 .then((response) => {
                     this.document = response.data;
+
+                    // Fetch updated document info after status change
+                    this.fetchDocumentInfo();
+
+                    // Update documentInfo directly for immediate UI update
+                    if (status === "received") {
+                        this.documentInfo = {
+                            ...this.documentInfo,
+                            receiver: this.user,
+                            received_date: currentDate,
+                        };
+                    }
+
                     Swal.fire({
                         toast: true,
                         position: "top-end",
@@ -1367,7 +1385,7 @@ export default {
                 })
                 .catch((err) => {
                     console.error(err);
-                    if (err.response && err.response.status === 401) {
+                    if (err.response?.status === 401) {
                         this.handleAuthError();
                     } else {
                         Swal.fire({
@@ -1676,6 +1694,50 @@ export default {
                     }
                 });
         },
+        fetchDocumentInfo() {
+            if (!this.document.id) {
+                // Reset documentInfo if no document id
+                this.documentInfo = {
+                    creator: null,
+                    receiver: null,
+                    created_date: null,
+                    received_date: null,
+                };
+                this.documentDates = {
+                    created_date: null,
+                    received_date: null,
+                };
+                return;
+            }
+
+            axios
+                .get(`/api/document-deliveries/${this.document.id}/info`, {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                })
+                .then((response) => {
+                    this.documentInfo = response.data;
+                    this.documentDates = {
+                        created_date: response.data.created_date
+                            ? new Date(response.data.created_date)
+                                  .toISOString()
+                                  .split("T")[0]
+                            : null,
+                        received_date: response.data.received_date
+                            ? new Date(response.data.received_date)
+                                  .toISOString()
+                                  .split("T")[0]
+                            : null,
+                    };
+                })
+                .catch((err) => {
+                    console.error("Error fetching document info:", err);
+                    if (err.response?.status === 401) {
+                        this.handleAuthError();
+                    }
+                });
+        },
         // Add to methods in TaoGiaoNhanhoso.vue
         printDocument() {
             if (!this.document.document_code) {
@@ -1739,6 +1801,30 @@ export default {
                 } else {
                     this.mappedDocuments = [];
                     this.mappedHomGiongDocuments = [];
+                }
+            },
+            immediate: true,
+        },
+    },
+    watch: {
+        // เพิ่ม watcher สำหรับ documentDates
+        documentDates: {
+            handler(newVal) {
+                // Update document dates based on status
+                if (this.canModifyDates.created) {
+                    this.document.created_date = newVal.created_date;
+                }
+                if (this.canModifyDates.received) {
+                    this.document.received_date = newVal.received_date;
+                }
+            },
+            deep: true,
+        },
+
+        "document.id": {
+            handler(newVal) {
+                if (newVal) {
+                    this.fetchDocumentInfo();
                 }
             },
             immediate: true,

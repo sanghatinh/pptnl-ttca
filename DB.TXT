@@ -148,6 +148,11 @@ ma_so_phieu	varchar(50)	YES	MUL	NULL
 created_at	timestamp	NO		current_timestamp()		
 updated_at	timestamp	NO		current_timestamp()	on update current_timestamp()	
 
+# table status_document_delivery;
+
+id	int	NO	PRI	NULL	auto_increment	
+id_status	varchar(50)	NO		NULL		
+name_status	varchar(50)	NO		NULL		
 
 
 
