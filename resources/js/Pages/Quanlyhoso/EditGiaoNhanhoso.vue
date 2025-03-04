@@ -171,15 +171,11 @@
                                         />
                                     </div>
                                 </div>
+                                <!-- Ngày lập -->
                                 <div class="col-12">
                                     <div class="form-group">
                                         <label for=""
-                                            >Ngày lập<span
-                                                v-if="
-                                                    formValidation.createdDate
-                                                        .required
-                                                "
-                                                class="text-danger"
+                                            >Ngày lập<span class="text-danger"
                                                 >*</span
                                             ></label
                                         >
@@ -195,6 +191,18 @@
                                             }"
                                             :disabled="!canModifyDates.created"
                                         />
+                                        <div
+                                            v-if="
+                                                formValidation.createdDate
+                                                    .required
+                                            "
+                                            class="invalid-feedback"
+                                        >
+                                            {{
+                                                formValidation.createdDate
+                                                    .message
+                                            }}
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -366,21 +374,23 @@
                                         />
                                     </div>
                                 </div>
+                                <!-- Ngày nhận -->
                                 <div class="col-12">
                                     <div
                                         class="form-group"
                                         v-if="showreceivedate"
                                     >
-                                        <label for=""
-                                            >Ngày nhận<span
+                                        <label for="">
+                                            Ngày nhận
+                                            <span
                                                 v-if="
                                                     formValidation.receivedDate
                                                         .required
                                                 "
                                                 class="text-danger"
                                                 >*</span
-                                            ></label
-                                        >
+                                            >
+                                        </label>
                                         <input
                                             type="date"
                                             class="form-control"
@@ -395,6 +405,18 @@
                                             }"
                                             :disabled="!canModifyDates.received"
                                         />
+                                        <div
+                                            v-if="
+                                                formValidation.receivedDate
+                                                    .required
+                                            "
+                                            class="invalid-feedback"
+                                        >
+                                            {{
+                                                formValidation.receivedDate
+                                                    .message
+                                            }}
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -1044,6 +1066,7 @@ export default {
                 // Update existing document
                 const updateData = {
                     ...this.document,
+                    file_count: this.documentCount,
                     action: "creating", // Add action for log
                     action_by: this.user.id, // Add action_by for log
                     action_date: this.documentDates.created_date, // Add action_date for log
@@ -1335,17 +1358,19 @@ export default {
 
         // Update the updateDocumentStatus method to use SweetAlert2 for success/error messages
         updateDocumentStatus(status) {
-            const currentDate = new Date().toISOString().split("T")[0];
+            const currentDate =
+                this.documentDates.received_date ||
+                new Date().toISOString().split("T")[0];
             const payload = {
                 status: status,
                 receiver_id: this.user.id,
                 action_date: currentDate,
+                file_count: this.documentCount,
             };
 
             // Set received_date when transitioning to received status
             if (status === "received") {
-                this.documentDates.received_date = currentDate;
-                payload.received_date = currentDate;
+                payload.received_date = this.documentDates.received_date;
             }
 
             axios
@@ -1369,7 +1394,7 @@ export default {
                         this.documentInfo = {
                             ...this.documentInfo,
                             receiver: this.user,
-                            received_date: currentDate,
+                            received_date: this.documentDates.received_date,
                         };
                     }
 
@@ -1696,7 +1721,6 @@ export default {
         },
         fetchDocumentInfo() {
             if (!this.document.id) {
-                // Reset documentInfo if no document id
                 this.documentInfo = {
                     creator: null,
                     receiver: null,
@@ -1717,19 +1741,31 @@ export default {
                     },
                 })
                 .then((response) => {
-                    this.documentInfo = response.data;
+                    const data = response.data;
+
+                    // Update documentInfo
+                    this.documentInfo = {
+                        creator: data.creator,
+                        receiver: data.receiver,
+                        created_date: data.created_date,
+                        received_date: data.received_date,
+                    };
+
+                    // Format dates for input fields
                     this.documentDates = {
-                        created_date: response.data.created_date
-                            ? new Date(response.data.created_date)
-                                  .toISOString()
-                                  .split("T")[0]
+                        created_date: data.created_date
+                            ? this.formatDateForInput(data.created_date)
                             : null,
-                        received_date: response.data.received_date
-                            ? new Date(response.data.received_date)
-                                  .toISOString()
-                                  .split("T")[0]
+                        received_date: data.received_date
+                            ? this.formatDateForInput(data.received_date)
                             : null,
                     };
+
+                    // Update document dates
+                    this.document.created_date =
+                        this.documentDates.created_date;
+                    this.document.received_date =
+                        this.documentDates.received_date;
                 })
                 .catch((err) => {
                     console.error("Error fetching document info:", err);
@@ -1737,6 +1773,11 @@ export default {
                         this.handleAuthError();
                     }
                 });
+        },
+
+        // Add helper method to format dates
+        formatDateForInput(dateString) {
+            return new Date(dateString).toISOString().split("T")[0];
         },
         // Add to methods in TaoGiaoNhanhoso.vue
         printDocument() {
@@ -1797,7 +1838,7 @@ export default {
             handler(newVal) {
                 if (newVal) {
                     this.fetchMappedDocuments();
-                    this.fetchMappedHomGiongDocuments(); // Add this line to fetch Hom Giong documents
+                    this.fetchMappedHomGiongDocuments();
                 } else {
                     this.mappedDocuments = [];
                     this.mappedHomGiongDocuments = [];
@@ -1805,12 +1846,8 @@ export default {
             },
             immediate: true,
         },
-    },
-    watch: {
-        // เพิ่ม watcher สำหรับ documentDates
         documentDates: {
             handler(newVal) {
-                // Update document dates based on status
                 if (this.canModifyDates.created) {
                     this.document.created_date = newVal.created_date;
                 }
@@ -1820,12 +1857,17 @@ export default {
             },
             deep: true,
         },
-
         "document.id": {
             handler(newVal) {
                 if (newVal) {
                     this.fetchDocumentInfo();
                 }
+            },
+            immediate: true,
+        },
+        documentCount: {
+            handler(newCount) {
+                this.document.file_count = newCount;
             },
             immediate: true,
         },

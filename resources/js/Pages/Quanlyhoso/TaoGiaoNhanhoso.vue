@@ -977,9 +977,10 @@ export default {
         },
         documentCount() {
             // Count both nghiem thu and hom giong documents
-            const nghiemThuCount = this.mappedDocuments.length;
-            const homGiongCount = this.mappedHomGiongDocuments.length;
-            return nghiemThuCount + homGiongCount;
+            return (
+                this.mappedDocuments.length +
+                this.mappedHomGiongDocuments.length
+            );
         },
     },
     mounted() {
@@ -1019,6 +1020,7 @@ export default {
                 // Update existing document
                 const updateData = {
                     ...this.document,
+                    file_count: this.documentCount,
                     action: "creating", // Add action for log
                     action_by: this.user.id, // Add action_by for log
                     action_date: this.documentDates.created_date, // Add action_date for log
@@ -1197,10 +1199,13 @@ export default {
                 return;
             }
 
-            // Update file count และวันที่ก่อน save
-            this.document.file_count = this.documentCount;
-            this.document.created_date = this.documentDates.created_date;
-            this.document.received_date = this.documentDates.received_date;
+            // Update document data before saving
+            this.document = {
+                ...this.document,
+                file_count: this.documentCount, // Set file_count from computed property
+                created_date: this.documentDates.created_date,
+                received_date: this.documentDates.received_date,
+            };
 
             axios
                 .post("/api/document-deliveries", this.document, {
@@ -1319,17 +1324,20 @@ export default {
 
         // Update the updateDocumentStatus method to use SweetAlert2 for success/error messages
         updateDocumentStatus(status) {
-            const currentDate = new Date().toISOString().split("T")[0];
+            // Use selected received_date or current date as fallback
+            const currentDate =
+                this.documentDates.received_date ||
+                new Date().toISOString().split("T")[0];
             const payload = {
                 status: status,
                 receiver_id: this.user.id,
                 action_date: currentDate,
+                file_count: this.documentCount,
             };
 
             // Set received_date when transitioning to received status
             if (status === "received") {
-                this.documentDates.received_date = currentDate;
-                payload.received_date = currentDate;
+                payload.received_date = this.documentDates.received_date;
             }
 
             axios
@@ -1343,7 +1351,10 @@ export default {
                     }
                 )
                 .then((response) => {
-                    this.document = response.data;
+                    this.document = {
+                        ...response.data,
+                        file_count: this.documentCount, // Ensure file_count is updated in local state
+                    };
 
                     // Fetch updated document info after status change
                     this.fetchDocumentInfo();
@@ -1353,7 +1364,7 @@ export default {
                         this.documentInfo = {
                             ...this.documentInfo,
                             receiver: this.user,
-                            received_date: currentDate,
+                            received_date: this.documentDates.received_date, // Use selected date
                         };
                     }
 
@@ -1781,7 +1792,7 @@ export default {
             handler(newVal) {
                 if (newVal) {
                     this.fetchMappedDocuments();
-                    this.fetchMappedHomGiongDocuments(); // Add this line to fetch Hom Giong documents
+                    this.fetchMappedHomGiongDocuments();
                 } else {
                     this.mappedDocuments = [];
                     this.mappedHomGiongDocuments = [];
@@ -1789,12 +1800,9 @@ export default {
             },
             immediate: true,
         },
-    },
-    watch: {
-        // เพิ่ม watcher สำหรับ documentDates
+
         documentDates: {
             handler(newVal) {
-                // Update document dates based on status
                 if (this.canModifyDates.created) {
                     this.document.created_date = newVal.created_date;
                 }
@@ -1810,6 +1818,13 @@ export default {
                 if (newVal) {
                     this.fetchDocumentInfo();
                 }
+            },
+            immediate: true,
+        },
+
+        documentCount: {
+            handler(newCount) {
+                this.document.file_count = newCount;
             },
             immediate: true,
         },

@@ -5,6 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB; // Add this import
+use App\Models\Log\DocumentLog;
+use App\Models\User;
+use App\Models\DocumentMapping;
+use App\Models\DocumentMappingHomgiong;
+use App\Models\Log\StatusDocumentDelivery;
 
 class DocumentDelivery extends Model
 {
@@ -69,6 +74,22 @@ class DocumentDelivery extends Model
          return $this->belongsTo(User::class, 'action_by', 'id');
      }
 
+    // Add relationship for status
+     public function status()
+    {
+        return $this->belongsTo(StatusDocumentDelivery::class, 'status', 'id_status');
+    }
+
+    // Add relationship for logs
+    public function document()
+    {
+        return $this->belongsTo(DocumentDelivery::class, 'document_id');
+    }
+
+    public function logs()
+    {
+        return $this->hasMany(DocumentLog::class, 'document_id');
+    }
 
 
 }

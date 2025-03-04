@@ -54,7 +54,7 @@
                                     </th>
                                     <th class="px-4 py-2">Mã số phiếu</th>
                                     <th class="px-4 py-2">Trạm</th>
-                                    <th class="px-4 py-2">Ngày lập</th>
+
                                     <th class="px-4 py-2">Tiều đề</th>
                                     <th class="px-4 py-2">Vụ đầu tư</th>
                                     <th class="px-4 py-2">Số lượng hồ sơ</th>
@@ -96,12 +96,7 @@
                                     >
                                         {{ item.station }}
                                     </td>
-                                    <td
-                                        class="border px-4 py-2"
-                                        @click="goToEditPage(item.id)"
-                                    >
-                                        {{ item.created_date }}
-                                    </td>
+
                                     <td
                                         class="border px-4 py-2"
                                         @click="goToEditPage(item.id)"
@@ -126,46 +121,46 @@
                                     >
                                         {{ item.document_type }}
                                     </td>
-                                    <td
-                                        class="border px-4 py-2"
-                                        @click="goToEditPage(item.id)"
-                                    >
-                                        {{ item.created_date }}
+                                    <td class="border px-4 py-2">
+                                        {{ formatDate(item.created_date) }}
                                     </td>
-                                    <td
-                                        class="border px-4 py-2"
-                                        @click="goToEditPage(item.id)"
-                                    >
+                                    <td class="border px-4 py-2">
                                         <i
                                             class="fas fa-user text-blue-500"
                                         ></i>
                                         {{ item.creator?.full_name || "N/A" }}
                                     </td>
-                                    <td
-                                        class="border px-4 py-2"
-                                        @click="goToEditPage(item.id)"
-                                    >
-                                        <i
-                                            class="fas fa-user text-green-500"
-                                        ></i>
-                                        {{ item.receiver?.full_name || "N/A" }}
-                                    </td>
-                                    <td
-                                        class="border px-4 py-2"
-                                        @click="goToEditPage(item.id)"
-                                    >
-                                        {{ item.received_date }}
-                                    </td>
-                                    <td
-                                        class="border px-4 py-2"
-                                        @click="goToEditPage(item.id)"
-                                    >
-                                        <span :class="statusClass(item.status)">
+                                    <td class="border px-4 py-2">
+                                        <template v-if="item.receiver">
                                             <i
-                                                :class="statusIcon(item.status)"
+                                                class="fas fa-user text-green-500"
+                                            ></i>
+                                            {{ item.receiver.full_name }}
+                                        </template>
+                                        <template v-else>
+                                            <span class="text-gray-400">-</span>
+                                        </template>
+                                    </td>
+                                    <td class="border px-4 py-2">
+                                        {{
+                                            item.received_date
+                                                ? formatDate(item.received_date)
+                                                : "-"
+                                        }}
+                                    </td>
+                                    <td class="border px-4 py-2">
+                                        <span
+                                            :class="
+                                                statusClass(item.status.code)
+                                            "
+                                        >
+                                            <i
+                                                :class="
+                                                    statusIcon(item.status.code)
+                                                "
                                                 class="mr-1"
                                             ></i>
-                                            {{ item.status }}
+                                            {{ item.status.name }}
                                         </span>
                                     </td>
                                     <td
@@ -206,14 +201,13 @@
                     >
                         <i
                             :class="
-                                statusIcon(item.status) +
+                                statusIcon(item.status.code) +
                                 ' text-3xl ' +
-                                statusClass(item.status)
+                                statusClass(item.status.code)
                             "
                         ></i>
-
-                        <span :class="statusClass(item.status)">
-                            {{ item.status }}
+                        <span :class="statusClass(item.status.code)">
+                            {{ item.status.name }}
                         </span>
                     </div>
                     <!-- ห้องที่ 2: รายการอื่นๆ -->
@@ -226,7 +220,8 @@
                             <strong>Tiều đề:</strong> {{ item.title }}
                         </div>
                         <div class="mb-2">
-                            <strong>Ngày lập:</strong> {{ item.created_date }}
+                            <strong>Ngày lập:</strong>
+                            {{ formatDate(item.created_date) }}
                         </div>
                         <div class="mb-2">
                             <strong>Người tạo:</strong>
@@ -235,8 +230,17 @@
                         </div>
                         <div class="mb-2">
                             <strong>Người nhận:</strong>
-                            <i class="fas fa-user text-green-500"></i>
-                            {{ item.receiver?.full_name || "N/A" }}
+                            <template v-if="item.receiver">
+                                <i class="fas fa-user text-green-500"></i>
+                                {{ item.receiver.full_name }}
+                            </template>
+                            <template v-else>
+                                <span class="text-gray-400">-</span>
+                            </template>
+                        </div>
+                        <div class="mb-2" v-if="item.received_date">
+                            <strong>Ngày nhận:</strong>
+                            {{ formatDate(item.received_date) }}
                         </div>
                     </div>
                 </div>
@@ -350,6 +354,9 @@ export default {
         },
     },
     methods: {
+        formatDate(date) {
+            return new Date(date).toLocaleDateString("vi-VN");
+        },
         toggleSelectAll(event) {
             if (event.target.checked) {
                 // Select all items on current page
@@ -525,6 +532,9 @@ export default {
 
 <style scoped>
 /* ...existing styles... */
+.text-gray-400 {
+    color: #9ca3af;
+}
 .container {
     padding: 1rem;
 }

@@ -8,24 +8,64 @@ use App\Models\DocumentMapping;
 use App\Models\DocumentMappingHomGiong;
 use App\Models\BienBanNghiemThuHomGiong;
 use App\Models\Log\DocumentLog; // Add this import
+use App\Models\Log\StatusDocumentDelivery; // Add this import
 
 use Illuminate\Http\Request;
 
 class DocumentDeliveryController extends Controller
 {
-    public function index(Request $request)
-    {
-        $query = DocumentDelivery::with(['creator', 'receiver']);
 
-        if ($request->has('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
+
+    
+  public function index(Request $request)
+{
+    $query = DocumentDelivery::with([
+        'creator', 
+        'receiver',
+        'logs' => function($q) {
+            $q->orderBy('created_at', 'desc');
         }
+    ]);
 
-        $perPage = $request->input('per_page', 10);
-        $documentDeliveries = $query->paginate($perPage);
-
-        return response()->json($documentDeliveries);
+    if ($request->has('search')) {
+        $query->where(function($q) use ($request) {
+            $search = $request->search;
+            $q->where('document_code', 'like', "%{$search}%")
+              ->orWhere('title', 'like', "%{$search}%");
+        });
     }
+
+    $statusMapping = StatusDocumentDelivery::pluck('name_status', 'id_status')
+        ->toArray();
+
+        $documentDeliveries = $query->get()->map(function($doc) use ($statusMapping) {
+            $creatingLog = $doc->logs->where('action', 'creating')->first();
+            // เพิ่มเงื่อนไขให้เช็คเฉพาะ received status
+            $receivedLog = $doc->logs->where('action', 'received')->first();
+            
+            return [
+                'id' => $doc->id,
+                'document_code' => $doc->document_code,
+                'station' => $doc->station,
+                'created_date' => $creatingLog ? $creatingLog->action_date : $doc->created_date,
+                'title' => $doc->title,
+                'investment_project' => $doc->investment_project,
+                'file_count' => $doc->file_count,
+                'document_type' => $doc->document_type,
+                'creator' => $creatingLog ? $creatingLog->actionUser : $doc->creator,
+                // ปรับการเช็คเงื่อนไข receiver และ received_date
+                'receiver' => $receivedLog ? $receivedLog->actionUser : null,
+                'received_date' => $receivedLog ? $receivedLog->action_date : null,
+                'status' => [
+                    'code' => $doc->status,
+                    'name' => $statusMapping[$doc->status] ?? $doc->status
+                ],
+                'loan_status' => $doc->loan_status
+            ];
+        });
+
+    return response()->json(['data' => $documentDeliveries]);
+}
 
 
     public function show($id)
@@ -46,7 +86,7 @@ class DocumentDeliveryController extends Controller
             $document = DocumentDelivery::create([
                 'document_code'      => $documentCode,
                 'created_date'       => $request->input('created_date'),
-                'title'             => 'PGNHS-'  . $request->input('document_type') . '-' . $documentCode,
+               'title'             => 'PGNHS-' . $request->input('document_type') . '-' . str_replace('PGNHS-', '', $documentCode),
                 'investment_project' => $investmentName, // ยังเก็บชื่อเต็มไว้
                 'creator_id'         => $request->input('creator_id'),
                 'station'           => $request->input('station'),
@@ -64,7 +104,9 @@ class DocumentDeliveryController extends Controller
             'document_id' => $document->id,
             'action' => 'creating',
             'action_by' => $request->input('creator_id'), // ID ของ user ที่สร้างเอกสาร
-            'action_date' => now(),
+            'action_date' => $request->input('created_date'), // ใช้วันที่ที่ผู้ใช้เลือก
+            'comments' => "Document was created",
+
         ]);
     
             return response()->json($document);
@@ -85,15 +127,21 @@ class DocumentDeliveryController extends Controller
         $status = $request->input('status');
         $receiverId = $request->input('receiver_id');
         $actionDate = $request->input('action_date');
+        //update file_count
+        $document->file_count = $request->input('file_count');
+        
 
         // Update document status
         $document->status = $status;
+      
+
         
         // Set receiver_id when status is 'received'
         if ($status === 'received') {
             $document->receiver_id = $receiverId;
-            $document->received_date = $actionDate;
+            $document->received_date = $request->input('received_date');
         }
+
         
         $document->save();
 
