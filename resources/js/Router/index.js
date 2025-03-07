@@ -47,8 +47,8 @@ const routes = [
         },
     },
     {
-        name: "EditGiaoNhanhoso",
-        path: "/EditGiaoNhanhoso/:id",
+        name: "DanhsachhosoEdit",
+        path: "/Danhsachhoso/:id",
         component: EditGiaoNhanhoso,
         meta: {
             middleware: [authMiddleware],

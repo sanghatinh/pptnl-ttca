@@ -1,5 +1,5 @@
 <template>
-    <div class="container mx-auto p-2">
+    <div class="container-fluid mx-auto p-2">
         <div class="row align-items-center mb-2" v-if="!isMobile">
             <div class="col d-flex justify-content-start gap-3">
                 <router-link to="/taonewhoso">
@@ -14,13 +14,36 @@
                 >
                     <i class="fa-solid fa-trash-can"></i>Xóa
                 </button>
+                <div class="status-filter">
+                    <select
+                        v-model="statusFilter"
+                        class="form-select status-select"
+                    >
+                        <option
+                            v-for="option in statusOptions"
+                            :key="option.code"
+                            :value="option.code"
+                            class="status-option"
+                        >
+                            <span
+                                v-if="option.code !== 'all'"
+                                class="status-icon"
+                            >
+                                <i :class="statusIcon(option.code)"></i>
+                            </span>
+                            {{ option.name }}
+                        </option>
+                    </select>
+                </div>
             </div>
-            <div class="col text-end">
+            <div
+                class="col d-flex justify-content-end gap-3 align-items-center"
+            >
                 <input
                     v-model="search"
                     type="text"
                     placeholder="Search..."
-                    class="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                    class="search-input px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
             </div>
         </div>
@@ -292,6 +315,15 @@ export default {
                 active: "bg-green-500 text-white",
                 disabled: "opacity-50 cursor-not-allowed",
             },
+
+            statusFilter: "all",
+            statusOptions: [
+                { code: "all", name: "Tất cả trạng thái" },
+                { code: "creating", name: "Nháp" },
+                { code: "sending", name: "Đã nộp" },
+                { code: "received", name: "Đã nhận" },
+                { code: "cancelled", name: "Hủy" },
+            ],
         };
     },
     computed: {
@@ -351,6 +383,32 @@ export default {
                 to: start + data.length,
                 total,
             };
+        },
+
+        filteredDeliveries() {
+            return this.documentDeliveries.filter((item) => {
+                const matchesSearch =
+                    item.document_code
+                        .toLowerCase()
+                        .includes(this.search.toLowerCase()) ||
+                    item.title
+                        .toLowerCase()
+                        .includes(this.search.toLowerCase()) ||
+                    (item.creator?.full_name &&
+                        item.creator.full_name
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.receiver?.full_name &&
+                        item.receiver.full_name
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase()));
+
+                const matchesStatus =
+                    this.statusFilter === "all" ||
+                    item.status.code === this.statusFilter;
+
+                return matchesSearch && matchesStatus;
+            });
         },
     },
     methods: {
@@ -517,7 +575,7 @@ export default {
             }
         },
         goToEditPage(id) {
-            this.$router.push(`/editgiaonhanhoso/${id}`);
+            this.$router.push(`/Danhsachhoso/${id}`);
         },
     },
     mounted() {
@@ -606,5 +664,62 @@ export default {
 
 .form-checkbox:hover {
     border-color: #10b981;
+}
+
+/* ... existing styles ... */
+
+.status-filter {
+    position: relative;
+    min-width: 200px;
+}
+
+.status-select {
+    appearance: none;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    padding: 0.5rem 2.5rem 0.5rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #374151;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    transition: all 0.2s ease;
+}
+
+.status-select:hover {
+    border-color: #10b981;
+}
+
+.status-select:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.status-option {
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.search-input {
+    min-width: 250px;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+    .status-filter {
+        min-width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .search-input {
+        min-width: 100%;
+    }
 }
 </style>

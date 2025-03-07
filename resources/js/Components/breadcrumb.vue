@@ -29,7 +29,7 @@ export default {
             pathToNameMap: {
                 danhsachhoso: "Danh sách hồ sơ",
                 taonewhoso: "Tạo mới hồ sơ",
-                editgiaonhanhoso: "Chỉnh sửa hồ sơ",
+                DanhsachHoso: "Chỉnh sửa hồ sơ",
             },
         };
     },

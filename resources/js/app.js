@@ -13,6 +13,9 @@ import VueSweetalert2 from "vue-sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
 import VueNumberFormat from "@coders-tm/vue-number-format";
 
+import { PerfectScrollbarPlugin } from "vue3-perfect-scrollbar";
+import "vue3-perfect-scrollbar/style.css";
+
 import { createPinia } from "pinia";
 const pinia = createPinia();
 
@@ -21,6 +24,7 @@ const app = createApp(App);
 app.use(VueSweetalert2);
 
 app.use(VueNumberFormat);
+app.use(PerfectScrollbarPlugin);
 app.component("header-bar", headerbar);
 app.component("side-barmenu", sidebarmenu);
 app.component("breadcrumb-vue", breadcrumbVue);
