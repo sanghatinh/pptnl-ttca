@@ -9,7 +9,7 @@
                 </router-link>
                 <button
                     type="button"
-                    class="button-30-del"
+                    class="button-30-text-red"
                     @click="deleteSelected"
                 >
                     <i class="fa-solid fa-trash-can"></i>Xóa
@@ -49,7 +49,7 @@
         </div>
 
         <div class="flex justify-center mb-2" v-if="isMobile">
-            <div class="col-12">
+            <div class="col-8 me-2">
                 <input
                     v-model="search"
                     type="text"
@@ -57,6 +57,32 @@
                     class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
             </div>
+            <div class="col-4">
+                <router-link to="/taonewhoso">
+                    <button
+                        type="button"
+                        class="button-30-save"
+                        style="height: 38px"
+                    >
+                        <i class="fa-solid fa-plus"></i>Tạo mới
+                    </button>
+                </router-link>
+            </div>
+        </div>
+        <div class="status-filter" v-if="isMobile">
+            <select v-model="statusFilter" class="form-select status-select">
+                <option
+                    v-for="option in statusOptions"
+                    :key="option.code"
+                    :value="option.code"
+                    class="status-option"
+                >
+                    <span v-if="option.code !== 'all'" class="status-icon">
+                        <i :class="statusIcon(option.code)"></i>
+                    </span>
+                    {{ option.name }}
+                </option>
+            </select>
         </div>
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <!-- สำหรับ Desktop -->

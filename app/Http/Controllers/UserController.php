@@ -129,7 +129,9 @@ public function logout(Request $request)
     public function getPositions()
     {
         try {
-            $positions = DB::table('listposition')->select('position')->get();
+            $positions = DB::table('listposition')
+                ->select('id_position', 'position', 'department')
+                ->get();
             return response()->json($positions);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

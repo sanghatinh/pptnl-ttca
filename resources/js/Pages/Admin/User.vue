@@ -154,11 +154,16 @@
                                                     id="position"
                                                     class="form-control"
                                                 >
+                                                    <option value="" disabled>
+                                                        Select Position
+                                                    </option>
                                                     <option
                                                         v-for="position in positions"
-                                                        :key="position"
+                                                        :key="
+                                                            position.id_position
+                                                        "
                                                         :value="
-                                                            position.position
+                                                            position.id_position
                                                         "
                                                     >
                                                         {{ position.position }}
@@ -301,7 +306,13 @@
                                             <td>{{ user.id }}</td>
                                             <td>{{ user.username }}</td>
                                             <td>{{ user.full_name }}</td>
-                                            <td>{{ user.position }}</td>
+                                            <td>
+                                                {{
+                                                    getPositionName(
+                                                        user.position
+                                                    )
+                                                }}
+                                            </td>
                                             <td>
                                                 {{
                                                     getStationName(user.station)
@@ -574,6 +585,14 @@ export default {
         this.fetchUserPermissions(); // เรียกอ่าน permission เมื่อสร้าง component
     },
     methods: {
+        // เพิ่มเมธอดสำหรับแสดงชื่อตำแหน่ง
+        getPositionName(positionId) {
+            const position = this.positions.find(
+                (p) => p.id_position === positionId
+            );
+            return position ? position.position : positionId;
+        },
+
         // ฟังก์ชันสำหรับ fetch data permissionName ของผู้ใช้
         fetchUserPermissions() {
             axios
