@@ -7,39 +7,61 @@
     </div>
 
     <div>
-        <div class="row align-items-center mb-3">
-            <div class="col">
-                <h3>User Management</h3>
+        <div class="row align-items-center mb-4">
+            <div class="col-12 col-md-6">
+                <h3 class="mb-0 fw-bold text-primary">User Management</h3>
             </div>
-            <!-- แสดงปุ่ม Tạo mới เฉพาะเมื่อผู้ใช้มี permission 'create' -->
-            <div
-                class="col text-end mb-2"
-                v-if="!ShowFormUser && userHasPermission('create')"
-            >
-                <button
-                    type="button"
-                    @click="Adduser"
-                    class="btn btn-success btn-rounded"
+
+            <!-- Show "Tạo mới" button only when user has 'create' permission -->
+            <div class="col-12 col-md-6" v-if="!ShowFormUser">
+                <div
+                    class="d-flex flex-column flex-md-row justify-content-md-end gap-2"
                 >
-                    <i class="bx bxs-user-plus"></i>Tạo mới
-                </button>
+                    <div
+                        class="search-container mb-2 mb-md-0 mt-2"
+                        v-if="userHasPermission('create')"
+                    >
+                        <div class="input-group">
+                            <input
+                                v-model="search"
+                                type="text"
+                                placeholder="Search users..."
+                                class="form-control border-start-0 search-input"
+                                aria-label="Search"
+                            />
+                        </div>
+                    </div>
+                    <button
+                        v-if="userHasPermission('create')"
+                        type="button"
+                        @click="Adduser"
+                        class="btn btn-success d-flex align-items-center mt-2"
+                        style="height: 38px; font-size: 0.875rem"
+                    >
+                        <i class="bx bxs-user-plus me-1"></i>
+                        <span>Tạo mới</span>
+                    </button>
+                </div>
             </div>
-            <div class="col text-end mb-2" v-if="ShowFormUser">
-                <div class="d-flex justify-content-end">
+
+            <div class="col-12 col-md-6 mt-2" v-if="ShowFormUser">
+                <div class="d-flex justify-content-md-end">
                     <button
                         type="button"
                         @click="Saveuser"
                         :disabled="FormValid"
-                        class="btn btn-success btn-rounded me-2"
+                        class="btn btn-success me-2 d-flex align-items-center"
                     >
-                        <i class="bx bxs-save"></i>Save
+                        <i class="bx bxs-save me-1"></i>
+                        <span>Save</span>
                     </button>
                     <button
                         type="button"
                         @click="Canneluser"
-                        class="btn btn-secondary btn-rounded"
+                        class="btn btn-secondary d-flex align-items-center"
                     >
-                        <i class="bx bx-x"></i>Cancel
+                        <i class="bx bx-x me-1"></i>
+                        <span>Cancel</span>
                     </button>
                 </div>
             </div>
@@ -299,7 +321,9 @@
                                     </thead>
                                     <tbody>
                                         <tr
-                                            v-for="(user, index) in users"
+                                            v-for="(
+                                                user, index
+                                            ) in paginatedUsers.data"
                                             :key="user.id"
                                         >
                                             <td>{{ index + 1 }}</td>
@@ -437,42 +461,13 @@
                                         </tr>
                                     </tbody>
                                 </table>
-                                <div class="card-body">
-                                    <nav aria-label="Page navigation example">
-                                        <ul
-                                            class="pagination rounded success justify-content-center"
-                                        >
-                                            <li class="page-item disabled">
-                                                <a class="page-link" href="#">
-                                                    <i
-                                                        class="icon-chevron-left"
-                                                    ></i
-                                                ></a>
-                                            </li>
-                                            <li class="page-item">
-                                                <a class="page-link" href="#"
-                                                    >1</a
-                                                >
-                                            </li>
-                                            <li class="page-item active">
-                                                <a class="page-link" href="#"
-                                                    >2</a
-                                                >
-                                            </li>
-                                            <li class="page-item">
-                                                <a class="page-link" href="#"
-                                                    >3</a
-                                                >
-                                            </li>
-                                            <li class="page-item">
-                                                <a class="page-link" href="#"
-                                                    ><i
-                                                        class="icon-chevron-right"
-                                                    ></i
-                                                ></a>
-                                            </li>
-                                        </ul>
-                                    </nav>
+                                <div class="flex justify-center mt-4">
+                                    <pagination
+                                        :data="paginatedUsers"
+                                        @pagination-change-page="pageChanged"
+                                        :limit="5"
+                                        :classes="paginationClasses"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -487,6 +482,7 @@
 <script>
 import axios from "axios";
 import { useStore } from "../../Store/Auth";
+import { Bootstrap5Pagination } from "laravel-vue-pagination";
 
 export default {
     setup() {
@@ -495,15 +491,28 @@ export default {
             store,
         };
     },
+    components: {
+        Pagination: Bootstrap5Pagination,
+    },
 
     data() {
         return {
+            search: "",
+            currentPage: 1,
+            perPage: 10,
             ShowFormUser: false,
             users: [],
             positions: [],
             stations: [],
             roles: [],
-            userPermissions: [], // เก็บสิทธิ์ของผู้ใช้
+            userPermissions: [],
+            paginationClasses: {
+                ul: "pagination rounded success justify-content-center",
+                li: "page-item",
+                a: "page-link",
+                active: "active",
+                disabled: "disabled",
+            },
             FormUser: {
                 username: "",
                 password: "",
@@ -513,15 +522,66 @@ export default {
                 position: "",
                 station: "",
                 role_id: null,
-                status: "active", // เพิ่มค่าเริ่มต้นของ status
+                status: "active",
             },
-            FormType: true, // ตัวแปรเพื่อเช็คว่าเป็นการเพิ่มหรือแก้ไข ถ้าเป็น true คือเพิ่ม ถ้าเป็น false คือแก้ไข
-            EditID: "", // ตัวแปรเพื่อเก็บ ID ของ User ที่ต้องการแก้ไข
-            isLoading: false, // เพิ่มตัวแปร isLoading
+            FormType: true,
+            EditID: "",
+            isLoading: false,
         };
     },
     //สร้างการตรวจสอบฟอร์มใส่ลูกเล่นเมื่อผู้ใช้กรอกข้อมูลไม่ครบหรือเป็นถ้าว่างให้ขึ้นข้อความแสดงใน input นั้น
     computed: {
+        // Add filtered users computed property
+        filteredUsers() {
+            return this.users.filter((user) => {
+                const searchTerm = this.search.toLowerCase();
+                return (
+                    user.username.toLowerCase().includes(searchTerm) ||
+                    user.full_name.toLowerCase().includes(searchTerm) ||
+                    (user.email &&
+                        user.email.toLowerCase().includes(searchTerm)) ||
+                    (user.phone &&
+                        user.phone.toLowerCase().includes(searchTerm)) ||
+                    this.getStationName(user.station)
+                        .toLowerCase()
+                        .includes(searchTerm) ||
+                    this.getPositionName(user.position)
+                        .toLowerCase()
+                        .includes(searchTerm) ||
+                    this.getRoleName(user.role_id)
+                        .toLowerCase()
+                        .includes(searchTerm)
+                );
+            });
+        },
+        // Add paginated users computed property
+        paginatedUsers() {
+            const total = this.filteredUsers.length;
+            const lastPage = Math.ceil(total / this.perPage) || 1;
+            const start = (this.currentPage - 1) * this.perPage;
+            const data = this.filteredUsers.slice(start, start + this.perPage);
+
+            return {
+                current_page: this.currentPage,
+                data,
+                first_page_url: "?page=1",
+                from: total > 0 ? start + 1 : 0,
+                last_page: lastPage,
+                last_page_url: `?page=${lastPage}`,
+                next_page_url:
+                    this.currentPage < lastPage
+                        ? `?page=${this.currentPage + 1}`
+                        : null,
+                path: "",
+                per_page: this.perPage,
+                prev_page_url:
+                    this.currentPage > 1
+                        ? `?page=${this.currentPage - 1}`
+                        : null,
+                to: start + data.length,
+                total,
+            };
+        },
         errors() {
             const errors = {};
             if (!this.FormUser.username) {
@@ -585,6 +645,10 @@ export default {
         this.fetchUserPermissions(); // เรียกอ่าน permission เมื่อสร้าง component
     },
     methods: {
+        // Add new pagination method
+        pageChanged(page) {
+            this.currentPage = page;
+        },
         // เพิ่มเมธอดสำหรับแสดงชื่อตำแหน่ง
         getPositionName(positionId) {
             const position = this.positions.find(
@@ -984,5 +1048,26 @@ export default {
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
+}
+
+.search-input {
+    min-width: 250px;
+    height: 38px;
+    transition: box-shadow 0.3s ease;
+}
+
+.search-input:focus {
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+}
+
+/* Replace the existing .badge styles and other styles... */
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+    .search-input {
+        min-width: 100%;
+        margin-bottom: 0.5rem;
+    }
 }
 </style>
