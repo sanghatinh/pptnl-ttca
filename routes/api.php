@@ -25,6 +25,9 @@ Route::get('/logout', [UserController::class, 'logout']);
 
 Route::group(['middleware' => ['auth:api']], function () {
 
+
+
+
     
 
     Route::get('/positions', [UserController::class, 'getPositions']);
@@ -77,6 +80,8 @@ Route::delete('/document-mappings-homgiong/{id}', [DocumentDeliveryController::c
 Route::get('/print/giaonhan-hoso/{document_code}', [PrintGiaoNhanHSController::class, 'print']);
 
 Route::get('/document-deliveries/{id}', [DocumentDeliveryController::class, 'show']);
+
+Route::get('/document-deliveries/{id}/check-access', [DocumentDeliveryController::class, 'checkAccess']);
 
 
   // เพิ่ม route สำหรับดึงข้อมูลผู้ใช้งาน

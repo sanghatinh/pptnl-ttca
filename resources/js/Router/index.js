@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { useStore } from "../Store/Auth";
+import axios from "axios"; // เพิ่มบรรทัดนี้ถ้ายังไม่มี
 import Home from "../Pages/Dashboard.vue";
 import Taohoso from "../Pages/Quanlyhoso/TaoGiaoNhanhoso.vue";
 import Danhsachhoso from "../Pages/Quanlyhoso/DanhsachHoso.vue";
@@ -6,7 +8,7 @@ import EditGiaoNhanhoso from "../Pages/Quanlyhoso/EditGiaoNhanhoso.vue";
 import login from "../Pages/Login.vue";
 import Nopage from "../Pages/404.vue";
 import Register from "../Pages/Register.vue";
-import { useStore } from "../Store/Auth";
+
 import ListUser from "../Pages/Admin/User.vue";
 import Permission from "../Pages/Admin/Permission.vue";
 import Role from "../Pages/Admin/Role.vue";
@@ -48,11 +50,50 @@ const routes = [
         },
     },
     {
-        name: "DanhsachhosoEdit",
         path: "/Danhsachhoso/:id",
+        name: "EditGiaoNhanhoso",
         component: EditGiaoNhanhoso,
-        meta: {
-            middleware: [authMiddleware],
+        meta: { requiresAuth: true },
+        beforeEnter: async (to, from, next) => {
+            // ดึงค่า id จาก route parameters
+            const id = to.params.id;
+
+            // ดึง token จาก localStorage
+            const token = localStorage.getItem("web_token");
+            const store = useStore();
+
+            if (!token) {
+                next("/login");
+                return;
+            }
+
+            try {
+                const response = await axios.get(
+                    `/api/document-deliveries/${id}/check-access`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (response.data.hasAccess) {
+                    next();
+                } else {
+                    next("/unauthorized");
+                }
+            } catch (error) {
+                console.error("Error checking access:", error);
+
+                if (error.response?.status === 401) {
+                    localStorage.removeItem("web_token");
+                    localStorage.removeItem("web_user");
+                    store.logout();
+                    next("/login");
+                } else {
+                    next("/unauthorized");
+                }
+            }
         },
     },
     {
@@ -117,7 +158,7 @@ const routes = [
         path: "/unauthorized",
         name: "Unauthorized",
         component: Unauthorized,
-        meta: { requiresAuth: false },
+        meta: { requiresAuth: true },
     },
 ];
 
@@ -148,5 +189,7 @@ router.beforeEach((to, from, next) => {
         }
     }
 });
+
+//ກວດສອບສິດໃນການແກ້ໄຂເອກະສານມອບສົ່ງວ່າມີສິດໃນການແກ້ໄຂເອກະສານບໍ່
 
 export default router;

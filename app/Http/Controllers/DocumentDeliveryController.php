@@ -516,8 +516,6 @@ public function checkAccess($id)
     
         $hasAccess = false;
         
-        \Log::info("User position: {$user->position}, Document creator: {$document->creator_id}, User ID: {$user->id}, Station: {$user->station}");
-        
         switch ($user->position) {
             case 'department_head':
             case 'office_workers':
@@ -536,7 +534,7 @@ public function checkAccess($id)
                 $hasAccess = false;
         }
         
-        \Log::info("Access result: " . ($hasAccess ? "Allowed" : "Denied"));
+        \Log::info("Access result for user {$user->id} ({$user->position}): " . ($hasAccess ? "Allowed" : "Denied"));
         
         return response()->json(['hasAccess' => $hasAccess]);
         

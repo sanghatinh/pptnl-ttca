@@ -1,4 +1,10 @@
 <template>
+    <!-- Loading starts -->
+    <div id="loading-wrapper" v-if="isLoading">
+        <div class="spinner-border" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
     <div class="container-fluid mx-auto p-2">
         <div class="row align-items-center mb-2" v-if="!isMobile">
             <div class="col d-flex justify-content-start gap-3">
@@ -333,6 +339,7 @@ export default {
     },
     data() {
         return {
+            isLoading: false, // Add this line
             userRole: null,
             userStation: null,
             documentDeliveries: [],
@@ -650,8 +657,59 @@ export default {
                 this.selectedItems = [];
             }
         },
-        goToEditPage(id) {
-            this.$router.push(`/Danhsachhoso/${id}`);
+        async goToEditPage(id) {
+            try {
+                // Set the loading state to true
+                this.isLoading = true;
+
+                // Call API to check access rights
+                const response = await axios.get(
+                    `/api/document-deliveries/${id}/check-access`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${this.store.getToken}`,
+                        },
+                    }
+                );
+
+                // Hide loading indicator
+                this.isLoading = false;
+
+                // If user has access
+                if (response.data.hasAccess) {
+                    this.$router.push(`/Danhsachhoso/${id}`);
+                } else {
+                    // If no access
+                    this.$router.push("/unauthorized");
+                }
+            } catch (error) {
+                console.error("Error checking document access:", error);
+                // Hide loading indicator
+                this.isLoading = false;
+
+                // Handle error cases
+                if (error.response?.status === 401) {
+                    // Session expired
+                    localStorage.removeItem("web_token");
+                    localStorage.removeItem("web_user");
+                    this.store.logout();
+                    this.$router.push("/login");
+                } else {
+                    // Other errors
+                    Swal.fire({
+                        title: "Lỗi",
+                        text: "Không thể kiểm tra quyền truy cập. Vui lòng thử lại sau.",
+                        icon: "error",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success px-4",
+                        },
+                    });
+                    // Navigate to Unauthorized page for safety
+                    this.$router.push("/unauthorized");
+                }
+            }
         },
     },
     mounted() {

@@ -12,10 +12,14 @@ Route::get('{any}', function () {
     return view('app');
 })->where('any','.*');
 
-// Route::group(['middleware' => ['auth', 'permission:read']], function () {
-//     Route::get('/dashboard', [DashboardController::class, 'index']);
-// });
 
+Route::get('/Danhsachhoso/{id}', function () {
+    return view('app');
+})->where('id', '[0-9]+');
+
+Route::get('/unauthorized', function () {
+    return view('app');
+});
 
 Route::get('/print/giaonhan-hoso/{document_code}', [PrintGiaoNhanHSController::class, 'print'])
     ->name('print.giaonhan-hoso');
