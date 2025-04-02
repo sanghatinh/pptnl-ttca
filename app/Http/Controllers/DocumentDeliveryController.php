@@ -17,30 +17,60 @@ class DocumentDeliveryController extends Controller
 
 
     
-  public function index(Request $request)
-{
-    $query = DocumentDelivery::with([
-        'creator', 
-        'receiver',
-        'logs' => function($q) {
-            $q->orderBy('created_at', 'desc');
+    public function index(Request $request)
+    {
+        $user = auth()->user();
+        
+        $query = DocumentDelivery::with([
+            'creator', 
+            'receiver',
+            'logs' => function($q) {
+                $q->orderBy('created_at', 'desc');
+            }
+        ]);
+    
+        // Apply role-based filtering
+        switch ($user->position) {
+            case 'department_head':
+            case 'office_workers':
+                // Can see all records
+                break;
+                
+            case 'Station_Chief':
+                // Can only see records from their station
+                $query->where('station', $user->station);
+                break;
+                
+            case 'Farm_worker':
+                // Can only see records they created
+                $query->where('creator_id', $user->id);
+                break;
+                
+            default:
+                // Restrict access for unknown roles
+                return response()->json(['error' => 'Unauthorized'], 403);
         }
-    ]);
-
-    if ($request->has('search')) {
-        $query->where(function($q) use ($request) {
+    
+        // Apply search filter if provided
+        if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $q->where('document_code', 'like', "%{$search}%")
-              ->orWhere('title', 'like', "%{$search}%");
-        });
-    }
-
-    $statusMapping = StatusDocumentDelivery::pluck('name_status', 'id_status')
-        ->toArray();
-
+            $query->where(function($q) use ($search) {
+                $q->where('document_code', 'like', "%{$search}%")
+                  ->orWhere('title', 'like', "%{$search}%");
+            });
+        }
+    
+        // Apply status filter if provided
+        if ($request->has('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+    
+        // Get status mapping for display
+        $statusMapping = StatusDocumentDelivery::pluck('name_status', 'id_status')
+            ->toArray();
+    
         $documentDeliveries = $query->get()->map(function($doc) use ($statusMapping) {
             $creatingLog = $doc->logs->where('action', 'creating')->first();
-            // เพิ่มเงื่อนไขให้เช็คเฉพาะ received status
             $receivedLog = $doc->logs->where('action', 'received')->first();
             
             return [
@@ -53,7 +83,6 @@ class DocumentDeliveryController extends Controller
                 'file_count' => $doc->file_count,
                 'document_type' => $doc->document_type,
                 'creator' => $creatingLog ? $creatingLog->actionUser : $doc->creator,
-                // ปรับการเช็คเงื่อนไข receiver และ received_date
                 'receiver' => $receivedLog ? $receivedLog->actionUser : null,
                 'received_date' => $receivedLog ? $receivedLog->action_date : null,
                 'status' => [
@@ -63,9 +92,9 @@ class DocumentDeliveryController extends Controller
                 'loan_status' => $doc->loan_status
             ];
         });
-
-    return response()->json(['data' => $documentDeliveries]);
-}
+    
+        return response()->json(['data' => $documentDeliveries]);
+    }
 
 
     public function show($id)
@@ -77,11 +106,11 @@ class DocumentDeliveryController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
     public function store(Request $request) {
         try {
             $investmentName = $request->input('investment_project');
             $documentCode = DocumentDelivery::generateDocumentCode($investmentName);
+     
             
             $document = DocumentDelivery::create([
                 'document_code'      => $documentCode,
@@ -466,5 +495,56 @@ public function getDocumentInfo($id)
         return response()->json(['error' => $e->getMessage()], 500);
     }
 }
+
+public function checkAccess($id)
+{
+    try {
+        \Log::info("Checking access for document ID: {$id}");
+        $user = auth()->user();
+        
+        if (!$user) {
+            \Log::warning("Unauthorized access: No user authenticated");
+            return response()->json(['hasAccess' => false, 'message' => 'User not authenticated'], 401);
+        }
+        
+        $document = DocumentDelivery::find($id);
+        
+        if (!$document) {
+            \Log::warning("Document not found: {$id}");
+            return response()->json(['hasAccess' => false, 'message' => 'Document not found'], 404);
+        }
+    
+        $hasAccess = false;
+        
+        \Log::info("User position: {$user->position}, Document creator: {$document->creator_id}, User ID: {$user->id}, Station: {$user->station}");
+        
+        switch ($user->position) {
+            case 'department_head':
+            case 'office_workers':
+                $hasAccess = true;
+                break;
+                
+            case 'Station_Chief':
+                $hasAccess = $document->station === $user->station;
+                break;
+                
+            case 'Farm_worker':
+                $hasAccess = $document->creator_id == $user->id;
+                break;
+                
+            default:
+                $hasAccess = false;
+        }
+        
+        \Log::info("Access result: " . ($hasAccess ? "Allowed" : "Denied"));
+        
+        return response()->json(['hasAccess' => $hasAccess]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error in checkAccess: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+        return response()->json(['hasAccess' => false, 'message' => 'Error checking access', 'error' => $e->getMessage()], 500);
+    }
+}
+
 
 }

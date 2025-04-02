@@ -69,6 +69,10 @@
                 </router-link>
             </div>
         </div>
+
+        <!-- สำหรับ Mobile view: เพิ่ม scope indicator -->
+        <div class="data-scope-indicator mb-2" v-if="isMobile"></div>
+
         <div class="status-filter" v-if="isMobile">
             <select v-model="statusFilter" class="form-select status-select">
                 <option
@@ -84,6 +88,7 @@
                 </option>
             </select>
         </div>
+
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <!-- สำหรับ Desktop -->
             <div v-if="!isMobile" class="card">
@@ -328,6 +333,8 @@ export default {
     },
     data() {
         return {
+            userRole: null,
+            userStation: null,
             documentDeliveries: [],
             search: "",
             currentPage: 1,
@@ -438,6 +445,38 @@ export default {
         },
     },
     methods: {
+        fetchUserInfo() {
+            axios
+                .get("/api/user-info", {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                })
+                .then((response) => {
+                    const user = response.data;
+                    // บันทึกข้อมูลสถานี
+                    this.userStation = user.station;
+
+                    // ดึงบทบาทตามตำแหน่ง
+                    return axios.get(
+                        `/api/get-role-by-position?position=${encodeURIComponent(
+                            user.position
+                        )}`,
+                        {
+                            headers: {
+                                Authorization: "Bearer " + this.store.getToken,
+                            },
+                        }
+                    );
+                })
+                .then((response) => {
+                    this.userRole = response.data.role;
+                })
+                .catch((error) => {
+                    console.error("เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้:", error);
+                });
+        },
+
         formatDate(date) {
             return new Date(date).toLocaleDateString("vi-VN");
         },
@@ -538,23 +577,34 @@ export default {
             }
         },
 
-        fetchData() {
-            axios
-                .get("/api/document-deliveries", {
+        async fetchData() {
+            try {
+                const response = await axios.get("/api/document-deliveries", {
                     params: {
                         search: this.search,
+                        status:
+                            this.statusFilter !== "all"
+                                ? this.statusFilter
+                                : undefined,
                         per_page: 1000,
+                        role: this.userRole,
+                        station: this.userStation,
                     },
                     headers: {
                         Authorization: "Bearer " + this.store.getToken,
                     },
-                })
-                .then((response) => {
-                    this.documentDeliveries = response.data.data;
-                })
-                .catch((error) => {
-                    console.error(error);
                 });
+
+                this.documentDeliveries = response.data.data;
+            } catch (error) {
+                console.error(error);
+                if (error.response?.status === 401) {
+                    localStorage.removeItem("web_token");
+                    localStorage.removeItem("web_user");
+                    this.store.logout();
+                    this.$router.push("/login");
+                }
+            }
         },
         pageChanged(page) {
             this.currentPage = page;
@@ -605,6 +655,7 @@ export default {
         },
     },
     mounted() {
+        this.fetchUserInfo(); // เพิ่มบรรทัดนี้
         this.fetchData();
         window.addEventListener("resize", this.handleResize);
     },

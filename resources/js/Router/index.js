@@ -11,6 +11,7 @@ import ListUser from "../Pages/Admin/User.vue";
 import Permission from "../Pages/Admin/Permission.vue";
 import Role from "../Pages/Admin/Role.vue";
 import Profile from "../Pages/Admin/UserProfile.vue";
+import Unauthorized from "../Pages/Unauthorized.vue";
 
 const authMiddleware = (to, from, next) => {
     const token = localStorage.getItem("web_token");
@@ -111,6 +112,12 @@ const routes = [
         meta: {
             middleware: [authMiddleware],
         },
+    },
+    {
+        path: "/unauthorized",
+        name: "Unauthorized",
+        component: Unauthorized,
+        meta: { requiresAuth: false },
     },
 ];
 

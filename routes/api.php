@@ -79,4 +79,20 @@ Route::get('/print/giaonhan-hoso/{document_code}', [PrintGiaoNhanHSController::c
 Route::get('/document-deliveries/{id}', [DocumentDeliveryController::class, 'show']);
 
 
+  // เพิ่ม route สำหรับดึงข้อมูลผู้ใช้งาน
+  Route::get('/user-info', function(Request $request) {
+    return $request->user();
+});
+
+// เพิ่ม route สำหรับดึงข้อมูลบทบาทตามตำแหน่ง
+Route::get('/get-role-by-position', function(Request $request) {
+    $position = $request->query('position');
+    
+    $role = DB::table('listposition')
+        ->where('position', $position)
+        ->value('id_position');
+        
+    return response()->json(['role' => $role]);
+});
+
 });
