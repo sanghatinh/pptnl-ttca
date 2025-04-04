@@ -71,9 +71,10 @@
                                     "
                                 >
                                     <router-link
-                                        to=""
+                                        to="/BienbannghiemthuDV"
                                         :class="
-                                            $route.path === ''
+                                            $route.path ===
+                                            '/BienbannghiemthuDV'
                                                 ? 'current-page'
                                                 : ''
                                         "

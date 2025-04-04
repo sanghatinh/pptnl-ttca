@@ -12,6 +12,7 @@ use App\Http\Controllers\DocumentDeliveryController;
 use App\Http\Controllers\InvestmentProjectController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\Print\PrintGiaoNhanHSController;
+use App\Http\Controllers\QuanlyHS\BienBanNghiemThuController;
 
 
 Route::apiResource('roles', RoleController::class);
@@ -99,5 +100,10 @@ Route::get('/get-role-by-position', function(Request $request) {
         
     return response()->json(['role' => $role]);
 });
+
+//Load ข้อมูลตาลาง tb_bien_ban_nghiemthu_dv
+Route::get('/bien-ban-nghiem-thu', [BienBanNghiemThuController::class, 'index']);
+
+
 
 });

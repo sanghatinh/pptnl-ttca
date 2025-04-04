@@ -8010,3 +8010,7 @@ code {
     color: #01902d;
     word-break: break-word;
 }
+
+.sidebar-submenu{
+    margin-left: -30px;
+}

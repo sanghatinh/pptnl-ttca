@@ -5,6 +5,7 @@ import Home from "../Pages/Dashboard.vue";
 import Taohoso from "../Pages/Quanlyhoso/TaoGiaoNhanhoso.vue";
 import Danhsachhoso from "../Pages/Quanlyhoso/DanhsachHoso.vue";
 import EditGiaoNhanhoso from "../Pages/Quanlyhoso/EditGiaoNhanhoso.vue";
+import BienBanNTDV from "../Pages/Quanlyhoso/BienBanNTDV.vue";
 import login from "../Pages/Login.vue";
 import Nopage from "../Pages/404.vue";
 import Register from "../Pages/Register.vue";
@@ -100,6 +101,14 @@ const routes = [
         name: "Danhsachhoso",
         path: "/Danhsachhoso",
         component: Danhsachhoso,
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
+        name: "BienBanNTDV",
+        path: "/BienbannghiemthuDV",
+        component: BienBanNTDV,
         meta: {
             middleware: [authMiddleware],
         },

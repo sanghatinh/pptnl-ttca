@@ -37,7 +37,9 @@
                             >
                                 <i :class="statusIcon(option.code)"></i>
                             </span>
-                            {{ option.name }}
+                            {{ option.name }} ({{
+                                statusCounts[option.code] || 0
+                            }})
                         </option>
                     </select>
                 </div>
@@ -120,7 +122,9 @@
                                 <span v-if="option.code !== 'all'">
                                     <i :class="statusIcon(option.code)"></i>
                                 </span>
-                                {{ option.name }}
+                                {{ option.name }} ({{
+                                    statusCounts[option.code] || 0
+                                }})
                             </option>
                         </select>
                         <div
@@ -512,6 +516,24 @@ export default {
                 total,
             };
         },
+        //ນັບຈຳນວນສະຖານນ່ະການສົ່ງ,ມອບ,ໄດ້ຮັບ,ຍົກເລິກ
+        statusCounts() {
+            const counts = {
+                all: this.documentDeliveries.length,
+                creating: 0,
+                sending: 0,
+                received: 0,
+                cancelled: 0,
+            };
+
+            this.documentDeliveries.forEach((item) => {
+                if (item.status && item.status.code in counts) {
+                    counts[item.status.code]++;
+                }
+            });
+
+            return counts;
+        },
     },
     methods: {
         fetchUserInfo() {
@@ -804,6 +826,10 @@ export default {
         },
         search() {
             this.currentPage = 1; // Reset to first page when search changes
+        },
+        documentDeliveries() {
+            // This will recalculate statusCounts when the document data changes
+            this.$forceUpdate();
         },
     },
 };
