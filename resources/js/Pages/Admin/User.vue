@@ -476,7 +476,7 @@
             </div>
         </div>
     </div>
-    {{ FormUser }}
+    <!-- {{ FormUser }} -->
 </template>
 
 <script>

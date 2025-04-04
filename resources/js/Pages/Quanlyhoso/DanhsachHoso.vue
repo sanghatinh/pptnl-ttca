@@ -41,58 +41,135 @@
                         </option>
                     </select>
                 </div>
-            </div>
-            <div
-                class="col d-flex justify-content-end gap-3 align-items-center"
-            >
-                <input
-                    v-model="search"
-                    type="text"
-                    placeholder="Search..."
-                    class="search-input px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
+                <div class="investment-filter ms-3">
+                    <select
+                        v-model="investmentFilter"
+                        class="form-select investment-select"
+                    >
+                        <option value="all">Tất cả vụ đầu tư</option>
+                        <option
+                            v-for="project in investmentProjects"
+                            :key="project"
+                            :value="project"
+                        >
+                            {{ project }}
+                        </option>
+                    </select>
+                </div>
+                <div
+                    class="col d-flex justify-content-end gap-3 align-items-center"
+                >
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Search..."
+                        class="search-input px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                </div>
             </div>
         </div>
 
-        <div class="flex justify-center mb-2" v-if="isMobile">
-            <div class="col-8 me-2">
-                <input
-                    v-model="search"
-                    type="text"
-                    placeholder="Search..."
-                    class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-            </div>
-            <div class="col-4">
+        <!-- Mobile Controls -->
+        <div
+            class="mobile-controls p-3 bg-white rounded-lg shadow-sm mb-3"
+            v-if="isMobile"
+        >
+            <!-- Search and Create Button Row -->
+            <div class="flex gap-2 mb-3">
+                <div class="flex-1 relative">
+                    <span
+                        class="absolute inset-y-0 left-0 flex items-center pl-3"
+                    >
+                        <i class="fas fa-search text-gray-400"></i>
+                    </span>
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Tìm kiếm hồ sơ..."
+                        class="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                    />
+                </div>
                 <router-link to="/taonewhoso">
                     <button
                         type="button"
-                        class="button-30-save"
-                        style="height: 38px"
+                        class="button-30-save flex items-center justify-center h-full px-3 py-2.5 whitespace-nowrap"
                     >
-                        <i class="fa-solid fa-plus"></i>Tạo mới
+                        <i class="fa-solid fa-plus mr-1"></i
+                        ><span>Tạo mới</span>
                     </button>
                 </router-link>
             </div>
-        </div>
 
-        <!-- สำหรับ Mobile view: เพิ่ม scope indicator -->
-        <div class="data-scope-indicator mb-2" v-if="isMobile"></div>
+            <!-- Filters Section -->
+            <div class="filter-section">
+                <!-- Status Filter -->
+                <div class="mb-2.5">
+                    <label class="text-sm font-medium text-gray-700 mb-1 block"
+                        >Trạng thái</label
+                    >
+                    <div class="relative">
+                        <select
+                            v-model="statusFilter"
+                            class="w-full py-2.5 pl-3 pr-10 border rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        >
+                            <option
+                                v-for="option in statusOptions"
+                                :key="option.code"
+                                :value="option.code"
+                            >
+                                <span v-if="option.code !== 'all'">
+                                    <i :class="statusIcon(option.code)"></i>
+                                </span>
+                                {{ option.name }}
+                            </option>
+                        </select>
+                        <div
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+                        >
+                            <i class="fas fa-chevron-down text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="status-filter" v-if="isMobile">
-            <select v-model="statusFilter" class="form-select status-select">
-                <option
-                    v-for="option in statusOptions"
-                    :key="option.code"
-                    :value="option.code"
-                    class="status-option"
+                <!-- Investment Filter -->
+                <div>
+                    <label class="text-sm font-medium text-gray-700 mb-1 block"
+                        >Vụ đầu tư</label
+                    >
+                    <div class="relative">
+                        <select
+                            v-model="investmentFilter"
+                            class="w-full py-2.5 pl-3 pr-10 border rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        >
+                            <option value="all">Tất cả vụ đầu tư</option>
+                            <option
+                                v-for="project in investmentProjects"
+                                :key="project"
+                                :value="project"
+                            >
+                                {{ project }}
+                            </option>
+                        </select>
+                        <div
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+                        >
+                            <i class="fas fa-chevron-down text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Button (Only if items are selected) -->
+            <div class="mt-3" v-if="selectedItems.length > 0">
+                <button
+                    type="button"
+                    class="w-full py-2 px-4 bg-red-600 text-white rounded-lg flex items-center justify-center text-sm font-medium"
+                    @click="deleteSelected"
                 >
-                    <span v-if="option.code !== 'all'" class="status-icon">
-                        <i :class="statusIcon(option.code)"></i>
-                    </span>
-                    {{ option.name }}
-                </option>
-            </select>
+                    <i class="fa-solid fa-trash-can mr-2"></i>Xóa
+                    {{ selectedItems.length }} mục đã chọn
+                </button>
+            </div>
         </div>
 
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
@@ -339,6 +416,8 @@ export default {
     },
     data() {
         return {
+            investmentFilter: "all",
+            investmentProjects: [],
             isLoading: false, // Add this line
             userRole: null,
             userStation: null,
@@ -376,7 +455,7 @@ export default {
         },
         filteredDeliveries() {
             return this.documentDeliveries.filter((item) => {
-                return (
+                const matchesSearch =
                     item.document_code
                         .toLowerCase()
                         .includes(this.search.toLowerCase()) ||
@@ -390,8 +469,17 @@ export default {
                     (item.receiver?.full_name &&
                         item.receiver.full_name
                             .toLowerCase()
-                            .includes(this.search.toLowerCase()))
-                );
+                            .includes(this.search.toLowerCase()));
+
+                const matchesStatus =
+                    this.statusFilter === "all" ||
+                    item.status.code === this.statusFilter;
+
+                const matchesInvestment =
+                    this.investmentFilter === "all" ||
+                    item.investment_project === this.investmentFilter;
+
+                return matchesSearch && matchesStatus && matchesInvestment;
             });
         },
         paginatedDeliveries() {
@@ -423,32 +511,6 @@ export default {
                 to: start + data.length,
                 total,
             };
-        },
-
-        filteredDeliveries() {
-            return this.documentDeliveries.filter((item) => {
-                const matchesSearch =
-                    item.document_code
-                        .toLowerCase()
-                        .includes(this.search.toLowerCase()) ||
-                    item.title
-                        .toLowerCase()
-                        .includes(this.search.toLowerCase()) ||
-                    (item.creator?.full_name &&
-                        item.creator.full_name
-                            .toLowerCase()
-                            .includes(this.search.toLowerCase())) ||
-                    (item.receiver?.full_name &&
-                        item.receiver.full_name
-                            .toLowerCase()
-                            .includes(this.search.toLowerCase()));
-
-                const matchesStatus =
-                    this.statusFilter === "all" ||
-                    item.status.code === this.statusFilter;
-
-                return matchesSearch && matchesStatus;
-            });
         },
     },
     methods: {
@@ -603,6 +665,7 @@ export default {
                 });
 
                 this.documentDeliveries = response.data.data;
+                this.extractInvestmentProjects(); // Extract unique investment projects
             } catch (error) {
                 console.error(error);
                 if (error.response?.status === 401) {
@@ -711,6 +774,18 @@ export default {
                 }
             }
         },
+        extractInvestmentProjects() {
+            // Get unique investment projects
+            const projects = [
+                ...new Set(
+                    this.documentDeliveries
+                        .map((item) => item.investment_project)
+                        .filter((project) => project) // Remove null/empty values
+                ),
+            ];
+
+            this.investmentProjects = projects;
+        },
     },
     mounted() {
         this.fetchUserInfo(); // เพิ่มบรรทัดนี้
@@ -719,6 +794,17 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener("resize", this.handleResize);
+    },
+    watch: {
+        statusFilter() {
+            this.currentPage = 1; // Reset to first page when filter changes
+        },
+        investmentFilter() {
+            this.currentPage = 1; // Reset to first page when filter changes
+        },
+        search() {
+            this.currentPage = 1; // Reset to first page when search changes
+        },
     },
 };
 </script>
@@ -855,6 +941,46 @@ export default {
 
     .search-input {
         min-width: 100%;
+    }
+}
+
+.investment-filter {
+    position: relative;
+    min-width: 200px;
+}
+
+.investment-select {
+    appearance: none;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    padding: 0.5rem 2.5rem 0.5rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #374151;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    transition: all 0.2s ease;
+}
+
+.investment-select:hover {
+    border-color: #10b981;
+}
+
+.investment-select:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+    .investment-filter {
+        min-width: 100%;
+        margin-bottom: 1rem;
     }
 }
 </style>

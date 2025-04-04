@@ -65,6 +65,24 @@
                                         >
                                     </router-link>
                                 </li>
+                                <li
+                                    v-if="
+                                        userCanViewComponent('Sales Dashboard')
+                                    "
+                                >
+                                    <router-link
+                                        to=""
+                                        :class="
+                                            $route.path === ''
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                    >
+                                        <span class="menu-text"
+                                            >Biên bản nghiệm thu dịch vụ</span
+                                        >
+                                    </router-link>
+                                </li>
                             </ul>
                         </div>
                     </li>
