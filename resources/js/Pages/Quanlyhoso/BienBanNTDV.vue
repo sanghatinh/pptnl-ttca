@@ -175,6 +175,13 @@
                                     <th class="px-4 py-2">
                                         Tổng tiền thanh toán
                                     </th>
+                                    <!-- Add new columns -->
+                                    <th class="px-4 py-2">Người giao</th>
+                                    <th class="px-4 py-2">Người nhận</th>
+                                    <th class="px-4 py-2">Ngày nhận</th>
+                                    <th class="px-4 py-2">
+                                        Trạng thái nhận HS
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -234,19 +241,36 @@
                                             )
                                         }}
                                     </td>
+                                    <!-- New columns -->
+                                    <td class="border px-4 py-2">
+                                        {{ item.nguoi_giao || "" }}
+                                    </td>
+                                    <td class="border px-4 py-2">
+                                        {{ item.nguoi_nhan || "" }}
+                                    </td>
+                                    <td class="border px-4 py-2">
+                                        {{ formatDate(item.ngay_nhan) }}
+                                    </td>
+                                    <td class="border px-4 py-2">
+                                        {{
+                                            formatStatus(
+                                                item.trang_thai_nhan_hs
+                                            )
+                                        }}
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <!-- pagination -->
-                    <!-- <div class="flex justify-center mt-4">
-                        <pagination
+                    <div class="flex justify-center mt-4">
+                        <Bootstrap5Pagination
                             :data="paginatedItems"
                             @pagination-change-page="pageChanged"
                             :limit="5"
                             :classes="paginationClasses"
                         />
-                    </div> -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -296,14 +320,14 @@
             </div>
             <!-- pagination -->
             <div class="flex justify-center mt-4">
-                <!-- <div class="pagination-card">
-                    <pagination
+                <div class="pagination-card">
+                    <Bootstrap5Pagination
                         :data="paginatedItems"
                         @pagination-change-page="pageChanged"
                         :limit="5"
                         :classes="paginationClasses"
                     />
-                </div> -->
+                </div>
             </div>
         </div>
     </div>
@@ -313,8 +337,12 @@
 import axios from "axios";
 import { useStore } from "../../Store/Auth";
 import { ref, computed, onMounted } from "vue";
+import { Bootstrap5Pagination } from "laravel-vue-pagination"; // Add this import
 
 export default {
+    components: {
+        Bootstrap5Pagination, // Register the component
+    },
     setup() {
         const store = useStore();
         return {
@@ -340,11 +368,11 @@ export default {
                 { code: "rejected", name: "Từ chối" },
             ],
             paginationClasses: {
-                wrapper: "pagination-wrapper",
-                element: "pagination-btn",
-                active: "pagination-active",
-                disabled: "pagination-disabled",
-                button: "pagination-button",
+                ul: "flex list-none pagination",
+                li: "page-item mx-1",
+                a: "page-link px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100",
+                active: "bg-green-500 text-white active",
+                disabled: "opacity-50 cursor-not-allowed disabled",
             },
         };
     },
@@ -410,6 +438,24 @@ export default {
         },
     },
     methods: {
+        formatDate(date) {
+            if (!date) return "";
+            return new Date(date).toLocaleDateString("vi-VN");
+        },
+
+        formatStatus(status) {
+            if (!status) return "";
+
+            const statusMap = {
+                creating: "Đang tạo",
+                sending: "Đang gửi",
+                received: "Đã nhận",
+                cancelled: "Đã hủy",
+            };
+
+            return statusMap[status] || status;
+        },
+
         statusIcon(status) {
             switch (status) {
                 case "approved":
@@ -438,7 +484,7 @@ export default {
             this.isMobile = window.innerWidth < 768;
         },
         async fetchBienBanData(page = 1) {
-            this.isLoading = true;
+            // this.isLoading = true;
             try {
                 const response = await axios.get("/api/bien-ban-nghiem-thu", {
                     params: {
@@ -479,7 +525,7 @@ export default {
                     );
                 }
             } finally {
-                this.isLoading = false;
+                // this.isLoading = false;
             }
         },
         extractInvestmentProjects() {
