@@ -243,20 +243,48 @@
                                     </td>
                                     <!-- New columns -->
                                     <td class="border px-4 py-2">
-                                        {{ item.nguoi_giao || "" }}
+                                        <template v-if="item.nguoi_giao">
+                                            <i
+                                                class="fas fa-user text-blue-500"
+                                            ></i>
+                                            {{ item.nguoi_giao }}
+                                        </template>
                                     </td>
                                     <td class="border px-4 py-2">
-                                        {{ item.nguoi_nhan || "" }}
+                                        <template v-if="item.nguoi_nhan">
+                                            <i
+                                                class="fas fa-user text-green-500"
+                                            ></i>
+                                            {{ item.nguoi_nhan }}
+                                        </template>
                                     </td>
                                     <td class="border px-4 py-2">
                                         {{ formatDate(item.ngay_nhan) }}
                                     </td>
                                     <td class="border px-4 py-2">
-                                        {{
-                                            formatStatus(
-                                                item.trang_thai_nhan_hs
-                                            )
-                                        }}
+                                        <span
+                                            v-if="item.trang_thai_nhan_hs"
+                                            :class="
+                                                statusClass(
+                                                    item.trang_thai_nhan_hs
+                                                )
+                                            "
+                                            class="flex items-center"
+                                        >
+                                            <i
+                                                :class="
+                                                    statusIcons(
+                                                        item.trang_thai_nhan_hs
+                                                    )
+                                                "
+                                                class="mr-1"
+                                            ></i>
+                                            {{
+                                                formatStatus(
+                                                    item.trang_thai_nhan_hs
+                                                )
+                                            }}
+                                        </span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -353,11 +381,14 @@ export default {
         return {
             isLoading: false,
             bienBanList: [],
+            allBienBanList: [], // เพิ่มสำหรับเก็บข้อมูลทั้งหมด
             search: "",
             statusFilter: "all",
             investmentFilter: "all",
             investmentProjects: [],
             isMobile: window.innerWidth < 768,
+            currentPage: 1, // เพิ่มสำหรับการจัดการหน้า
+            perPage: 10, // จำนวนรายการต่อหน้า
             paginatedItems: {
                 data: [],
             },
@@ -436,6 +467,32 @@ export default {
                 return matchesSearch && matchesStatus && matchesInvestment;
             });
         },
+        paginatedItems() {
+            // Implement client-side pagination
+            const page = this.currentPage || 1;
+            const perPage = this.perPage || 10;
+            const total = this.filteredItems.length;
+            const lastPage = Math.ceil(total / perPage);
+            const from = (page - 1) * perPage + 1;
+            const to = Math.min(from + perPage - 1, total);
+
+            const items = this.filteredItems.slice(
+                (page - 1) * perPage,
+                page * perPage
+            );
+
+            return {
+                current_page: page,
+                data: items,
+                from: from,
+                last_page: lastPage,
+                per_page: perPage,
+                to: to,
+                total: total,
+                prev_page_url: page > 1 ? `?page=${page - 1}` : null,
+                next_page_url: page < lastPage ? `?page=${page + 1}` : null,
+            };
+        },
     },
     methods: {
         formatDate(date) {
@@ -455,7 +512,39 @@ export default {
 
             return statusMap[status] || status;
         },
+        statusClass(status) {
+            if (!status) return "";
 
+            switch (status) {
+                case "creating":
+                    return "text-yellow-600";
+                case "sending":
+                    return "text-blue-600";
+                case "received":
+                    return "text-green-600";
+                case "cancelled":
+                    return "text-red-600";
+                default:
+                    return "";
+            }
+        },
+
+        statusIcons(status) {
+            if (!status) return "";
+
+            switch (status) {
+                case "creating":
+                    return "fas fa-spinner";
+                case "sending":
+                    return "fas fa-shipping-fast";
+                case "received":
+                    return "fas fa-check-circle";
+                case "cancelled":
+                    return "fas fa-times-circle";
+                default:
+                    return "fas fa-info-circle";
+            }
+        },
         statusIcon(status) {
             switch (status) {
                 case "approved":
@@ -477,55 +566,44 @@ export default {
             }).format(value);
         },
         pageChanged(page) {
-            // If using Laravel pagination
-            this.fetchBienBanData(page);
+            this.currentPage = page;
         },
         checkScreenSize() {
             this.isMobile = window.innerWidth < 768;
         },
         async fetchBienBanData(page = 1) {
-            // this.isLoading = true;
+            this.isLoading = true;
             try {
+                // โหลดข้อมูลทั้งหมดครั้งเดียว
                 const response = await axios.get("/api/bien-ban-nghiem-thu", {
                     params: {
-                        page: page,
-                        search: this.search,
-                        status:
-                            this.statusFilter !== "all"
-                                ? this.statusFilter
-                                : null,
-                        investment_project:
-                            this.investmentFilter !== "all"
-                                ? this.investmentFilter
-                                : null,
+                        per_page: 1000, // โหลดทั้งหมดหรือจำนวนมากๆ
                     },
                     headers: {
                         Authorization: "Bearer " + this.store.getToken,
                     },
                 });
 
-                this.bienBanList = response.data.data;
-                this.paginatedItems = response.data;
+                this.allBienBanList = response.data.data;
+                this.bienBanList = this.allBienBanList;
 
-                // Extract unique investment projects for the filter
+                // Set current page
+                this.currentPage = page;
+
+                // ดึงรายการโครงการลงทุนที่มีอยู่ทั้งหมด
                 this.extractInvestmentProjects();
             } catch (error) {
                 console.error("Error fetching biên bản:", error);
 
                 if (error.response?.status === 401) {
-                    // Session expired
-                    localStorage.removeItem("web_token");
-                    localStorage.removeItem("web_user");
-                    this.store.logout();
-                    this.$router.push("/login");
+                    this.handleAuthError();
                 } else {
-                    // Handle other errors
                     alert(
                         "Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau."
                     );
                 }
             } finally {
-                // this.isLoading = false;
+                this.isLoading = false;
             }
         },
         extractInvestmentProjects() {
@@ -556,13 +634,13 @@ export default {
     },
     watch: {
         search() {
-            this.fetchBienBanData();
+            this.currentPage = 1; // รีเซ็ตกลับไปหน้าแรก
         },
         statusFilter() {
-            this.fetchBienBanData();
+            this.currentPage = 1; // รีเซ็ตกลับไปหน้าแรก
         },
         investmentFilter() {
-            this.fetchBienBanData();
+            this.currentPage = 1; // รีเซ็ตกลับไปหน้าแรก
         },
     },
     mounted() {
@@ -744,5 +822,13 @@ export default {
         min-width: 100%;
         margin-bottom: 1rem;
     }
+}
+/* จัดการการแสดงผลของไอคอนร่วมกับข้อความ */
+.flex.items-center {
+    display: flex;
+    align-items: center;
+}
+.mr-1 {
+    margin-right: 0.25rem;
 }
 </style>
