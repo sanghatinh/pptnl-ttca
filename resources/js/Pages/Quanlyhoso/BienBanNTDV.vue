@@ -151,36 +151,782 @@
                         <table class="table-auto w-full">
                             <thead>
                                 <tr>
-                                    <th class="px-4 py-2">Mã nghiệm thu</th>
-                                    <th class="px-4 py-2">Trạm</th>
-                                    <th class="px-4 py-2">Vụ đầu tư</th>
-                                    <th class="px-4 py-2">Tiêu đề</th>
                                     <th class="px-4 py-2">
-                                        Khách hàng cá nhân
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Mã nghiệm thu</span>
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'ma_nghiem_thu'
+                                                    )
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.ma_nghiem_thu,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="
+                                                activeFilter === 'ma_nghiem_thu'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <input
+                                                v-model="
+                                                    columnFilters.ma_nghiem_thu
+                                                "
+                                                type="text"
+                                                placeholder="Tìm kiếm mã nghiệm thu..."
+                                                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'ma_nghiem_thu'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="activeFilter = null"
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
                                     </th>
                                     <th class="px-4 py-2">
-                                        Khách hàng doanh nghiệp
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Trạm</span>
+                                            <button
+                                                @click="toggleFilter('tram')"
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.tram,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="activeFilter === 'tram'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto mb-2"
+                                            >
+                                                <div
+                                                    v-for="option in uniqueValues.tram"
+                                                    :key="option"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`tram-${option}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.tram
+                                                        "
+                                                        class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                    />
+                                                    <label
+                                                        :for="`tram-${option}`"
+                                                        class="select-none"
+                                                        >{{ option }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="resetFilter('tram')"
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="applyFilter('tram')"
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
                                     </th>
                                     <th class="px-4 py-2">
-                                        Hợp đồng đầu tư mía
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Vụ đầu tư</span>
+                                            <button
+                                                @click="
+                                                    toggleFilter('vu_dau_tu')
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.vu_dau_tu,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="activeFilter === 'vu_dau_tu'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto mb-2"
+                                            >
+                                                <div
+                                                    v-for="option in uniqueValues.vu_dau_tu"
+                                                    :key="option"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`vu_dau_tu-${option}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.vu_dau_tu
+                                                        "
+                                                        class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                    />
+                                                    <label
+                                                        :for="`vu_dau_tu-${option}`"
+                                                        class="select-none"
+                                                        >{{ option }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter('vu_dau_tu')
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter('vu_dau_tu')
+                                                    "
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
                                     </th>
                                     <th class="px-4 py-2">
-                                        Hình thức thực hiện DV
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Tiêu đề</span>
+                                            <button
+                                                @click="toggleFilter('tieu_de')"
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.tieu_de,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="activeFilter === 'tieu_de'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <input
+                                                v-model="columnFilters.tieu_de"
+                                                type="text"
+                                                placeholder="Tìm kiếm tiêu đề..."
+                                                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter('tieu_de')
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="activeFilter = null"
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
                                     </th>
                                     <th class="px-4 py-2">
-                                        Hợp đồng cung ứng dịch vụ
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Khách hàng cá nhân</span>
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'khach_hang_ca_nhan_dt_mia'
+                                                    )
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.khach_hang_ca_nhan_dt_mia,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'khach_hang_ca_nhan_dt_mia'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <input
+                                                v-model="
+                                                    columnFilters.khach_hang_ca_nhan_dt_mia
+                                                "
+                                                type="text"
+                                                placeholder="Tìm kiếm khách hàng..."
+                                                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'khach_hang_ca_nhan_dt_mia'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="activeFilter = null"
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-2">
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Khách hàng doanh nghiệp</span>
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'khach_hang_doanh_nghiep_dt_mia'
+                                                    )
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.khach_hang_doanh_nghiep_dt_mia,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'khach_hang_doanh_nghiep_dt_mia'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <input
+                                                v-model="
+                                                    columnFilters.khach_hang_doanh_nghiep_dt_mia
+                                                "
+                                                type="text"
+                                                placeholder="Tìm kiếm doanh nghiệp..."
+                                                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'khach_hang_doanh_nghiep_dt_mia'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="activeFilter = null"
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-2">
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Hợp đồng đầu tư mía</span>
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'hop_dong_dau_tu_mia'
+                                                    )
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.hop_dong_dau_tu_mia,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'hop_dong_dau_tu_mia'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <input
+                                                v-model="
+                                                    columnFilters.hop_dong_dau_tu_mia
+                                                "
+                                                type="text"
+                                                placeholder="Tìm kiếm hợp đồng..."
+                                                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'hop_dong_dau_tu_mia'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="activeFilter = null"
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-2">
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Hình thức thực hiện DV</span>
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'hinh_thuc_thuc_hien_dv'
+                                                    )
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.hinh_thuc_thuc_hien_dv,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'hinh_thuc_thuc_hien_dv'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto mb-2"
+                                            >
+                                                <div
+                                                    v-for="option in uniqueValues.hinh_thuc_thuc_hien_dv"
+                                                    :key="option"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`hinh_thuc_thuc_hien_dv-${option}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.hinh_thuc_thuc_hien_dv
+                                                        "
+                                                        class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                    />
+                                                    <label
+                                                        :for="`hinh_thuc_thuc_hien_dv-${option}`"
+                                                        class="select-none"
+                                                        >{{ option }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'hinh_thuc_thuc_hien_dv'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'hinh_thuc_thuc_hien_dv'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-2">
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span
+                                                >Hợp đồng cung ứng dịch vụ</span
+                                            >
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'hop_dong_cung_ung_dich_vu'
+                                                    )
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.hop_dong_cung_ung_dich_vu,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'hop_dong_cung_ung_dich_vu'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <input
+                                                v-model="
+                                                    columnFilters.hop_dong_cung_ung_dich_vu
+                                                "
+                                                type="text"
+                                                placeholder="Tìm kiếm hợp đồng..."
+                                                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'hop_dong_cung_ung_dich_vu'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="activeFilter = null"
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
                                     </th>
                                     <th class="px-4 py-2">Tổng tiền dịch vụ</th>
                                     <th class="px-4 py-2">Tổng tiền tạm giữ</th>
                                     <th class="px-4 py-2">
                                         Tổng tiền thanh toán
                                     </th>
-                                    <!-- Add new columns -->
-                                    <th class="px-4 py-2">Người giao</th>
-                                    <th class="px-4 py-2">Người nhận</th>
-                                    <th class="px-4 py-2">Ngày nhận</th>
                                     <th class="px-4 py-2">
-                                        Trạng thái nhận HS
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Người giao</span>
+                                            <button
+                                                @click="
+                                                    toggleFilter('nguoi_giao')
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.nguoi_giao,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="activeFilter === 'nguoi_giao'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <input
+                                                v-model="
+                                                    columnFilters.nguoi_giao
+                                                "
+                                                type="text"
+                                                placeholder="Tìm kiếm người giao..."
+                                                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'nguoi_giao'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="activeFilter = null"
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-2">
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Người nhận</span>
+                                            <button
+                                                @click="
+                                                    toggleFilter('nguoi_nhan')
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.nguoi_nhan,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="activeFilter === 'nguoi_nhan'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <input
+                                                v-model="
+                                                    columnFilters.nguoi_nhan
+                                                "
+                                                type="text"
+                                                placeholder="Tìm kiếm người nhận..."
+                                                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'nguoi_nhan'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="activeFilter = null"
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-2">
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Ngày nhận</span>
+                                            <button
+                                                @click="
+                                                    toggleFilter('ngay_nhan')
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.ngay_nhan,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="activeFilter === 'ngay_nhan'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <input
+                                                v-model="
+                                                    columnFilters.ngay_nhan
+                                                "
+                                                type="text"
+                                                placeholder="Tìm kiếm ngày nhận (DD/MM/YYYY)..."
+                                                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter('ngay_nhan')
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="activeFilter = null"
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-2">
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Trạng thái nhận HS</span>
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'trang_thai_nhan_hs'
+                                                    )
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.trang_thai_nhan_hs,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'trang_thai_nhan_hs'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto mb-2"
+                                            >
+                                                <div
+                                                    v-for="option in uniqueValues.trang_thai_nhan_hs"
+                                                    :key="option"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`trang_thai_nhan_hs-${option}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.trang_thai_nhan_hs
+                                                        "
+                                                        class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                    />
+                                                    <label
+                                                        :for="`trang_thai_nhan_hs-${option}`"
+                                                        class="select-none"
+                                                        >{{
+                                                            formatStatus(option)
+                                                        }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'trang_thai_nhan_hs'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'trang_thai_nhan_hs'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
                                     </th>
                                 </tr>
                             </thead>
@@ -241,7 +987,6 @@
                                             )
                                         }}
                                     </td>
-                                    <!-- New columns -->
                                     <td class="border px-4 py-2">
                                         <template v-if="item.nguoi_giao">
                                             <i
@@ -405,6 +1150,34 @@ export default {
                 active: "bg-green-500 text-white active",
                 disabled: "opacity-50 cursor-not-allowed disabled",
             },
+            activeFilter: null,
+            columnFilters: {
+                ma_nghiem_thu: "",
+                tram: "",
+                vu_dau_tu: "",
+                tieu_de: "",
+                khach_hang_ca_nhan_dt_mia: "",
+                khach_hang_doanh_nghiep_dt_mia: "",
+                hop_dong_dau_tu_mia: "",
+                hinh_thuc_thuc_hien_dv: "",
+                hop_dong_cung_ung_dich_vu: "",
+                nguoi_giao: "",
+                nguoi_nhan: "",
+                ngay_nhan: "",
+                trang_thai_nhan_hs: "",
+            },
+            selectedFilterValues: {
+                tram: [],
+                vu_dau_tu: [],
+                hinh_thuc_thuc_hien_dv: [],
+                trang_thai_nhan_hs: [],
+            },
+            uniqueValues: {
+                tram: [],
+                vu_dau_tu: [],
+                hinh_thuc_thuc_hien_dv: [],
+                trang_thai_nhan_hs: [],
+            },
         };
     },
     computed: {
@@ -464,7 +1237,100 @@ export default {
                         item.vu_dau_tu === this.investmentFilter;
                 }
 
-                return matchesSearch && matchesStatus && matchesInvestment;
+                // Column specific filters
+                const matchColumnFilters =
+                    // Search text filters
+                    (!this.columnFilters.ma_nghiem_thu ||
+                        (item.ma_nghiem_thu &&
+                            item.ma_nghiem_thu
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.ma_nghiem_thu.toLowerCase()
+                                ))) &&
+                    (!this.columnFilters.tieu_de ||
+                        (item.tieu_de &&
+                            item.tieu_de
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.tieu_de.toLowerCase()
+                                ))) &&
+                    (!this.columnFilters.khach_hang_ca_nhan_dt_mia ||
+                        (item.khach_hang_ca_nhan_dt_mia &&
+                            item.khach_hang_ca_nhan_dt_mia
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.khach_hang_ca_nhan_dt_mia.toLowerCase()
+                                ))) &&
+                    (!this.columnFilters.khach_hang_doanh_nghiep_dt_mia ||
+                        (item.khach_hang_doanh_nghiep_dt_mia &&
+                            item.khach_hang_doanh_nghiep_dt_mia
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.khach_hang_doanh_nghiep_dt_mia.toLowerCase()
+                                ))) &&
+                    (!this.columnFilters.hop_dong_dau_tu_mia ||
+                        (item.hop_dong_dau_tu_mia &&
+                            item.hop_dong_dau_tu_mia
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.hop_dong_dau_tu_mia.toLowerCase()
+                                ))) &&
+                    (!this.columnFilters.hop_dong_cung_ung_dich_vu ||
+                        (item.hop_dong_cung_ung_dich_vu &&
+                            item.hop_dong_cung_ung_dich_vu
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.hop_dong_cung_ung_dich_vu.toLowerCase()
+                                ))) &&
+                    (!this.columnFilters.nguoi_giao ||
+                        (item.nguoi_giao &&
+                            item.nguoi_giao
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.nguoi_giao.toLowerCase()
+                                ))) &&
+                    (!this.columnFilters.nguoi_nhan ||
+                        (item.nguoi_nhan &&
+                            item.nguoi_nhan
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.nguoi_nhan.toLowerCase()
+                                ))) &&
+                    (!this.columnFilters.ngay_nhan ||
+                        (item.ngay_nhan &&
+                            this.formatDate(item.ngay_nhan).includes(
+                                this.columnFilters.ngay_nhan
+                            ))) &&
+                    // Dropdown filters - check if empty or if value is in selected options
+                    (this.selectedFilterValues.tram.length === 0 ||
+                        (item.tram &&
+                            this.selectedFilterValues.tram.includes(
+                                item.tram
+                            ))) &&
+                    (this.selectedFilterValues.vu_dau_tu.length === 0 ||
+                        (item.vu_dau_tu &&
+                            this.selectedFilterValues.vu_dau_tu.includes(
+                                item.vu_dau_tu
+                            ))) &&
+                    (this.selectedFilterValues.hinh_thuc_thuc_hien_dv.length ===
+                        0 ||
+                        (item.hinh_thuc_thuc_hien_dv &&
+                            this.selectedFilterValues.hinh_thuc_thuc_hien_dv.includes(
+                                item.hinh_thuc_thuc_hien_dv
+                            ))) &&
+                    (this.selectedFilterValues.trang_thai_nhan_hs.length ===
+                        0 ||
+                        (item.trang_thai_nhan_hs &&
+                            this.selectedFilterValues.trang_thai_nhan_hs.includes(
+                                item.trang_thai_nhan_hs
+                            )));
+
+                return (
+                    matchesSearch &&
+                    matchesStatus &&
+                    matchesInvestment &&
+                    matchColumnFilters
+                );
             });
         },
         paginatedItems() {
@@ -592,6 +1458,12 @@ export default {
 
                 // ดึงรายการโครงการลงทุนที่มีอยู่ทั้งหมด
                 this.extractInvestmentProjects();
+
+                // Initialize unique values for dropdown filters
+                this.updateUniqueValues("tram");
+                this.updateUniqueValues("vu_dau_tu");
+                this.updateUniqueValues("hinh_thuc_thuc_hien_dv");
+                this.updateUniqueValues("trang_thai_nhan_hs");
             } catch (error) {
                 console.error("Error fetching biên bản:", error);
 
@@ -631,6 +1503,75 @@ export default {
             // Redirect to login
             this.$router.push("/login");
         },
+        toggleFilter(column) {
+            if (this.activeFilter === column) {
+                this.activeFilter = null;
+            } else {
+                this.activeFilter = column;
+
+                // If it's a dropdown filter column, update unique values
+                if (
+                    [
+                        "tram",
+                        "vu_dau_tu",
+                        "hinh_thuc_thuc_hien_dv",
+                        "trang_thai_nhan_hs",
+                    ].includes(column)
+                ) {
+                    this.updateUniqueValues(column);
+                }
+            }
+        },
+
+        updateUniqueValues(column) {
+            // Get unique values for dropdown columns
+            this.uniqueValues[column] = [
+                ...new Set(
+                    this.bienBanList.map((item) => item[column]).filter(Boolean) // Remove null/undefined values
+                ),
+            ];
+        },
+
+        resetFilter(column) {
+            if (
+                [
+                    "tram",
+                    "vu_dau_tu",
+                    "hinh_thuc_thuc_hien_dv",
+                    "trang_thai_nhan_hs",
+                ].includes(column)
+            ) {
+                this.selectedFilterValues[column] = [];
+            } else {
+                this.columnFilters[column] = "";
+            }
+            this.currentPage = 1;
+        },
+
+        resetAllFilters() {
+            // Reset text filters
+            for (const key in this.columnFilters) {
+                this.columnFilters[key] = "";
+            }
+
+            // Reset dropdown filters
+            for (const key in this.selectedFilterValues) {
+                this.selectedFilterValues[key] = [];
+            }
+
+            // Reset global filters
+            this.search = "";
+            this.statusFilter = "all";
+            this.investmentFilter = "all";
+
+            this.currentPage = 1;
+        },
+
+        applyFilter(column) {
+            // Just close the filter dropdown as the filter is applied automatically
+            this.activeFilter = null;
+            this.currentPage = 1;
+        },
     },
     watch: {
         search() {
@@ -641,6 +1582,18 @@ export default {
         },
         investmentFilter() {
             this.currentPage = 1; // รีเซ็ตกลับไปหน้าแรก
+        },
+        columnFilters: {
+            handler() {
+                this.currentPage = 1;
+            },
+            deep: true,
+        },
+        selectedFilterValues: {
+            handler() {
+                this.currentPage = 1;
+            },
+            deep: true,
         },
     },
     mounted() {
@@ -830,5 +1783,106 @@ export default {
 }
 .mr-1 {
     margin-right: 0.25rem;
+}
+
+/* Add new styles for filters */
+th {
+    position: relative;
+}
+
+.table-auto th {
+    min-width: 150px;
+    white-space: nowrap;
+}
+
+.desktop-row {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.desktop-row:hover {
+    background-color: #f0fff4;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Improve table appearance */
+.table-auto {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.table-auto th:first-child {
+    border-top-left-radius: 0.5rem;
+}
+
+.table-auto th:last-child {
+    border-top-right-radius: 0.5rem;
+}
+
+.table-auto tr:last-child td:first-child {
+    border-bottom-left-radius: 0.5rem;
+}
+
+.table-auto tr:last-child td:last-child {
+    border-bottom-right-radius: 0.5rem;
+}
+
+/* Filter icon styling */
+.fa-filter {
+    font-size: 0.75rem;
+}
+
+/* Filter dropdown positioning */
+.relative {
+    position: relative;
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+    cursor: pointer;
+}
+
+/* Improve active filter visibility */
+.text-green-500 {
+    color: #10b981;
+}
+
+/* Improve dropdown shadow */
+.shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Ensure filter dropdowns appear on top */
+.z-10 {
+    z-index: 10;
+}
+
+/* Fix for filter dropdowns positioning */
+.table-auto th {
+    position: relative;
+}
+
+/* Prevent dropdowns from being cut off by overflow-x-auto */
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
+    position: fixed; /* Changed from absolute to fixed */
+    transform: translateY(
+        6px
+    ); /* Small offset to avoid overlap with filter button */
+}
+
+/* Improve table overflow behavior */
+.overflow-x-auto {
+    position: relative;
+    min-width: 100%;
+}
+
+/* Add responsive table wrapper */
+.table-responsive-wrapper {
+    position: relative;
 }
 </style>
