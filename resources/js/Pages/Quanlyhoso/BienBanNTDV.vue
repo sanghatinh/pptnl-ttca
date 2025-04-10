@@ -1798,7 +1798,7 @@ export default {
     position: absolute;
     right: 5px;
     top: 25px;
-    z-index: 1;
+    z-index: 100;
     font-size: 1rem;
     cursor: pointer;
     color: #fff;
@@ -1901,36 +1901,134 @@ input[type="checkbox"] {
     position: relative;
 }
 
-/* Prevent dropdowns from being cut off by overflow-x-auto */
+/* Improved dropdown positioning to prevent overlap with table headers */
 .absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
-    position: absolute; /* Changed from fixed to absolute */
-    top: 100%; /* Position below the filter button */
-    left: 0; /* Align with the left edge of the parent */
-    transform: translateY(6px); /* Small offset for better appearance */
-    z-index: 1050; /* Ensure dropdown appears above other elements */
-    overflow: auto; /* Handle overflow for long dropdowns */
-    max-height: 200px; /* Limit height to prevent excessive size */
+    position: absolute;
+    top: calc(100% + 5px); /* Position below the header with some spacing */
+    left: 0;
+    min-width: 250px;
+    max-width: 300px;
+    z-index: 1050;
+    overflow: visible;
+    max-height: 300px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }
 
-/* Ensure parent elements have proper positioning */
-th {
-    position: relative; /* Ensure dropdowns are positioned relative to the column */
+/* Handle overflow for long content in dropdown filters */
+.max-h-40.overflow-y-auto {
+    max-height: 160px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
 }
 
-/* Add overflow handling for table container */
+/* Prettier scrollbars for Webkit browsers */
+.max-h-40.overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
+
+.max-h-40.overflow-y-auto::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 3px;
+}
+
+.max-h-40.overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 3px;
+}
+
+/* Ensure the table container handles overlays properly */
 .overflow-x-auto {
     position: relative;
     overflow: visible; /* Allow dropdowns to overflow outside the container */
+    width: 100%;
 }
 
-/* Improve table overflow behavior */
-.overflow-x-auto {
+/* Make sure the card has proper overflow handling */
+.card-body {
     position: relative;
-    min-width: 100%;
+    overflow: visible;
 }
 
-/* Add responsive table wrapper */
+/* Ensure table wrapper handles the overflow context properly */
 .table-responsive-wrapper {
     position: relative;
+    overflow: visible;
+    width: 100%;
+}
+
+/* Make the filter dropdowns look more professional */
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
+    padding: 12px;
+    background-color: white;
+    border-radius: 8px;
+}
+
+/* Improve filter input styling */
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 input[type="text"] {
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+}
+
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 input[type="text"]:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+/* Style filter buttons */
+.flex.justify-between button {
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.flex.justify-between button:hover {
+    transform: translateY(-1px);
+}
+
+/* Add a subtle pointer indicator to make it clearer the dropdown is tied to a specific column */
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10:before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 10px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    transform: rotate(45deg);
+    border-left: 1px solid #e2e8f0;
+    border-top: 1px solid #e2e8f0;
+    z-index: -1;
+}
+
+/* Fix table header sticky positioning for better scrolling */
+.table-auto thead th {
+    position: sticky;
+    top: 0;
+    background-color: #e7e7e7;
+    z-index: 10;
+}
+
+/* Ensure filter icons look professional */
+.fas.fa-filter {
+    transition: color 0.2s;
+}
+
+button:hover .fas.fa-filter:not(.text-green-500) {
+    color: #10b981;
+}
+
+/* Improve mobile view for filter dropdowns */
+@media (max-width: 768px) {
+    .absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
+        width: 90vw;
+        max-width: 90vw;
+        left: 0;
+        right: 0;
+        margin-left: auto;
+        margin-right: auto;
+    }
 }
 </style>
