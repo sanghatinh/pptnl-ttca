@@ -147,6 +147,14 @@
             <!-- Desktop view table -->
             <div v-if="!isMobile" class="card">
                 <div class="card-body">
+                    <!-- Reset filters button -->
+                    <span
+                        class="reset-all-filters-btn"
+                        title="Reset tất cả bộ lọc"
+                        @click="resetAllFilters"
+                    >
+                        <i class="fas fa-redo-alt"></i>
+                    </span>
                     <div class="overflow-x-auto">
                         <table class="table-auto w-full">
                             <thead>
@@ -1783,6 +1791,32 @@ export default {
 }
 .mr-1 {
     margin-right: 0.25rem;
+}
+
+/* Reset filters button styling */
+.reset-all-filters-btn {
+    position: absolute;
+    right: 5px;
+    top: 25px;
+    z-index: 1;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #fff;
+    background: #198754;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.reset-all-filters-btn:hover {
+    background: #10b981;
+    transform: rotate(30deg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Add new styles for filters */
