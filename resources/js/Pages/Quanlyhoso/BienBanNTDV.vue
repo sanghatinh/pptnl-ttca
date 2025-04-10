@@ -31,20 +31,48 @@
                         </option>
                     </select>
                 </div>
-                <div class="investment-filter ms-3">
-                    <select
-                        v-model="investmentFilter"
-                        class="form-select investment-select"
-                    >
-                        <option value="all">Tất cả vụ đầu tư</option>
-                        <option
-                            v-for="project in investmentProjects"
-                            :key="project"
-                            :value="project"
+                <!-- Vertical ellipsis dropdown menu -->
+                <div class="actions-menu">
+                    <div class="dropdown">
+                        <button
+                            class="btn btn-light btn-icon"
+                            type="button"
+                            id="actionMenuButton"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
                         >
-                            {{ project }}
-                        </option>
-                    </select>
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul
+                            class="dropdown-menu shadow-sm"
+                            aria-labelledby="actionMenuButton"
+                        >
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="#"
+                                    @click.prevent="exportToExcel"
+                                >
+                                    <i
+                                        class="fas fa-file-excel text-success me-2"
+                                    ></i>
+                                    Export to Excel
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="#"
+                                    @click.prevent="importData"
+                                >
+                                    <i
+                                        class="fas fa-upload text-primary me-2"
+                                    ></i>
+                                    Import Data
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
                 <div
                     class="col d-flex justify-content-end gap-3 align-items-center"
