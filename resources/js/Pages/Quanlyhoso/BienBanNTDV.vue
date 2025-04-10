@@ -1869,10 +1869,24 @@ input[type="checkbox"] {
 
 /* Prevent dropdowns from being cut off by overflow-x-auto */
 .absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
-    position: fixed; /* Changed from absolute to fixed */
-    transform: translateY(
-        6px
-    ); /* Small offset to avoid overlap with filter button */
+    position: absolute; /* Changed from fixed to absolute */
+    top: 100%; /* Position below the filter button */
+    left: 0; /* Align with the left edge of the parent */
+    transform: translateY(6px); /* Small offset for better appearance */
+    z-index: 1050; /* Ensure dropdown appears above other elements */
+    overflow: auto; /* Handle overflow for long dropdowns */
+    max-height: 200px; /* Limit height to prevent excessive size */
+}
+
+/* Ensure parent elements have proper positioning */
+th {
+    position: relative; /* Ensure dropdowns are positioned relative to the column */
+}
+
+/* Add overflow handling for table container */
+.overflow-x-auto {
+    position: relative;
+    overflow: visible; /* Allow dropdowns to overflow outside the container */
 }
 
 /* Improve table overflow behavior */
