@@ -2059,4 +2059,61 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         margin-right: auto;
     }
 }
+
+/* Vertical ellipsis button styling */
+.actions-menu {
+    position: relative;
+}
+
+.btn-icon {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #e5e7eb;
+}
+
+.btn-icon:hover {
+    background-color: #e9ecef;
+    color: #495057;
+    border-color: #ddd;
+}
+
+.btn-icon:focus {
+    box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25);
+    border-color: #10b981;
+}
+
+.dropdown-menu {
+    min-width: 200px;
+    padding: 0.5rem 0;
+    margin: 0.125rem 0 0;
+    border-radius: 0.375rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item {
+    padding: 0.6rem 1rem;
+    display: flex;
+    align-items: center;
+    color: #212529;
+    transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #f0fff4;
+    color: #10b981;
+}
+
+.dropdown-item i {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+}
 </style>
