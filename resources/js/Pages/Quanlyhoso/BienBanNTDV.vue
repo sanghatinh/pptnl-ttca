@@ -51,7 +51,7 @@
                                 <a
                                     class="dropdown-item"
                                     href="#"
-                                    @click.prevent="exportToExcel"
+                                    @click.prevent="showExportModal"
                                 >
                                     <i
                                         class="fas fa-file-excel text-success me-2"
@@ -1140,6 +1140,51 @@
             </div>
         </div>
     </div>
+    <!-- Export to Excel Modal -->
+    <div
+        class="modal fade"
+        id="exportModal"
+        tabindex="-1"
+        aria-labelledby="exportModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title text-success" id="exportModalLabel">
+                        <i class="fas fa-file-excel text-success me-2"></i>
+                        Export to Excel
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        @click="closeExportModal"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Select export option:</p>
+                    <div class="d-grid gap-2">
+                        <button
+                            @click="exportToExcelCurrentPage"
+                            class="btn btn-outline-success"
+                        >
+                            <i class="fas fa-file-export me-2"></i>
+                            Current Page Only
+                        </button>
+                        <button
+                            @click="exportToExcelAllPages"
+                            class="btn btn-success"
+                        >
+                            <i class="fas fa-table me-2"></i>
+                            All Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -1147,7 +1192,9 @@ import axios from "axios";
 import { useStore } from "../../Store/Auth";
 import { ref, computed, onMounted } from "vue";
 import { Bootstrap5Pagination } from "laravel-vue-pagination"; // Add this import
-
+// Import Bootstrap JS explicitly
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
 export default {
     components: {
         Bootstrap5Pagination, // Register the component
@@ -1214,6 +1261,7 @@ export default {
                 hinh_thuc_thuc_hien_dv: [],
                 trang_thai_nhan_hs: [],
             },
+            exportModal: null, // Add this to store modal reference
         };
     },
     computed: {
@@ -1608,6 +1656,215 @@ export default {
             this.activeFilter = null;
             this.currentPage = 1;
         },
+
+        //export to excel functions
+        showExportModal() {
+            try {
+                // Ensure Bootstrap is properly imported and initialized
+                import("bootstrap/dist/js/bootstrap.bundle.min.js")
+                    .then((bootstrap) => {
+                        const Modal = bootstrap.Modal;
+                        const modalElement =
+                            document.getElementById("exportModal");
+
+                        if (modalElement) {
+                            this.exportModal = new Modal(modalElement);
+                            this.exportModal.show();
+                        } else {
+                            console.error("Modal element not found");
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("Failed to load Bootstrap:", err);
+                        // Fallback method using direct DOM manipulation
+                        const modalElement =
+                            document.getElementById("exportModal");
+                        if (modalElement) {
+                            modalElement.classList.add("show");
+                            modalElement.style.display = "block";
+                            document.body.classList.add("modal-open");
+
+                            // Add backdrop
+                            const backdrop = document.createElement("div");
+                            backdrop.classList.add(
+                                "modal-backdrop",
+                                "fade",
+                                "show"
+                            );
+                            document.body.appendChild(backdrop);
+                        }
+                    });
+            } catch (error) {
+                console.error("Error showing modal:", error);
+            }
+        },
+
+        exportToExcelCurrentPage() {
+            // Get the current page data from paginatedItems
+            if (
+                this.paginatedItems.data &&
+                this.paginatedItems.data.length > 0
+            ) {
+                this.generateExcel(
+                    this.paginatedItems.data,
+                    "bien_ban_current_page"
+                );
+
+                // Close modal after export
+                this.closeExportModal();
+            } else {
+                alert("Không có dữ liệu để xuất");
+                // Close modal after alert
+                this.closeExportModal();
+            }
+        },
+
+        exportToExcelAllPages() {
+            this.isLoading = true;
+            // Use all filtered items instead of just the current page
+            setTimeout(() => {
+                if (this.filteredItems && this.filteredItems.length > 0) {
+                    this.generateExcel(this.filteredItems, "bien_ban_all_data");
+                } else {
+                    alert("Không có dữ liệu để xuất");
+                }
+                this.isLoading = false;
+
+                // Close modal after export
+                this.closeExportModal();
+            }, 100);
+        },
+
+        generateExcel(data, filename) {
+            try {
+                // Import xlsx and FileSaver dynamically
+                import("xlsx").then((XLSX) => {
+                    import("file-saver").then((module) => {
+                        const FileSaver = module.default;
+
+                        // Check if data exists and is not empty
+                        if (!data || data.length === 0) {
+                            alert("Không có dữ liệu để xuất");
+                            return;
+                        }
+
+                        // Format data for export
+                        const exportData = data.map((item) => ({
+                            "Mã nghiệm thu": item.ma_nghiem_thu || "",
+                            Trạm: item.tram || "",
+                            "Vụ đầu tư": item.vu_dau_tu || "",
+                            "Tiêu đề": item.tieu_de || "",
+                            "Khách hàng cá nhân":
+                                item.khach_hang_ca_nhan_dt_mia || "",
+                            "Khách hàng doanh nghiệp":
+                                item.khach_hang_doanh_nghiep_dt_mia || "",
+                            "Hợp đồng đầu tư mía":
+                                item.hop_dong_dau_tu_mia || "",
+                            "Hình thức thực hiện DV":
+                                item.hinh_thuc_thuc_hien_dv || "",
+                            "Hợp đồng cung ứng DV":
+                                item.hop_dong_cung_ung_dich_vu || "",
+                            "Tổng tiền dịch vụ": item.tong_tien_dich_vu || 0,
+                            "Tổng tiền tạm giữ": item.tong_tien_tam_giu || 0,
+                            "Tổng tiền thanh toán":
+                                item.tong_tien_thanh_toan || 0,
+                            "Người giao": item.nguoi_giao || "",
+                            "Người nhận": item.nguoi_nhan || "",
+                            "Ngày nhận": item.ngay_nhan
+                                ? this.formatDate(item.ngay_nhan)
+                                : "",
+                            "Trạng thái": item.trang_thai_nhan_hs
+                                ? this.formatStatus(item.trang_thai_nhan_hs)
+                                : "",
+                        }));
+
+                        // Only proceed if we have data after formatting
+                        if (exportData.length === 0) {
+                            alert("Không có dữ liệu để xuất");
+                            return;
+                        }
+
+                        // Create a worksheet
+                        const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+                        // Set column widths
+                        const columnWidths = [
+                            { wpx: 120 }, // Mã nghiệm thu
+                            { wpx: 100 }, // Trạm
+                            { wpx: 120 }, // Vụ đầu tư
+                            { wpx: 150 }, // Tiêu đề
+                            { wpx: 150 }, // Khách hàng cá nhân
+                            { wpx: 150 }, // Khách hàng doanh nghiệp
+                            { wpx: 150 }, // Hợp đồng đầu tư mía
+                            { wpx: 150 }, // Hình thức thực hiện DV
+                            { wpx: 150 }, // Hợp đồng cung ứng DV
+                            { wpx: 120 }, // Tổng tiền dịch vụ
+                            { wpx: 120 }, // Tổng tiền tạm giữ
+                            { wpx: 120 }, // Tổng tiền thanh toán
+                            { wpx: 120 }, // Người giao
+                            { wpx: 120 }, // Người nhận
+                            { wpx: 100 }, // Ngày nhận
+                            { wpx: 120 }, // Trạng thái
+                        ];
+                        worksheet["!cols"] = columnWidths;
+
+                        // Create a workbook
+                        const workbook = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(
+                            workbook,
+                            worksheet,
+                            "Biên bản nghiệm thu"
+                        );
+
+                        // Create an Excel file
+                        const excelBuffer = XLSX.write(workbook, {
+                            bookType: "xlsx",
+                            type: "array",
+                        });
+
+                        // Save the file
+                        const blob = new Blob([excelBuffer], {
+                            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        });
+                        FileSaver.saveAs(
+                            blob,
+                            `${filename}_${
+                                new Date().toISOString().split("T")[0]
+                            }.xlsx`
+                        );
+
+                        // Show success notification
+                        this.$toast?.success(
+                            "Excel file exported successfully"
+                        ) || alert("Excel file exported successfully");
+                    });
+                });
+            } catch (error) {
+                console.error("Export error:", error);
+                alert("Error exporting data. Please try again.");
+                this.isLoading = false;
+            }
+        },
+        closeExportModal() {
+            // Check if we have stored a modal reference and use it
+            if (this.exportModal) {
+                this.exportModal.hide();
+            } else {
+                // Try to close using direct DOM manipulation if Bootstrap isn't working properly
+                const modalElement = document.getElementById("exportModal");
+                if (modalElement) {
+                    modalElement.classList.remove("show");
+                    modalElement.style.display = "none";
+                    document.body.classList.remove("modal-open");
+
+                    // Remove backdrop
+                    const backdrop = document.querySelector(".modal-backdrop");
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }
+            }
+        },
     },
     watch: {
         search() {
@@ -1635,6 +1892,23 @@ export default {
     mounted() {
         this.fetchBienBanData();
         window.addEventListener("resize", this.checkScreenSize);
+
+        // Properly initialize Bootstrap components
+        import("bootstrap/dist/js/bootstrap.bundle.min.js")
+            .then((bootstrap) => {
+                // Store the Bootstrap module for later use
+                window.bootstrap = bootstrap;
+
+                // Initialize the export modal
+                const exportModalElement =
+                    document.getElementById("exportModal");
+                if (exportModalElement) {
+                    this.exportModal = new bootstrap.Modal(exportModalElement);
+                }
+            })
+            .catch((err) => {
+                console.error("Failed to load Bootstrap:", err);
+            });
     },
     beforeUnmount() {
         window.removeEventListener("resize", this.checkScreenSize);
