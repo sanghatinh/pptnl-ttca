@@ -613,10 +613,7 @@
                                             </button>
                                         </div>
                                         <div
-                                            v-if="
-                                                activeFilter ===
-                                                'hinh_thuc_thuc_hien_dv'
-                                            "
+                                            v-if="activeFilter === 'hinh_thuc_thuc_hien_dv'"
                                             class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
                                         >
                                             <div
@@ -2205,12 +2202,14 @@ export default {
                     this.totalRecords = data.total || 0;
                     this.processingProgress = 100;
 
-                    if (data.success) {
-                        // Import completed successfully
-                        setTimeout(() => {
-                            this.isImporting = false;
-                            this.closeImportModal();
+                    // Import completed with either success or failure
+                    setTimeout(() => {
+                        this.isImporting = false;
 
+                        if (data.success) {
+                            // Import completed successfully
+                            this.closeImportModal();
+                            
                             // Show success message
                             alert(
                                 `Import completed successfully. ${this.processedRecords} records imported.`
@@ -2218,23 +2217,25 @@ export default {
 
                             // Refresh data
                             this.fetchBienBanData();
-                        }, 1000);
-                    } else {
-                        // Import failed
-                        this.isImporting = false;
-                        this.importErrors = data.errors || [
-                            "Unknown errors occurred during processing.",
-                        ];
-                        alert(
-                            "Import failed. Please check the errors and try again."
-                        );
-                    }
+                        } else {
+                            // Import failed, but show specific errors in UI
+                            this.importErrors = Array.isArray(data.errors) ? data.errors : 
+                                (data.errors ? [data.errors] : ["Unknown errors occurred during processing."]);
+                                
+                            if (this.importErrors.some(err => err.includes("transaction"))) {
+                                // พยายามแสดงข้อความที่เข้าใจง่ายกว่าสำหรับปัญหา transaction
+                                alert("นำเข้าข้อมูลสำเร็จบางส่วน แต่เกิดข้อผิดพลาดกับฐานข้อมูล โปรดรีเฟรชหน้าและตรวจสอบข้อมูล");
+                            } else {
+                                alert("Import failed. Please check the errors and try again.");
+                            }
+                        }
+                    }, 1000);
                 } else {
                     // Still processing, update progress
                     this.processedRecords = data.processed || 0;
                     this.totalRecords = data.total || this.totalRecords;
                     this.processingProgress = Math.round(
-                        (this.processedRecords * 100) / this.totalRecords
+                        (this.processedRecords * 100) / (this.totalRecords || 1) // ป้องกันการหารด้วย 0
                     );
 
                     // Check again after a delay
@@ -2244,8 +2245,14 @@ export default {
                 console.error("Error checking import progress:", error);
                 this.isImporting = false;
                 this.importErrors = [
-                    "Error monitoring import progress. The import may still be processing.",
+                    "Error monitoring import progress. The import may still be processing in the background."
                 ];
+                
+                // น่าจะมีการประมวลผลเสร็จบางส่วนแล้ว ให้เรียกดูข้อมูลอีกครั้ง
+                setTimeout(() => {
+                    this.fetchBienBanData();
+                    alert("การตรวจสอบสถานะนำเข้าข้อมูลมีปัญหา แต่การนำเข้าอาจเสร็จสิ้นแล้วบางส่วน ระบบจะรีเฟรชข้อมูลให้");
+                }, 2000);
             }
         },
     },

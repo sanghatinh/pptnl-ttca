@@ -131,8 +131,19 @@ class BienBanNghiemThuController extends Controller
             $importData['status'] = 'processing';
             \Cache::put('import_' . $importId, $importData, 3600);
             
-            // Get file from storage
-            $filePath = storage_path('app/' . $path);
+            // Get file from storage - fix path to match filesystem configuration
+            $filePath = storage_path('app/private/' . $path);
+            
+            // Check if file exists
+            if (!file_exists($filePath)) {
+                // Try alternative path if the file doesn't exist at the expected location
+                $alternativePath = storage_path('app/' . $path);
+                if (file_exists($alternativePath)) {
+                    $filePath = $alternativePath;
+                } else {
+                    throw new \Exception("File \"$filePath\" does not exist.");
+                }
+            }
             
             // Determine file type and process accordingly
             $extension = pathinfo($filePath, PATHINFO_EXTENSION);
@@ -173,70 +184,90 @@ class BienBanNghiemThuController extends Controller
             \DB::beginTransaction();
             
             try {
-                // First, truncate the table to replace all data
-                \DB::table('tb_bien_ban_nghiemthu_dv')->truncate();
+                // First, delete related records in document_mapping that reference this table
+                \DB::table('document_mapping')->whereNotNull('ma_nghiem_thu_bb')->delete();
                 
-                // Insert new records
-                foreach ($rows as $index => $row) {
-                    try {
-                        // Skip empty rows
-                        if (empty(array_filter($row))) {
-                            continue;
-                        }
-                        
-                        $data = [];
-                        
-                        // Map data from Excel/CSV to database columns
-                        foreach ($columnMap as $dbColumn => $excelIndex) {
-                            if ($excelIndex !== false && isset($row[$excelIndex])) {
-                                // For numeric fields, ensure proper formatting
-                                if (in_array($dbColumn, ['tong_tien', 'tong_tien_dich_vu', 'tong_tien_tam_giu', 'tong_tien_thanh_toan'])) {
-                                    // Remove currency symbols and formatting
-                                    $value = preg_replace('/[^0-9.]/', '', $row[$excelIndex]);
-                                    $data[$dbColumn] = $value ?: 0;
-                                } else {
-                                    $data[$dbColumn] = $row[$excelIndex];
+                // Then temporarily disable foreign key checks and truncate the main table
+                \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+                \DB::table('tb_bien_ban_nghiemthu_dv')->truncate();
+                \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+                
+                // Insert new records in batches for better performance
+                $batchSize = 100; // Process 100 records at a time
+                $batches = array_chunk($rows, $batchSize);
+                
+                foreach ($batches as $batchIndex => $batch) {
+                    $batchData = [];
+                    
+                    foreach ($batch as $index => $row) {
+                        $rowIndex = ($batchIndex * $batchSize) + $index;
+                        try {
+                            // Skip empty rows
+                            if (empty(array_filter($row))) {
+                                continue;
+                            }
+                            
+                            $data = [];
+                            
+                            // Map data from Excel/CSV to database columns
+                            foreach ($columnMap as $dbColumn => $excelIndex) {
+                                if ($excelIndex !== false && isset($row[$excelIndex])) {
+                                    // For numeric fields, ensure proper formatting
+                                    if (in_array($dbColumn, ['tong_tien', 'tong_tien_dich_vu', 'tong_tien_tam_giu', 'tong_tien_thanh_toan'])) {
+                                        // Remove currency symbols and formatting
+                                        $value = preg_replace('/[^0-9.]/', '', $row[$excelIndex]);
+                                        $data[$dbColumn] = $value ?: 0;
+                                    } else {
+                                        $data[$dbColumn] = $row[$excelIndex];
+                                    }
                                 }
                             }
+                            
+                            // Set required fields if missing
+                            if (empty($data['ma_nghiem_thu'])) {
+                                throw new \Exception('Row ' . ($rowIndex + 2) . ': Missing required field: ma_nghiem_thu');
+                            }
+                            
+                            if (empty($data['tram'])) {
+                                $data['tram'] = '';
+                            }
+                            
+                            if (empty($data['vu_dau_tu'])) {
+                                $data['vu_dau_tu'] = '';
+                            }
+                            
+                            if (empty($data['tieu_de'])) {
+                                $data['tieu_de'] = '';
+                            }
+                            
+                            // Set timestamps
+                            $data['created_at'] = now();
+                            $data['updated_at'] = now();
+                            
+                            // Add to batch data
+                            $batchData[] = $data;
+                            
+                            $processedCount++;
+                            
+                        } catch (\Exception $e) {
+                            // Log error but continue processing
+                            $errors[] = 'Row ' . ($rowIndex + 2) . ': ' . $e->getMessage();
                         }
-                        
-                        // Set required fields if missing
-                        if (empty($data['ma_nghiem_thu'])) {
-                            throw new \Exception('Row ' . ($index + 2) . ': Missing required field: ma_nghiem_thu');
-                        }
-                        
-                        if (empty($data['tram'])) {
-                            $data['tram'] = '';
-                        }
-                        
-                        if (empty($data['vu_dau_tu'])) {
-                            $data['vu_dau_tu'] = '';
-                        }
-                        
-                        if (empty($data['tieu_de'])) {
-                            $data['tieu_de'] = '';
-                        }
-                        
-                        // Set timestamps
-                        $data['created_at'] = now();
-                        $data['updated_at'] = now();
-                        
-                        // Insert record
-                        \DB::table('tb_bien_ban_nghiemthu_dv')->insert($data);
-                        
-                        $processedCount++;
-                        
-                        // Update progress every 10 records
-                        if ($processedCount % 10 === 0) {
-                            $importData = \Cache::get('import_' . $importId);
-                            $importData['processed'] = $processedCount;
-                            \Cache::put('import_' . $importId, $importData, 3600);
-                        }
-                        
-                    } catch (\Exception $e) {
-                        // Log error but continue processing
-                        $errors[] = 'Row ' . ($index + 2) . ': ' . $e->getMessage();
                     }
+                    
+                    // Insert batch if not empty
+                    if (!empty($batchData)) {
+                        \DB::table('tb_bien_ban_nghiemthu_dv')->insert($batchData);
+                    }
+                    
+                    // Update progress after each batch
+                    $importData = \Cache::get('import_' . $importId);
+                    $importData['processed'] = $processedCount;
+                    $importData['errors'] = $errors;
+                    \Cache::put('import_' . $importId, $importData, 3600);
+                    
+                    // Give the database a moment to breathe
+                    usleep(10000); // 10ms pause between batches
                 }
                 
                 // Commit transaction
@@ -256,7 +287,9 @@ class BienBanNghiemThuController extends Controller
                 
             } catch (\Exception $e) {
                 // Rollback transaction on error
-                \DB::rollBack();
+                if (\DB::transactionLevel() > 0) {
+                    \DB::rollBack();
+                }
                 
                 // Update error status
                 $importData = \Cache::get('import_' . $importId);
@@ -271,6 +304,10 @@ class BienBanNghiemThuController extends Controller
             
         } catch (\Exception $e) {
             // Handle outer exceptions
+            if (\DB::transactionLevel() > 0) {
+                \DB::rollBack();
+            }
+            
             $importData = \Cache::get('import_' . $importId);
             $importData['status'] = 'failed';
             $importData['errors'] = array_merge($importData['errors'] ?? [], [$e->getMessage()]);
@@ -298,7 +335,7 @@ class BienBanNghiemThuController extends Controller
             'hop_dong_cung_ung_dich_vu' => ['hợp đồng cung ứng dịch vụ', 'hop dong cung ung dich vu', 'hợp đồng dịch vụ', 'hop dong dich vu', 'service contract'],
             'tong_tien' => ['tổng tiền', 'tong tien', 'total amount', 'total'],
             'tong_tien_dich_vu' => ['tổng tiền dịch vụ', 'tong tien dich vu', 'service amount', 'tiền dịch vụ'],
-            'tong_tien_tam_giu' => ['tổng tiền tạm giữ', 'tong tien tam giu', 'retention amount', 'tiền tạm giữ'],
+            'tong_tien_tam_giu' => ['tổng tiền tạm giữ', 'tong tien tam giu', 'retention amount', 'tiền tạm giữ', 'Tổng tiền thanh toán còn lại'],
             'tong_tien_thanh_toan' => ['tổng tiền thanh toán', 'tong tien thanh toan', 'payment amount', 'tiền thanh toán'],
             'can_bo_nong_vu' => ['cán bộ nông vụ', 'can bo nong vu', 'officer', 'agricultural officer'],
             'tinh_trang' => ['tình trạng', 'tinh trang', 'status'],
