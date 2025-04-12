@@ -1185,12 +1185,143 @@
             </div>
         </div>
     </div>
+
+    <!-- Import Data Modal -->
+    <div
+        class="modal fade"
+        id="importModal"
+        tabindex="-1"
+        aria-labelledby="importModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title text-primary" id="importModalLabel">
+                        <i class="fas fa-upload text-primary me-2"></i>
+                        Import Data
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        @click="closeImportModal"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning mb-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <small
+                            >This will replace all existing data in the system.
+                            Make sure you have a backup before
+                            proceeding.</small
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="importFile" class="form-label"
+                            >Select file</label
+                        >
+                        <input
+                            class="form-control"
+                            type="file"
+                            id="importFile"
+                            @change="handleFileSelected"
+                            accept=".csv,.xlsx"
+                        />
+                        <div class="form-text">
+                            Supported file types: .csv, .xlsx
+                        </div>
+                    </div>
+
+                    <div v-if="uploadProgress > 0" class="mb-3">
+                        <label class="form-label">Upload Progress</label>
+                        <div class="progress">
+                            <div
+                                class="progress-bar progress-bar-striped progress-bar-animated"
+                                role="progressbar"
+                                :style="`width: ${uploadProgress}%`"
+                                :aria-valuenow="uploadProgress"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                {{ uploadProgress }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="processingRecords" class="mb-3">
+                        <label class="form-label">Processing Records</label>
+                        <div class="progress">
+                            <div
+                                class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                                role="progressbar"
+                                :style="`width: ${processingProgress}%`"
+                                :aria-valuenow="processingProgress"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                {{ processedRecords }} / {{ totalRecords }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="importErrors.length > 0" class="mt-3">
+                        <div class="alert alert-danger">
+                            <h6 class="alert-heading">Import Errors</h6>
+                            <ul class="mb-0 ps-3">
+                                <li
+                                    v-for="(error, index) in importErrors.slice(
+                                        0,
+                                        5
+                                    )"
+                                    :key="index"
+                                >
+                                    {{ error }}
+                                </li>
+                            </ul>
+                            <div
+                                v-if="importErrors.length > 5"
+                                class="mt-2 text-center"
+                            >
+                                <small
+                                    >And {{ importErrors.length - 5 }} more
+                                    errors...</small
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                        @click="closeImportModal"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        @click="startImport"
+                        :disabled="!selectedFile || isImporting"
+                    >
+                        <i class="fas fa-upload me-2"></i>
+                        <span v-if="isImporting">Importing...</span>
+                        <span v-else>Import</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
 import axios from "axios";
 import { useStore } from "../../Store/Auth";
-import { ref, computed, onMounted } from "vue";
+// import { ref, computed, onMounted } from "vue";
 import { Bootstrap5Pagination } from "laravel-vue-pagination"; // Add this import
 // Import Bootstrap JS explicitly
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
@@ -1217,9 +1348,6 @@ export default {
             isMobile: window.innerWidth < 768,
             currentPage: 1, // เพิ่มสำหรับการจัดการหน้า
             perPage: 10, // จำนวนรายการต่อหน้า
-            paginatedItems: {
-                data: [],
-            },
             statusOptions: [
                 { code: "all", name: "Tất cả trạng thái" },
                 { code: "approved", name: "Đã duyệt" },
@@ -1262,6 +1390,14 @@ export default {
                 trang_thai_nhan_hs: [],
             },
             exportModal: null, // Add this to store modal reference
+            selectedFile: null,
+            uploadProgress: 0,
+            processingRecords: false,
+            processingProgress: 0,
+            processedRecords: 0,
+            totalRecords: 0,
+            importErrors: [],
+            isImporting: false,
         };
     },
     computed: {
@@ -1863,6 +1999,253 @@ export default {
                         backdrop.remove();
                     }
                 }
+            }
+        },
+        importData() {
+            // Show the import modal
+            try {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js")
+                    .then((bootstrap) => {
+                        const Modal = bootstrap.Modal;
+                        const modalElement =
+                            document.getElementById("importModal");
+
+                        if (modalElement) {
+                            const importModal = new Modal(modalElement);
+                            importModal.show();
+                        } else {
+                            console.error("Import modal element not found");
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("Failed to load Bootstrap:", err);
+
+                        // Fallback method using direct DOM manipulation
+                        const modalElement =
+                            document.getElementById("importModal");
+                        if (modalElement) {
+                            modalElement.classList.add("show");
+                            modalElement.style.display = "block";
+                            document.body.classList.add("modal-open");
+
+                            // Add backdrop
+                            const backdrop = document.createElement("div");
+                            backdrop.classList.add(
+                                "modal-backdrop",
+                                "fade",
+                                "show"
+                            );
+                            document.body.appendChild(backdrop);
+                        }
+                    });
+            } catch (error) {
+                console.error("Error showing import modal:", error);
+            }
+        },
+
+        handleFileSelected(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Validate file type
+                const fileType = file.name.split(".").pop().toLowerCase();
+                if (!["csv", "xlsx"].includes(fileType)) {
+                    alert("Please select a valid CSV or Excel file.");
+                    event.target.value = ""; // Clear the file input
+                    this.selectedFile = null;
+                    return;
+                }
+
+                this.selectedFile = file;
+                this.importErrors = [];
+                console.log("File selected:", file.name);
+            } else {
+                this.selectedFile = null;
+            }
+        },
+
+        closeImportModal() {
+            try {
+                const modalElement = document.getElementById("importModal");
+                if (modalElement) {
+                    if (window.bootstrap) {
+                        const modalInstance =
+                            window.bootstrap.Modal.getInstance(modalElement);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                    } else {
+                        // Fallback if bootstrap is not available
+                        modalElement.classList.remove("show");
+                        modalElement.style.display = "none";
+                        document.body.classList.remove("modal-open");
+
+                        // Remove backdrop
+                        const backdrop =
+                            document.querySelector(".modal-backdrop");
+                        if (backdrop) {
+                            backdrop.remove();
+                        }
+                    }
+                }
+
+                // Reset import state
+                this.selectedFile = null;
+                this.uploadProgress = 0;
+                this.processingRecords = false;
+                this.processingProgress = 0;
+                this.processedRecords = 0;
+                this.totalRecords = 0;
+                this.importErrors = [];
+            } catch (error) {
+                console.error("Error closing import modal:", error);
+            }
+        },
+
+        async startImport() {
+            if (!this.selectedFile) {
+                alert("กรุณาเลือกไฟล์ที่ต้องการอัพโหลด");
+                return;
+            }
+
+            // Confirm before proceeding
+            const confirmImport = confirm(
+                "คำเตือน: การนำเข้าข้อมูลจะแทนที่ข้อมูลเดิมทั้งหมด คุณแน่ใจหรือไม่ที่จะดำเนินการต่อ?"
+            );
+
+            if (!confirmImport) {
+                return;
+            }
+
+            this.isImporting = true;
+            this.uploadProgress = 0;
+            this.processingRecords = false;
+            this.processingProgress = 0;
+            this.processedRecords = 0;
+            this.totalRecords = 0;
+            this.importErrors = [];
+
+            try {
+                const formData = new FormData();
+                formData.append("file", this.selectedFile);
+
+                // Start file upload with progress tracking
+                const response = await axios.post(
+                    "/api/import-bienban-nghiemthu",
+                    formData,
+                    {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                        onUploadProgress: (progressEvent) => {
+                            this.uploadProgress = Math.round(
+                                (progressEvent.loaded * 100) /
+                                    progressEvent.total
+                            );
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    this.processingRecords = true;
+                    this.totalRecords = response.data.totalRecords || 0;
+
+                    // Start tracking processing status
+                    this.checkImportProgress(response.data.importId);
+                } else {
+                    this.isImporting = false;
+                    this.importErrors = response.data.errors || [
+                        "An unknown error occurred during import.",
+                    ];
+                    alert(
+                        "Import failed. Please check the errors and try again."
+                    );
+                }
+            } catch (error) {
+                this.isImporting = false;
+                console.error("Import error:", error);
+
+                if (error.response) {
+                    if (error.response.status === 401) {
+                        this.handleAuthError();
+                    } else {
+                        this.importErrors = error.response.data.errors || [
+                            error.response.data.message || "Server error",
+                        ];
+                    }
+                } else {
+                    this.importErrors = [
+                        "Network error. Please check your connection and try again.",
+                    ];
+                }
+
+                alert(
+                    "Error importing data. Please check the console for details."
+                );
+            }
+        },
+
+        async checkImportProgress(importId) {
+            if (!importId) return;
+
+            try {
+                const response = await axios.get(
+                    `/api/import-progress/${importId}`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                const data = response.data;
+
+                if (data.finished) {
+                    this.processedRecords = data.processed || 0;
+                    this.totalRecords = data.total || 0;
+                    this.processingProgress = 100;
+
+                    if (data.success) {
+                        // Import completed successfully
+                        setTimeout(() => {
+                            this.isImporting = false;
+                            this.closeImportModal();
+
+                            // Show success message
+                            alert(
+                                `Import completed successfully. ${this.processedRecords} records imported.`
+                            );
+
+                            // Refresh data
+                            this.fetchBienBanData();
+                        }, 1000);
+                    } else {
+                        // Import failed
+                        this.isImporting = false;
+                        this.importErrors = data.errors || [
+                            "Unknown errors occurred during processing.",
+                        ];
+                        alert(
+                            "Import failed. Please check the errors and try again."
+                        );
+                    }
+                } else {
+                    // Still processing, update progress
+                    this.processedRecords = data.processed || 0;
+                    this.totalRecords = data.total || this.totalRecords;
+                    this.processingProgress = Math.round(
+                        (this.processedRecords * 100) / this.totalRecords
+                    );
+
+                    // Check again after a delay
+                    setTimeout(() => this.checkImportProgress(importId), 1000);
+                }
+            } catch (error) {
+                console.error("Error checking import progress:", error);
+                this.isImporting = false;
+                this.importErrors = [
+                    "Error monitoring import progress. The import may still be processing.",
+                ];
             }
         },
     },

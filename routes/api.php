@@ -104,6 +104,10 @@ Route::get('/get-role-by-position', function(Request $request) {
 //Load ข้อมูลตาลาง tb_bien_ban_nghiemthu_dv
 Route::get('/bien-ban-nghiem-thu', [BienBanNghiemThuController::class, 'index']);
 
+// Import data routes for BienBanNghiemThu
+Route::post('/import-bienban-nghiemthu', [BienBanNghiemThuController::class, 'importData']);
+Route::get('/import-progress/{importId}', [BienBanNghiemThuController::class, 'importProgress']);
+
 
 
 });
