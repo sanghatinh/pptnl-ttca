@@ -141,7 +141,7 @@ class BienBanNghiemThuController extends Controller
                 if (file_exists($alternativePath)) {
                     $filePath = $alternativePath;
                 } else {
-                    throw new \Exception("File \"$filePath\" does not exist.");
+                    throw new \Exception("File \"$path\" does not exist at expected locations.");
                 }
             }
             
@@ -151,6 +151,9 @@ class BienBanNghiemThuController extends Controller
             // Load the file based on extension
             if ($extension == 'csv') {
                 $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Csv');
+                $reader->setDelimiter(',');
+                $reader->setEnclosure('"');
+                $reader->setSheetIndex(0);
             } else {
                 $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
             }
@@ -160,13 +163,17 @@ class BienBanNghiemThuController extends Controller
             $rows = $worksheet->toArray();
             
             // Get headers from first row
+            if (empty($rows) || count($rows) < 2) {
+                throw new \Exception('File is empty or does not contain data rows. Please check the file and try again.');
+            }
+            
             $headers = array_map('trim', $rows[0]);
             
             // Map Excel/CSV columns to database columns
             $columnMap = $this->getColumnMapping($headers);
             
             if (empty($columnMap)) {
-                throw new \Exception('Could not map columns from file to database. Required columns are missing.');
+                throw new \Exception('Could not map columns from file to database. Required columns are missing. Please verify your file has the following columns: ma_nghiem_thu, tram, vu_dau_tu, tieu_de');
             }
             
             // Skip header row
@@ -180,10 +187,10 @@ class BienBanNghiemThuController extends Controller
             $processedCount = 0;
             $errors = [];
             
-            // Start transaction
-            \DB::beginTransaction();
-            
+            // Use a simple try-catch instead of the callback-style transaction
             try {
+                \DB::beginTransaction();
+                
                 // First, delete related records in document_mapping that reference this table
                 \DB::table('document_mapping')->whereNotNull('ma_nghiem_thu_bb')->delete();
                 
@@ -270,44 +277,30 @@ class BienBanNghiemThuController extends Controller
                     usleep(10000); // 10ms pause between batches
                 }
                 
-                // Commit transaction
+                // If we get here, commit the transaction
                 \DB::commit();
-                
-                // Update final status
-                $importData = \Cache::get('import_' . $importId);
-                $importData['status'] = 'completed';
-                $importData['processed'] = $processedCount;
-                $importData['errors'] = $errors;
-                $importData['success'] = true;
-                $importData['finished'] = true;
-                \Cache::put('import_' . $importId, $importData, 3600);
-                
-                // Delete the temporary file
-                \Storage::delete($path);
-                
             } catch (\Exception $e) {
-                // Rollback transaction on error
-                if (\DB::transactionLevel() > 0) {
-                    \DB::rollBack();
-                }
-                
-                // Update error status
-                $importData = \Cache::get('import_' . $importId);
-                $importData['status'] = 'failed';
-                $importData['errors'] = array_merge($importData['errors'] ?? [], [$e->getMessage()]);
-                $importData['success'] = false;
-                $importData['finished'] = true;
-                \Cache::put('import_' . $importId, $importData, 3600);
-                
-                \Log::error('Import process error: ' . $e->getMessage());
+                // Rollback the transaction
+                \DB::rollBack();
+                // Add the error to our errors array
+                $errors[] = 'Transaction error: ' . $e->getMessage();
+                throw $e; // Re-throw to be caught by the outer catch block
             }
+            
+            // Update final status
+            $importData = \Cache::get('import_' . $importId);
+            $importData['status'] = 'completed';
+            $importData['processed'] = $processedCount;
+            $importData['errors'] = $errors;
+            $importData['success'] = true;
+            $importData['finished'] = true;
+            \Cache::put('import_' . $importId, $importData, 3600);
+            
+            // Delete the temporary file
+            \Storage::delete($path);
             
         } catch (\Exception $e) {
-            // Handle outer exceptions
-            if (\DB::transactionLevel() > 0) {
-                \DB::rollBack();
-            }
-            
+            // Update error status
             $importData = \Cache::get('import_' . $importId);
             $importData['status'] = 'failed';
             $importData['errors'] = array_merge($importData['errors'] ?? [], [$e->getMessage()]);
@@ -315,7 +308,7 @@ class BienBanNghiemThuController extends Controller
             $importData['finished'] = true;
             \Cache::put('import_' . $importId, $importData, 3600);
             
-            \Log::error('Import error: ' . $e->getMessage());
+            \Log::error('Import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
     }
 

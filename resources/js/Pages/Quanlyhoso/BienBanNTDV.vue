@@ -613,7 +613,10 @@
                                             </button>
                                         </div>
                                         <div
-                                            v-if="activeFilter === 'hinh_thuc_thuc_hien_dv'"
+                                            v-if="
+                                                activeFilter ===
+                                                'hinh_thuc_thuc_hien_dv'
+                                            "
                                             class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
                                         >
                                             <div
@@ -2135,10 +2138,14 @@ export default {
                             Authorization: "Bearer " + this.store.getToken,
                         },
                         onUploadProgress: (progressEvent) => {
-                            this.uploadProgress = Math.round(
-                                (progressEvent.loaded * 100) /
-                                    progressEvent.total
-                            );
+                            if (progressEvent.total) {
+                                this.uploadProgress = Math.round(
+                                    (progressEvent.loaded * 100) /
+                                        progressEvent.total
+                                );
+                            } else {
+                                this.uploadProgress = 50; // Show 50% if total is unknown
+                            }
                         },
                     }
                 );
@@ -2154,6 +2161,7 @@ export default {
                     this.importErrors = response.data.errors || [
                         "An unknown error occurred during import.",
                     ];
+                    console.error("Import failed:", response.data);
                     alert(
                         "Import failed. Please check the errors and try again."
                     );
@@ -2166,24 +2174,39 @@ export default {
                     if (error.response.status === 401) {
                         this.handleAuthError();
                     } else {
-                        this.importErrors = error.response.data.errors || [
-                            error.response.data.message || "Server error",
-                        ];
+                        this.importErrors =
+                            error.response.data.errors ||
+                            Array.isArray(error.response.data.message)
+                                ? error.response.data.message
+                                : [
+                                      error.response.data.message ||
+                                          "Server error",
+                                  ];
                     }
-                } else {
+                } else if (error.request) {
+                    // Request made but no response received
                     this.importErrors = [
-                        "Network error. Please check your connection and try again.",
+                        "No response from server. Please check your network connection and try again.",
+                    ];
+                } else {
+                    // Error setting up the request
+                    this.importErrors = [
+                        "Network error. Please check your connection and try again: " +
+                            error.message,
                     ];
                 }
 
                 alert(
-                    "Error importing data. Please check the console for details."
+                    "Error importing data. Please check the error details displayed below."
                 );
             }
         },
 
         async checkImportProgress(importId) {
-            if (!importId) return;
+            if (!importId) {
+                this.importErrors = ["Invalid import ID. Please try again."];
+                return;
+            }
 
             try {
                 const response = await axios.get(
@@ -2202,57 +2225,88 @@ export default {
                     this.totalRecords = data.total || 0;
                     this.processingProgress = 100;
 
-                    // Import completed with either success or failure
-                    setTimeout(() => {
-                        this.isImporting = false;
-
-                        if (data.success) {
-                            // Import completed successfully
+                    if (data.success) {
+                        // Import completed successfully
+                        setTimeout(() => {
+                            this.isImporting = false;
                             this.closeImportModal();
-                            
-                            // Show success message
+
+                            // Show success message with counts
                             alert(
-                                `Import completed successfully. ${this.processedRecords} records imported.`
+                                `Import completed successfully. ${this.processedRecords} records imported.` +
+                                    (data.errors && data.errors.length > 0
+                                        ? ` ${data.errors.length} rows had warnings/errors but were skipped.`
+                                        : "")
                             );
 
                             // Refresh data
                             this.fetchBienBanData();
+                        }, 1000);
+                    } else {
+                        // Import failed
+                        this.isImporting = false;
+
+                        // Make sure errors are properly presented
+                        if (data.errors && data.errors.length > 0) {
+                            this.importErrors = data.errors;
                         } else {
-                            // Import failed, but show specific errors in UI
-                            this.importErrors = Array.isArray(data.errors) ? data.errors : 
-                                (data.errors ? [data.errors] : ["Unknown errors occurred during processing."]);
-                                
-                            if (this.importErrors.some(err => err.includes("transaction"))) {
-                                // พยายามแสดงข้อความที่เข้าใจง่ายกว่าสำหรับปัญหา transaction
-                                alert("นำเข้าข้อมูลสำเร็จบางส่วน แต่เกิดข้อผิดพลาดกับฐานข้อมูล โปรดรีเฟรชหน้าและตรวจสอบข้อมูล");
-                            } else {
-                                alert("Import failed. Please check the errors and try again.");
-                            }
+                            this.importErrors = [
+                                "Unknown errors occurred during processing.",
+                            ];
                         }
-                    }, 1000);
+
+                        console.error("Import failed:", data);
+                        alert(
+                            "Import failed. Please check the error messages displayed below."
+                        );
+                    }
                 } else {
                     // Still processing, update progress
                     this.processedRecords = data.processed || 0;
-                    this.totalRecords = data.total || this.totalRecords;
-                    this.processingProgress = Math.round(
-                        (this.processedRecords * 100) / (this.totalRecords || 1) // ป้องกันการหารด้วย 0
-                    );
+                    this.totalRecords = data.total || this.totalRecords || 1;
+
+                    // Avoid division by zero
+                    if (this.totalRecords > 0) {
+                        this.processingProgress = Math.min(
+                            99, // Cap at 99% until finished
+                            Math.round(
+                                (this.processedRecords * 100) /
+                                    this.totalRecords
+                            )
+                        );
+                    } else {
+                        this.processingProgress = 50; // Show 50% if total is unknown
+                    }
+
+                    // Update import errors if any are available during processing
+                    if (data.errors && data.errors.length > 0) {
+                        this.importErrors = data.errors;
+                    }
 
                     // Check again after a delay
                     setTimeout(() => this.checkImportProgress(importId), 1000);
                 }
             } catch (error) {
                 console.error("Error checking import progress:", error);
+
+                if (error.response && error.response.status === 401) {
+                    this.handleAuthError();
+                    return;
+                }
+
                 this.isImporting = false;
                 this.importErrors = [
-                    "Error monitoring import progress. The import may still be processing in the background."
+                    "Error monitoring import progress. The import may still be processing in the background.",
+                    "Please refresh the page after a few minutes to see if the data was imported.",
                 ];
-                
-                // น่าจะมีการประมวลผลเสร็จบางส่วนแล้ว ให้เรียกดูข้อมูลอีกครั้ง
-                setTimeout(() => {
-                    this.fetchBienBanData();
-                    alert("การตรวจสอบสถานะนำเข้าข้อมูลมีปัญหา แต่การนำเข้าอาจเสร็จสิ้นแล้วบางส่วน ระบบจะรีเฟรชข้อมูลให้");
-                }, 2000);
+
+                if (error.response && error.response.data) {
+                    if (typeof error.response.data === "string") {
+                        this.importErrors.push(error.response.data);
+                    } else if (error.response.data.message) {
+                        this.importErrors.push(error.response.data.message);
+                    }
+                }
             }
         },
     },
