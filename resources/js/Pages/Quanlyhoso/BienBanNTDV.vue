@@ -671,9 +671,7 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span
-                                                >สัญญาให้บริการ</span
-                                            >
+                                            <span>สัญญาให้บริการ</span>
                                             <button
                                                 @click="
                                                     toggleFilter(
@@ -1213,7 +1211,10 @@
                     <div class="alert alert-warning mb-3">
                         <i class="fas fa-exclamation-triangle me-2"></i>
                         <small
-                            >การนำเข้าข้อมูลจะแทนที่เฉพาะข้อมูลที่มี รหัสใหม่ที่นำเข้า โดยไม่ลบข้อมูลเดิมที่มีการอ้างอิงไว้ ตรวจสอบข้อมูลให้ถูกต้องก่อนดำเนินการ</small
+                            >การนำเข้าข้อมูลจะแทนที่เฉพาะข้อมูลที่มี
+                            รหัสใหม่ที่นำเข้า
+                            โดยไม่ลบข้อมูลเดิมที่มีการอ้างอิงไว้
+                            ตรวจสอบข้อมูลให้ถูกต้องก่อนดำเนินการ</small
                         >
                     </div>
 
@@ -1228,9 +1229,7 @@
                             @change="handleFileSelected"
                             accept=".csv,.xlsx"
                         />
-                        <div class="form-text">
-                            รองรับไฟล์: .csv, .xlsx
-                        </div>
+                        <div class="form-text">รองรับไฟล์: .csv, .xlsx</div>
                     </div>
 
                     <div v-if="uploadProgress > 0" class="mb-3">
@@ -1283,9 +1282,7 @@
                                 v-if="importErrors.length > 5"
                                 class="mt-2 text-center"
                             >
-                                <small
-                                    >ข้อผิดพลาดอื่นๆ...</small
-                                >
+                                <small>ข้อผิดพลาดอื่นๆ...</small>
                             </div>
                         </div>
                     </div>
@@ -1323,6 +1320,7 @@ import { Bootstrap5Pagination } from "laravel-vue-pagination"; // Add this impor
 // Import Bootstrap JS explicitly
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
+import Swal from "sweetalert2"; // Import SweetAlert2
 export default {
     components: {
         Bootstrap5Pagination, // Register the component
@@ -1883,30 +1881,26 @@ export default {
 
                         // Format data for export
                         const exportData = data.map((item) => ({
-                            "รหัสเอกสาร": item.ma_nghiem_thu || "",
-                            "สถานี": item.tram || "",
-                            "วุฒิลงทุน": item.vu_dau_tu || "",
-                            "หัวข้อ": item.tieu_de || "",
-                            "ลูกค้าบุคคล":
-                                item.khach_hang_ca_nhan_dt_mia || "",
-                            "ลูกค้าธุรกิจ":
+                            รหัสเอกสาร: item.ma_nghiem_thu || "",
+                            สถานี: item.tram || "",
+                            วุฒิลงทุน: item.vu_dau_tu || "",
+                            หัวข้อ: item.tieu_de || "",
+                            ลูกค้าบุคคล: item.khach_hang_ca_nhan_dt_mia || "",
+                            ลูกค้าธุรกิจ:
                                 item.khach_hang_doanh_nghiep_dt_mia || "",
-                            "สัญญาลงทุนอ้อย":
-                                item.hop_dong_dau_tu_mia || "",
-                            "รูปแบบบริการ":
-                                item.hinh_thuc_thuc_hien_dv || "",
-                            "สัญญาให้บริการ":
+                            สัญญาลงทุนอ้อย: item.hop_dong_dau_tu_mia || "",
+                            รูปแบบบริการ: item.hinh_thuc_thuc_hien_dv || "",
+                            สัญญาให้บริการ:
                                 item.hop_dong_cung_ung_dich_vu || "",
-                            "มูลค่าบริการรวม": item.tong_tien_dich_vu || 0,
-                            "ยอดเงินคงเหลือ": item.tong_tien_tam_giu || 0,
-                            "ยอดเงินที่ต้องชำระ":
-                                item.tong_tien_thanh_toan || 0,
-                            "ผู้ส่ง": item.nguoi_giao || "",
-                            "ผู้รับ": item.nguoi_nhan || "",
-                            "วันที่รับ": item.ngay_nhan
+                            มูลค่าบริการรวม: item.tong_tien_dich_vu || 0,
+                            ยอดเงินคงเหลือ: item.tong_tien_tam_giu || 0,
+                            ยอดเงินที่ต้องชำระ: item.tong_tien_thanh_toan || 0,
+                            ผู้ส่ง: item.nguoi_giao || "",
+                            ผู้รับ: item.nguoi_nhan || "",
+                            วันที่รับ: item.ngay_nhan
                                 ? this.formatDate(item.ngay_nhan)
                                 : "",
-                            "สถานะ": item.trang_thai_nhan_hs
+                            สถานะ: item.trang_thai_nhan_hs
                                 ? this.formatStatus(item.trang_thai_nhan_hs)
                                 : "",
                         }));
@@ -1967,9 +1961,8 @@ export default {
                         );
 
                         // Show success notification
-                        this.$toast?.success(
-                            "ส่งออกไฟล์ Excel สำเร็จ"
-                        ) || alert("ส่งออกไฟล์ Excel สำเร็จ");
+                        this.$toast?.success("ส่งออกไฟล์ Excel สำเร็จ") ||
+                            alert("ส่งออกไฟล์ Excel สำเร็จ");
                     });
                 });
             } catch (error) {
@@ -2100,16 +2093,35 @@ export default {
 
         async startImport() {
             if (!this.selectedFile) {
-                alert("กรุณาเลือกไฟล์ที่ต้องการอัพโหลด");
+                Swal.fire({
+                    title: "Cảnh báo",
+                    text: "Vui lòng chọn tệp để tải lên",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
                 return;
             }
 
-            // Confirm before proceeding
-            const confirmImport = confirm(
-                "คำเตือน: การนำเข้าข้อมูลจะเปลี่ยนแปลงข้อมูลตามรหัสเอกสารที่นำเข้า คุณแน่ใจหรือไม่ที่จะดำเนินการต่อ?"
-            );
+            // Confirm before proceeding with SweetAlert2
+            const result = await Swal.fire({
+                title: "Xác nhận tải lên",
+                text: "Cảnh báo: Việc nhập dữ liệu sẽ thay đổi dữ liệu theo mã tài liệu được nhập. Bạn có chắc chắn muốn tiếp tục không?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "OK",
+                cancelButtonText: "Hủy",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-success",
+                },
+            });
 
-            if (!confirmImport) {
+            if (!result.isConfirmed) {
                 return;
             }
 
@@ -2156,12 +2168,21 @@ export default {
                 } else {
                     this.isImporting = false;
                     this.importErrors = response.data.errors || [
-                        "An unknown error occurred during import.",
+                        "Đã xảy ra lỗi không xác định trong quá trình nhập.",
                     ];
                     console.error("Import failed:", response.data);
-                    alert(
-                        "Import failed. Please check the errors and try again."
-                    );
+
+                    // Use SweetAlert2 to show failure
+                    Swal.fire({
+                        title: "Thất bại",
+                        text: "Nhập dữ liệu không thành công. Vui lòng kiểm tra lỗi và thử lại.",
+                        icon: "error",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
                 }
             } catch (error) {
                 this.isImporting = false;
@@ -2177,25 +2198,33 @@ export default {
                                 ? error.response.data.message
                                 : [
                                       error.response.data.message ||
-                                          "Server error",
+                                          "Lỗi máy chủ",
                                   ];
                     }
                 } else if (error.request) {
                     // Request made but no response received
                     this.importErrors = [
-                        "No response from server. Please check your network connection and try again.",
+                        "Không có phản hồi từ máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.",
                     ];
                 } else {
                     // Error setting up the request
                     this.importErrors = [
-                        "Network error. Please check your connection and try again: " +
+                        "Lỗi mạng. Vui lòng kiểm tra kết nối của bạn và thử lại: " +
                             error.message,
                     ];
                 }
 
-                alert(
-                    "Error importing data. Please check the error details displayed below."
-                );
+                // Use SweetAlert2 to show error
+                Swal.fire({
+                    title: "Lỗi",
+                    text: "Lỗi khi nhập dữ liệu. Vui lòng kiểm tra chi tiết lỗi hiển thị bên dưới.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
             }
         },
 
@@ -2228,13 +2257,33 @@ export default {
                             this.isImporting = false;
                             this.closeImportModal();
 
-                            // Show success message with counts
-                            alert(
-                                `นำเข้าข้อมูลสำเร็จ ${this.processedRecords} รายการ` +
-                                (this.importErrors.length > 0 ? ` พบข้อผิดพลาด ${this.importErrors.length} รายการ` : "")
-                            );
+                            // Show success toast notification with SweetAlert2
+                            Swal.fire({
+                                title: "Thành công",
+                                text:
+                                    `Đã tải lên thành công ${this.processedRecords} bản ghi` +
+                                    (this.importErrors.length > 0
+                                        ? ` với ${this.importErrors.length} lỗi`
+                                        : ""),
+                                icon: "success",
+                                toast: true,
+                                position: "top-end",
+                                showConfirmButton: false,
+                                timer: 5000,
+                                timerProgressBar: true,
+                                didOpen: (toast) => {
+                                    toast.addEventListener(
+                                        "mouseenter",
+                                        Swal.stopTimer
+                                    );
+                                    toast.addEventListener(
+                                        "mouseleave",
+                                        Swal.resumeTimer
+                                    );
+                                },
+                            });
 
-                            // Refresh data
+                            // Refresh data to get the latest changes
                             this.fetchBienBanData();
                         }, 1000);
                     } else {
@@ -2246,14 +2295,23 @@ export default {
                             this.importErrors = data.errors;
                         } else {
                             this.importErrors = [
-                                "Unknown errors occurred during processing.",
+                                "Đã xảy ra lỗi không xác định trong quá trình xử lý.",
                             ];
                         }
 
                         console.error("Import failed:", data);
-                        alert(
-                            "Import failed. Please check the error messages displayed below."
-                        );
+
+                        // Show error notification with SweetAlert2
+                        Swal.fire({
+                            title: "Thất bại",
+                            text: "Tải lên không thành công. Vui lòng kiểm tra thông báo lỗi bên dưới.",
+                            icon: "error",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        });
                     }
                 } else {
                     // Still processing, update progress
@@ -2291,8 +2349,8 @@ export default {
 
                 this.isImporting = false;
                 this.importErrors = [
-                    "Error monitoring import progress. The import may still be processing in the background.",
-                    "Please refresh the page after a few minutes to see if the data was imported.",
+                    "Lỗi khi theo dõi tiến trình tải lên. Quá trình tải lên có thể vẫn đang được xử lý trong nền.",
+                    "Vui lòng làm mới trang sau vài phút để xem dữ liệu đã được tải lên hay chưa.",
                 ];
 
                 if (error.response && error.response.data) {
