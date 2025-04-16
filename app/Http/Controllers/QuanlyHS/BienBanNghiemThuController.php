@@ -191,12 +191,35 @@ class BienBanNghiemThuController extends Controller
             try {
                 \DB::beginTransaction();
                 
-                // First, delete related records in document_mapping that reference this table
-                \DB::table('document_mapping')->whereNotNull('ma_nghiem_thu_bb')->delete();
+                // Store existing ma_nghiem_thu values that have mappings
+                $existingMappedBienBan = \DB::table('document_mapping')
+                    ->whereNotNull('ma_nghiem_thu_bb')
+                    ->pluck('ma_nghiem_thu_bb')
+                    ->toArray();
                 
-                // Then temporarily disable foreign key checks and truncate the main table
+                // Extract ma_nghiem_thu values from the import file
+                $importedBienBanIds = [];
+                foreach ($rows as $row) {
+                    $maIndex = $columnMap['ma_nghiem_thu'];
+                    if ($maIndex !== false && isset($row[$maIndex]) && !empty($row[$maIndex])) {
+                        $importedBienBanIds[] = $row[$maIndex];
+                    }
+                }
+                
+                // Get only bienban IDs that will be affected but preserve mappings
+                $preserveMappings = array_intersect($existingMappedBienBan, $importedBienBanIds);
+                
+                // First temporarily disable foreign key checks 
                 \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-                \DB::table('tb_bien_ban_nghiemthu_dv')->truncate();
+                
+                // Delete records from tb_bien_ban_nghiemthu_dv that will be replaced by the import
+                // but preserve records referenced in document_mapping that aren't in the import
+                if (!empty($importedBienBanIds)) {
+                    \DB::table('tb_bien_ban_nghiemthu_dv')
+                        ->whereIn('ma_nghiem_thu', $importedBienBanIds)
+                        ->delete();
+                }
+                
                 \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
                 
                 // Insert new records in batches for better performance
