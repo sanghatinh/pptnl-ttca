@@ -149,6 +149,28 @@
                                                 />
                                             </div>
                                         </div>
+                                        <div class="col-12">
+                                            <div class="form-group mb-3">
+                                                <label for="inputMaNhanVien"
+                                                    >Mã nhân viên</label
+                                                >
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    v-model="
+                                                        FormUser.ma_nhan_vien
+                                                    "
+                                                    placeholder="Mã nhân viên (ví dụ: 000123)"
+                                                    maxlength="6"
+                                                />
+                                                <small
+                                                    class="form-text text-muted"
+                                                    >Nhập mã nhân viên dạng 6
+                                                    chữ số (ví dụ:
+                                                    000123)</small
+                                                >
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -308,8 +330,8 @@
                                             <th>#</th>
                                             <th>ID</th>
                                             <th>Username</th>
-
                                             <th>Họ và tên</th>
+                                            <th>Mã NV</th>
                                             <th>Chức vụ</th>
                                             <th>Trạm nông vụ</th>
                                             <th>Email</th>
@@ -330,6 +352,13 @@
                                             <td>{{ user.id }}</td>
                                             <td>{{ user.username }}</td>
                                             <td>{{ user.full_name }}</td>
+                                            <td>
+                                                {{
+                                                    formatEmployeeId(
+                                                        user.ma_nhan_vien
+                                                    )
+                                                }}
+                                            </td>
                                             <td>
                                                 {{
                                                     getPositionName(
@@ -523,6 +552,7 @@ export default {
                 station: "",
                 role_id: null,
                 status: "active",
+                ma_nhan_vien: null,
             },
             FormType: true,
             EditID: "",
@@ -688,6 +718,7 @@ export default {
                 station: "",
                 role_id: null,
                 status: "active",
+                ma_nhan_vien: null,
             };
         },
         //Edit user From headers:{ Authorization: 'Bearer '+this.store.getToken }
@@ -754,6 +785,7 @@ export default {
                                 station: "",
                                 role_id: null,
                                 status: "active",
+                                ma_nhan_vien: null,
                             };
                         } else {
                             // แสดงข้อความแจ้งเตือนบักทึกไม่สำเร็จ
@@ -819,6 +851,7 @@ export default {
                                 station: "",
                                 role_id: null,
                                 status: "active",
+                                ma_nhan_vien: null,
                             };
                         } else {
                             // แสดงข้อความแจ้งเตือนบักทึกไม่สำเร็จ
@@ -985,6 +1018,11 @@ export default {
         getRoleName(roleId) {
             const role = this.roles.find((role) => role.id === roleId);
             return role ? role.name : "Unknown";
+        },
+        formatEmployeeId(value) {
+            if (!value) return "";
+            // Ensure the value is treated as a string and pad with leading zeros to 6 digits
+            return String(value).padStart(6, "0");
         },
     },
 };

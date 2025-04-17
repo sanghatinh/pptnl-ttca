@@ -182,6 +182,7 @@ public function addnewuser(Request $request)
         'station'    => 'required|string',
         'role_id'    => 'required|exists:roles,id',
         'status'     => 'required|in:active,inactive',
+        'ma_nhan_vien' => 'nullable|string',
     ]);
 
     try {
@@ -195,6 +196,7 @@ public function addnewuser(Request $request)
         $user->station     = $request->station;
         $user->role_id     = $request->role_id;
         $user->status      = $request->status;
+        $user->ma_nhan_vien = $request->ma_nhan_vien;
 
         // Set created_user from currently logged in user
         $user->created_user = Auth::id();
@@ -231,6 +233,7 @@ public function updateuser(Request $request, $id)
         'station'    => 'required|string',
         'role_id'    => 'required|exists:roles,id',
         'status'     => 'required|in:active,inactive',
+        'ma_nhan_vien' => 'nullable|string',
     ]);
 
     try {
@@ -247,6 +250,7 @@ public function updateuser(Request $request, $id)
         $user->station    = $request->station;
         $user->role_id    = $request->role_id;
         $user->status     = $request->status;
+        $user->ma_nhan_vien = $request->ma_nhan_vien;
 
         // Update password only if provided
         if ($request->filled('password')) {
