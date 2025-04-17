@@ -2,7 +2,7 @@
     <!-- Loading starts -->
     <div id="loading-wrapper" v-if="isLoading">
         <div class="spinner-border" role="status">
-            <span class="sr-only">กำลังโหลด...</span>
+            <span class="sr-only">Loadding...</span>
         </div>
     </div>
     <div class="container-fluid mx-auto p-2">
@@ -56,7 +56,7 @@
                                     <i
                                         class="fas fa-file-excel text-success me-2"
                                     ></i>
-                                    ส่งออกไฟล์ Excel
+                                    Export to excel
                                 </a>
                             </li>
                             <li>
@@ -68,7 +68,7 @@
                                     <i
                                         class="fas fa-upload text-primary me-2"
                                     ></i>
-                                    นำเข้าข้อมูล
+                                    Import data
                                 </a>
                             </li>
                         </ul>
@@ -80,7 +80,7 @@
                     <input
                         v-model="search"
                         type="text"
-                        placeholder="ค้นหา..."
+                        placeholder="Tìm kiếm hồ sơ..."
                         class="search-input px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                 </div>
@@ -103,7 +103,7 @@
                     <input
                         v-model="search"
                         type="text"
-                        placeholder="ค้นหาเอกสาร..."
+                        placeholder="Tìm kiếm hồ sơ..."
                         class="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                     />
                 </div>
@@ -114,7 +114,7 @@
                 <!-- Status Filter -->
                 <div class="mb-2.5">
                     <label class="text-sm font-medium text-gray-700 mb-1 block"
-                        >สถานะ</label
+                        >Tình trạng thanh toán</label
                     >
                     <div class="relative">
                         <select
@@ -145,14 +145,14 @@
                 <!-- Investment Filter -->
                 <div>
                     <label class="text-sm font-medium text-gray-700 mb-1 block"
-                        >วุฒิลงทุน</label
+                        >Vụ đầu tư</label
                     >
                     <div class="relative">
                         <select
                             v-model="investmentFilter"
                             class="w-full py-2.5 pl-3 pr-10 border rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                         >
-                            <option value="all">ทุกวุฒิลงทุน</option>
+                            <option value="all">Chọn tất cả</option>
                             <option
                                 v-for="project in investmentProjects"
                                 :key="project"
@@ -178,7 +178,7 @@
                     <!-- Reset filters button -->
                     <span
                         class="reset-all-filters-btn"
-                        title="รีเซ็ตตัวกรองทั้งหมด"
+                        title="Reset all filters"
                         @click="resetAllFilters"
                     >
                         <i class="fas fa-redo-alt"></i>
@@ -191,7 +191,7 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>รหัสเอกสาร</span>
+                                            <span>Mã nghiệm thu</span>
                                             <button
                                                 @click="
                                                     toggleFilter(
@@ -220,7 +220,7 @@
                                                     columnFilters.ma_nghiem_thu
                                                 "
                                                 type="text"
-                                                placeholder="ค้นหารหัสเอกสาร..."
+                                                placeholder="Tìm kiếm Mã nghiệm thu..."
                                                 class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                                             />
                                             <div class="flex justify-between">
@@ -232,13 +232,13 @@
                                                     "
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="activeFilter = null"
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
@@ -247,7 +247,7 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>สถานี</span>
+                                            <span>Trạm</span>
                                             <button
                                                 @click="toggleFilter('tram')"
                                                 class="ml-2 text-gray-500 hover:text-gray-700"
@@ -294,13 +294,13 @@
                                                     @click="resetFilter('tram')"
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="applyFilter('tram')"
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
@@ -309,7 +309,7 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>วุฒิลงทุน</span>
+                                            <span>Vụ đầu tư</span>
                                             <button
                                                 @click="
                                                     toggleFilter('vu_dau_tu')
@@ -360,7 +360,7 @@
                                                     "
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="
@@ -368,7 +368,7 @@
                                                     "
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
@@ -377,7 +377,7 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>หัวข้อ</span>
+                                            <span>Tiêu đề</span>
                                             <button
                                                 @click="toggleFilter('tieu_de')"
                                                 class="ml-2 text-gray-500 hover:text-gray-700"
@@ -398,7 +398,7 @@
                                             <input
                                                 v-model="columnFilters.tieu_de"
                                                 type="text"
-                                                placeholder="ค้นหาหัวข้อ..."
+                                                placeholder="Tìm kiếm Tiêu đề..."
                                                 class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                                             />
                                             <div class="flex justify-between">
@@ -408,13 +408,13 @@
                                                     "
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="activeFilter = null"
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
@@ -423,7 +423,9 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>ลูกค้าบุคคล</span>
+                                            <span
+                                                >Khách hàng cá nhân ĐT mía</span
+                                            >
                                             <button
                                                 @click="
                                                     toggleFilter(
@@ -453,7 +455,7 @@
                                                     columnFilters.khach_hang_ca_nhan_dt_mia
                                                 "
                                                 type="text"
-                                                placeholder="ค้นหาลูกค้า..."
+                                                placeholder="Tìm kiếm khách hàng..."
                                                 class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                                             />
                                             <div class="flex justify-between">
@@ -465,13 +467,13 @@
                                                     "
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="activeFilter = null"
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
@@ -480,7 +482,10 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>ลูกค้าธุรกิจ</span>
+                                            <span
+                                                >Khách hàng doanh nghiệp ĐT
+                                                mía</span
+                                            >
                                             <button
                                                 @click="
                                                     toggleFilter(
@@ -510,7 +515,7 @@
                                                     columnFilters.khach_hang_doanh_nghiep_dt_mia
                                                 "
                                                 type="text"
-                                                placeholder="ค้นหาธุรกิจ..."
+                                                placeholder="Tìm kiếm khách hàng DN..."
                                                 class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                                             />
                                             <div class="flex justify-between">
@@ -522,13 +527,13 @@
                                                     "
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="activeFilter = null"
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
@@ -537,7 +542,7 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>สัญญาลงทุนอ้อย</span>
+                                            <span>Hợp đồng đầu tư mía</span>
                                             <button
                                                 @click="
                                                     toggleFilter(
@@ -567,7 +572,7 @@
                                                     columnFilters.hop_dong_dau_tu_mia
                                                 "
                                                 type="text"
-                                                placeholder="ค้นหาสัญญา..."
+                                                placeholder="Tìm kiếm hợp đồng..."
                                                 class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                                             />
                                             <div class="flex justify-between">
@@ -579,13 +584,13 @@
                                                     "
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="activeFilter = null"
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
@@ -594,7 +599,7 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>รูปแบบบริการ</span>
+                                            <span>Hình thức thực hiện DV</span>
                                             <button
                                                 @click="
                                                     toggleFilter(
@@ -652,7 +657,7 @@
                                                     "
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="
@@ -662,7 +667,7 @@
                                                     "
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
@@ -671,7 +676,9 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>สัญญาให้บริการ</span>
+                                            <span
+                                                >Hợp đồng cung ứng dịch vụ</span
+                                            >
                                             <button
                                                 @click="
                                                     toggleFilter(
@@ -701,7 +708,7 @@
                                                     columnFilters.hop_dong_cung_ung_dich_vu
                                                 "
                                                 type="text"
-                                                placeholder="ค้นหาสัญญา..."
+                                                placeholder="Tìm kiếm hợp đồng..."
                                                 class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                                             />
                                             <div class="flex justify-between">
@@ -713,27 +720,27 @@
                                                     "
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="activeFilter = null"
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
                                     </th>
-                                    <th class="px-4 py-2">มูลค่าบริการรวม</th>
-                                    <th class="px-4 py-2">ยอดเงินคงเหลือ</th>
+                                    <th class="px-4 py-2">Tổng tiền</th>
+                                    <th class="px-4 py-2">Tổng tiền tạm giữ</th>
                                     <th class="px-4 py-2">
-                                        ยอดเงินที่ต้องชำระ
+                                        Tổng tiền thanh toán
                                     </th>
                                     <th class="px-4 py-2">
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>ผู้ส่ง</span>
+                                            <span>Người giao hồ sơ</span>
                                             <button
                                                 @click="
                                                     toggleFilter('nguoi_giao')
@@ -758,7 +765,7 @@
                                                     columnFilters.nguoi_giao
                                                 "
                                                 type="text"
-                                                placeholder="ค้นหาผู้ส่ง..."
+                                                placeholder="Tìm kiếm Người giao hồ sơ..."
                                                 class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                                             />
                                             <div class="flex justify-between">
@@ -770,13 +777,13 @@
                                                     "
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="activeFilter = null"
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
@@ -785,7 +792,7 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>ผู้รับ</span>
+                                            <span>Người nhận hồ sơ</span>
                                             <button
                                                 @click="
                                                     toggleFilter('nguoi_nhan')
@@ -810,7 +817,7 @@
                                                     columnFilters.nguoi_nhan
                                                 "
                                                 type="text"
-                                                placeholder="ค้นหาผู้รับ..."
+                                                placeholder="Tìm kiếm Người nhận hồ sơ..."
                                                 class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                                             />
                                             <div class="flex justify-between">
@@ -822,13 +829,13 @@
                                                     "
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="activeFilter = null"
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
@@ -837,7 +844,7 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>วันที่รับ</span>
+                                            <span>Ngày nhận hồ sơ</span>
                                             <button
                                                 @click="
                                                     toggleFilter('ngay_nhan')
@@ -862,7 +869,7 @@
                                                     columnFilters.ngay_nhan
                                                 "
                                                 type="text"
-                                                placeholder="ค้นหาวันที่รับ (DD/MM/YYYY)..."
+                                                placeholder="Tìm kiếm Ngày nhận hồ sơ (DD/MM/YYYY)..."
                                                 class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                                             />
                                             <div class="flex justify-between">
@@ -872,13 +879,13 @@
                                                     "
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="activeFilter = null"
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
@@ -887,7 +894,10 @@
                                         <div
                                             class="flex items-center justify-between"
                                         >
-                                            <span>สถานะการรับเอกสาร</span>
+                                            <span
+                                                >Tình trạng giao nhận hồ
+                                                sơ</span
+                                            >
                                             <button
                                                 @click="
                                                     toggleFilter(
@@ -947,7 +957,7 @@
                                                     "
                                                     class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
                                                 >
-                                                    รีเซ็ต
+                                                    Reset
                                                 </button>
                                                 <button
                                                     @click="
@@ -957,7 +967,7 @@
                                                     "
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
-                                                    ใช้
+                                                    Áp dụng
                                                 </button>
                                             </div>
                                         </div>
@@ -1092,35 +1102,35 @@
             >
                 <div class="flex-1 justify-items-start">
                     <div class="mb-2">
-                        <strong>รหัสเอกสาร:</strong>
+                        <strong>Mã nghiệm thu:</strong>
                         {{ item.ma_nghiem_thu }}
                     </div>
                     <div class="mb-2">
-                        <strong>สถานี:</strong>
+                        <strong>Trạm:</strong>
                         {{ item.tram }}
                     </div>
                     <div class="mb-2">
-                        <strong>วุฒิลงทุน:</strong>
+                        <strong>Vụ đầu tư:</strong>
                         {{ item.vu_dau_tu }}
                     </div>
                     <div class="mb-2">
-                        <strong>หัวข้อ:</strong>
+                        <strong>Tiêu đề:</strong>
                         {{ item.tieu_de }}
                     </div>
                     <div class="mb-2">
-                        <strong>สัญญาลงทุนอ้อย:</strong>
+                        <strong>Hợp đồng đầu tư mía:</strong>
                         {{ item.hop_dong_dau_tu_mia }}
                     </div>
                     <div class="mb-2">
-                        <strong>รูปแบบบริการ:</strong>
+                        <strong>Hình thức thực hiện DV:</strong>
                         {{ item.hinh_thuc_thuc_hien_dv }}
                     </div>
                     <div class="mb-2">
-                        <strong>สัญญาให้บริการ:</strong>
+                        <strong>Hợp đồng cung ứng dịch vụ:</strong>
                         {{ item.hop_dong_cung_ung_dich_vu }}
                     </div>
                     <div class="mb-2">
-                        <strong>มูลค่าบริการรวม:</strong>
+                        <strong>Tổng tiền:</strong>
                         {{ formatCurrency(item.tong_tien_dich_vu) }}
                     </div>
                 </div>
@@ -1151,7 +1161,7 @@
                 <div class="modal-header bg-light">
                     <h5 class="modal-title text-success" id="exportModalLabel">
                         <i class="fas fa-file-excel text-success me-2"></i>
-                        ส่งออกไฟล์ Excel
+                        Export to Excel
                     </h5>
                     <button
                         type="button"
@@ -1162,21 +1172,21 @@
                     ></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted small mb-3">เลือกรูปแบบการส่งออก:</p>
+                    <p class="text-muted small mb-3">Chọn định dạng xuất:</p>
                     <div class="d-grid gap-2">
                         <button
                             @click="exportToExcelCurrentPage"
                             class="btn btn-outline-success"
                         >
                             <i class="fas fa-file-export me-2"></i>
-                            เฉพาะหน้าปัจจุบัน
+                            Chỉ xuất trang hiện tại
                         </button>
                         <button
                             @click="exportToExcelAllPages"
                             class="btn btn-success"
                         >
                             <i class="fas fa-table me-2"></i>
-                            ข้อมูลทั้งหมด
+                            Xuất tất cả
                         </button>
                     </div>
                 </div>
@@ -1197,7 +1207,7 @@
                 <div class="modal-header bg-light">
                     <h5 class="modal-title text-primary" id="importModalLabel">
                         <i class="fas fa-upload text-primary me-2"></i>
-                        นำเข้าข้อมูล
+                        Import data
                     </h5>
                     <button
                         type="button"
@@ -1211,16 +1221,16 @@
                     <div class="alert alert-warning mb-3">
                         <i class="fas fa-exclamation-triangle me-2"></i>
                         <small
-                            >การนำเข้าข้อมูลจะแทนที่เฉพาะข้อมูลที่มี
-                            รหัสใหม่ที่นำเข้า
-                            โดยไม่ลบข้อมูลเดิมที่มีการอ้างอิงไว้
-                            ตรวจสอบข้อมูลให้ถูกต้องก่อนดำเนินการ</small
+                            >Import data chỉ thay thế dữ liệu hiện có. Mã nhập
+                            mới Không xóa dữ liệu tham chiếu gốc Vui lòng xác
+                            minh thông tin là chính xác trước khi tiếp
+                            tục.</small
                         >
                     </div>
 
                     <div class="mb-3">
                         <label for="importFile" class="form-label"
-                            >เลือกไฟล์</label
+                            >Select file</label
                         >
                         <input
                             class="form-control"
@@ -1229,11 +1239,11 @@
                             @change="handleFileSelected"
                             accept=".csv,.xlsx"
                         />
-                        <div class="form-text">รองรับไฟล์: .csv, .xlsx</div>
+                        <div class="form-text">Support files: .csv, .xlsx</div>
                     </div>
 
                     <div v-if="uploadProgress > 0" class="mb-3">
-                        <label class="form-label">ความคืบหน้าการอัปโหลด</label>
+                        <label class="form-label">Upload progress</label>
                         <div class="progress">
                             <div
                                 class="progress-bar progress-bar-striped progress-bar-animated"
@@ -1249,7 +1259,7 @@
                     </div>
 
                     <div v-if="processingRecords" class="mb-3">
-                        <label class="form-label">กำลังประมวลผลข้อมูล</label>
+                        <label class="form-label">Processing data</label>
                         <div class="progress">
                             <div
                                 class="progress-bar progress-bar-striped progress-bar-animated bg-success"
@@ -1266,7 +1276,7 @@
 
                     <div v-if="importErrors.length > 0" class="mt-3">
                         <div class="alert alert-danger">
-                            <h6 class="alert-heading">ข้อผิดพลาดในการนำเข้า</h6>
+                            <h6 class="alert-heading">Import error</h6>
                             <ul class="mb-0 ps-3">
                                 <li
                                     v-for="(error, index) in importErrors.slice(
@@ -1282,7 +1292,7 @@
                                 v-if="importErrors.length > 5"
                                 class="mt-2 text-center"
                             >
-                                <small>ข้อผิดพลาดอื่นๆ...</small>
+                                <small>Other errors...</small>
                             </div>
                         </div>
                     </div>
@@ -1294,7 +1304,7 @@
                         data-bs-dismiss="modal"
                         @click="closeImportModal"
                     >
-                        ยกเลิก
+                        Cancel
                     </button>
                     <button
                         type="button"
@@ -1303,8 +1313,8 @@
                         :disabled="!selectedFile || isImporting"
                     >
                         <i class="fas fa-upload me-2"></i>
-                        <span v-if="isImporting">กำลังนำเข้า...</span>
-                        <span v-else>นำเข้า</span>
+                        <span v-if="isImporting">Importing...</span>
+                        <span v-else>Import</span>
                     </button>
                 </div>
             </div>
@@ -1344,7 +1354,7 @@ export default {
             currentPage: 1, // เพิ่มสำหรับการจัดการหน้า
             perPage: 10, // จำนวนรายการต่อหน้า
             statusOptions: [
-                { code: "all", name: "ทุกสถานะ" },
+                { code: "all", name: "Tất cả" },
                 { code: "approved", name: "อนุมัติแล้ว" },
                 { code: "pending", name: "รอการอนุมัติ" },
                 { code: "rejected", name: "ปฏิเสธ" },
@@ -1585,10 +1595,10 @@ export default {
             if (!status) return "";
 
             const statusMap = {
-                creating: "กำลังสร้าง",
-                sending: "กำลังส่ง",
-                received: "ได้รับแล้ว",
-                cancelled: "ยกเลิกแล้ว",
+                creating: "Nháp",
+                sending: "Đang nộp",
+                received: "Đã nhận",
+                cancelled: "Hủy",
             };
 
             return statusMap[status] || status;
@@ -1844,7 +1854,7 @@ export default {
                 // Close modal after export
                 this.closeExportModal();
             } else {
-                alert("ไม่พบข้อมูลที่ต้องการส่งออก");
+                alert("Không tìm thấy dữ liệu cần xuất.");
                 // Close modal after alert
                 this.closeExportModal();
             }
@@ -1857,7 +1867,7 @@ export default {
                 if (this.filteredItems && this.filteredItems.length > 0) {
                     this.generateExcel(this.filteredItems, "bien_ban_all_data");
                 } else {
-                    alert("ไม่พบข้อมูลที่ต้องการส่งออก");
+                    alert("Không tìm thấy dữ liệu cần xuất.");
                 }
                 this.isLoading = false;
 
@@ -1881,26 +1891,30 @@ export default {
 
                         // Format data for export
                         const exportData = data.map((item) => ({
-                            รหัสเอกสาร: item.ma_nghiem_thu || "",
-                            สถานี: item.tram || "",
-                            วุฒิลงทุน: item.vu_dau_tu || "",
-                            หัวข้อ: item.tieu_de || "",
-                            ลูกค้าบุคคล: item.khach_hang_ca_nhan_dt_mia || "",
-                            ลูกค้าธุรกิจ:
+                            "Mã nghiệm thu": item.ma_nghiem_thu || "",
+                            Trạm: item.tram || "",
+                            "Vụ đầu tư": item.vu_dau_tu || "",
+                            "Tiêu đề": item.tieu_de || "",
+                            "Khách hàng cá nhân":
+                                item.khach_hang_ca_nhan_dt_mia || "",
+                            "Khách hàng doanh nghiệp":
                                 item.khach_hang_doanh_nghiep_dt_mia || "",
-                            สัญญาลงทุนอ้อย: item.hop_dong_dau_tu_mia || "",
-                            รูปแบบบริการ: item.hinh_thuc_thuc_hien_dv || "",
-                            สัญญาให้บริการ:
+                            "Hợp đồng đầu tư mía":
+                                item.hop_dong_dau_tu_mia || "",
+                            "Hình thức thực hiện DV":
+                                item.hinh_thuc_thuc_hien_dv || "",
+                            "Hợp đồng cung ứng DV":
                                 item.hop_dong_cung_ung_dich_vu || "",
-                            มูลค่าบริการรวม: item.tong_tien_dich_vu || 0,
-                            ยอดเงินคงเหลือ: item.tong_tien_tam_giu || 0,
-                            ยอดเงินที่ต้องชำระ: item.tong_tien_thanh_toan || 0,
-                            ผู้ส่ง: item.nguoi_giao || "",
-                            ผู้รับ: item.nguoi_nhan || "",
-                            วันที่รับ: item.ngay_nhan
+                            "Tổng tiền dịch vụ": item.tong_tien_dich_vu || 0,
+                            "Tổng tiền tạm giữ": item.tong_tien_tam_giu || 0,
+                            "Tổng tiền thanh toán":
+                                item.tong_tien_thanh_toan || 0,
+                            "Người giao": item.nguoi_giao || "",
+                            "Người nhận": item.nguoi_nhan || "",
+                            "Ngày nhận": item.ngay_nhan
                                 ? this.formatDate(item.ngay_nhan)
                                 : "",
-                            สถานะ: item.trang_thai_nhan_hs
+                            "Trạng thái": item.trang_thai_nhan_hs
                                 ? this.formatStatus(item.trang_thai_nhan_hs)
                                 : "",
                         }));
@@ -1916,21 +1930,21 @@ export default {
 
                         // Set column widths
                         const columnWidths = [
-                            { wpx: 120 }, // รหัสเอกสาร
-                            { wpx: 100 }, // สถานี
-                            { wpx: 120 }, // วุฒิลงทุน
-                            { wpx: 150 }, // หัวข้อ
-                            { wpx: 150 }, // ลูกค้าบุคคล
-                            { wpx: 150 }, // ลูกค้าธุรกิจ
-                            { wpx: 150 }, // สัญญาลงทุนอ้อย
-                            { wpx: 150 }, // รูปแบบบริการ
-                            { wpx: 150 }, // สัญญาให้บริการ
-                            { wpx: 120 }, // มูลค่าบริการรวม
-                            { wpx: 120 }, // ยอดเงินคงเหลือ
-                            { wpx: 120 }, // ยอดเงินที่ต้องชำระ
-                            { wpx: 120 }, // ผู้ส่ง
-                            { wpx: 120 }, // ผู้รับ
-                            { wpx: 100 }, // วันที่รับ
+                            { wpx: 120 }, // Mã nghiệm thu
+                            { wpx: 100 }, // Trạm
+                            { wpx: 120 }, // Vụ đầu tư
+                            { wpx: 150 }, // Tiêu đề
+                            { wpx: 150 }, // Khách hàng cá nhân ĐT mía
+                            { wpx: 150 }, // Khách hàng doanh nghiệp ĐT mía
+                            { wpx: 150 }, // Hợp đồng đầu tư mía
+                            { wpx: 150 }, // Hình thức thực hiện DV
+                            { wpx: 150 }, // Hợp đồng cung ứng dịch vụ
+                            { wpx: 120 }, // Tổng tiền
+                            { wpx: 120 }, // Tổng tiền tạm giữ
+                            { wpx: 120 }, // Tổng tiền thanh toán
+                            { wpx: 120 }, // Người giao hồ sơ
+                            { wpx: 120 }, // Người nhận hồ sơ
+                            { wpx: 100 }, // Ngày nhận hồ sơ
                             { wpx: 120 }, // สถานะ
                         ];
                         worksheet["!cols"] = columnWidths;
@@ -1961,13 +1975,13 @@ export default {
                         );
 
                         // Show success notification
-                        this.$toast?.success("ส่งออกไฟล์ Excel สำเร็จ") ||
-                            alert("ส่งออกไฟล์ Excel สำเร็จ");
+                        this.$toast?.success("Export to Excel succeed") ||
+                            alert("Export to Excel succeed");
                     });
                 });
             } catch (error) {
                 console.error("Export error:", error);
-                alert("เกิดข้อผิดพลาดในการส่งออกข้อมูล กรุณาลองใหม่อีกครั้ง");
+                alert("Đã xảy ra lỗi khi xuất dữ liệu. Vui lòng thử lại.");
                 this.isLoading = false;
             }
         },
@@ -2039,7 +2053,7 @@ export default {
                 // Validate file type
                 const fileType = file.name.split(".").pop().toLowerCase();
                 if (!["csv", "xlsx"].includes(fileType)) {
-                    alert("กรุณาเลือกไฟล์ที่ถูกต้อง (CSV หรือ Excel)");
+                    alert("Vui lòng chọn đúng tập tin. (CSV หรือ Excel)");
                     event.target.value = ""; // Clear the file input
                     this.selectedFile = null;
                     return;
@@ -2365,13 +2379,13 @@ export default {
     },
     watch: {
         search() {
-            this.currentPage = 1; // รีเซ็ตกลับไปหน้าแรก
+            this.currentPage = 1; // Resetกลับไปหน้าแรก
         },
         statusFilter() {
-            this.currentPage = 1; // รีเซ็ตกลับไปหน้าแรก
+            this.currentPage = 1; // Resetกลับไปหน้าแรก
         },
         investmentFilter() {
-            this.currentPage = 1; // รีเซ็ตกลับไปหน้าแรก
+            this.currentPage = 1; // Resetกลับไปหน้าแรก
         },
         columnFilters: {
             handler() {
