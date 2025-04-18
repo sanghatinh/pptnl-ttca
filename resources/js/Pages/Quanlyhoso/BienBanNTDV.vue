@@ -305,6 +305,64 @@
                                             </div>
                                         </div>
                                     </th>
+                                    <!-- Add this column header after "Ngày nhận hồ sơ" and before "Tình trạng giao nhận hồ sơ" -->
+                                    <th class="px-4 py-2">
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Cán bộ nông vụ</span>
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'can_bo_nong_vu'
+                                                    )
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.can_bo_nong_vu,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'can_bo_nong_vu'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <input
+                                                v-model="
+                                                    columnFilters.can_bo_nong_vu
+                                                "
+                                                type="text"
+                                                placeholder="Tìm kiếm Cán bộ nông vụ..."
+                                                class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'can_bo_nong_vu'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="activeFilter = null"
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
                                     <th class="px-4 py-2">
                                         <div
                                             class="flex items-center justify-between"
@@ -988,6 +1046,14 @@
                                         {{ item.tram }}
                                     </td>
                                     <td class="border px-4 py-2">
+                                        <template v-if="item.can_bo_nong_vu">
+                                            <i
+                                                class="fas fa-user-tie text-purple-500"
+                                            ></i>
+                                            {{ item.can_bo_nong_vu }}
+                                        </template>
+                                    </td>
+                                    <td class="border px-4 py-2">
                                         {{ item.vu_dau_tu }}
                                     </td>
                                     <td class="border px-4 py-2">
@@ -1370,6 +1436,7 @@ export default {
             columnFilters: {
                 ma_nghiem_thu: "",
                 tram: "",
+                can_bo_nong_vu: "",
                 vu_dau_tu: "",
                 tieu_de: "",
                 khach_hang_ca_nhan_dt_mia: "",
@@ -1526,6 +1593,13 @@ export default {
                             this.formatDate(item.ngay_nhan).includes(
                                 this.columnFilters.ngay_nhan
                             ))) &&
+                    (!this.columnFilters.can_bo_nong_vu ||
+                        (item.can_bo_nong_vu &&
+                            item.can_bo_nong_vu
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.can_bo_nong_vu.toLowerCase()
+                                ))) &&
                     // Dropdown filters - check if empty or if value is in selected options
                     (this.selectedFilterValues.tram.length === 0 ||
                         (item.tram &&
@@ -1893,6 +1967,7 @@ export default {
                         const exportData = data.map((item) => ({
                             "Mã nghiệm thu": item.ma_nghiem_thu || "",
                             Trạm: item.tram || "",
+                            "Cán bộ nông vụ": item.can_bo_nong_vu || "", // Add new column
                             "Vụ đầu tư": item.vu_dau_tu || "",
                             "Tiêu đề": item.tieu_de || "",
                             "Khách hàng cá nhân":
@@ -1932,6 +2007,7 @@ export default {
                         const columnWidths = [
                             { wpx: 120 }, // Mã nghiệm thu
                             { wpx: 100 }, // Trạm
+                            { wpx: 120 }, // Cán bộ nông vụ
                             { wpx: 120 }, // Vụ đầu tư
                             { wpx: 150 }, // Tiêu đề
                             { wpx: 150 }, // Khách hàng cá nhân ĐT mía

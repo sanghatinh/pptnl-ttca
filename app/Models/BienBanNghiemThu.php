@@ -27,6 +27,7 @@ class BienBanNghiemThu extends Model
         'can_bo_nong_vu',
         'tinh_trang',
         'tinh_trang_duyet',
+        'ma_nhan_vien',
     ];
 
     // เพิ่ม scope สำหรับการค้นหา

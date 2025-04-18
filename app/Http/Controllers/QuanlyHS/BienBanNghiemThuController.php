@@ -355,7 +355,9 @@ class BienBanNghiemThuController extends Controller
             'tong_tien_thanh_toan' => ['tổng tiền thanh toán', 'tong tien thanh toan', 'payment amount', 'tiền thanh toán'],
             'can_bo_nong_vu' => ['cán bộ nông vụ', 'can bo nong vu', 'officer', 'agricultural officer'],
             'tinh_trang' => ['tình trạng', 'tinh trang', 'status'],
-            'tinh_trang_duyet' => ['tình trạng duyệt', 'tinh trang duyet', 'approval status', 'approval']
+            'tinh_trang_duyet' => ['tình trạng duyệt', 'tinh trang duyet', 'approval status', 'approval'],
+            //เพี่ม column ma_nhan_vien
+            'ma_nhan_vien' => ['mã nhân viên', 'ma nhan vien', 'employee code', 'employee id', 'Mã nhân viên (Cán bộ nông vụ) (Nhân viên)']
         ];
         
         $columnMap = [];
