@@ -8,57 +8,58 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller; // Add this import
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
+
 class BienBanNghiemThuController extends Controller
 {
    
     public function index(Request $request)
-    {
-        $query = DB::table('tb_bien_ban_nghiemthu_dv as bb')
-            ->select(
-                'bb.*',
-                'u_creator.full_name as nguoi_giao',
-                'u_receiver.full_name as nguoi_nhan',
-                'dd.received_date as ngay_nhan',
-                'dd.status as trang_thai_nhan_hs'
-            )
-            ->leftJoin('document_mapping as dm', 'bb.ma_nghiem_thu', '=', 'dm.ma_nghiem_thu_bb')
-            ->leftJoin('document_delivery as dd', 'dm.document_code', '=', 'dd.document_code')
-            ->leftJoin('users as u_creator', 'dd.creator_id', '=', 'u_creator.id')
-            ->leftJoin('users as u_receiver', 'dd.receiver_id', '=', 'u_receiver.id');
-        
-        // Apply search filter
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('bb.ma_nghiem_thu', 'LIKE', "%{$search}%")
-                  ->orWhere('bb.tieu_de', 'LIKE', "%{$search}%")
-                  ->orWhere('bb.hop_dong_dau_tu_mia', 'LIKE', "%{$search}%")
-                  ->orWhere('bb.tram', 'LIKE', "%{$search}%");
-            });
+{
+    try {
+        $user = auth()->user();
+        $query = DB::table('tb_bien_ban_nghiemthu_dv');
+
+        // Access control based on user position
+        switch ($user->position) {
+            case 'department_head':
+            case 'office_workers':
+                // See all records - no filtering needed
+                break;
+                
+            case 'Station_Chief':
+                // Filter by user's station
+                $query->where('tram', $user->station);
+                break;
+                
+            case 'Farm_worker':
+                // Filter by employee code
+                $query->where('ma_nhan_vien', $user->ma_nhan_vien);
+                break;
+                
+            default:
+                // Default case - return no records
+                return response()->json([
+                    'data' => [],
+                    'message' => 'Unauthorized position'
+                ], 403);
         }
-        
-        // Apply status filter
-        if ($request->has('status') && $request->status) {
-            if ($request->status === 'approved') {
-                $query->where('bb.tinh_trang_duyet', 1);
-            } elseif ($request->status === 'pending') {
-                $query->where('bb.tinh_trang_duyet', 0);
-            } elseif ($request->status === 'rejected') {
-                $query->where('bb.tinh_trang_duyet', 2);
-            }
-        }
-        
-        // Apply investment project filter
-        if ($request->has('investment_project') && $request->investment_project) {
-            $query->where('bb.vu_dau_tu', $request->investment_project);
-        }
-        
-        // Paginate the results
-        $perPage = $request->input('per_page', 10);
-        $bienBanList = $query->paginate($perPage);
-        
-        return response()->json($bienBanList);
+
+        // Get the filtered records
+        $records = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $records
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Error in BienBan index: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error retrieving records',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     // Import data from Excel/CSV
     public function importData(Request $request)

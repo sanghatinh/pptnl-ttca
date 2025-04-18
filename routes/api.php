@@ -90,6 +90,9 @@ Route::get('/document-deliveries/{id}/check-access', [DocumentDeliveryController
     return $request->user();
 });
 
+
+Route::get('/user-info', [UserController::class, 'getUserInfo']);
+
 // เพิ่ม route สำหรับดึงข้อมูลบทบาทตามตำแหน่ง
 Route::get('/get-role-by-position', function(Request $request) {
     $position = $request->query('position');

@@ -356,6 +356,31 @@ public function getUserComponents()
 }
 
 
+public function getUserInfo(Request $request)
+{
+    try {
+        $user = auth()->user();
+        
+        return response()->json([
+            'success' => true,
+            'id' => $user->id,
+            'position' => $user->position,
+            'station' => $user->station,
+            'ma_nhan_vien' => $user->ma_nhan_vien,
+            'full_name' => $user->full_name
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error in getUserInfo: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error retrieving user info',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
 
 
 

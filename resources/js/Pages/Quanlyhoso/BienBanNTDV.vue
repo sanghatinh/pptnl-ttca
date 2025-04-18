@@ -1419,6 +1419,9 @@ export default {
             isMobile: window.innerWidth < 768,
             currentPage: 1, // เพิ่มสำหรับการจัดการหน้า
             perPage: 10, // จำนวนรายการต่อหน้า
+            userPosition: null,
+            userStation: null,
+            userEmployeeCode: null,
             statusOptions: [
                 { code: "all", name: "Tất cả" },
                 { code: "approved", name: "อนุมัติแล้ว" },
@@ -1736,42 +1739,68 @@ export default {
         checkScreenSize() {
             this.isMobile = window.innerWidth < 768;
         },
+        async fetchUserInfo() {
+            try {
+                const response = await axios.get("/api/user-info", {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                });
+
+                const user = response.data;
+                this.userPosition = user.position;
+                this.userStation = user.station;
+                this.userEmployeeCode = user.ma_nhan_vien;
+
+                // After getting user info, fetch the bien ban data
+                await this.fetchBienBanData();
+            } catch (error) {
+                console.error("Error fetching user info:", error);
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            }
+        },
+
         async fetchBienBanData(page = 1) {
             this.isLoading = true;
             try {
-                // โหลดข้อมูลทั้งหมดครั้งเดียว
                 const response = await axios.get("/api/bien-ban-nghiem-thu", {
                     params: {
-                        per_page: 1000, // โหลดทั้งหมดหรือจำนวนมากๆ
+                        page,
+                        per_page: 1000,
+                        position: this.userPosition,
+                        station: this.userStation,
+                        ma_nhan_vien: this.userEmployeeCode,
                     },
                     headers: {
                         Authorization: "Bearer " + this.store.getToken,
                     },
                 });
 
-                this.allBienBanList = response.data.data;
-                this.bienBanList = this.allBienBanList;
-
-                // Set current page
-                this.currentPage = page;
-
-                // ดึงรายการโครงการลงทุนที่มีอยู่ทั้งหมด
-                this.extractInvestmentProjects();
-
-                // Initialize unique values for dropdown filters
-                this.updateUniqueValues("tram");
-                this.updateUniqueValues("vu_dau_tu");
-                this.updateUniqueValues("hinh_thuc_thuc_hien_dv");
-                this.updateUniqueValues("trang_thai_nhan_hs");
+                if (response.data.success) {
+                    this.allBienBanList = response.data.data;
+                    this.bienBanList = this.allBienBanList;
+                    this.currentPage = page;
+                    this.extractInvestmentProjects();
+                    this.updateUniqueValues("tram");
+                    this.updateUniqueValues("vu_dau_tu");
+                    this.updateUniqueValues("hinh_thuc_thuc_hien_dv");
+                    this.updateUniqueValues("trang_thai_nhan_hs");
+                } else {
+                    throw new Error(response.data.message);
+                }
             } catch (error) {
                 console.error("Error fetching biên bản:", error);
-
                 if (error.response?.status === 401) {
                     this.handleAuthError();
                 } else {
-                    alert(
-                        "Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau."
-                    );
+                    Swal.fire({
+                        title: "Error!",
+                        text: "Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.",
+                        icon: "error",
+                        confirmButtonText: "OK",
+                    });
                 }
             } finally {
                 this.isLoading = false;
@@ -2477,6 +2506,7 @@ export default {
         },
     },
     mounted() {
+        this.fetchUserInfo();
         this.fetchBienBanData();
         window.addEventListener("resize", this.checkScreenSize);
 
