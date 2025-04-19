@@ -13,6 +13,7 @@ use App\Http\Controllers\InvestmentProjectController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\Print\PrintGiaoNhanHSController;
 use App\Http\Controllers\QuanlyHS\BienBanNghiemThuController;
+use App\Http\Controllers\QuanlyHS\PhieuGiaoNhanHomGiongController;
 
 
 Route::apiResource('roles', RoleController::class);
@@ -111,6 +112,9 @@ Route::get('/bien-ban-nghiem-thu', [BienBanNghiemThuController::class, 'index'])
 Route::post('/import-bienban-nghiemthu', [BienBanNghiemThuController::class, 'importData']);
 Route::get('/import-progress/{importId}', [BienBanNghiemThuController::class, 'importProgress']);
 
-
+// Routes for Phieu Giao Nhan Hom Giong
+Route::get('/phieu-giao-nhan-hom-giong', [PhieuGiaoNhanHomGiongController::class, 'index']);
+Route::post('/import-phieu-giao-nhan', [PhieuGiaoNhanHomGiongController::class, 'importData']);
+Route::get('/import-homgiong-progress/{importId}', [PhieuGiaoNhanHomGiongController::class, 'importProgress']);
 
 });

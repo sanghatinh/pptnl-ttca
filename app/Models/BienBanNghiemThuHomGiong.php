@@ -33,7 +33,8 @@ class BienBanNghiemThuHomGiong extends Model
         'tong_tien_cong_don',
         'tong_tien_van_chuyen',
         'vu_dau_tu',
-        'tinh_trang_duyet'
+        'tinh_trang_duyet',
+        'ma_nhan_vien'
     ];
 
     // Add scope for searching

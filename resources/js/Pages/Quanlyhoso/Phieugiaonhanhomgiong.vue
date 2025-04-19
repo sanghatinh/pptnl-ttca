@@ -797,13 +797,14 @@
                 <div class="modal-header bg-light">
                     <h5 class="modal-title text-success" id="exportModalLabel">
                         <i class="fas fa-file-excel text-success me-2"></i>
-                        Xuất Excel
+                        Export to Excel
                     </h5>
                     <button
                         type="button"
                         class="btn-close"
                         data-bs-dismiss="modal"
                         aria-label="Close"
+                        @click="closeExportModal"
                     ></button>
                 </div>
                 <div class="modal-body">
@@ -842,7 +843,7 @@
                 <div class="modal-header bg-light">
                     <h5 class="modal-title text-primary" id="importModalLabel">
                         <i class="fas fa-upload text-primary me-2"></i>
-                        Import Data
+                        Import data
                     </h5>
                     <button
                         type="button"
@@ -856,15 +857,16 @@
                     <div class="alert alert-warning mb-3">
                         <i class="fas fa-exclamation-triangle me-2"></i>
                         <small
-                            >Import data sẽ cập nhật dữ liệu theo mã phiếu. Vui
-                            lòng kiểm tra kỹ thông tin trước khi tiếp
+                            >Import data chỉ thay thế dữ liệu hiện có. Mã nhập
+                            mới Không xóa dữ liệu tham chiếu gốc Vui lòng xác
+                            minh thông tin là chính xác trước khi tiếp
                             tục.</small
                         >
                     </div>
 
                     <div class="mb-3">
                         <label for="importFile" class="form-label"
-                            >Chọn file</label
+                            >Select file</label
                         >
                         <input
                             class="form-control"
@@ -873,16 +875,16 @@
                             @change="handleFileSelected"
                             accept=".csv,.xlsx"
                         />
-                        <div class="form-text">Hỗ trợ file: .csv, .xlsx</div>
+                        <div class="form-text">Support files: .csv, .xlsx</div>
                     </div>
 
                     <div v-if="uploadProgress > 0" class="mb-3">
-                        <label class="form-label">Tiến trình tải lên</label>
+                        <label class="form-label">Upload progress</label>
                         <div class="progress">
                             <div
-                                class="progress-bar bg-success"
+                                class="progress-bar progress-bar-striped progress-bar-animated"
                                 role="progressbar"
-                                :style="{ width: uploadProgress + '%' }"
+                                :style="`width: ${uploadProgress}%`"
                                 :aria-valuenow="uploadProgress"
                                 aria-valuemin="0"
                                 aria-valuemax="100"
@@ -892,17 +894,42 @@
                         </div>
                     </div>
 
+                    <div v-if="processingRecords" class="mb-3">
+                        <label class="form-label">Processing data</label>
+                        <div class="progress">
+                            <div
+                                class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                                role="progressbar"
+                                :style="`width: ${processingProgress}%`"
+                                :aria-valuenow="processingProgress"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                {{ processedRecords }} / {{ totalRecords }}
+                            </div>
+                        </div>
+                    </div>
+
                     <div v-if="importErrors.length > 0" class="mt-3">
                         <div class="alert alert-danger">
-                            <h6 class="alert-heading">Lỗi import</h6>
+                            <h6 class="alert-heading">Import error</h6>
                             <ul class="mb-0 ps-3">
                                 <li
-                                    v-for="(error, index) in importErrors"
+                                    v-for="(error, index) in importErrors.slice(
+                                        0,
+                                        5
+                                    )"
                                     :key="index"
                                 >
                                     {{ error }}
                                 </li>
                             </ul>
+                            <div
+                                v-if="importErrors.length > 5"
+                                class="mt-2 text-center"
+                            >
+                                <small>Other errors...</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -913,7 +940,7 @@
                         data-bs-dismiss="modal"
                         @click="closeImportModal"
                     >
-                        Hủy
+                        Cancel
                     </button>
                     <button
                         type="button"
@@ -922,7 +949,7 @@
                         :disabled="!selectedFile || isImporting"
                     >
                         <i class="fas fa-upload me-2"></i>
-                        <span v-if="isImporting">Đang import...</span>
+                        <span v-if="isImporting">Importing...</span>
                         <span v-else>Import</span>
                     </button>
                 </div>
@@ -1137,10 +1164,43 @@ export default {
 
         // Export methods
         showExportModal() {
-            const modalElement = document.getElementById("exportModal");
-            if (modalElement) {
-                const modal = new bootstrap.Modal(modalElement);
-                modal.show();
+            try {
+                // Ensure Bootstrap is properly imported and initialized
+                import("bootstrap/dist/js/bootstrap.bundle.min.js")
+                    .then((bootstrap) => {
+                        const Modal = bootstrap.Modal;
+                        const modalElement =
+                            document.getElementById("exportModal");
+
+                        if (modalElement) {
+                            this.exportModal = new Modal(modalElement);
+                            this.exportModal.show();
+                        } else {
+                            console.error("Modal element not found");
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("Failed to load Bootstrap:", err);
+                        // Fallback method using direct DOM manipulation
+                        const modalElement =
+                            document.getElementById("exportModal");
+                        if (modalElement) {
+                            modalElement.classList.add("show");
+                            modalElement.style.display = "block";
+                            document.body.classList.add("modal-open");
+
+                            // Add backdrop
+                            const backdrop = document.createElement("div");
+                            backdrop.classList.add(
+                                "modal-backdrop",
+                                "fade",
+                                "show"
+                            );
+                            document.body.appendChild(backdrop);
+                        }
+                    });
+            } catch (error) {
+                console.error("Error showing modal:", error);
             }
         },
 
@@ -1279,41 +1339,166 @@ export default {
             }
         },
 
-        // Import methods
-        importData() {
-            const modalElement = document.getElementById("importModal");
+        closeExportModal() {
+            const modalElement = document.getElementById("exportModal");
             if (modalElement) {
-                const modal = new bootstrap.Modal(modalElement);
-                modal.show();
+                // First move focus to a safe element outside the modal
+                document.body.focus();
+                // Then hide the modal
+                const bsModal = bootstrap.Modal.getInstance(modalElement);
+                if (bsModal) {
+                    bsModal.hide();
+                }
+            }
+        },
+
+        importData() {
+            // Show the import modal
+            try {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js")
+                    .then((bootstrap) => {
+                        const Modal = bootstrap.Modal;
+                        const modalElement =
+                            document.getElementById("importModal");
+
+                        if (modalElement) {
+                            const importModal = new Modal(modalElement);
+                            importModal.show();
+                        } else {
+                            console.error("Import modal element not found");
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("Failed to load Bootstrap:", err);
+
+                        // Fallback method using direct DOM manipulation
+                        const modalElement =
+                            document.getElementById("importModal");
+                        if (modalElement) {
+                            modalElement.classList.add("show");
+                            modalElement.style.display = "block";
+                            document.body.classList.add("modal-open");
+
+                            // Add backdrop
+                            const backdrop = document.createElement("div");
+                            backdrop.classList.add(
+                                "modal-backdrop",
+                                "fade",
+                                "show"
+                            );
+                            document.body.appendChild(backdrop);
+                        }
+                    });
+            } catch (error) {
+                console.error("Error showing import modal:", error);
             }
         },
 
         handleFileSelected(event) {
             const file = event.target.files[0];
             if (file) {
+                // Validate file type
                 const fileType = file.name.split(".").pop().toLowerCase();
                 if (!["csv", "xlsx"].includes(fileType)) {
-                    alert("Vui lòng chọn file CSV hoặc Excel");
-                    event.target.value = "";
+                    alert("Vui lòng chọn đúng tập tin. (CSV หรือ Excel)");
+                    event.target.value = ""; // Clear the file input
                     this.selectedFile = null;
                     return;
                 }
+
                 this.selectedFile = file;
                 this.importErrors = [];
+                console.log("File selected:", file.name);
+            } else {
+                this.selectedFile = null;
+            }
+        },
+
+        closeImportModal() {
+            try {
+                const modalElement = document.getElementById("importModal");
+                if (modalElement) {
+                    if (window.bootstrap) {
+                        const modalInstance =
+                            window.bootstrap.Modal.getInstance(modalElement);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                    } else {
+                        // Fallback if bootstrap is not available
+                        modalElement.classList.remove("show");
+                        modalElement.style.display = "none";
+                        document.body.classList.remove("modal-open");
+
+                        // Remove backdrop
+                        const backdrop =
+                            document.querySelector(".modal-backdrop");
+                        if (backdrop) {
+                            backdrop.remove();
+                        }
+                    }
+                }
+
+                // Reset import state
+                this.selectedFile = null;
+                this.uploadProgress = 0;
+                this.processingRecords = false;
+                this.processingProgress = 0;
+                this.processedRecords = 0;
+                this.totalRecords = 0;
+                this.importErrors = [];
+            } catch (error) {
+                console.error("Error closing import modal:", error);
             }
         },
 
         async startImport() {
             if (!this.selectedFile) {
-                alert("Vui lòng chọn file để import");
+                Swal.fire({
+                    title: "Cảnh báo",
+                    text: "Vui lòng chọn tệp để tải lên",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+                return;
+            }
+
+            // Confirm before proceeding with SweetAlert2
+            const result = await Swal.fire({
+                title: "Xác nhận tải lên",
+                text: "Cảnh báo: Việc nhập dữ liệu sẽ thay đổi dữ liệu theo mã tài liệu được nhập. Bạn có chắc chắn muốn tiếp tục không?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "OK",
+                cancelButtonText: "Hủy",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-success",
+                },
+            });
+
+            if (!result.isConfirmed) {
                 return;
             }
 
             this.isImporting = true;
-            const formData = new FormData();
-            formData.append("file", this.selectedFile);
+            this.uploadProgress = 0;
+            this.processingRecords = false;
+            this.processingProgress = 0;
+            this.processedRecords = 0;
+            this.totalRecords = 0;
+            this.importErrors = [];
 
             try {
+                const formData = new FormData();
+                formData.append("file", this.selectedFile);
+
+                // Start file upload with progress tracking
                 const response = await axios.post(
                     "/api/import-phieu-giao-nhan",
                     formData,
@@ -1323,44 +1508,220 @@ export default {
                             Authorization: "Bearer " + this.store.getToken,
                         },
                         onUploadProgress: (progressEvent) => {
-                            this.uploadProgress = Math.round(
-                                (progressEvent.loaded * 100) /
-                                    progressEvent.total
-                            );
+                            if (progressEvent.total) {
+                                this.uploadProgress = Math.round(
+                                    (progressEvent.loaded * 100) /
+                                        progressEvent.total
+                                );
+                            } else {
+                                this.uploadProgress = 50; // Show 50% if total is unknown
+                            }
                         },
                     }
                 );
 
                 if (response.data.success) {
-                    alert("Import thành công");
-                    this.closeImportModal();
-                    this.fetchPhieuData(); // Refresh data
+                    this.processingRecords = true;
+                    this.totalRecords = response.data.totalRecords || 0;
+
+                    // Start tracking processing status
+                    this.checkImportProgress(response.data.importId);
                 } else {
+                    this.isImporting = false;
                     this.importErrors = response.data.errors || [
-                        "Có lỗi xảy ra khi import",
+                        "Đã xảy ra lỗi không xác định trong quá trình nhập.",
                     ];
+                    console.error("Import failed:", response.data);
+
+                    // Use SweetAlert2 to show failure
+                    Swal.fire({
+                        title: "Thất bại",
+                        text: "Nhập dữ liệu không thành công. Vui lòng kiểm tra lỗi và thử lại.",
+                        icon: "error",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
                 }
             } catch (error) {
-                console.error("Import error:", error);
-                this.importErrors = [
-                    "Có lỗi xảy ra khi import: " + error.message,
-                ];
-            } finally {
                 this.isImporting = false;
+                console.error("Import error:", error);
+
+                if (error.response) {
+                    if (error.response.status === 401) {
+                        this.handleAuthError();
+                    } else {
+                        this.importErrors =
+                            error.response.data.errors ||
+                            Array.isArray(error.response.data.message)
+                                ? error.response.data.message
+                                : [
+                                      error.response.data.message ||
+                                          "Lỗi máy chủ",
+                                  ];
+                    }
+                } else if (error.request) {
+                    // Request made but no response received
+                    this.importErrors = [
+                        "Không có phản hồi từ máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.",
+                    ];
+                } else {
+                    // Error setting up the request
+                    this.importErrors = [
+                        "Lỗi mạng. Vui lòng kiểm tra kết nối của bạn và thử lại: " +
+                            error.message,
+                    ];
+                }
+
+                // Use SweetAlert2 to show error
+                Swal.fire({
+                    title: "Lỗi",
+                    text: "Lỗi khi nhập dữ liệu. Vui lòng kiểm tra chi tiết lỗi hiển thị bên dưới.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
             }
         },
 
-        closeImportModal() {
-            const modalElement = document.getElementById("importModal");
-            if (modalElement) {
-                const modal = bootstrap.Modal.getInstance(modalElement);
-                if (modal) {
-                    modal.hide();
+        async checkImportProgress(importId) {
+            if (!importId) {
+                this.importErrors = ["Invalid import ID. Please try again."];
+                return;
+            }
+
+            try {
+                const response = await axios.get(
+                    `/api/import-homgiong-progress/${importId}`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                const data = response.data;
+
+                if (data.finished) {
+                    this.processedRecords = data.processed || 0;
+                    this.totalRecords = data.total || 0;
+                    this.processingProgress = 100;
+
+                    if (data.success) {
+                        // Import completed successfully
+                        setTimeout(() => {
+                            this.isImporting = false;
+                            this.closeImportModal();
+
+                            // Show success toast notification with SweetAlert2
+                            Swal.fire({
+                                title: "Thành công",
+                                text:
+                                    `Đã tải lên thành công ${this.processedRecords} bản ghi` +
+                                    (this.importErrors.length > 0
+                                        ? ` với ${this.importErrors.length} lỗi`
+                                        : ""),
+                                icon: "success",
+                                toast: true,
+                                position: "top-end",
+                                showConfirmButton: false,
+                                timer: 5000,
+                                timerProgressBar: true,
+                                didOpen: (toast) => {
+                                    toast.addEventListener(
+                                        "mouseenter",
+                                        Swal.stopTimer
+                                    );
+                                    toast.addEventListener(
+                                        "mouseleave",
+                                        Swal.resumeTimer
+                                    );
+                                },
+                            });
+
+                            // Refresh data to get the latest changes
+                            this.fetchBienBanData();
+                        }, 1000);
+                    } else {
+                        // Import failed
+                        this.isImporting = false;
+
+                        // Make sure errors are properly presented
+                        if (data.errors && data.errors.length > 0) {
+                            this.importErrors = data.errors;
+                        } else {
+                            this.importErrors = [
+                                "Đã xảy ra lỗi không xác định trong quá trình xử lý.",
+                            ];
+                        }
+
+                        console.error("Import failed:", data);
+
+                        // Show error notification with SweetAlert2
+                        Swal.fire({
+                            title: "Thất bại",
+                            text: "Tải lên không thành công. Vui lòng kiểm tra thông báo lỗi bên dưới.",
+                            icon: "error",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        });
+                    }
+                } else {
+                    // Still processing, update progress
+                    this.processedRecords = data.processed || 0;
+                    this.totalRecords = data.total || this.totalRecords || 1;
+
+                    // Avoid division by zero
+                    if (this.totalRecords > 0) {
+                        this.processingProgress = Math.min(
+                            99, // Cap at 99% until finished
+                            Math.round(
+                                (this.processedRecords * 100) /
+                                    this.totalRecords
+                            )
+                        );
+                    } else {
+                        this.processingProgress = 50; // Show 50% if total is unknown
+                    }
+
+                    // Update import errors if any are available during processing
+                    if (data.errors && data.errors.length > 0) {
+                        this.importErrors = data.errors;
+                    }
+
+                    // Check again after a delay
+                    setTimeout(() => this.checkImportProgress(importId), 1000);
+                }
+            } catch (error) {
+                console.error("Error checking import progress:", error);
+
+                if (error.response && error.response.status === 401) {
+                    this.handleAuthError();
+                    return;
+                }
+
+                this.isImporting = false;
+                this.importErrors = [
+                    "Lỗi khi theo dõi tiến trình tải lên. Quá trình tải lên có thể vẫn đang được xử lý trong nền.",
+                    "Vui lòng làm mới trang sau vài phút để xem dữ liệu đã được tải lên hay chưa.",
+                ];
+
+                if (error.response && error.response.data) {
+                    if (typeof error.response.data === "string") {
+                        this.importErrors.push(error.response.data);
+                    } else if (error.response.data.message) {
+                        this.importErrors.push(error.response.data.message);
+                    }
                 }
             }
-            this.selectedFile = null;
-            this.uploadProgress = 0;
-            this.importErrors = [];
         },
     },
     watch: {
