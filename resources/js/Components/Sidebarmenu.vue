@@ -65,22 +65,42 @@
                                         >
                                     </router-link>
                                 </li>
+
                                 <li
                                     v-if="
                                         userCanViewComponent('Sales Dashboard')
                                     "
                                 >
                                     <router-link
-                                        to="/BienbannghiemthuDV"
+                                        to="/Bienbannghiemthudichvu"
                                         :class="
                                             $route.path ===
-                                            '/BienbannghiemthuDV'
+                                            '/Bienbannghiemthudichvu'
                                                 ? 'current-page'
                                                 : ''
                                         "
                                     >
                                         <span class="menu-text"
                                             >Biên bản nghiệm thu dịch vụ</span
+                                        >
+                                    </router-link>
+                                </li>
+                                <li
+                                    v-if="
+                                        userCanViewComponent('Sales Dashboard')
+                                    "
+                                >
+                                    <router-link
+                                        to="/Phieugiaonhanhomgiong"
+                                        :class="
+                                            $route.path ===
+                                            '/Phieugiaonhanhomgiong'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                    >
+                                        <span class="menu-text"
+                                            >Phiêu giao nhận hom giống</span
                                         >
                                     </router-link>
                                 </li>

@@ -147,6 +147,7 @@ tong_tien_cong_don	decimal(15,2)	YES		NULL
 tong_tien_van_chuyen	decimal(15,2)	YES		NULL		
 vu_dau_tu	varchar(255)	YES		NULL		
 tinh_trang_duyet	varchar(255)	YES		NULL		
+ma_nhan_vien	varchar(50)	YES		NULL		
 
 # table document_mapping_homgiong;
 
