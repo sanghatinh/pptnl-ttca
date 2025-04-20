@@ -22,8 +22,8 @@
                         </option>
                     </select>
                 </div>
-                  <!-- Add Export/Import buttons to the dropdown menu -->
-                  <div class="actions-menu">
+                <!-- Add Export/Import buttons to the dropdown menu -->
+                <div class="actions-menu">
                     <div class="dropdown">
                         <button
                             class="btn btn-light btn-icon"
@@ -75,7 +75,6 @@
                         class="search-input px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                 </div>
-          
             </div>
         </div>
 
@@ -233,7 +232,10 @@
                                                 class="fas fa-filter"
                                                 :class="{
                                                     'text-green-500':
-                                                        columnFilters.vu_dau_tu,
+                                                        selectedFilterValues.vu_dau_tu &&
+                                                        selectedFilterValues
+                                                            .vu_dau_tu.length >
+                                                            0,
                                                 }"
                                             ></i>
                                         </button>
@@ -241,14 +243,30 @@
                                             v-if="activeFilter === 'vu_dau_tu'"
                                             class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
                                         >
-                                            <input
-                                                type="text"
-                                                v-model="
-                                                    columnFilters.vu_dau_tu
-                                                "
-                                                class="form-control mb-2"
-                                                placeholder="Lọc theo vụ..."
-                                            />
+                                            <div
+                                                class="max-h-40 overflow-y-auto mb-2"
+                                            >
+                                                <div
+                                                    v-for="option in uniqueValues.vu_dau_tu"
+                                                    :key="option"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`vu_dau_tu-${option}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.vu_dau_tu
+                                                        "
+                                                        class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                    />
+                                                    <label
+                                                        :for="`vu_dau_tu-${option}`"
+                                                        class="select-none"
+                                                        >{{ option }}</label
+                                                    >
+                                                </div>
+                                            </div>
                                             <div class="flex justify-between">
                                                 <button
                                                     @click="
@@ -375,32 +393,27 @@
                                     <th>
                                         Hợp đồng đầu tư mía bên nhận
                                         <button
-                                            @click="
-                                                toggleFilter(
-                                                    'hop_dong_dau_tu_mia_ben_nhan'
-                                                )
-                                            "
+                                            @click="toggleFilter('ma_hop_dong')"
                                             class="filter-btn"
                                         >
                                             <i
                                                 class="fas fa-filter"
                                                 :class="{
                                                     'text-green-500':
-                                                        columnFilters.hop_dong_dau_tu_mia_ben_nhan,
+                                                        columnFilters.ma_hop_dong,
                                                 }"
                                             ></i>
                                         </button>
                                         <div
                                             v-if="
-                                                activeFilter ===
-                                                'hop_dong_dau_tu_mia_ben_nhan'
+                                                activeFilter === 'ma_hop_dong'
                                             "
                                             class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
                                         >
                                             <input
                                                 type="text"
                                                 v-model="
-                                                    columnFilters.hop_dong_dau_tu_mia_ben_nhan
+                                                    columnFilters.ma_hop_dong
                                                 "
                                                 class="form-control mb-2"
                                                 placeholder="Lọc theo hợp đồng..."
@@ -409,7 +422,7 @@
                                                 <button
                                                     @click="
                                                         resetFilter(
-                                                            'hop_dong_dau_tu_mia_ben_nhan'
+                                                            'ma_hop_dong'
                                                         )
                                                     "
                                                     class="btn btn-sm btn-light"
@@ -419,7 +432,7 @@
                                                 <button
                                                     @click="
                                                         applyFilter(
-                                                            'hop_dong_dau_tu_mia_ben_nhan'
+                                                            'ma_hop_dong'
                                                         )
                                                     "
                                                     class="btn btn-sm btn-success"
@@ -673,14 +686,20 @@
                                     <td>{{ item.vu_dau_tu }}</td>
                                     <td>{{ item.ten_phieu }}</td>
                                     <td>
-                                        {{ item.hop_dong_dau_tu_mia_ben_giao }}
+                                        {{
+                                            item.hop_dong_dau_tu_mia_ben_giao_hom
+                                        }}
                                     </td>
                                     <td>
-                                        {{ item.hop_dong_dau_tu_mia_ben_nhan }}
+                                        {{ item.ma_hop_dong }}
                                     </td>
                                     <td>
                                         {{
-                                            formatCurrency(item.tong_thuc_nhan)
+                                            item.tong_thuc_nhan
+                                                ? new Intl.NumberFormat().format(
+                                                      item.tong_thuc_nhan
+                                                  )
+                                                : "0"
                                         }}
                                     </td>
                                     <td>
@@ -743,11 +762,11 @@
                     </div>
                     <div class="mb-2">
                         <strong>Hợp đồng đầu tư mía bên giao:</strong>
-                        {{ item.hop_dong_dau_tu_mia_ben_giao }}
+                        {{ item.hop_dong_dau_tu_mia_ben_giao_hom }}
                     </div>
                     <div class="mb-2">
                         <strong>Hợp đồng đầu tư mía bên nhận:</strong>
-                        {{ item.hop_dong_dau_tu_mia_ben_nhan }}
+                        {{ item.ma_hop_dong }}
                     </div>
                     <div class="mb-2">
                         <strong>Tổng thực nhận:</strong>
@@ -1008,7 +1027,7 @@ export default {
                 vu_dau_tu: "",
                 ten_phieu: "",
                 hop_dong_dau_tu_mia_ben_giao: "",
-                hop_dong_dau_tu_mia_ben_nhan: "",
+                ma_hop_dong: "",
                 nguoi_giao_ho_so: "",
                 nguoi_nhan_ho_so: "",
                 ngay_nhan_ho_so: "",
@@ -1022,19 +1041,31 @@ export default {
             // Add export/import related data
             exportModal: null,
             importModal: null,
+            // Add unique values and selected filter values
+            uniqueValues: {
+                vu_dau_tu: [],
+            },
+            selectedFilterValues: {
+                vu_dau_tu: [],
+            },
         };
     },
     computed: {
         filteredItems() {
             return this.phieuList.filter((item) => {
+                // Apply global search
                 const matchesSearch =
                     item.ma_so_phieu
-                        .toLowerCase()
+                        ?.toLowerCase()
                         .includes(this.search.toLowerCase()) ||
                     item.ten_phieu
-                        .toLowerCase()
+                        ?.toLowerCase()
+                        .includes(this.search.toLowerCase()) ||
+                    item.can_bo_nong_vu
+                        ?.toLowerCase()
                         .includes(this.search.toLowerCase());
 
+                // Apply status filter
                 let matchesStatus = true;
                 if (this.statusFilter !== "all") {
                     if (this.statusFilter === "approved") {
@@ -1046,7 +1077,87 @@ export default {
                     }
                 }
 
-                return matchesSearch && matchesStatus;
+                // Apply column filters
+                const matchesColumnFilters =
+                    // Mã số phiếu
+                    (!this.columnFilters.ma_so_phieu ||
+                        (item.ma_so_phieu &&
+                            item.ma_so_phieu
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.ma_so_phieu.toLowerCase()
+                                ))) &&
+                    // Cán bộ nông vụ
+                    (!this.columnFilters.can_bo_nong_vu ||
+                        (item.can_bo_nong_vu &&
+                            item.can_bo_nong_vu
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.can_bo_nong_vu.toLowerCase()
+                                ))) &&
+                    // Vụ đầu tư (Unique dropdown filter)
+                    (this.selectedFilterValues.vu_dau_tu.length === 0 ||
+                        (item.vu_dau_tu &&
+                            this.selectedFilterValues.vu_dau_tu.includes(
+                                item.vu_dau_tu
+                            ))) &&
+                    // Tên phiếu
+                    (!this.columnFilters.ten_phieu ||
+                        (item.ten_phieu &&
+                            item.ten_phieu
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.ten_phieu.toLowerCase()
+                                ))) &&
+                    // Hợp đồng đầu tư mía bên giao
+                    (!this.columnFilters.hop_dong_dau_tu_mia_ben_giao ||
+                        (item.hop_dong_dau_tu_mia_ben_giao_hom &&
+                            item.hop_dong_dau_tu_mia_ben_giao_hom
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.hop_dong_dau_tu_mia_ben_giao.toLowerCase()
+                                ))) &&
+                    // Hợp đồng đầu tư mía bên nhận
+                    (!this.columnFilters.ma_hop_dong ||
+                        (item.ma_hop_dong &&
+                            item.ma_hop_dong
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.ma_hop_dong.toLowerCase()
+                                ))) &&
+                    // Người giao hồ sơ
+                    (!this.columnFilters.nguoi_giao_ho_so ||
+                        (item.nguoi_giao_ho_so &&
+                            item.nguoi_giao_ho_so
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.nguoi_giao_ho_so.toLowerCase()
+                                ))) &&
+                    // Người nhận hồ sơ
+                    (!this.columnFilters.nguoi_nhan_ho_so ||
+                        (item.nguoi_nhan_ho_so &&
+                            item.nguoi_nhan_ho_so
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.nguoi_nhan_ho_so.toLowerCase()
+                                ))) &&
+                    // Ngày nhận hồ sơ
+                    (!this.columnFilters.ngay_nhan_ho_so ||
+                        (item.ngay_nhan_ho_so &&
+                            this.formatDate(item.ngay_nhan_ho_so).includes(
+                                this.columnFilters.ngay_nhan_ho_so
+                            ))) &&
+                    // Tình trạng giao nhận hồ sơ
+                    (this.columnFilters.tinh_trang_giao_nhan_ho_so === "" ||
+                        item.tinh_trang_giao_nhan_ho_so ===
+                            (this.columnFilters.tinh_trang_giao_nhan_ho_so
+                                ? parseInt(
+                                      this.columnFilters
+                                          .tinh_trang_giao_nhan_ho_so
+                                  )
+                                : item.tinh_trang_giao_nhan_ho_so));
+
+                return matchesSearch && matchesStatus && matchesColumnFilters;
             });
         },
         paginatedItems() {
@@ -1095,7 +1206,7 @@ export default {
             if (!value) return "0";
             return new Intl.NumberFormat("vi-VN", {
                 style: "currency",
-                currency: "VND",
+                currency: "KIP",
                 maximumFractionDigits: 0,
             }).format(value);
         },
@@ -1121,6 +1232,12 @@ export default {
                     this.allPhieuList = response.data.data;
                     this.phieuList = this.allPhieuList;
                     this.currentPage = page;
+                    // Extract unique values for filters
+                    this.uniqueValues.vu_dau_tu = [
+                        ...new Set(
+                            this.allPhieuList.map((item) => item.vu_dau_tu)
+                        ),
+                    ];
                 } else {
                     throw new Error(response.data.message);
                 }
@@ -1138,8 +1255,26 @@ export default {
             }
         },
         resetAllFilters() {
+            // Reset global search
             this.search = "";
+
+            // Reset status filter
             this.statusFilter = "all";
+
+            // Reset all column filters
+            for (const key in this.columnFilters) {
+                this.columnFilters[key] = "";
+            }
+
+            // Reset dropdown filters
+            for (const key in this.selectedFilterValues) {
+                this.selectedFilterValues[key] = [];
+            }
+
+            // Reset active filter (close any open filter dropdown)
+            this.activeFilter = null;
+
+            // Reset to first page
             this.currentPage = 1;
         },
         viewDetails(item) {
@@ -1154,10 +1289,32 @@ export default {
         // Column filter methods
         toggleFilter(column) {
             this.activeFilter = this.activeFilter === column ? null : column;
+
+            // If it's the vu_dau_tu column and we're opening the filter, ensure unique values are populated
+            if (column === "vu_dau_tu" && this.activeFilter === "vu_dau_tu") {
+                this.updateUniqueValues("vu_dau_tu");
+            }
+        },
+
+        updateUniqueValues(column) {
+            // Get unique values for dropdown columns
+            if (column === "vu_dau_tu") {
+                this.uniqueValues[column] = [
+                    ...new Set(
+                        this.phieuList
+                            .map((item) => item[column])
+                            .filter(Boolean) // Remove null/undefined values
+                    ),
+                ];
+            }
         },
 
         resetFilter(column) {
-            this.columnFilters[column] = "";
+            if (column === "vu_dau_tu") {
+                this.selectedFilterValues[column] = [];
+            } else {
+                this.columnFilters[column] = "";
+            }
             this.currentPage = 1;
         },
 
@@ -1254,9 +1411,9 @@ export default {
                             "Vụ đầu tư": item.vu_dau_tu || "",
                             "Tên phiếu": item.ten_phieu || "",
                             "Hợp đồng đầu tư mía bên giao":
-                                item.hop_dong_dau_tu_mia_ben_giao || "",
+                                item.hop_dong_dau_tu_mia_ben_giao_hom || "",
                             "Hợp đồng đầu tư mía bên nhận":
-                                item.hop_dong_dau_tu_mia_ben_nhan || "",
+                                item.ma_hop_dong || "",
                             "Tổng thực nhận": item.tong_thuc_nhan || 0,
                             "Tổng tiền": item.tong_tien || 0,
                             "Người giao hồ sơ": item.nguoi_giao_ho_so || "",
@@ -1404,7 +1561,7 @@ export default {
                 // Validate file type
                 const fileType = file.name.split(".").pop().toLowerCase();
                 if (!["csv", "xlsx"].includes(fileType)) {
-                    alert("Vui lòng chọn đúng tập tin. (CSV หรือ Excel)");
+                    alert("Vui lòng chọn đúng tập tin. (CSV hoặc Excel)");
                     event.target.value = ""; // Clear the file input
                     this.selectedFile = null;
                     return;
@@ -1738,6 +1895,9 @@ export default {
     },
     mounted() {
         this.fetchPhieuData();
+        // After fetching data, initialize the unique values
+        this.updateUniqueValues("vu_dau_tu");
+
         window.addEventListener("resize", () => {
             this.isMobile = window.innerWidth < 768;
         });
