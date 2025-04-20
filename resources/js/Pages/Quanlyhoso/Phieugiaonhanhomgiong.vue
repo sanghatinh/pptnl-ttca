@@ -701,7 +701,14 @@
                                     :key="item.id"
                                 >
                                     <td>{{ item.ma_so_phieu }}</td>
-                                    <td>{{ item.can_bo_nong_vu }}</td>
+                                    <td>
+                                        <template v-if="item.can_bo_nong_vu">
+                                            <i
+                                                class="fas fa-user-tie text-purple-500"
+                                            ></i>
+                                            {{ item.can_bo_nong_vu }}
+                                        </template>
+                                    </td>
                                     <td>{{ item.vu_dau_tu }}</td>
                                     <td>{{ item.ten_phieu }}</td>
                                     <td>
@@ -724,17 +731,52 @@
                                     <td>
                                         {{ formatCurrency(item.tong_tien) }}
                                     </td>
-                                    <td>{{ item.nguoi_giao_ho_so }}</td>
-                                    <td>{{ item.nguoi_nhan_ho_so }}</td>
+                                    <td>
+                                        <template v-if="item.nguoi_giao_ho_so">
+                                            <i
+                                                class="fas fa-user text-blue-500"
+                                            ></i>
+                                            {{ item.nguoi_giao_ho_so }}
+                                        </template>
+                                    </td>
+                                    <td>
+                                        <template v-if="item.nguoi_nhan_ho_so">
+                                            <i
+                                                class="fas fa-user text-green-500"
+                                            ></i>
+                                            {{ item.nguoi_nhan_ho_so }}
+                                        </template>
+                                    </td>
                                     <td>
                                         {{ formatDate(item.ngay_nhan_ho_so) }}
                                     </td>
                                     <td>
-                                        {{
-                                            formatStatus(
-                                                item.tinh_trang_giao_nhan_ho_so
-                                            )
-                                        }}
+                                        <span
+                                            v-if="
+                                                item.tinh_trang_giao_nhan_ho_so !==
+                                                undefined
+                                            "
+                                            :class="
+                                                statusClass(
+                                                    item.tinh_trang_giao_nhan_ho_so
+                                                )
+                                            "
+                                            class="flex items-center"
+                                        >
+                                            <i
+                                                :class="
+                                                    statusIcons(
+                                                        item.tinh_trang_giao_nhan_ho_so
+                                                    )
+                                                "
+                                                class="mr-1"
+                                            ></i>
+                                            {{
+                                                formatStatus(
+                                                    item.tinh_trang_giao_nhan_ho_so
+                                                )
+                                            }}
+                                        </span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -1214,9 +1256,10 @@ export default {
             if (!status) return "";
 
             const statusMap = {
-                0: "Chờ duyệt",
-                1: "Đã duyệt",
-                2: "Từ chối",
+                creating: "Nháp",
+                sending: "Đang nộp",
+                received: "Đã nhận",
+                cancelled: "Hủy",
             };
 
             return statusMap[status] || status;
@@ -1925,6 +1968,52 @@ export default {
                         this.importErrors.push(error.response.data.message);
                     }
                 }
+            }
+        },
+
+        statusClass(status) {
+            if (!status) return "";
+
+            switch (status) {
+                case "creating":
+                    return "text-yellow-600";
+                case "sending":
+                    return "text-blue-600";
+                case "received":
+                    return "text-green-600";
+                case "cancelled":
+                    return "text-red-600";
+                default:
+                    return "";
+            }
+        },
+
+        statusIcons(status) {
+            if (!status) return "";
+
+            switch (status) {
+                case "creating":
+                    return "fas fa-spinner";
+                case "sending":
+                    return "fas fa-shipping-fast";
+                case "received":
+                    return "fas fa-check-circle";
+                case "cancelled":
+                    return "fas fa-times-circle";
+                default:
+                    return "fas fa-info-circle";
+            }
+        },
+        statusIcon(status) {
+            switch (status) {
+                case "approved":
+                    return "fas fa-check-circle text-success";
+                case "pending":
+                    return "fas fa-clock text-warning";
+                case "rejected":
+                    return "fas fa-times-circle text-danger";
+                default:
+                    return "";
             }
         },
     },
