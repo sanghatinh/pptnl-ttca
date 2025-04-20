@@ -22,18 +22,8 @@
                         </option>
                     </select>
                 </div>
-                <div
-                    class="col d-flex justify-content-end gap-3 align-items-center"
-                >
-                    <input
-                        v-model="search"
-                        type="text"
-                        placeholder="Tìm kiếm phiếu..."
-                        class="search-input px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                </div>
-                <!-- Add Export/Import buttons to the dropdown menu -->
-                <div class="actions-menu">
+                  <!-- Add Export/Import buttons to the dropdown menu -->
+                  <div class="actions-menu">
                     <div class="dropdown">
                         <button
                             class="btn btn-light btn-icon"
@@ -75,6 +65,17 @@
                         </ul>
                     </div>
                 </div>
+                <div
+                    class="col d-flex justify-content-end gap-3 align-items-center"
+                >
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Tìm kiếm phiếu..."
+                        class="search-input px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                </div>
+          
             </div>
         </div>
 
@@ -702,11 +703,14 @@
                         </table>
                     </div>
                     <div class="flex justify-center mt-4">
-                        <Bootstrap5Pagination
-                            :data="paginatedItems"
-                            @pagination-change-page="pageChanged"
-                            :classes="paginationClasses"
-                        />
+                        <div class="pagination-card">
+                            <Bootstrap5Pagination
+                                :data="paginatedItems"
+                                @pagination-change-page="pageChanged"
+                                :limit="5"
+                                :classes="paginationClasses"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1747,7 +1751,7 @@ export default {
 </script>
 
 <style scoped>
-/* ...existing styles... */
+/* Table & Pagination Styling */
 .text-gray-400 {
     color: #9ca3af;
 }
@@ -1800,8 +1804,6 @@ export default {
     justify-content: center;
 }
 
-/* Add to <style> section */
-
 .desktop-row.selected {
     background-color: #e6f4ea;
 }
@@ -1823,8 +1825,6 @@ export default {
 .form-checkbox:hover {
     border-color: #10b981;
 }
-
-/* ... existing styles ... */
 
 .status-filter {
     position: relative;
@@ -1921,26 +1921,402 @@ export default {
     }
 }
 
-/* Add styles for column filters */
-.filter-btn {
-    background: none;
-    border: none;
-    padding: 2px 6px;
+/* จัดการการแสดงผลของไอคอนร่วมกับข้อความ */
+.flex.items-center {
+    display: flex;
+    align-items: center;
+}
+.mr-1 {
+    margin-right: 0.25rem;
+}
+
+/* Reset filters button styling */
+.reset-all-filters-btn {
+    position: absolute;
+    right: 5px;
+    top: 25px;
+    z-index: 100;
+    font-size: 1rem;
     cursor: pointer;
-    color: #6b7280;
+    color: #fff;
+    background: #198754;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
 }
 
-.filter-btn:hover {
+.reset-all-filters-btn:hover {
+    background: #10b981;
+    transform: rotate(30deg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Add new styles for filters */
+th {
+    position: relative;
+}
+
+.table-auto th {
+    min-width: 150px;
+    white-space: nowrap;
+}
+
+.desktop-row {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.desktop-row:hover {
+    background-color: #f0fff4;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Improve table appearance */
+.table-auto {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.table-auto th:first-child {
+    border-top-left-radius: 0.5rem;
+}
+
+.table-auto th:last-child {
+    border-top-right-radius: 0.5rem;
+}
+
+.table-auto tr:last-child td:first-child {
+    border-bottom-left-radius: 0.5rem;
+}
+
+.table-auto tr:last-child td:last-child {
+    border-bottom-right-radius: 0.5rem;
+}
+
+/* Filter icon styling */
+.fa-filter {
+    font-size: 0.75rem;
+}
+
+/* Filter dropdown positioning */
+.relative {
+    position: relative;
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+    cursor: pointer;
+}
+
+/* Improve active filter visibility */
+.text-green-500 {
     color: #10b981;
 }
 
-.filter-btn.active {
+/* Improve dropdown shadow */
+.shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Ensure filter dropdowns appear on top */
+.z-10 {
+    z-index: 10;
+}
+
+/* Fix for filter dropdowns positioning */
+.table-auto th {
+    position: relative;
+}
+
+/* Improved dropdown positioning to prevent overlap with table headers */
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
+    position: absolute;
+    top: calc(100% + 5px); /* Position below the header with some spacing */
+    left: 0;
+    min-width: 250px;
+    max-width: 300px;
+    z-index: 1050;
+    overflow: visible;
+    max-height: 300px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+/* Handle overflow for long content in dropdown filters */
+.max-h-40.overflow-y-auto {
+    max-height: 160px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+/* Prettier scrollbars for Webkit browsers */
+.max-h-40.overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
+
+.max-h-40.overflow-y-auto::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 3px;
+}
+
+.max-h-40.overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 3px;
+}
+
+/* Ensure the table container handles overlays properly */
+.overflow-x-auto {
+    position: relative;
+    overflow: visible; /* Allow dropdowns to overflow outside the container */
+    width: 100%;
+}
+
+/* Make sure the card has proper overflow handling */
+.card-body {
+    position: relative;
+    overflow: visible;
+}
+
+/* Ensure table wrapper handles the overflow context properly */
+.table-responsive-wrapper {
+    position: relative;
+    overflow: visible;
+    width: 100%;
+}
+
+/* Make the filter dropdowns look more professional */
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
+    padding: 12px;
+    background-color: white;
+    border-radius: 8px;
+}
+
+/* Improve filter input styling */
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 input[type="text"] {
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+}
+
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 input[type="text"]:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+/* Style filter buttons */
+.flex.justify-between button {
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.flex.justify-between button:hover {
+    transform: translateY(-1px);
+}
+
+/* Add a subtle pointer indicator to make it clearer the dropdown is tied to a specific column */
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10:before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 10px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    transform: rotate(45deg);
+    border-left: 1px solid #e2e8f0;
+    border-top: 1px solid #e2e8f0;
+    z-index: -1;
+}
+
+/* Fix table header sticky positioning for better scrolling */
+.table-auto thead th {
+    position: sticky;
+    top: 0;
+    background-color: #e7e7e7;
+    z-index: 10;
+}
+
+/* Ensure filter icons look professional */
+.fas.fa-filter {
+    transition: color 0.2s;
+}
+
+button:hover .fas.fa-filter:not(.text-green-500) {
     color: #10b981;
 }
 
-/* Position the filter dropdown */
-.absolute.mt-1.bg-white {
+/* Improve mobile view for filter dropdowns */
+@media (max-width: 768px) {
+    .absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
+        width: 90vw;
+        max-width: 90vw;
+        left: 0;
+        right: 0;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* Vertical ellipsis button styling */
+.actions-menu {
+    position: relative;
+}
+
+.btn-icon {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #e5e7eb;
+}
+
+.btn-icon:hover {
+    background-color: #e9ecef;
+    color: #495057;
+    border-color: #ddd;
+}
+
+.btn-icon:focus {
+    box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25);
+    border-color: #10b981;
+}
+
+.dropdown-menu {
     min-width: 200px;
-    z-index: 1000;
+    padding: 0.5rem 0;
+    margin: 0.125rem 0 0;
+    border-radius: 0.375rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item {
+    padding: 0.6rem 1rem;
+    display: flex;
+    align-items: center;
+    color: #212529;
+    transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #f0fff4;
+    color: #10b981;
+}
+
+.dropdown-item i {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+}
+
+/* Improved Pagination Styling */
+.pagination {
+    display: flex;
+    padding-left: 0;
+    list-style: none;
+    border-radius: 0.25rem;
+}
+
+.page-item {
+    margin: 0 2px;
+}
+
+.page-link {
+    position: relative;
+    display: block;
+    padding: 0.5rem 0.75rem;
+    margin-left: -1px;
+    line-height: 1.25;
+    color: #198754;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+}
+
+.page-link:hover {
+    z-index: 2;
+    color: #0d6efd;
+    text-decoration: none;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.page-link:focus {
+    z-index: 3;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25);
+}
+
+.page-item.active .page-link {
+    z-index: 3;
+    color: #fff;
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    cursor: auto;
+    background-color: #fff;
+    border-color: #dee2e6;
+}
+
+/* Table row styling */
+.table-auto tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.table-auto tbody tr:hover {
+    background-color: rgba(16, 185, 129, 0.05);
+}
+
+.table-auto td {
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    vertical-align: middle;
+}
+
+/* Loading indicator */
+#loading-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.7);
+    z-index: 9999;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: #198754;
+}
+
+/* Table rows clickable indication */
+.table-auto tbody tr {
+    cursor: pointer;
 }
 </style>
