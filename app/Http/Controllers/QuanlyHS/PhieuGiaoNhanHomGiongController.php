@@ -10,54 +10,75 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class PhieuGiaoNhanHomGiongController extends Controller
 {
-    public function index(Request $request)
-    {
-        try {
-            $user = auth()->user();
-            $query = DB::table('bien_ban_nghiem_thu_hom_giong');
+ 
 
-            // Access control based on user position
-            switch ($user->position) {
-                case 'department_head':
-                case 'office_workers':
-                    // See all records - no filtering needed
-                    break;
-                    
-                case 'Station_Chief':
-                    // Filter by user's station
-                    $query->where('tram', $user->station);
-                    break;
-                    
-                case 'Farm_worker':
-                    // Filter by employee code
-                    $query->where('ma_nhan_vien', $user->ma_nhan_vien);
-                    break;
-                    
-                default:
-                    // Default case - return no records
-                    return response()->json([
-                        'data' => [],
-                        'message' => 'Unauthorized position'
-                    ], 403);
-            }
+public function index(Request $request)
+{
+    try {
+        $user = auth()->user();
+        
+        // Start with base query on bien_ban_nghiem_thu_hom_giong
+        $query = DB::table('bien_ban_nghiem_thu_hom_giong as hg')
+            // Join with document_mapping_homgiong to get document_code
+            ->leftJoin('document_mapping_homgiong as dmhg', 'hg.ma_so_phieu', '=', 'dmhg.ma_so_phieu')
+            // Join with document_delivery to get creator_id, receiver_id, received_date, status
+            ->leftJoin('document_delivery as dd', 'dmhg.document_code', '=', 'dd.document_code')
+            // Join with users table for creator name (nguoi_giao_ho_so)
+            ->leftJoin('users as creator', 'dd.creator_id', '=', 'creator.id')
+            // Join with users table for receiver name (nguoi_nhan_ho_so)
+            ->leftJoin('users as receiver', 'dd.receiver_id', '=', 'receiver.id');
 
-            // Get the filtered records
-            $records = $query->get();
-
-            return response()->json([
-                'success' => true,
-                'data' => $records
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('Error in PhieuGiaoNhan index: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error retrieving records',
-                'error' => $e->getMessage()
-            ], 500);
+        // Access control based on user position
+        switch ($user->position) {
+            case 'department_head':
+            case 'office_workers':
+                // See all records - no filtering needed
+                break;
+                
+            case 'Station_Chief':
+                // Filter by user's station
+                $query->where('hg.tram', $user->station);
+                break;
+                
+            case 'Farm_worker':
+                // Filter by employee code
+                $query->where('hg.ma_nhan_vien', $user->ma_nhan_vien);
+                break;
+                
+            default:
+                // Default case - return no records
+                return response()->json([
+                    'data' => [],
+                    'message' => 'Unauthorized position'
+                ], 403);
         }
+
+        // Select all fields from hom_giong table and additional fields from related tables
+        $query->select(
+            'hg.*',
+            'creator.full_name as nguoi_giao_ho_so',
+            'receiver.full_name as nguoi_nhan_ho_so',
+            'dd.received_date as ngay_nhan_ho_so',
+            'dd.status as tinh_trang_giao_nhan_ho_so'
+        );
+
+        // Get the filtered records
+        $records = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $records
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Error in PhieuGiaoNhan index: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error retrieving records',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     // Import data from Excel/CSV
     public function importData(Request $request)

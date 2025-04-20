@@ -609,23 +609,33 @@
                                         </div>
                                     </th>
                                     <th>
-                                        Tình trạng giao nhận hồ sơ
-                                        <button
-                                            @click="
-                                                toggleFilter(
-                                                    'tinh_trang_giao_nhan_ho_so'
-                                                )
-                                            "
-                                            class="filter-btn"
+                                        <div
+                                            class="flex items-center justify-between"
                                         >
-                                            <i
-                                                class="fas fa-filter"
-                                                :class="{
-                                                    'text-green-500':
-                                                        columnFilters.tinh_trang_giao_nhan_ho_so,
-                                                }"
-                                            ></i>
-                                        </button>
+                                            <span
+                                                >Tình trạng giao nhận hồ
+                                                sơ</span
+                                            >
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'tinh_trang_giao_nhan_ho_so'
+                                                    )
+                                                "
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            selectedFilterValues.tinh_trang_giao_nhan_ho_so &&
+                                                            selectedFilterValues
+                                                                .tinh_trang_giao_nhan_ho_so
+                                                                .length > 0,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
                                         <div
                                             v-if="
                                                 activeFilter ===
@@ -633,23 +643,32 @@
                                             "
                                             class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
                                         >
-                                            <select
-                                                v-model="
-                                                    columnFilters.tinh_trang_giao_nhan_ho_so
-                                                "
-                                                class="form-select mb-2"
+                                            <div
+                                                class="max-h-40 overflow-y-auto mb-2"
                                             >
-                                                <option value="">Tất cả</option>
-                                                <option value="0">
-                                                    Chờ duyệt
-                                                </option>
-                                                <option value="1">
-                                                    Đã duyệt
-                                                </option>
-                                                <option value="2">
-                                                    Từ chối
-                                                </option>
-                                            </select>
+                                                <div
+                                                    v-for="option in uniqueValues.tinh_trang_giao_nhan_ho_so"
+                                                    :key="option"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`tinh_trang_giao_nhan_ho_so-${option}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.tinh_trang_giao_nhan_ho_so
+                                                        "
+                                                        class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                    />
+                                                    <label
+                                                        :for="`tinh_trang_giao_nhan_ho_so-${option}`"
+                                                        class="select-none"
+                                                        >{{
+                                                            formatStatus(option)
+                                                        }}</label
+                                                    >
+                                                </div>
+                                            </div>
                                             <div class="flex justify-between">
                                                 <button
                                                     @click="
@@ -1044,9 +1063,11 @@ export default {
             // Add unique values and selected filter values
             uniqueValues: {
                 vu_dau_tu: [],
+                tinh_trang_giao_nhan_ho_so: [],
             },
             selectedFilterValues: {
                 vu_dau_tu: [],
+                tinh_trang_giao_nhan_ho_so: [],
             },
         };
     },
@@ -1148,14 +1169,12 @@ export default {
                                 this.columnFilters.ngay_nhan_ho_so
                             ))) &&
                     // Tình trạng giao nhận hồ sơ
-                    (this.columnFilters.tinh_trang_giao_nhan_ho_so === "" ||
-                        item.tinh_trang_giao_nhan_ho_so ===
-                            (this.columnFilters.tinh_trang_giao_nhan_ho_so
-                                ? parseInt(
-                                      this.columnFilters
-                                          .tinh_trang_giao_nhan_ho_so
-                                  )
-                                : item.tinh_trang_giao_nhan_ho_so));
+                    (this.selectedFilterValues.tinh_trang_giao_nhan_ho_so
+                        .length === 0 ||
+                        (item.tinh_trang_giao_nhan_ho_so &&
+                            this.selectedFilterValues.tinh_trang_giao_nhan_ho_so.includes(
+                                item.tinh_trang_giao_nhan_ho_so
+                            )));
 
                 return matchesSearch && matchesStatus && matchesColumnFilters;
             });
@@ -1238,6 +1257,13 @@ export default {
                             this.allPhieuList.map((item) => item.vu_dau_tu)
                         ),
                     ];
+                    this.uniqueValues.tinh_trang_giao_nhan_ho_so = [
+                        ...new Set(
+                            this.allPhieuList.map(
+                                (item) => item.tinh_trang_giao_nhan_ho_so
+                            )
+                        ),
+                    ];
                 } else {
                     throw new Error(response.data.message);
                 }
@@ -1294,6 +1320,12 @@ export default {
             if (column === "vu_dau_tu" && this.activeFilter === "vu_dau_tu") {
                 this.updateUniqueValues("vu_dau_tu");
             }
+            if (
+                column === "tinh_trang_giao_nhan_ho_so" &&
+                this.activeFilter === "tinh_trang_giao_nhan_ho_so"
+            ) {
+                this.updateUniqueValues("tinh_trang_giao_nhan_ho_so");
+            }
         },
 
         updateUniqueValues(column) {
@@ -1307,10 +1339,21 @@ export default {
                     ),
                 ];
             }
+            if (column === "tinh_trang_giao_nhan_ho_so") {
+                this.uniqueValues[column] = [
+                    ...new Set(
+                        this.phieuList
+                            .map((item) => item[column])
+                            .filter(Boolean) // Remove null/undefined values
+                    ),
+                ];
+            }
         },
 
         resetFilter(column) {
             if (column === "vu_dau_tu") {
+                this.selectedFilterValues[column] = [];
+            } else if (column === "tinh_trang_giao_nhan_ho_so") {
                 this.selectedFilterValues[column] = [];
             } else {
                 this.columnFilters[column] = "";
@@ -1897,6 +1940,7 @@ export default {
         this.fetchPhieuData();
         // After fetching data, initialize the unique values
         this.updateUniqueValues("vu_dau_tu");
+        this.updateUniqueValues("tinh_trang_giao_nhan_ho_so");
 
         window.addEventListener("resize", () => {
             this.isMobile = window.innerWidth < 768;
