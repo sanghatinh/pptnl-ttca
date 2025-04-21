@@ -16,9 +16,20 @@ class BienBanNghiemThuController extends Controller
 {
     try {
         $user = auth()->user();
-        $query = DB::table('tb_bien_ban_nghiemthu_dv');
+        
+        // Start with base query on bien ban table
+        $query = \DB::table('tb_bien_ban_nghiemthu_dv as bb')
+            // Join with document_mapping to get document_code
+            ->leftJoin('document_mapping as dm', 'bb.ma_nghiem_thu', '=', 'dm.ma_nghiem_thu_bb')
+            // Join with document_delivery to get creator_id, receiver_id, received_date, status
+            ->leftJoin('document_delivery as dd', 'dm.document_code', '=', 'dd.document_code')
+            // Join with users table for creator name (nguoi_giao)
+            ->leftJoin('users as creator', 'dd.creator_id', '=', 'creator.id')
+            // Join with users table for receiver name (nguoi_nhan)
+            ->leftJoin('users as receiver'k;
+            , 'dd.receiver_id', '=', 'receiver.id');
 
-        // Access control based on user position
+        // Apply role-based filtering
         switch ($user->position) {
             case 'department_head':
             case 'office_workers':
@@ -27,21 +38,30 @@ class BienBanNghiemThuController extends Controller
                 
             case 'Station_Chief':
                 // Filter by user's station
-                $query->where('tram', $user->station);
+                $query->where('bb.tram', $user->station);
                 break;
                 
             case 'Farm_worker':
                 // Filter by employee code
-                $query->where('ma_nhan_vien', $user->ma_nhan_vien);
+                $query->where('bb.ma_nhan_vien', $user->ma_nhan_vien);
                 break;
                 
             default:
                 // Default case - return no records
                 return response()->json([
-                    'data' => [],
+                    'success' => false,
                     'message' => 'Unauthorized position'
                 ], 403);
         }
+
+        // Select all fields from bien_ban table and additional fields from related tables
+        $query->select(
+            'bb.*',
+            'creator.full_name as nguoi_giao',
+            'receiver.full_name as nguoi_nhan',
+            'dd.received_date as ngay_nhan',
+            'dd.status as trang_thai_nhan_hs'
+        );
 
         // Get the filtered records
         $records = $query->get();
@@ -52,11 +72,10 @@ class BienBanNghiemThuController extends Controller
         ]);
 
     } catch (\Exception $e) {
-        \Log::error('Error in BienBan index: ' . $e->getMessage());
+        \Log::error('Error in BienBanNghiemThu index: ' . $e->getMessage());
         return response()->json([
             'success' => false,
-            'message' => 'Error retrieving records',
-            'error' => $e->getMessage()
+            'message' => 'Error retrieving records: ' . $e->getMessage()
         ], 500);
     }
 }
