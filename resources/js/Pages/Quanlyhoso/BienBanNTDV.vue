@@ -926,8 +926,7 @@
                                                 v-model="
                                                     columnFilters.ngay_nhan
                                                 "
-                                                type="text"
-                                                placeholder="Tìm kiếm Ngày nhận hồ sơ (DD/MM/YYYY)..."
+                                                type="date"
                                                 class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                                             />
                                             <div class="flex justify-between">
@@ -1593,9 +1592,10 @@ export default {
                                 ))) &&
                     (!this.columnFilters.ngay_nhan ||
                         (item.ngay_nhan &&
-                            this.formatDate(item.ngay_nhan).includes(
-                                this.columnFilters.ngay_nhan
-                            ))) &&
+                            this.formatDateForComparison(item.ngay_nhan) ===
+                                this.formatDateForComparison(
+                                    this.columnFilters.ngay_nhan
+                                ))) &&
                     (!this.columnFilters.can_bo_nong_vu ||
                         (item.can_bo_nong_vu &&
                             item.can_bo_nong_vu
@@ -1732,6 +1732,14 @@ export default {
                 currency: "VND",
                 maximumFractionDigits: 0,
             }).format(value);
+        },
+        formatDateForComparison(date) {
+            if (!date) return "";
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = (d.getMonth() + 1).toString().padStart(2, "0");
+            const day = d.getDate().toString().padStart(2, "0");
+            return `${year}-${month}-${day}`;
         },
         pageChanged(page) {
             this.currentPage = page;
