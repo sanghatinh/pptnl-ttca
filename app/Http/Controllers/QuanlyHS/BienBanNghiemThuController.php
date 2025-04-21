@@ -26,8 +26,7 @@ class BienBanNghiemThuController extends Controller
             // Join with users table for creator name (nguoi_giao)
             ->leftJoin('users as creator', 'dd.creator_id', '=', 'creator.id')
             // Join with users table for receiver name (nguoi_nhan)
-            ->leftJoin('users as receiver'k;
-            , 'dd.receiver_id', '=', 'receiver.id');
+            ->leftJoin('users as receiver', 'dd.receiver_id', '=', 'receiver.id');
 
         // Apply role-based filtering
         switch ($user->position) {
