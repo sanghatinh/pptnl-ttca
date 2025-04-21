@@ -1207,9 +1207,12 @@ export default {
                     // Ngày nhận hồ sơ
                     (!this.columnFilters.ngay_nhan_ho_so ||
                         (item.ngay_nhan_ho_so &&
-                            this.formatDate(item.ngay_nhan_ho_so).includes(
-                                this.columnFilters.ngay_nhan_ho_so
-                            ))) &&
+                            this.formatDateForComparison(
+                                item.ngay_nhan_ho_so
+                            ) ===
+                                this.formatDateForComparison(
+                                    this.columnFilters.ngay_nhan_ho_so
+                                ))) &&
                     // Tình trạng giao nhận hồ sơ
                     (this.selectedFilterValues.tinh_trang_giao_nhan_ho_so
                         .length === 0 ||
@@ -1250,7 +1253,11 @@ export default {
     methods: {
         formatDate(date) {
             if (!date) return "";
-            return new Date(date).toLocaleDateString("vi-VN");
+            const d = new Date(date);
+            const day = d.getDate().toString().padStart(2, "0");
+            const month = (d.getMonth() + 1).toString().padStart(2, "0");
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
         },
         formatStatus(status) {
             if (!status) return "";
@@ -2015,6 +2022,14 @@ export default {
                 default:
                     return "";
             }
+        },
+        formatDateForComparison(date) {
+            if (!date) return "";
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = (d.getMonth() + 1).toString().padStart(2, "0");
+            const day = d.getDate().toString().padStart(2, "0");
+            return `${year}-${month}-${day}`;
         },
     },
     watch: {
