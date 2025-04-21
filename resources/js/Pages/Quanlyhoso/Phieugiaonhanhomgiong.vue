@@ -168,6 +168,66 @@
                                         </div>
                                     </th>
                                     <th>
+                                        Trạm
+                                        <button
+                                            @click="toggleFilter('tram')"
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        selectedFilterValues.tram &&
+                                                        selectedFilterValues
+                                                            .tram.length > 0,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="activeFilter === 'tram'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto mb-2"
+                                            >
+                                                <div
+                                                    v-for="option in uniqueValues.tram"
+                                                    :key="option"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`tram-${option}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.tram
+                                                        "
+                                                        class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                    />
+                                                    <label
+                                                        :for="`tram-${option}`"
+                                                        class="select-none"
+                                                        >{{ option }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="resetFilter('tram')"
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="applyFilter('tram')"
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th>
                                         Cán bộ nông vụ
                                         <button
                                             @click="
@@ -442,6 +502,7 @@
                                             </div>
                                         </div>
                                     </th>
+
                                     <th>Tổng thực nhận</th>
                                     <th>Tổng tiền</th>
                                     <th>
@@ -701,6 +762,7 @@
                                     :key="item.id"
                                 >
                                     <td>{{ item.ma_so_phieu }}</td>
+                                    <td>{{ item.tram }}</td>
                                     <td>
                                         <template v-if="item.can_bo_nong_vu">
                                             <i
@@ -719,6 +781,7 @@
                                     <td>
                                         {{ item.ma_hop_dong }}
                                     </td>
+
                                     <td>
                                         {{
                                             item.tong_thuc_nhan
@@ -820,6 +883,10 @@
                     <div class="mb-2">
                         <strong>Tên phiếu:</strong>
                         {{ item.ten_phieu }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Trạm:</strong>
+                        {{ item.tram }}
                     </div>
                     <div class="mb-2">
                         <strong>Hợp đồng đầu tư mía bên giao:</strong>
@@ -1106,10 +1173,12 @@ export default {
             uniqueValues: {
                 vu_dau_tu: [],
                 tinh_trang_giao_nhan_ho_so: [],
+                tram: [], // Add this line
             },
             selectedFilterValues: {
                 vu_dau_tu: [],
                 tinh_trang_giao_nhan_ho_so: [],
+                tram: [], // Add this line
             },
         };
     },
@@ -1219,6 +1288,12 @@ export default {
                         (item.tinh_trang_giao_nhan_ho_so &&
                             this.selectedFilterValues.tinh_trang_giao_nhan_ho_so.includes(
                                 item.tinh_trang_giao_nhan_ho_so
+                            ))) &&
+                    // Tram (Unique dropdown filter)
+                    (this.selectedFilterValues.tram.length === 0 ||
+                        (item.tram &&
+                            this.selectedFilterValues.tram.includes(
+                                item.tram
                             )));
 
                 return matchesSearch && matchesStatus && matchesColumnFilters;
@@ -1314,6 +1389,10 @@ export default {
                             )
                         ),
                     ];
+                    // Add this for the new tram filter
+                    this.uniqueValues.tram = [
+                        ...new Set(this.allPhieuList.map((item) => item.tram)),
+                    ];
                 } else {
                     throw new Error(response.data.message);
                 }
@@ -1366,30 +1445,24 @@ export default {
         toggleFilter(column) {
             this.activeFilter = this.activeFilter === column ? null : column;
 
-            // If it's the vu_dau_tu column and we're opening the filter, ensure unique values are populated
-            if (column === "vu_dau_tu" && this.activeFilter === "vu_dau_tu") {
-                this.updateUniqueValues("vu_dau_tu");
-            }
+            // If it's one of our dropdown columns and we're opening the filter, ensure unique values are populated
             if (
-                column === "tinh_trang_giao_nhan_ho_so" &&
-                this.activeFilter === "tinh_trang_giao_nhan_ho_so"
+                (column === "vu_dau_tu" ||
+                    column === "tram" ||
+                    column === "tinh_trang_giao_nhan_ho_so") &&
+                this.activeFilter === column
             ) {
-                this.updateUniqueValues("tinh_trang_giao_nhan_ho_so");
+                this.updateUniqueValues(column);
             }
         },
 
         updateUniqueValues(column) {
             // Get unique values for dropdown columns
-            if (column === "vu_dau_tu") {
-                this.uniqueValues[column] = [
-                    ...new Set(
-                        this.phieuList
-                            .map((item) => item[column])
-                            .filter(Boolean) // Remove null/undefined values
-                    ),
-                ];
-            }
-            if (column === "tinh_trang_giao_nhan_ho_so") {
+            if (
+                column === "vu_dau_tu" ||
+                column === "tram" ||
+                column === "tinh_trang_giao_nhan_ho_so"
+            ) {
                 this.uniqueValues[column] = [
                     ...new Set(
                         this.phieuList
@@ -1401,9 +1474,11 @@ export default {
         },
 
         resetFilter(column) {
-            if (column === "vu_dau_tu") {
-                this.selectedFilterValues[column] = [];
-            } else if (column === "tinh_trang_giao_nhan_ho_so") {
+            if (
+                column === "vu_dau_tu" ||
+                column === "tram" ||
+                column === "tinh_trang_giao_nhan_ho_so"
+            ) {
                 this.selectedFilterValues[column] = [];
             } else {
                 this.columnFilters[column] = "";
@@ -1503,6 +1578,7 @@ export default {
                             "Cán bộ nông vụ": item.can_bo_nong_vu || "",
                             "Vụ đầu tư": item.vu_dau_tu || "",
                             "Tên phiếu": item.ten_phieu || "",
+                            Trạm: item.tram || "", // Add the new column
                             "Hợp đồng đầu tư mía bên giao":
                                 item.hop_dong_dau_tu_mia_ben_giao_hom || "",
                             "Hợp đồng đầu tư mía bên nhận":
@@ -1531,6 +1607,7 @@ export default {
                             { wch: 20 }, // Cán bộ nông vụ
                             { wch: 15 }, // Vụ đầu tư
                             { wch: 30 }, // Tên phiếu
+                            { wch: 15 }, // Trạm (new column)
                             { wch: 25 }, // Hợp đồng đầu tư mía bên giao
                             { wch: 25 }, // Hợp đồng đầu tư mía bên nhận
                             { wch: 15 }, // Tổng thực nhận
@@ -2045,6 +2122,7 @@ export default {
         // After fetching data, initialize the unique values
         this.updateUniqueValues("vu_dau_tu");
         this.updateUniqueValues("tinh_trang_giao_nhan_ho_so");
+        this.updateUniqueValues("tram"); // Add this line
 
         window.addEventListener("resize", () => {
             this.isMobile = window.innerWidth < 768;
