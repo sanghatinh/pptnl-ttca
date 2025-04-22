@@ -1733,7 +1733,7 @@ export default {
             if (!value) return "0";
             return new Intl.NumberFormat("vi-VN", {
                 style: "currency",
-                currency: "VND",
+                currency: "KIP",
                 maximumFractionDigits: 0,
             }).format(value);
         },
@@ -2940,6 +2940,22 @@ input[type="checkbox"] {
     top: 0;
     background-color: #e7e7e7;
     z-index: 10;
+}
+
+/* Table row styling */
+.table-auto tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.table-auto tbody tr:hover {
+    background-color: rgba(16, 185, 129, 0.05);
+}
+
+.table-auto td {
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    vertical-align: middle;
 }
 
 /* Ensure filter icons look professional */
