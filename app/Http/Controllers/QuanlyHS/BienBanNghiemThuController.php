@@ -435,13 +435,9 @@ class BienBanNghiemThuController extends Controller
         try {
             // Get the main document info from bien ban table
             $document = \DB::table('tb_bien_ban_nghiemthu_dv as bb')
-                // Join with document_mapping to get document_code
                 ->leftJoin('document_mapping as dm', 'bb.ma_nghiem_thu', '=', 'dm.ma_nghiem_thu_bb')
-                // Join with document_delivery to get creator_id, receiver_id, received_date, status
                 ->leftJoin('document_delivery as dd', 'dm.document_code', '=', 'dd.document_code')
-                // Join with users table for creator name (nguoi_giao)
                 ->leftJoin('users as creator', 'dd.creator_id', '=', 'creator.id')
-                // Join with users table for receiver name (nguoi_nhan)
                 ->leftJoin('users as receiver', 'dd.receiver_id', '=', 'receiver.id')
                 ->select(
                     'bb.*',
@@ -449,25 +445,27 @@ class BienBanNghiemThuController extends Controller
                     'receiver.full_name as nguoi_nhan',
                     'dd.received_date as ngay_nhan',
                     'dd.status as trang_thai_nhan_hs'
-                    
                 )
                 ->where('bb.ma_nghiem_thu', $id)
                 ->first();
-                
+
             if (!$document) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy thông tin biên bản nghiệm thu'
                 ], 404);
             }
-            
-        
+
+            // Fetch service details from tb_chitiet_dichvu_nt
+            $serviceDetails = \DB::table('tb_chitiet_dichvu_nt')
+                ->where('nghiem_thu_dich_vu', $document->tieu_de)
+                ->get();
+
             return response()->json([
                 'success' => true,
                 'document' => $document,
-           
+                'serviceDetails' => $serviceDetails
             ]);
-            
         } catch (\Exception $e) {
             \Log::error('Error in BienBanNghiemThu show: ' . $e->getMessage());
             return response()->json([

@@ -43,11 +43,19 @@
                                         }"
                                     >
                                         <div class="step-icon status-received">
-                                            <i class="fas fa-check-circle"></i>
+                                            <i
+                                                :class="
+                                                    getReceivedStepIcon(
+                                                        document.trang_thai_nhan_hs
+                                                    )
+                                                "
+                                            ></i>
                                         </div>
-                                        <span class="step-label"
-                                            >Đã nhận hồ sơ</span
-                                        >
+                                        <span class="step-label">{{
+                                            getReceivedStepLabel(
+                                                document.trang_thai_nhan_hs
+                                            )
+                                        }}</span>
                                     </div>
 
                                     <!-- Processing Step -->
@@ -525,25 +533,28 @@
                                     <thead class="table-light">
                                         <tr>
                                             <th>STT</th>
-                                            <th>Mã DV</th>
-                                            <th>Tên dịch vụ</th>
-                                            <th>Đơn vị</th>
-                                            <th>Số lượng</th>
+                                            <th>Dịch vụ</th>
+                                            <th>Mã số thửa</th>
+                                            <th>Đơn vị tính</th>
+                                            <th>Số lần thực hiện</th>
+                                            <th>Khối lượng thực hiện</th>
                                             <th>Đơn giá</th>
                                             <th>Thành tiền</th>
-                                            <th>Ghi chú</th>
+                                            <th>Số tiền tạm giữ</th>
+                                            <th>Tiền thanh toán</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr v-if="!serviceDetails.length">
                                             <td
-                                                colspan="8"
+                                                colspan="10"
                                                 class="text-center py-3 text-muted"
                                             >
                                                 <i
                                                     class="fas fa-info-circle me-2"
                                                 ></i>
-                                                Không có dữ liệu chi tiết
+                                                Không có dữ liệu chi tiết dịch
+                                                vụ cho nghiệm thu này
                                             </td>
                                         </tr>
                                         <tr
@@ -553,12 +564,21 @@
                                             :key="index"
                                         >
                                             <td>{{ index + 1 }}</td>
-                                            <td>{{ item.ma_dv }}</td>
-                                            <td>{{ item.ten_dv }}</td>
-                                            <td>{{ item.don_vi }}</td>
+                                            <td>{{ item.dich_vu }}</td>
+                                            <td>{{ item.ma_so_thua }}</td>
+                                            <td>{{ item.don_vi_tinh }}</td>
                                             <td class="text-end">
                                                 {{
-                                                    formatNumber(item.so_luong)
+                                                    formatNumber(
+                                                        item.so_lan_thuc_hien
+                                                    )
+                                                }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{
+                                                    formatNumber(
+                                                        item.khoi_luong_thuc_hien
+                                                    )
                                                 }}
                                             </td>
                                             <td class="text-end">
@@ -573,14 +593,27 @@
                                                     )
                                                 }}
                                             </td>
-                                            <td>{{ item.ghi_chu }}</td>
+                                            <td class="text-end">
+                                                {{
+                                                    formatCurrency(
+                                                        item.tien_con_lai
+                                                    )
+                                                }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{
+                                                    formatCurrency(
+                                                        item.tien_thanh_toan
+                                                    )
+                                                }}
+                                            </td>
                                         </tr>
                                         <tr
                                             v-if="serviceDetails.length"
                                             class="table-secondary"
                                         >
                                             <td
-                                                colspan="6"
+                                                colspan="7"
                                                 class="text-end fw-bold"
                                             >
                                                 Tổng cộng:
@@ -590,7 +623,20 @@
                                                     formatCurrency(totalAmount)
                                                 }}
                                             </td>
-                                            <td></td>
+                                            <td class="text-end fw-bold">
+                                                {{
+                                                    formatCurrency(
+                                                        totalPaymentAmount
+                                                    )
+                                                }}
+                                            </td>
+                                            <td class="text-end fw-bold">
+                                                {{
+                                                    formatCurrency(
+                                                        totalRemainingAmount
+                                                    )
+                                                }}
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -677,6 +723,18 @@ export default {
                 0
             );
         },
+        totalPaymentAmount() {
+            return this.serviceDetails.reduce(
+                (sum, item) => sum + (parseFloat(item.tien_con_lai) || 0),
+                0
+            );
+        },
+        totalRemainingAmount() {
+            return this.serviceDetails.reduce(
+                (sum, item) => sum + (parseFloat(item.tien_thanh_toan) || 0),
+                0
+            );
+        },
     },
     mounted() {
         this.fetchUserData();
@@ -690,7 +748,6 @@ export default {
             }
         },
         fetchDocument() {
-            // Get the bien ban ID from route params
             const id = this.$route.params.id;
             if (!id) {
                 this.showError("Không tìm thấy mã nghiệm thu");
@@ -706,19 +763,27 @@ export default {
                 })
                 .then((response) => {
                     if (response.data.success) {
-                        // Set document data
                         this.document = {
                             ...response.data.document,
-                            // Provide a default processing_status if it's not in the response
                             processing_status:
                                 response.data.document.processing_status ||
                                 "received",
                         };
                         this.noteText = this.document.ghi_chu || "";
 
-                        // Set service details if available
-                        this.serviceDetails =
-                            response.data.serviceDetails || [];
+                        // Set service details
+                        this.serviceDetails = response.data.serviceDetails.map(
+                            (item) => ({
+                                ...item,
+                                so_lan_thuc_hien: item.so_lan_thuc_hien || 0,
+                                so_luong: item.so_luong || 0,
+                                don_gia: item.don_gia || 0,
+                                thanh_tien: item.thanh_tien || 0,
+                                tien_thanh_toan: item.tien_thanh_toan || 0,
+                                tien_thanh_toan_con_lai:
+                                    item.tien_thanh_toan_con_lai || 0,
+                            })
+                        );
                     } else {
                         this.showError(
                             response.data.message ||
@@ -798,6 +863,34 @@ export default {
             if (action === "returned") return "fas fa-undo";
             if (action === "note_added") return "fas fa-sticky-note";
             return "fas fa-circle";
+        },
+        getReceivedStepIcon(status) {
+            switch (status) {
+                case "creating":
+                    return "fas fa-edit";
+                case "sending":
+                    return "fas fa-paper-plane";
+                case "received":
+                    return "fas fa-check-circle";
+                case "cancelled":
+                    return "fas fa-times-circle";
+                default:
+                    return "fas fa-edit"; // Default icon
+            }
+        },
+        getReceivedStepLabel(status) {
+            switch (status) {
+                case "creating":
+                    return "Nháp";
+                case "sending":
+                    return "Đang nộp";
+                case "received":
+                    return "Đã nhận";
+                case "cancelled":
+                    return "Hủy";
+                default:
+                    return "Chưa nhận"; // Default label
+            }
         },
         confirmAction(title, text, icon) {
             return Swal.fire({
