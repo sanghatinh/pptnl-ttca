@@ -528,118 +528,132 @@
                     <div class="card mt-3">
                         <div class="card-body">
                             <h5 class="card-title">Chi tiết dịch vụ</h5>
-                            <div class="table-responsive mt-2">
-                                <table class="table table-bordered table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>STT</th>
-                                            <th>Dịch vụ</th>
-                                            <th>Mã số thửa</th>
-                                            <th>Đơn vị tính</th>
-                                            <th>Số lần thực hiện</th>
-                                            <th>Khối lượng thực hiện</th>
-                                            <th>Đơn giá</th>
-                                            <th>Thành tiền</th>
-                                            <th>Số tiền tạm giữ</th>
-                                            <th>Tiền thanh toán</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-if="!serviceDetails.length">
-                                            <td
-                                                colspan="10"
-                                                class="text-center py-3 text-muted"
+                            <div class="table-container">
+                                <div class="table-responsive mt-2">
+                                    <table
+                                        class="table table-bordered table-hover align-middle"
+                                    >
+                                        <thead class="table-light text-center">
+                                            <tr>
+                                                <th>STT</th>
+                                                <th>Dịch vụ</th>
+                                                <th>Mã số thửa</th>
+                                                <th>Đơn vị tính</th>
+                                                <th>Số lần thực hiện</th>
+                                                <th>Khối lượng thực hiện</th>
+                                                <th>Đơn giá</th>
+                                                <th>Thành tiền</th>
+                                                <th>Số tiền tạm giữ</th>
+                                                <th>Tiền thanh toán</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-if="!serviceDetails.length">
+                                                <td
+                                                    colspan="10"
+                                                    class="text-center py-3 text-muted"
+                                                >
+                                                    <i
+                                                        class="fas fa-info-circle me-2"
+                                                    ></i>
+                                                    Không có dữ liệu chi tiết
+                                                    dịch vụ cho nghiệm thu này
+                                                </td>
+                                            </tr>
+                                            <tr
+                                                v-for="(
+                                                    item, index
+                                                ) in serviceDetails"
+                                                :key="index"
                                             >
-                                                <i
-                                                    class="fas fa-info-circle me-2"
-                                                ></i>
-                                                Không có dữ liệu chi tiết dịch
-                                                vụ cho nghiệm thu này
-                                            </td>
-                                        </tr>
-                                        <tr
-                                            v-for="(
-                                                item, index
-                                            ) in serviceDetails"
-                                            :key="index"
-                                        >
-                                            <td>{{ index + 1 }}</td>
-                                            <td>{{ item.dich_vu }}</td>
-                                            <td>{{ item.ma_so_thua }}</td>
-                                            <td>{{ item.don_vi_tinh }}</td>
-                                            <td class="text-end">
-                                                {{
-                                                    formatNumber(
-                                                        item.so_lan_thuc_hien
-                                                    )
-                                                }}
-                                            </td>
-                                            <td class="text-end">
-                                                {{
-                                                    formatNumber(
-                                                        item.khoi_luong_thuc_hien
-                                                    )
-                                                }}
-                                            </td>
-                                            <td class="text-end">
-                                                {{
-                                                    formatCurrency(item.don_gia)
-                                                }}
-                                            </td>
-                                            <td class="text-end">
-                                                {{
-                                                    formatCurrency(
-                                                        item.thanh_tien
-                                                    )
-                                                }}
-                                            </td>
-                                            <td class="text-end">
-                                                {{
-                                                    formatCurrency(
-                                                        item.tien_con_lai
-                                                    )
-                                                }}
-                                            </td>
-                                            <td class="text-end">
-                                                {{
-                                                    formatCurrency(
-                                                        item.tien_thanh_toan
-                                                    )
-                                                }}
-                                            </td>
-                                        </tr>
-                                        <tr
-                                            v-if="serviceDetails.length"
-                                            class="table-secondary"
-                                        >
-                                            <td
-                                                colspan="7"
-                                                class="text-end fw-bold"
+                                                <td class="text-center">
+                                                    {{ index + 1 }}
+                                                </td>
+                                                <td class="truncate">
+                                                    {{ item.dich_vu }}
+                                                </td>
+                                                <td>{{ item.ma_so_thua }}</td>
+                                                <td class="text-center">
+                                                    {{ item.don_vi_tinh }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{
+                                                        formatNumber(
+                                                            item.so_lan_thuc_hien
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{
+                                                        formatNumber(
+                                                            item.khoi_luong_thuc_hien
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.don_gia
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.thanh_tien
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.tien_con_lai
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.tien_thanh_toan
+                                                        )
+                                                    }}
+                                                </td>
+                                            </tr>
+                                            <tr
+                                                v-if="serviceDetails.length"
+                                                class="table-secondary"
                                             >
-                                                Tổng cộng:
-                                            </td>
-                                            <td class="text-end fw-bold">
-                                                {{
-                                                    formatCurrency(totalAmount)
-                                                }}
-                                            </td>
-                                            <td class="text-end fw-bold">
-                                                {{
-                                                    formatCurrency(
-                                                        totalPaymentAmount
-                                                    )
-                                                }}
-                                            </td>
-                                            <td class="text-end fw-bold">
-                                                {{
-                                                    formatCurrency(
-                                                        totalRemainingAmount
-                                                    )
-                                                }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                                <td
+                                                    colspan="7"
+                                                    class="text-end fw-bold"
+                                                >
+                                                    Tổng cộng:
+                                                </td>
+                                                <td class="text-end fw-bold">
+                                                    {{
+                                                        formatCurrency(
+                                                            totalAmount
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-bold">
+                                                    {{
+                                                        formatCurrency(
+                                                            totalPaymentAmount
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-bold">
+                                                    {{
+                                                        formatCurrency(
+                                                            totalRemainingAmount
+                                                        )
+                                                    }}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1318,5 +1332,68 @@ export default {
     .col-md-6 {
         width: 100% !important;
     }
+}
+
+/* Enhanced table styles */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+}
+
+.table th {
+    font-weight: 600;
+    white-space: nowrap;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    padding: 0.75rem;
+    vertical-align: middle;
+}
+
+.table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+    white-space: nowrap;
+    border: 1px solid #dee2e6;
+}
+
+.table tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.table .text-center {
+    text-align: center !important;
+}
+
+.table .fw-bold {
+    font-weight: 600 !important;
+}
+
+.table-secondary {
+    background-color: #f2f2f2 !important;
+}
+
+/* Handle long text in table cells */
+.table td.truncate {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Add subtle shadow to table */
+.table-container {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    border-radius: 5px;
+    overflow: hidden;
 }
 </style>
