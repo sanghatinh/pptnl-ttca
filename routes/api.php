@@ -109,7 +109,8 @@ Route::get('/get-role-by-position', function(Request $request) {
 Route::get('/bien-ban-nghiem-thu', [BienBanNghiemThuController::class, 'index']);
 //Load details ข้อมูลตาลาง tb_bien_ban_nghiemthu_dv
 Route::get('/bienban-nghiemthu/{id}', [BienBanNghiemThuController::class, 'show']);
-
+// เพิ่ม route สำหรับตรวจสอบสิทธิ์การเข้าถึงเอกสาร bien-ban-nghiemthu
+Route::get('/bien-ban-nghiemthu/{id}/check-access', [BienBanNghiemThuController::class, 'checkAccess']);
 
 // Import data routes for BienBanNghiemThu
 Route::post('/import-bienban-nghiemthu', [BienBanNghiemThuController::class, 'importData']);
@@ -119,5 +120,7 @@ Route::get('/import-progress/{importId}', [BienBanNghiemThuController::class, 'i
 Route::get('/phieu-giao-nhan-hom-giong', [PhieuGiaoNhanHomGiongController::class, 'index']);
 Route::post('/import-phieu-giao-nhan', [PhieuGiaoNhanHomGiongController::class, 'importData']);
 Route::get('/import-homgiong-progress/{importId}', [PhieuGiaoNhanHomGiongController::class, 'importProgress']);
+
+
 
 });

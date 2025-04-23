@@ -1824,13 +1824,60 @@ export default {
                 ...new Set(this.bienBanList.map((item) => item.vu_dau_tu)),
             ].filter(Boolean);
         },
-        viewDetails(item) {
-            // You can implement a detail view here
-            // For example:
-            // this.$router.push(`/bien-ban-nghiem-thu/${item.ma_nghiem_thu}`);
+        async viewDetails(item) {
+            this.isLoading = true;
+            try {
+                // ตรวจสอบสิทธิ์การเข้าถึงก่อนการนำทาง
+                const response = await axios.get(
+                    `/api/bien-ban-nghiemthu/${item.ma_nghiem_thu}/check-access`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
 
-            // Or show a modal with details
-            console.log("Viewing details for:", item);
+                this.isLoading = false;
+
+                if (response.data.hasAccess) {
+                    // มีสิทธิ์เข้าถึง - นำทางไปยังหน้ารายละเอียด
+                    this.$router.push(
+                        `/Details_NghiemthuDV/${item.ma_nghiem_thu}`
+                    );
+                } else {
+                    // ไม่มีสิทธิ์เข้าถึง - แสดงข้อความและนำทางไปยังหน้า Unauthorized
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Hạn chế truy cập",
+                        text: "Bạn không có quyền truy cập tài liệu này",
+                        confirmButtonText: "Đã hiểu",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-primary",
+                        },
+                    }).then(() => {
+                        this.$router.push("/unauthorized");
+                    });
+                }
+            } catch (error) {
+                this.isLoading = false;
+                console.error("Error checking access:", error);
+
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Đã xảy ra lỗi",
+                        text: "Không thể kiểm tra quyền truy cập",
+                        confirmButtonText: "Thử lại",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-primary",
+                        },
+                    });
+                }
+            }
         },
         handleAuthError() {
             // Clear localStorage
