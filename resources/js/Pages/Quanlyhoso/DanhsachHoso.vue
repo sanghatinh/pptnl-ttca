@@ -180,11 +180,20 @@
             <!-- สำหรับ Desktop -->
             <div v-if="!isMobile" class="card">
                 <div class="card-body">
+                    <!-- Add this button before the table -->
+                    <span
+                        class="reset-all-filters-btn"
+                        title="Reset all filters"
+                        @click="resetAllFilters"
+                    >
+                        <i class="fas fa-redo-alt"></i>
+                    </span>
+
                     <div class="overflow-x-auto">
                         <table class="table-auto w-full">
                             <thead>
                                 <tr>
-                                    <!-- New checkbox column header -->
+                                    <!-- Checkbox column header -->
                                     <th class="px-4 py-2">
                                         <input
                                             type="checkbox"
@@ -193,20 +202,599 @@
                                             class="form-checkbox h-4 w-4 text-green-600"
                                         />
                                     </th>
-                                    <th class="px-4 py-2">Mã số phiếu</th>
-                                    <th class="px-4 py-2">Trạm</th>
 
-                                    <th class="px-4 py-2">Tiều đề</th>
-                                    <th class="px-4 py-2">Vụ đầu tư</th>
-                                    <th class="px-4 py-2">Số lượng hồ sơ</th>
-                                    <th class="px-4 py-2">Loại hồ sơ</th>
-                                    <th class="px-4 py-2">Ngày lập</th>
-                                    <th class="px-4 py-2">Người tạo</th>
-                                    <th class="px-4 py-2">Người nhận</th>
-                                    <th class="px-4 py-2">Ngày nhận</th>
-                                    <th class="px-4 py-2">Trạng thái</th>
+                                    <!-- Mã số phiếu with text search filter -->
                                     <th class="px-4 py-2">
-                                        Trạng thái thanh toán
+                                        Mã số phiếu
+                                        <button
+                                            @click="
+                                                toggleFilter('document_code')
+                                            "
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        columnFilters.document_code,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter === 'document_code'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <input
+                                                type="text"
+                                                v-model="
+                                                    columnFilters.document_code
+                                                "
+                                                class="form-control mb-2"
+                                                placeholder="Lọc theo mã số..."
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'document_code'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'document_code'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Trạm with unique dropdown filter -->
+                                    <th class="px-4 py-2">
+                                        Trạm
+                                        <button
+                                            @click="toggleFilter('station')"
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        selectedFilterValues.station &&
+                                                        selectedFilterValues
+                                                            .station.length > 0,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="activeFilter === 'station'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto mb-2"
+                                            >
+                                                <div
+                                                    v-for="option in uniqueValues.station"
+                                                    :key="option"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`station-${option}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.station
+                                                        "
+                                                        class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                    />
+                                                    <label
+                                                        :for="`station-${option}`"
+                                                        class="select-none"
+                                                        >{{ option }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter('station')
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter('station')
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Tiều đề with text search filter -->
+                                    <th class="px-4 py-2">
+                                        Tiều đề
+                                        <button
+                                            @click="toggleFilter('title')"
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        columnFilters.title,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="activeFilter === 'title'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <input
+                                                type="text"
+                                                v-model="columnFilters.title"
+                                                class="form-control mb-2"
+                                                placeholder="Lọc theo tiêu đề..."
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter('title')
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter('title')
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Vụ đầu tư with unique dropdown filter -->
+                                    <th class="px-4 py-2">
+                                        Vụ đầu tư
+                                        <button
+                                            @click="
+                                                toggleFilter(
+                                                    'investment_project'
+                                                )
+                                            "
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        selectedFilterValues.investment_project &&
+                                                        selectedFilterValues
+                                                            .investment_project
+                                                            .length > 0,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'investment_project'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto mb-2"
+                                            >
+                                                <div
+                                                    v-for="option in uniqueValues.investment_project"
+                                                    :key="option"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`investment_project-${option}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.investment_project
+                                                        "
+                                                        class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                    />
+                                                    <label
+                                                        :for="`investment_project-${option}`"
+                                                        class="select-none"
+                                                        >{{ option }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'investment_project'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'investment_project'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Số lượng hồ sơ - no filter -->
+                                    <th class="px-4 py-2">Số lượng hồ sơ</th>
+
+                                    <!-- Loại hồ sơ with unique dropdown filter -->
+                                    <th class="px-4 py-2">
+                                        Loại hồ sơ
+                                        <button
+                                            @click="
+                                                toggleFilter('document_type')
+                                            "
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        selectedFilterValues.document_type &&
+                                                        selectedFilterValues
+                                                            .document_type
+                                                            .length > 0,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter === 'document_type'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto mb-2"
+                                            >
+                                                <div
+                                                    v-for="option in uniqueValues.document_type"
+                                                    :key="option"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`document_type-${option}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.document_type
+                                                        "
+                                                        class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                    />
+                                                    <label
+                                                        :for="`document_type-${option}`"
+                                                        class="select-none"
+                                                        >{{ option }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'document_type'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'document_type'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Ngày lập with date filter -->
+                                    <th class="px-4 py-2">
+                                        Ngày lập
+                                        <button
+                                            @click="
+                                                toggleFilter('created_date')
+                                            "
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        columnFilters.created_date,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter === 'created_date'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <input
+                                                type="date"
+                                                v-model="
+                                                    columnFilters.created_date
+                                                "
+                                                class="form-control mb-2"
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'created_date'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'created_date'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Người tạo with text search filter -->
+                                    <th class="px-4 py-2">
+                                        Người tạo
+                                        <button
+                                            @click="toggleFilter('creator')"
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        columnFilters.creator,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="activeFilter === 'creator'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <input
+                                                type="text"
+                                                v-model="columnFilters.creator"
+                                                class="form-control mb-2"
+                                                placeholder="Lọc theo người tạo..."
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter('creator')
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter('creator')
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Người nhận with text search filter -->
+                                    <th class="px-4 py-2">
+                                        Người nhận
+                                        <button
+                                            @click="toggleFilter('receiver')"
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        columnFilters.receiver,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="activeFilter === 'receiver'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <input
+                                                type="text"
+                                                v-model="columnFilters.receiver"
+                                                class="form-control mb-2"
+                                                placeholder="Lọc theo người nhận..."
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter('receiver')
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter('receiver')
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Ngày nhận with date filter -->
+                                    <th class="px-4 py-2">
+                                        Ngày nhận
+                                        <button
+                                            @click="
+                                                toggleFilter('received_date')
+                                            "
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        columnFilters.received_date,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter === 'received_date'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <input
+                                                type="date"
+                                                v-model="
+                                                    columnFilters.received_date
+                                                "
+                                                class="form-control mb-2"
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'received_date'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'received_date'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Trạng thái with unique dropdown filter -->
+                                    <th class="px-4 py-2">
+                                        Trạng thái
+                                        <button
+                                            @click="toggleFilter('status')"
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        selectedFilterValues.status &&
+                                                        selectedFilterValues
+                                                            .status.length > 0,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="activeFilter === 'status'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto mb-2"
+                                            >
+                                                <div
+                                                    v-for="option in uniqueValues.status"
+                                                    :key="option.code"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`status-${option.code}`"
+                                                        :value="option.code"
+                                                        v-model="
+                                                            selectedFilterValues.status
+                                                        "
+                                                        class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                    />
+                                                    <label
+                                                        :for="`status-${option.code}`"
+                                                        class="select-none"
+                                                        >{{
+                                                            option.name
+                                                        }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter('status')
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter('status')
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
                                     </th>
                                 </tr>
                             </thead>
@@ -303,12 +891,6 @@
                                             ></i>
                                             {{ item.status.name }}
                                         </span>
-                                    </td>
-                                    <td
-                                        class="border px-4 py-2"
-                                        @click="goToEditPage(item.id)"
-                                    >
-                                        {{ item.loan_status }}
                                     </td>
                                 </tr>
                             </tbody>
@@ -447,6 +1029,27 @@ export default {
                 { code: "received", name: "Đã nhận" },
                 { code: "cancelled", name: "Hủy" },
             ],
+            activeFilter: null,
+            columnFilters: {
+                document_code: "",
+                title: "",
+                creator: "",
+                receiver: "",
+                created_date: "",
+                received_date: "",
+            },
+            uniqueValues: {
+                station: [],
+                investment_project: [],
+                document_type: [],
+                status: [],
+            },
+            selectedFilterValues: {
+                station: [],
+                investment_project: [],
+                document_type: [],
+                status: [],
+            },
         };
     },
     computed: {
@@ -459,6 +1062,7 @@ export default {
         },
         filteredDeliveries() {
             return this.documentDeliveries.filter((item) => {
+                // Global search (existing)
                 const matchesSearch =
                     item.document_code
                         .toLowerCase()
@@ -475,15 +1079,87 @@ export default {
                             .toLowerCase()
                             .includes(this.search.toLowerCase()));
 
+                // Status dropdown filter (existing)
                 const matchesStatus =
                     this.statusFilter === "all" ||
                     item.status.code === this.statusFilter;
 
-                const matchesInvestment =
-                    this.investmentFilter === "all" ||
-                    item.investment_project === this.investmentFilter;
+                // Column filters (new)
+                const matchesColumnFilters =
+                    // Mã số phiếu
+                    (!this.columnFilters.document_code ||
+                        (item.document_code &&
+                            item.document_code
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.document_code.toLowerCase()
+                                ))) &&
+                    // Trạm (unique dropdown)
+                    (this.selectedFilterValues.station.length === 0 ||
+                        (item.station &&
+                            this.selectedFilterValues.station.includes(
+                                item.station
+                            ))) &&
+                    // Tiều đề
+                    (!this.columnFilters.title ||
+                        (item.title &&
+                            item.title
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.title.toLowerCase()
+                                ))) &&
+                    // Vụ đầu tư (unique dropdown)
+                    (this.selectedFilterValues.investment_project.length ===
+                        0 ||
+                        (item.investment_project &&
+                            this.selectedFilterValues.investment_project.includes(
+                                item.investment_project
+                            ))) &&
+                    // Loại hồ sơ (unique dropdown)
+                    (this.selectedFilterValues.document_type.length === 0 ||
+                        (item.document_type &&
+                            this.selectedFilterValues.document_type.includes(
+                                item.document_type
+                            ))) &&
+                    // Ngày lập
+                    (!this.columnFilters.created_date ||
+                        (item.created_date &&
+                            this.formatDateForComparison(item.created_date) ===
+                                this.formatDateForComparison(
+                                    this.columnFilters.created_date
+                                ))) &&
+                    // Người tạo
+                    (!this.columnFilters.creator ||
+                        (item.creator?.full_name &&
+                            item.creator.full_name
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.creator.toLowerCase()
+                                ))) &&
+                    // Người nhận
+                    (!this.columnFilters.receiver ||
+                        (item.receiver?.full_name &&
+                            item.receiver.full_name
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.receiver.toLowerCase()
+                                ))) &&
+                    // Ngày nhận
+                    (!this.columnFilters.received_date ||
+                        (item.received_date &&
+                            this.formatDateForComparison(item.received_date) ===
+                                this.formatDateForComparison(
+                                    this.columnFilters.received_date
+                                ))) &&
+                    // Trạng thái (unique dropdown)
+                    (this.selectedFilterValues.status.length === 0 ||
+                        (item.status.code &&
+                            this.selectedFilterValues.status.includes(
+                                item.status.code
+                            )));
 
-                return matchesSearch && matchesStatus && matchesInvestment;
+                // Return true if it matches all filters
+                return matchesSearch && matchesStatus && matchesColumnFilters;
             });
         },
         paginatedDeliveries() {
@@ -808,10 +1484,137 @@ export default {
 
             this.investmentProjects = projects;
         },
+        // Existing methods...
+
+        // Add new methods for column filtering
+        toggleFilter(column) {
+            this.activeFilter = this.activeFilter === column ? null : column;
+
+            // If it's one of our dropdown columns and we're opening the filter
+            if (
+                [
+                    "station",
+                    "investment_project",
+                    "document_type",
+                    "status",
+                ].includes(column) &&
+                this.activeFilter === column
+            ) {
+                this.updateUniqueValues(column);
+            }
+        },
+
+        updateUniqueValues(column) {
+            if (column === "station") {
+                this.uniqueValues.station = [
+                    ...new Set(
+                        this.documentDeliveries
+                            .map((item) => item.station)
+                            .filter(Boolean) // Remove null/undefined values
+                    ),
+                ];
+            } else if (column === "investment_project") {
+                this.uniqueValues.investment_project = [
+                    ...new Set(
+                        this.documentDeliveries
+                            .map((item) => item.investment_project)
+                            .filter(Boolean)
+                    ),
+                ];
+            } else if (column === "document_type") {
+                this.uniqueValues.document_type = [
+                    ...new Set(
+                        this.documentDeliveries
+                            .map((item) => item.document_type)
+                            .filter(Boolean)
+                    ),
+                ];
+            } else if (column === "status") {
+                // Status is a bit different because it's an object
+                const uniqueStatusCodes = [
+                    ...new Set(
+                        this.documentDeliveries
+                            .map((item) => item.status.code)
+                            .filter(Boolean)
+                    ),
+                ];
+
+                this.uniqueValues.status = uniqueStatusCodes.map((code) => {
+                    const statusObj = this.documentDeliveries.find(
+                        (item) => item.status.code === code
+                    )?.status;
+                    return statusObj
+                        ? { code: statusObj.code, name: statusObj.name }
+                        : { code, name: code };
+                });
+            }
+        },
+
+        resetFilter(column) {
+            if (
+                [
+                    "station",
+                    "investment_project",
+                    "document_type",
+                    "status",
+                ].includes(column)
+            ) {
+                this.selectedFilterValues[column] = [];
+            } else {
+                this.columnFilters[column] = "";
+            }
+            this.currentPage = 1;
+        },
+
+        applyFilter(column) {
+            this.activeFilter = null; // Close the dropdown
+            this.currentPage = 1; // Reset to first page
+        },
+
+        resetAllFilters() {
+            // Reset global search
+            this.search = "";
+
+            // Reset status filter
+            this.statusFilter = "all";
+
+            // Reset all column filters
+            Object.keys(this.columnFilters).forEach((key) => {
+                this.columnFilters[key] = "";
+            });
+
+            // Reset all dropdown filters
+            Object.keys(this.selectedFilterValues).forEach((key) => {
+                this.selectedFilterValues[key] = [];
+            });
+
+            // Reset active filter
+            this.activeFilter = null;
+
+            // Reset to first page
+            this.currentPage = 1;
+        },
+
+        formatDateForComparison(date) {
+            if (!date) return "";
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = (d.getMonth() + 1).toString().padStart(2, "0");
+            const day = d.getDate().toString().padStart(2, "0");
+            return `${year}-${month}-${day}`;
+        },
     },
     mounted() {
-        this.fetchUserInfo(); // เพิ่มบรรทัดนี้
+        this.fetchUserInfo();
         this.fetchData();
+
+        // Initialize unique values for dropdown filters
+        // Add after fetchData() completes
+        this.updateUniqueValues("station");
+        this.updateUniqueValues("investment_project");
+        this.updateUniqueValues("document_type");
+        this.updateUniqueValues("status");
+
         window.addEventListener("resize", this.handleResize);
     },
     beforeUnmount() {
@@ -1008,5 +1811,133 @@ export default {
         min-width: 100%;
         margin-bottom: 1rem;
     }
+}
+
+/* Add these new styles for filters */
+
+/* Reset filters button styling */
+.reset-all-filters-btn {
+    position: absolute;
+    right: 5px;
+    top: 25px;
+    z-index: 100;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #fff;
+    background: #198754;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.reset-all-filters-btn:hover {
+    background: #10b981;
+    transform: rotate(30deg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Filter icon styling */
+.filter-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 4px;
+    color: #6c757d;
+    font-size: 0.75rem;
+    vertical-align: middle;
+}
+
+.filter-btn:hover {
+    color: #198754;
+}
+
+.fa-filter {
+    font-size: 0.75rem;
+}
+
+.text-green-500 {
+    color: #10b981;
+}
+
+/* Filter dropdown positioning */
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    min-width: 250px;
+    max-width: 300px;
+    z-index: 1050;
+    overflow: visible;
+    max-height: 300px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    padding: 12px;
+    background-color: white;
+    border-radius: 8px;
+}
+
+/* Handle overflow for long content in dropdown filters */
+.max-h-40.overflow-y-auto {
+    max-height: 160px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+/* Prettier scrollbars for Webkit browsers */
+.max-h-40.overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
+
+.max-h-40.overflow-y-auto::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 3px;
+}
+
+.max-h-40.overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 3px;
+}
+
+/* Add a subtle pointer indicator to make it clearer the dropdown is tied to a specific column */
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10:before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 10px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    transform: rotate(45deg);
+    border-left: 1px solid #e2e8f0;
+    border-top: 1px solid #e2e8f0;
+    z-index: -1;
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.table-auto th {
+    position: relative;
+    min-width: 150px;
+    white-space: nowrap;
+}
+
+.table-auto th:first-child {
+    min-width: auto;
+}
+
+/* Add more spacing to allow for filter icons */
+.px-4.py-2 {
+    position: relative;
 }
 </style>

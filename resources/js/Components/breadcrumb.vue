@@ -11,8 +11,8 @@
                 :class="{ active: index === breadcrumbs.length - 1 }"
             >
                 <router-link
-                    v-if="index !== breadcrumbs.length - 1"
-                    :to="item.path"
+                    v-if="index !== breadcrumbs.length - 1 || item.customPath"
+                    :to="item.customPath || item.path"
                 >
                     {{ item.name }}
                 </router-link>
@@ -27,9 +27,14 @@ export default {
     data() {
         return {
             pathToNameMap: {
-                danhsachhoso: "Danh sách hồ sơ",
+                Danhsachhoso: "Danh sách hồ sơ",
                 taonewhoso: "Tạo mới hồ sơ",
-                DanhsachHoso: "Chỉnh sửa hồ sơ",
+                Details_NghiemthuDV: "Nghiệm thu dịch vụ",
+                Details_Phieugiaonhanhomgiong: "Phiếu giao nhận hom giống",
+            },
+            customPathMap: {
+                Details_NghiemthuDV: "/Bienbannghiemthudichvu",
+                Details_Phieugiaonhanhomgiong: "/Phieugiaonhanhomgiong",
             },
         };
     },
@@ -45,6 +50,7 @@ export default {
                 breadcrumbs.push({
                     name: this.pathToNameMap[segment] || segment,
                     path: currentPath,
+                    customPath: this.customPathMap[segment],
                 });
             });
 
