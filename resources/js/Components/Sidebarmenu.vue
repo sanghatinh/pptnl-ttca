@@ -23,34 +23,15 @@
                     <li class="header-menu">General</li>
                     <li class="sidebar-dropdown active">
                         <a href="#">
-                            <i class="icon-devices_other"></i>
+                            <i class="fa-solid fa-folder-open"></i>
                             <span class="menu-text">Quản lý hồ sơ</span>
                         </a>
                         <div class="sidebar-submenu">
                             <ul>
                                 <!-- Assuming permission check for each dashboard if needed -->
+
                                 <li
-                                    v-if="
-                                        userCanViewComponent('Admin Dashboard')
-                                    "
-                                >
-                                    <router-link
-                                        to="/Taonewhoso"
-                                        :class="
-                                            $route.path === '/Taonewhoso'
-                                                ? 'current-page'
-                                                : ''
-                                        "
-                                    >
-                                        <span class="menu-text"
-                                            >Tạo giao nhận hồ sơ</span
-                                        >
-                                    </router-link>
-                                </li>
-                                <li
-                                    v-if="
-                                        userCanViewComponent('Sales Dashboard')
-                                    "
+                                    v-if="userCanViewComponent('Quản lý hồ sơ')"
                                 >
                                     <router-link
                                         to="/DanhsachHoso"
@@ -67,9 +48,7 @@
                                 </li>
 
                                 <li
-                                    v-if="
-                                        userCanViewComponent('Sales Dashboard')
-                                    "
+                                    v-if="userCanViewComponent('Quản lý hồ sơ')"
                                 >
                                     <router-link
                                         to="/Bienbannghiemthudichvu"
@@ -86,9 +65,7 @@
                                     </router-link>
                                 </li>
                                 <li
-                                    v-if="
-                                        userCanViewComponent('Sales Dashboard')
-                                    "
+                                    v-if="userCanViewComponent('Quản lý hồ sơ')"
                                 >
                                     <router-link
                                         to="/Phieugiaonhanhomgiong"
@@ -109,11 +86,72 @@
                     </li>
                 </ul>
 
+                <!-- Quản lý tài chính -->
+                <ul>
+                    <li class="sidebar-dropdown active">
+                        <a href="#">
+                            <i class="fa-solid fa-money-bill-trend-up"></i>
+                            <span class="menu-text">Quản lý tài chính</span>
+                        </a>
+                        <div class="sidebar-submenu">
+                            <ul>
+                                <li
+                                    v-if="
+                                        userCanViewComponent(
+                                            'Financial Dashboard'
+                                        )
+                                    "
+                                >
+                                    <router-link
+                                        to="/financial-overview"
+                                        :class="
+                                            $route.path ===
+                                            '/financial-overview'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                    >
+                                        <span class="menu-text"
+                                            >Tổng quan tài chính</span
+                                        >
+                                    </router-link>
+                                </li>
+                                <li v-if="userCanViewComponent('Transactions')">
+                                    <router-link
+                                        to="/transactions"
+                                        :class="
+                                            $route.path === '/transactions'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                    >
+                                        <span class="menu-text">Giao dịch</span>
+                                    </router-link>
+                                </li>
+                                <li v-if="userCanViewComponent('Reports')">
+                                    <router-link
+                                        to="/financial-reports"
+                                        :class="
+                                            $route.path === '/financial-reports'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                    >
+                                        <span class="menu-text"
+                                            >Báo cáo tài chính</span
+                                        >
+                                    </router-link>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+
                 <!-- Quản lý hệ thống -->
                 <ul>
                     <li class="sidebar-dropdown active">
                         <a href="#">
-                            <i class="icon-devices_other"></i>
+                            <i class="fa-solid fa-gears"></i>
                             <span class="menu-text">Quản lý hệ thống</span>
                         </a>
                         <div class="sidebar-submenu">

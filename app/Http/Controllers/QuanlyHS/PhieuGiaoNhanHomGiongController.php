@@ -501,7 +501,7 @@ public function index(Request $request)
 
         // Fetch service details from tb_chitiet_homgiong
         $serviceDetails = \DB::table('tb_chitiet_giaonhan_homgiong')
-            ->where('phieu_gn_hom_giong', $document->ten_phieu)
+            ->where('ma_so_phieu', $document->ma_so_phieu)
             ->get();
 
         return response()->json([

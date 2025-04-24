@@ -446,7 +446,7 @@
                                                 <td class="truncate">
                                                     {{ item.giong_mia }}
                                                 </td>
-                                                <td>{{ item.ma_so_thua }}</td>
+                                                <td>{{ item.thua_dat }}</td>
                                                 <td class="text-center">
                                                     {{ item.don_vi_tinh }}
                                                 </td>
