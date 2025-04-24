@@ -178,8 +178,50 @@ const routes = [
         name: "Details_Phieugiaonhanhomgiong",
         path: "/Details_Phieugiaonhanhomgiong/:id",
         component: Details_Phieugiaonhanhomgiong,
-        meta: {
-            middleware: [authMiddleware],
+        meta: { requiresAuth: true },
+        beforeEnter: async (to, from, next) => {
+            // ดึงค่า id จาก route parameters
+            const id = to.params.id;
+
+            // ดึง token จาก localStorage
+            const token = localStorage.getItem("web_token");
+            const store = useStore();
+
+            if (!token) {
+                next("/login");
+                return;
+            }
+
+            try {
+                // ตรวจสอบสิทธิ์การเข้าถึง
+                const response = await axios.get(
+                    `/api/bienban-nghiemthu-homgiong/${id}/check-access`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (response.data.hasAccess) {
+                    next(); // มีสิทธิ์เข้าถึง - อนุญาตให้เข้าถึงหน้านี้
+                } else {
+                    next("/unauthorized"); // ไม่มีสิทธิ์เข้าถึง - นำทางไปยังหน้า Unauthorized
+                }
+            } catch (error) {
+                console.error("Error checking access:", error);
+
+                if (error.response?.status === 401) {
+                    // Token หมดอายุหรือไม่ถูกต้อง - logout และนำทางไปยังหน้า login
+                    localStorage.removeItem("web_token");
+                    localStorage.removeItem("web_user");
+                    store.logout();
+                    next("/login");
+                } else {
+                    // ข้อผิดพลาดอื่นๆ - นำทางไปยังหน้า Unauthorized
+                    next("/unauthorized");
+                }
+            }
         },
     },
     {

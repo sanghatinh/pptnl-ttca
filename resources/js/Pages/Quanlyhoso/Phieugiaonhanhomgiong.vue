@@ -760,6 +760,8 @@
                                 <tr
                                     v-for="item in paginatedItems.data"
                                     :key="item.id"
+                                    @click="viewDetails(item)"
+                                    class="cursor-pointer"
                                 >
                                     <td>{{ item.ma_so_phieu }}</td>
                                     <td>{{ item.tram }}</td>
@@ -1432,8 +1434,60 @@ export default {
             // Reset to first page
             this.currentPage = 1;
         },
-        viewDetails(item) {
-            console.log("Viewing details for:", item);
+        async viewDetails(item) {
+            try {
+                // แสดง loading indicator
+                this.isLoading = true;
+
+                // ตรวจสอบสิทธิ์ผ่าน API
+                const response = await axios.get(
+                    `/api/bienban-nghiemthu-homgiong/${item.ma_so_phieu}/check-access`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                // ถ้ามีสิทธิ์เข้าถึง
+                if (response.data.hasAccess) {
+                    // นำทางไปยังหน้ารายละเอียด
+                    this.$router.push(
+                        `/Details_Phieugiaonhanhomgiong/${item.ma_so_phieu}`
+                    );
+                } else {
+                    // ถ้าไม่มีสิทธิ์ นำทางไปยังหน้า Unauthorized
+                    this.$router.push("/unauthorized");
+                }
+            } catch (error) {
+                console.error("Error checking access:", error);
+
+                if (error.response?.status === 401) {
+                    // กรณี token หมดอายุหรือไม่ถูกต้อง
+                    localStorage.removeItem("web_token");
+                    localStorage.removeItem("web_user");
+                    this.store.logout();
+                    this.$router.push("/login");
+                } else {
+                    // กรณีเกิดข้อผิดพลาดอื่นๆ
+                    this.$router.push("/unauthorized");
+
+                    // แสดงข้อความแจ้งเตือน
+                    Swal.fire({
+                        title: "ข้อผิดพลาด",
+                        text: "คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้",
+                        icon: "error",
+                        confirmButtonText: "ตกลง",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
+                }
+            } finally {
+                // ซ่อน loading indicator
+                this.isLoading = false;
+            }
         },
         handleAuthError() {
             localStorage.removeItem("web_token");
@@ -2704,5 +2758,12 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 /* Table rows clickable indication */
 .table-auto tbody tr {
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.table-auto tbody tr:hover {
+    background-color: rgba(16, 185, 129, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 </style>

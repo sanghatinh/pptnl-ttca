@@ -271,7 +271,7 @@ public function index(Request $request)
                     $deleted = \DB::table('bien_ban_nghiem_thu_hom_giong')
                         ->whereIn('ma_so_phieu', $importedHGIds)
                         ->delete();
-                    \Log::info('Deleted ' . $deleted . ' existing records');
+                        \Log::info('Deleted ' . $deleted . ' existing records');
                 }
                 
                 \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
@@ -515,6 +515,70 @@ public function index(Request $request)
         return response()->json([
             'success' => false,
             'message' => 'Lỗi khi lấy thông tin phiếu giao nhận: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function checkAccess($id)
+{
+    try {
+        // ดึงข้อมูล user ที่กำลังเข้าใช้งาน
+        $user = auth()->user();
+        
+        if (!$user) {
+            return response()->json([
+                'hasAccess' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+        
+        // ค้นหาเอกสารที่ต้องการเข้าถึง
+        $document = \DB::table('bien_ban_nghiem_thu_hom_giong')
+            ->where('ma_so_phieu', $id)
+            ->first();
+            
+        if (!$document) {
+            return response()->json([
+                'hasAccess' => false,
+                'message' => 'Document not found'
+            ], 404);
+        }
+        
+        // ตรวจสอบสิทธิ์ตามบทบาท
+        switch ($user->position) {
+            case 'department_head':
+            case 'office_workers':
+                // สามารถเข้าถึงได้ทั้งหมด
+                return response()->json([
+                    'hasAccess' => true
+                ]);
+                
+            case 'Station_Chief':
+                // เข้าถึงได้เฉพาะเอกสารของ station ตัวเอง
+                $hasAccess = $document->tram === $user->station;
+                return response()->json([
+                    'hasAccess' => $hasAccess
+                ]);
+                
+            case 'Farm_worker':
+                // เข้าถึงได้เฉพาะเอกสารที่เกี่ยวข้องกับตัวเอง
+                $hasAccess = $document->ma_nhan_vien === $user->ma_nhan_vien;
+                return response()->json([
+                    'hasAccess' => $hasAccess
+                ]);
+                
+            default:
+                // กรณีอื่นๆ ไม่มีสิทธิ์เข้าถึง
+                return response()->json([
+                    'hasAccess' => false
+                ]);
+        }
+        
+    } catch (\Exception $e) {
+        \Log::error('Error checking access: ' . $e->getMessage());
+        return response()->json([
+            'hasAccess' => false,
+            'message' => 'Error checking access: ' . $e->getMessage()
         ], 500);
     }
 }
