@@ -444,7 +444,7 @@
                                                     {{ index + 1 }}
                                                 </td>
                                                 <td class="truncate">
-                                                    {{ item.loai_giong }}
+                                                    {{ item.giong_mia }}
                                                 </td>
                                                 <td>{{ item.ma_so_thua }}</td>
                                                 <td class="text-center">
@@ -453,7 +453,7 @@
                                                 <td class="text-end">
                                                     {{
                                                         formatNumber(
-                                                            item.so_luong
+                                                            item.thuc_nhan
                                                         )
                                                     }}
                                                 </td>
@@ -467,7 +467,7 @@
                                                 <td class="text-end">
                                                     {{
                                                         formatCurrency(
-                                                            item.thanh_tien
+                                                            item.thanh_tien_hom_giong
                                                         )
                                                     }}
                                                 </td>
@@ -569,7 +569,8 @@ export default {
         },
         totalAmount() {
             return this.serviceDetails.reduce(
-                (sum, item) => sum + (parseFloat(item.thanh_tien) || 0),
+                (sum, item) =>
+                    sum + (parseFloat(item.thanh_tien_hom_giong) || 0),
                 0
             );
         },
@@ -638,7 +639,7 @@ export default {
         },
 
         formatCurrency(value) {
-            if (!value) return "0 VNĐ";
+            if (!value) return "0 KIP";
             return new Intl.NumberFormat("vi-VN", {
                 style: "currency",
                 currency: "KIP",
@@ -658,10 +659,10 @@ export default {
             return new Date(date).toLocaleString("vi-VN");
         },
         formatStatus(status) {
-            if (status === "received") return "Đã nhận";
-            if (status === "processed") return "Đã xử lý";
-            if (status === "returned") return "Đã trả lại";
-            if (status === "pending") return "Đang chờ";
+            if (status === "cancelled") return "Hủy";
+            if (status === "received") return "Đã nộp";
+            if (status === "sending") return "Đã nộp";
+            if (status === "creating") return "Đang tạo";
             return status || "N/A";
         },
         formatActionText(action) {
@@ -675,9 +676,9 @@ export default {
         },
         statusClass(status) {
             if (status === "received") return "text-success";
-            if (status === "processed") return "text-primary";
-            if (status === "returned") return "text-danger";
-            if (status === "pending") return "text-warning";
+            if (status === "sending") return "text-primary";
+            if (status === "cancelled") return "text-danger";
+            if (status === "creating") return "text-primary";
             return "";
         },
         getActionClass(action) {
@@ -701,9 +702,9 @@ export default {
         getReceivedStepIcon(status) {
             switch (status) {
                 case "creating":
-                    return "fas fa-edit";
+                    return "fas fa-spinner";
                 case "sending":
-                    return "fas fa-paper-plane";
+                    return "fas fa-shipping-fast";
                 case "received":
                     return "fas fa-check-circle";
                 case "cancelled":
@@ -715,7 +716,7 @@ export default {
         getReceivedStepLabel(status) {
             switch (status) {
                 case "creating":
-                    return "Nháp";
+                    return "Đang tạo";
                 case "sending":
                     return "Đang nộp";
                 case "received":

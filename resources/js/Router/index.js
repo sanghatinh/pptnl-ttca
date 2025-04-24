@@ -176,7 +176,7 @@ const routes = [
     },
     {
         name: "Details_Phieugiaonhanhomgiong",
-        path: "/Details_Phieugiaonhanhomgiong",
+        path: "/Details_Phieugiaonhanhomgiong/:id",
         component: Details_Phieugiaonhanhomgiong,
         meta: {
             middleware: [authMiddleware],

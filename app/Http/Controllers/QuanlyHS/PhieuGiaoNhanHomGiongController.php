@@ -464,4 +464,58 @@ public function index(Request $request)
         
         return $columnMap;
     }
+
+    public function show($id)
+{
+    try {
+        // Get the main document info from bien_ban_nghiem_thu_hom_giong table
+        $document = \DB::table('bien_ban_nghiem_thu_hom_giong as hg')
+            ->leftJoin('document_mapping_homgiong as dmhg', 'hg.ma_so_phieu', '=', 'dmhg.ma_so_phieu')
+            ->leftJoin('document_delivery as dd', 'dmhg.document_code', '=', 'dd.document_code')
+            ->leftJoin('users as creator', 'dd.creator_id', '=', 'creator.id')
+            ->leftJoin('users as receiver', 'dd.receiver_id', '=', 'receiver.id')
+            ->select(
+                'hg.ma_so_phieu',
+                'hg.can_bo_nong_vu',
+                'hg.vu_dau_tu',
+                'hg.ten_phieu',
+                'hg.hop_dong_dau_tu_mia_ben_giao_hom as hop_dong_dau_tu_mia_ben_giao',
+                'hg.ma_hop_dong as hop_dong_dau_tu_mia_ben_nhan',
+                'hg.tong_thuc_nhan',
+                'hg.tong_tien',
+                'creator.full_name as nguoi_giao',
+                'receiver.full_name as nguoi_nhan',
+                'dd.received_date as ngay_nhan',
+                'dd.status as trang_thai_nhan_hs'
+                
+            )
+            ->where('hg.ma_so_phieu', $id)
+            ->first();
+
+        if (!$document) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy thông tin phiếu giao nhận hom giống'
+            ], 404);
+        }
+
+        // Fetch service details from tb_chitiet_homgiong
+        $serviceDetails = \DB::table('tb_chitiet_giaonhan_homgiong')
+            ->where('phieu_gn_hom_giong', $document->ten_phieu)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'document' => $document,
+            'serviceDetails' => $serviceDetails
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Error in PhieuGiaoNhanHomGiong show: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi lấy thông tin phiếu giao nhận: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

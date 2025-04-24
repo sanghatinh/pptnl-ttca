@@ -165,3 +165,45 @@ name_status	varchar(50)	NO		NULL
 
 
 
+# table tb_chitiet_giaonhan_homgiong;
+
+id	int	NO	PRI	NULL	auto_increment	
+tram	varchar(100)	YES		NULL		
+ma_so_phieu	varchar(100)	YES		NULL		
+tieu_de	varchar(255)	YES		NULL		
+doi_tac_giao_hom_kh	varchar(255)	YES		NULL		
+doi_tac_giao_hom_khdn	varchar(255)	YES		NULL		
+khach_hang_ca_nhan	varchar(255)	YES		NULL		
+khach_hang_doanh_nghiep	varchar(255)	YES		NULL		
+phieu_gn_hom_giong	varchar(255)	YES		NULL		
+chitiet_hd_dt_mia	varchar(255)	YES		NULL		
+hang_muc_cong_viec	varchar(255)	YES		NULL		
+giong_mia	varchar(255)	YES		NULL		
+tinh_trang_duyet	varchar(100)	YES		NULL		
+so_luong_dk	decimal(10,2)	YES		NULL		
+ngay_nhan	date	YES		NULL		
+thuc_nhan	decimal(10,2)	YES		NULL		
+don_gia	decimal(12,2)	YES		NULL		
+thanh_tien_hom_giong	decimal(12,2)	YES		NULL		
+hop_dong_thu_hoach	varchar(255)	YES		NULL		
+don_gia_don_chat	decimal(10,2)	YES		NULL		
+thanh_tien_don_chat	decimal(12,2)	YES		NULL		
+hop_dong_boc_xep	varchar(255)	YES		NULL		
+don_gia_boc_xep	decimal(12,2)	YES		NULL		
+thanh_tien_boc_xep	decimal(12,2)	YES		NULL		
+hop_dong_van_chuyen	varchar(255)	YES		NULL		
+don_gia_van_chuyen	decimal(12,2)	YES		NULL		
+thanh_tien_van_chuyen	decimal(12,2)	YES		NULL		
+don_vi_tinh	varchar(50)	YES		NULL		
+so_tien_dau_tu_hl	decimal(12,2)	YES		NULL		
+so_tien_dau_tu_khl	decimal(12,2)	YES		NULL		
+doi_tac_thu_hoach_kh	varchar(255)	YES		NULL		
+doi_tac_thu_hoach_khdn	varchar(255)	YES		NULL		
+doi_tac_van_chuyen_kh	varchar(255)	YES		NULL		
+doi_tac_van_chuyen_khdn	varchar(255)	YES		NULL		
+doi_tac_boc_xep	varchar(255)	YES		NULL		
+can_bo_nong_vu	varchar(255)	YES		NULL		
+chitiet_hd_dt_mia_doitac	varchar(255)	YES		NULL		
+vu_dau_tu	varchar(100)	YES		NULL		
+
+
