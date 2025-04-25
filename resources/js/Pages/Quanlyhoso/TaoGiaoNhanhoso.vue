@@ -19,7 +19,7 @@
                             <button
                                 v-if="showSaveButton"
                                 type="button"
-                                class="btn btn-save"
+                                class="button-30"
                                 @click="saveOrUpdateDocument"
                             >
                                 <i class="bx bxs-save"></i>
@@ -29,7 +29,7 @@
                             <button
                                 v-if="showCreateNewButton"
                                 type="button"
-                                class="btn btn-new"
+                                class="button-30-save"
                                 @click="createNew"
                             >
                                 <i class="fa-solid fa-plus"></i>
@@ -38,7 +38,7 @@
 
                             <button
                                 v-if="showSubmitButton"
-                                class="btn btn-submit"
+                                class="button-30-text-green"
                                 @click="sendDocument"
                             >
                                 <i class="bx bx-calendar-check"></i>
@@ -48,7 +48,7 @@
                             <button
                                 v-if="showRejectButton"
                                 type="button"
-                                class="btn btn-reject"
+                                class="button-30"
                                 @click="rejectDocument"
                             >
                                 <i class="bx bx-calendar-x"></i>
@@ -58,7 +58,7 @@
                             <button
                                 v-if="showApproveButton"
                                 type="button"
-                                class="btn btn-approve"
+                                class="button-30-text-green"
                                 @click="receiveDocument"
                             >
                                 <i class="bx bx-check-square"></i>
@@ -68,7 +68,7 @@
                             <button
                                 v-if="showCancelButton"
                                 type="button"
-                                class="btn btn-cancel"
+                                class="button-30"
                                 @click="cancelDocument"
                             >
                                 <i class="fa-solid fa-xmark"></i>
@@ -78,7 +78,7 @@
                             <button
                                 v-if="showDeleteButton"
                                 type="button"
-                                class="btn btn-delete"
+                                class="button-30-del"
                                 @click="deleteDocument"
                             >
                                 <i class="fa-solid fa-trash-can"></i>
@@ -87,11 +87,11 @@
 
                             <button
                                 type="button"
-                                class="btn btn-print"
+                                class="button-30"
                                 @click="printDocument"
                             >
                                 <i class="bx bxs-printer"></i>
-                                <span>In</span>
+                                <span>Print</span>
                             </button>
                         </div>
                     </div>
@@ -582,7 +582,7 @@
                                                             v-if="
                                                                 canModifyMappings
                                                             "
-                                                            class="btn btn-sm btn-primary"
+                                                            class="btn btn-sm btn-success"
                                                             data-bs-toggle="modal"
                                                             data-bs-target="#extraLargeModal"
                                                         >
@@ -720,7 +720,7 @@
                                                             v-if="
                                                                 canModifyMappings
                                                             "
-                                                            class="btn btn-sm btn-primary"
+                                                            class="btn btn-sm btn-success"
                                                             data-bs-toggle="modal"
                                                             data-bs-target="#homGiongModal"
                                                         >
@@ -807,7 +807,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="extraLargeModalLabel">
-                        <i class="bx bx-clipboard text-primary me-2"></i>
+                        <i class="bx bx-clipboard me-2"></i>
                         Thêm biên bản nghiệm thu dịch vụ
                     </h5>
                     <button
@@ -935,7 +935,7 @@
                     </button>
                     <button
                         type="button"
-                        class="btn btn-primary"
+                        class="btn btn-success"
                         @click="addMapping(selectedBienBan)"
                         :disabled="!selectedBienBan"
                     >
@@ -959,7 +959,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="homGiongModalLabel">
-                        <i class="bx bx-leaf text-primary me-2"></i>
+                        <i class="bx bx-leaf me-2"></i>
                         Thêm biên bản hom giống
                     </h5>
                     <button
@@ -1085,7 +1085,7 @@
                     </button>
                     <button
                         type="button"
-                        class="btn btn-primary"
+                        class="btn btn-success"
                         @click="addHomGiongMapping(selectedHomGiong)"
                         :disabled="!selectedHomGiong"
                     >
@@ -2239,7 +2239,7 @@ export default {
 }
 
 .btn-save {
-    background-color: #2196f3;
+    background-color: #198754;
     color: white;
 }
 
@@ -2311,7 +2311,7 @@ export default {
 }
 
 .btn-add {
-    background-color: #2196f3;
+    background-color: #198754;
     color: white;
     padding: 0.375rem 0.75rem;
 }
@@ -2353,7 +2353,7 @@ export default {
 }
 
 .progress-tracker.received::before {
-    background-color: #43a047;
+    background-color: #198754;
 }
 
 .progress-tracker.cancelled::before {
@@ -2398,7 +2398,7 @@ export default {
 }
 
 .status-received {
-    color: #43a047;
+    color: #198754;
 }
 
 .status-cancelled {
@@ -2416,7 +2416,7 @@ export default {
 }
 
 .track-step.active .status-received {
-    background-color: #43a047;
+    background-color: #198754;
     color: white;
 }
 
@@ -2469,7 +2469,7 @@ export default {
 
 .info-card-header h5 i {
     margin-right: 0.5rem;
-    color: #2196f3;
+    color: #198754;
     font-size: 1.1rem;
 }
 
@@ -2541,7 +2541,7 @@ export default {
 
 .stat-icon i {
     font-size: 1.5rem;
-    color: #2196f3;
+    color: #198754;
 }
 
 .stat-content {
@@ -2552,7 +2552,7 @@ export default {
 .stat-value {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #2196f3;
+    color: #198754;
     line-height: 1;
 }
 
@@ -2589,7 +2589,7 @@ export default {
 
 .section-title i {
     font-size: 1.25rem;
-    color: #2196f3;
+    color: #198754;
 }
 
 .section-title h5 {
@@ -2656,7 +2656,7 @@ export default {
 
 /* ======== MODAL STYLING ======== */
 .modal-header {
-    background-color: #f8f9fa;
+    background-color: #198754;
     border-bottom: 1px solid #e9ecef;
     padding: 1rem 1.5rem;
 }
@@ -2673,7 +2673,7 @@ export default {
 }
 
 .modal-footer {
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid #198754;
     padding: 1rem 1.5rem;
 }
 
@@ -2735,7 +2735,7 @@ export default {
 
 .details-header {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid #198754;
 }
 
 .details-header h6 {
