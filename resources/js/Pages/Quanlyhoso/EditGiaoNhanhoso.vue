@@ -1,377 +1,404 @@
 <template lang="">
     <breadcrumb-vue />
-    <div class="card shadow">
-        <div class="card-body p-0">
-            <PerfectScrollbar
-                :options="{
-                    wheelSpeed: 1,
-                    wheelPropagation: true,
-                    minScrollbarLength: 20,
-                }"
-                class="scroll-area"
-            >
-                <!-- button  -->
-                <!-- Fixed top container -->
-                <div class="sticky-wrapper">
-                    <!-- Add container with padding -->
-                    <div class="container-fluid px-4">
-                        <div class="button-container">
-                            <div class="row align-items-center mb-2">
-                                <div class="col d-flex gap-3">
-                                    <button
-                                        v-if="showSaveButton"
-                                        type="button"
-                                        class="button-30"
-                                        @click="saveOrUpdateDocument"
-                                    >
-                                        <i class="bx bxs-save"></i>Save
-                                    </button>
+    <div class="document-delivery-container">
+        <PerfectScrollbar
+            :options="{
+                wheelSpeed: 1,
+                wheelPropagation: true,
+                minScrollbarLength: 20,
+            }"
+            class="scroll-area"
+        >
+            <!-- Header Controls Section -->
+            <div class="header-controls-wrapper">
+                <div class="container-fluid">
+                    <!-- Status Indicator and Buttons -->
+                    <div class="header-content">
+                        <div class="action-button-group">
+                            <button
+                                v-if="showSaveButton"
+                                type="button"
+                                class="button-30"
+                                @click="saveOrUpdateDocument"
+                            >
+                                <i class="bx bxs-save"></i>
+                                <span>Lưu</span>
+                            </button>
 
-                                    <button
-                                        v-if="showCreateNewButton"
-                                        type="button"
-                                        class="button-30-save"
-                                        @click="$router.push('/taonewhoso')"
-                                    >
-                                        <i class="fa-solid fa-plus"></i>Tạo mới
-                                    </button>
+                            <button
+                                v-if="showCreateNewButton"
+                                type="button"
+                                class="button-30-save"
+                                @click="$router.push('/taonewhoso')"
+                            >
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Tạo mới</span>
+                            </button>
 
-                                    <button
-                                        v-if="showSubmitButton"
-                                        class="button-30-text-green"
-                                        role="button"
-                                        @click="sendDocument"
-                                    >
-                                        <i class="bx bx-calendar-check"></i>Nộp
-                                    </button>
+                            <button
+                                v-if="showSubmitButton"
+                                class="button-30-text-green"
+                                @click="sendDocument"
+                            >
+                                <i class="bx bx-calendar-check"></i>
+                                <span>Nộp</span>
+                            </button>
 
-                                    <button
-                                        v-if="showRejectButton"
-                                        type="button"
-                                        class="button-30"
-                                        @click="rejectDocument"
-                                    >
-                                        <i class="bx bx-calendar-x"></i>Không
-                                        duyệt
-                                    </button>
+                            <button
+                                v-if="showRejectButton"
+                                type="button"
+                                class="button-30"
+                                @click="rejectDocument"
+                            >
+                                <i class="bx bx-calendar-x"></i>
+                                <span>Không duyệt</span>
+                            </button>
 
-                                    <button
-                                        v-if="showApproveButton"
-                                        type="button"
-                                        class="button-30-text-green"
-                                        @click="receiveDocument"
-                                    >
-                                        <i class="bx bx-check-square"></i>Duyệt
-                                    </button>
+                            <button
+                                v-if="showApproveButton"
+                                type="button"
+                                class="button-30-text-green"
+                                @click="receiveDocument"
+                            >
+                                <i class="bx bx-check-square"></i>
+                                <span>Duyệt</span>
+                            </button>
 
-                                    <button
-                                        v-if="showCancelButton"
-                                        type="button"
-                                        class="button-30"
-                                        @click="cancelDocument"
-                                    >
-                                        <i class="fa-solid fa-xmark"></i>Hủy
-                                    </button>
+                            <button
+                                v-if="showCancelButton"
+                                type="button"
+                                class="button-30"
+                                @click="cancelDocument"
+                            >
+                                <i class="fa-solid fa-xmark"></i>
+                                <span>Hủy</span>
+                            </button>
 
-                                    <button
-                                        v-if="showDeleteButton"
-                                        type="button"
-                                        class="button-30-del"
-                                        @click="deleteDocument"
-                                    >
-                                        <i class="fa-solid fa-trash-can"></i>Xóa
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="button-30"
-                                        @click="printDocument"
-                                    >
-                                        <i class="bx bxs-printer"></i>Print
-                                    </button>
-                                </div>
-                            </div>
+                            <button
+                                v-if="showDeleteButton"
+                                type="button"
+                                class="button-30-del"
+                                @click="deleteDocument"
+                            >
+                                <i class="fa-solid fa-trash-can"></i>
+                                <span>Xóa</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                class="button-30"
+                                @click="printDocument"
+                            >
+                                <i class="bx bxs-printer"></i>
+                                <span>Print</span>
+                            </button>
                         </div>
-                        <!-- progress-tracker-container -->
-                        <div class="progress-container mt-4">
-                            <div class="col-12">
-                                <div
-                                    class="progress-tracker"
-                                    :class="document.status"
-                                >
-                                    <!-- Creating Step -->
-                                    <div
-                                        class="track-step"
-                                        :class="{
-                                            active:
-                                                document.status === 'creating',
-                                        }"
-                                    >
-                                        <div class="step-icon status-creating">
-                                            <i
-                                                class="fas fa-spinner fa-spin"
-                                            ></i>
-                                        </div>
-                                        <span class="step-label">Nháp</span>
-                                    </div>
+                    </div>
 
-                                    <!-- Sending Step -->
-                                    <div
-                                        class="track-step"
-                                        :class="{
-                                            active:
-                                                document.status === 'sending',
-                                        }"
-                                    >
-                                        <div class="step-icon status-sending">
-                                            <i class="fas fa-shipping-fast"></i>
-                                        </div>
-                                        <span class="step-label">Đang nộp</span>
-                                    </div>
-
-                                    <!-- Received Step -->
-                                    <div
-                                        class="track-step"
-                                        :class="{
-                                            active:
-                                                document.status === 'received',
-                                        }"
-                                    >
-                                        <div class="step-icon status-received">
-                                            <i class="fas fa-check-circle"></i>
-                                        </div>
-                                        <span class="step-label">Đã nhận</span>
-                                    </div>
-
-                                    <!-- Cancelled Step -->
-                                    <div
-                                        v-if="showCancelledStep"
-                                        class="track-step"
-                                        :class="{
-                                            active:
-                                                document.status === 'cancelled',
-                                        }"
-                                    >
-                                        <div class="step-icon status-cancelled">
-                                            <i class="fas fa-times-circle"></i>
-                                        </div>
-                                        <span class="step-label">Hủy</span>
-                                    </div>
+                    <!-- Progress Tracker -->
+                    <div class="progress-tracker-container">
+                        <div class="progress-tracker" :class="document.status">
+                            <!-- Creating Step -->
+                            <div
+                                class="track-step"
+                                :class="{
+                                    active: document.status === 'creating',
+                                }"
+                            >
+                                <div class="step-icon status-creating">
+                                    <i class="fas fa-spinner"></i>
                                 </div>
+                                <span class="step-label">Nháp</span>
+                            </div>
+
+                            <!-- Sending Step -->
+                            <div
+                                class="track-step"
+                                :class="{
+                                    active: document.status === 'sending',
+                                }"
+                            >
+                                <div class="step-icon status-sending">
+                                    <i class="fas fa-shipping-fast"></i>
+                                </div>
+                                <span class="step-label">Đang nộp</span>
+                            </div>
+
+                            <!-- Received Step -->
+                            <div
+                                class="track-step"
+                                :class="{
+                                    active: document.status === 'received',
+                                }"
+                            >
+                                <div class="step-icon status-received">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <span class="step-label">Đã nhận</span>
+                            </div>
+
+                            <!-- Cancelled Step -->
+                            <div
+                                v-if="showCancelledStep"
+                                class="track-step"
+                                :class="{
+                                    active: document.status === 'cancelled',
+                                }"
+                            >
+                                <div class="step-icon status-cancelled">
+                                    <i class="fas fa-times-circle"></i>
+                                </div>
+                                <span class="step-label">Hủy</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Main content with added top margin -->
-                <div class="main-content-wrapper">
-                    <div class="d-flex flex-column flex-md-row gap-1">
-                        <!-- ส่วนที่ 1 ของการสร้างหน้าจอ -->
-                        <div class="card col-12 col-md-6">
-                            <div class="card-body">
-                                <h5 class="card-title">Thông tin phiếu</h5>
-                                <div class="row gutters">
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for=""
-                                                >Mã số phiếu&nbsp;<span
-                                                    ><i
-                                                        class="bx bx-lock-alt"
-                                                    ></i></span
-                                            ></label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                v-model="document.document_code"
-                                                placeholder="Mã số phiếu"
-                                                disabled
-                                            />
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <div class="container-fluid">
+                    <!-- Document Information Cards -->
+                    <div class="row">
+                        <!-- Document Details Card -->
+                        <div class="col-12 col-lg-6 mb-4">
+                            <div class="info-card">
+                                <div class="info-card-header">
+                                    <h5>
+                                        <i class="bx bx-file"></i> Thông tin
+                                        phiếu
+                                    </h5>
+                                </div>
+                                <div class="info-card-body">
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <div class="form-group">
+                                                <label class="form-label">
+                                                    Mã số phiếu
+                                                    <i
+                                                        class="bx bx-lock-alt text-muted"
+                                                    ></i>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    v-model="
+                                                        document.document_code
+                                                    "
+                                                    placeholder="Mã số phiếu"
+                                                    disabled
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
-                                    <!-- Ngày lập -->
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for=""
-                                                >Ngày lập<span
-                                                    class="text-danger"
-                                                    >*</span
-                                                ></label
-                                            >
-                                            <input
-                                                type="date"
-                                                class="form-control"
-                                                v-model="
-                                                    documentDates.created_date
-                                                "
-                                                placeholder="Ngày lập"
-                                                :class="{
-                                                    'is-invalid':
+
+                                        <div class="col-12 mb-3">
+                                            <div class="form-group">
+                                                <label class="form-label">
+                                                    Ngày lập
+                                                    <span
+                                                        v-if="
+                                                            formValidation
+                                                                .createdDate
+                                                                .required
+                                                        "
+                                                        class="required-indicator"
+                                                        >*</span
+                                                    >
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    class="form-control"
+                                                    v-model="
+                                                        documentDates.created_date
+                                                    "
+                                                    :class="{
+                                                        'is-invalid':
+                                                            formValidation
+                                                                .createdDate
+                                                                .required,
+                                                    }"
+                                                    :disabled="
+                                                        !canModifyDates.created
+                                                    "
+                                                />
+                                                <div
+                                                    v-if="
                                                         formValidation
                                                             .createdDate
-                                                            .required,
-                                                }"
-                                                :disabled="
-                                                    !canModifyDates.created
-                                                "
-                                            />
-                                            <div
-                                                v-if="
-                                                    formValidation.createdDate
-                                                        .required
-                                                "
-                                                class="invalid-feedback"
-                                            >
-                                                {{
-                                                    formValidation.createdDate
-                                                        .message
-                                                }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for=""
-                                                >Tiều đề&nbsp;<span
-                                                    ><i
-                                                        class="bx bx-lock-alt"
-                                                    ></i></span
-                                            ></label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                v-model="document.title"
-                                                placeholder="Tiều đề"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for=""
-                                                >Vụ đầu tư<span
-                                                    v-if="
-                                                        formValidation
-                                                            .investmentProject
                                                             .required
                                                     "
-                                                    class="text-danger"
-                                                    >*</span
-                                                ></label
-                                            >
-                                            <select
-                                                class="form-control"
-                                                v-model="
-                                                    document.investment_project
-                                                "
-                                                :class="{
-                                                    'is-invalid':
-                                                        formValidation
-                                                            .investmentProject
-                                                            .required,
-                                                }"
-                                            >
-                                                <option
-                                                    v-for="project in investmentProjects"
-                                                    :key="project.id"
-                                                    :value="project.Ten_Vudautu"
+                                                    class="invalid-feedback"
                                                 >
-                                                    {{ project.Ten_Vudautu }}
-                                                </option>
-                                            </select>
-                                            <div
-                                                v-if="
-                                                    formValidation
-                                                        .investmentProject
-                                                        .required
-                                                "
-                                                class="invalid-feedback"
-                                            >
-                                                {{
-                                                    formValidation
-                                                        .investmentProject
-                                                        .message
-                                                }}
+                                                    {{
+                                                        formValidation
+                                                            .createdDate.message
+                                                    }}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for=""
-                                                >Người tạo&nbsp;<span
-                                                    ><i
-                                                        class="bx bx-lock-alt"
-                                                    ></i></span
-                                            ></label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                :value="creatorName"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
 
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for=""
-                                                >Trạm&nbsp;<span
-                                                    ><i
-                                                        class="bx bx-lock-alt"
-                                                    ></i></span
-                                            ></label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                :value="
-                                                    user ? user.station : ''
-                                                "
-                                                disabled
-                                            />
+                                        <div class="col-12 mb-3">
+                                            <div class="form-group">
+                                                <label class="form-label">
+                                                    Tiêu đề
+                                                    <i
+                                                        class="bx bx-lock-alt text-muted"
+                                                    ></i>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    v-model="document.title"
+                                                    placeholder="Tiều đề"
+                                                    disabled
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for=""
-                                                >Loại hồ sơ<span
+
+                                        <div class="col-12 mb-3">
+                                            <div class="form-group">
+                                                <label class="form-label">
+                                                    Vụ đầu tư
+                                                    <span
+                                                        v-if="
+                                                            formValidation
+                                                                .investmentProject
+                                                                .required
+                                                        "
+                                                        class="required-indicator"
+                                                        >*</span
+                                                    >
+                                                </label>
+                                                <select
+                                                    class="form-select"
+                                                    v-model="
+                                                        document.investment_project
+                                                    "
+                                                    :class="{
+                                                        'is-invalid':
+                                                            formValidation
+                                                                .investmentProject
+                                                                .required,
+                                                    }"
+                                                >
+                                                    <option
+                                                        v-for="project in investmentProjects"
+                                                        :key="project.id"
+                                                        :value="
+                                                            project.Ten_Vudautu
+                                                        "
+                                                    >
+                                                        {{
+                                                            project.Ten_Vudautu
+                                                        }}
+                                                    </option>
+                                                </select>
+                                                <div
+                                                    v-if="
+                                                        formValidation
+                                                            .investmentProject
+                                                            .required
+                                                    "
+                                                    class="invalid-feedback"
+                                                >
+                                                    {{
+                                                        formValidation
+                                                            .investmentProject
+                                                            .message
+                                                    }}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 mb-3">
+                                            <div class="form-group">
+                                                <label class="form-label">
+                                                    Người tạo
+                                                    <i
+                                                        class="bx bx-lock-alt text-muted"
+                                                    ></i>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    :value="creatorName"
+                                                    disabled
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 mb-3">
+                                            <div class="form-group">
+                                                <label class="form-label">
+                                                    Trạm
+                                                    <i
+                                                        class="bx bx-lock-alt text-muted"
+                                                    ></i>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    :value="
+                                                        user ? user.station : ''
+                                                    "
+                                                    disabled
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 mb-3">
+                                            <div class="form-group">
+                                                <label class="form-label">
+                                                    Loại hồ sơ
+                                                    <span
+                                                        v-if="
+                                                            formValidation
+                                                                .documentType
+                                                                .required
+                                                        "
+                                                        class="required-indicator"
+                                                        >*</span
+                                                    >
+                                                </label>
+                                                <select
+                                                    class="form-select"
+                                                    v-model="
+                                                        document.document_type
+                                                    "
+                                                    :class="{
+                                                        'is-invalid':
+                                                            formValidation
+                                                                .documentType
+                                                                .required,
+                                                    }"
+                                                >
+                                                    <option value="">
+                                                        Chọn loại hồ sơ
+                                                    </option>
+                                                    <option
+                                                        v-for="type in documentTypes"
+                                                        :key="type.id"
+                                                        :value="
+                                                            type.Ten_LoaiHoso
+                                                        "
+                                                    >
+                                                        {{ type.Ten_LoaiHoso }}
+                                                    </option>
+                                                </select>
+                                                <div
                                                     v-if="
                                                         formValidation
                                                             .documentType
                                                             .required
                                                     "
-                                                    class="text-danger"
-                                                    >*</span
-                                                ></label
-                                            >
-                                            <select
-                                                class="form-control"
-                                                v-model="document.document_type"
-                                                :class="{
-                                                    'is-invalid':
+                                                    class="invalid-feedback"
+                                                >
+                                                    {{
                                                         formValidation
                                                             .documentType
-                                                            .required,
-                                                }"
-                                            >
-                                                <option value="">
-                                                    Chọn loại hồ sơ
-                                                </option>
-                                                <option
-                                                    v-for="type in documentTypes"
-                                                    :key="type.id"
-                                                    :value="type.Ten_LoaiHoso"
-                                                >
-                                                    {{ type.Ten_LoaiHoso }}
-                                                </option>
-                                            </select>
-                                            <div
-                                                v-if="
-                                                    formValidation.documentType
-                                                        .required
-                                                "
-                                                class="invalid-feedback"
-                                            >
-                                                {{
-                                                    formValidation.documentType
-                                                        .message
-                                                }}
+                                                            .message
+                                                    }}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -379,275 +406,392 @@
                             </div>
                         </div>
 
-                        <!-- ส่วนที่ 2 ของการสร้างหน้าจอ -->
-                        <div class="card col-12 col-md-6">
-                            <div class="card-body">
-                                <h5 class="card-title">Thông tin giao nhận</h5>
-                                <div class="row gutters">
-                                    <div class="col-12">
-                                        <div class="form-group">
-                                            <label for=""
-                                                >Số lượng hồ sơ&nbsp;<span
-                                                    ><i
-                                                        class="bx bx-lock-alt"
-                                                    ></i></span
-                                            ></label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                :value="documentCount"
-                                                placeholder="Số lượng hồ sơ"
-                                                disabled
-                                            />
+                        <!-- Reception Information Card -->
+                        <div class="col-12 col-lg-6 mb-4">
+                            <div class="info-card">
+                                <div class="info-card-header">
+                                    <h5>
+                                        <i class="bx bx-transfer"></i> Thông tin
+                                        giao nhận
+                                    </h5>
+                                </div>
+                                <div class="info-card-body">
+                                    <div class="row">
+                                        <div class="col-12 mb-4">
+                                            <div class="document-stats">
+                                                <div class="stat-item">
+                                                    <div class="stat-icon">
+                                                        <i
+                                                            class="bx bx-file-blank"
+                                                        ></i>
+                                                    </div>
+                                                    <div class="stat-content">
+                                                        <span
+                                                            class="stat-value"
+                                                            >{{
+                                                                documentCount
+                                                            }}</span
+                                                        >
+                                                        <span class="stat-label"
+                                                            >Số lượng hồ
+                                                            sơ</span
+                                                        >
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <!-- Ngày nhận -->
-                                    <div class="col-12">
+
                                         <div
-                                            class="form-group"
+                                            class="col-12 mb-3"
                                             v-if="showreceivedate"
                                         >
-                                            <label for="">
-                                                Ngày nhận
-                                                <span
+                                            <div class="form-group">
+                                                <label class="form-label">
+                                                    Ngày nhận
+                                                    <span
+                                                        v-if="
+                                                            formValidation
+                                                                .receivedDate
+                                                                .required
+                                                        "
+                                                        class="required-indicator"
+                                                        >*</span
+                                                    >
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    class="form-control"
+                                                    v-model="
+                                                        documentDates.received_date
+                                                    "
+                                                    :class="{
+                                                        'is-invalid':
+                                                            formValidation
+                                                                .receivedDate
+                                                                .required,
+                                                    }"
+                                                    :disabled="
+                                                        !canModifyDates.received
+                                                    "
+                                                />
+                                                <div
                                                     v-if="
                                                         formValidation
                                                             .receivedDate
                                                             .required
                                                     "
-                                                    class="text-danger"
-                                                    >*</span
+                                                    class="invalid-feedback"
                                                 >
-                                            </label>
-                                            <input
-                                                type="date"
-                                                class="form-control"
-                                                v-model="
-                                                    documentDates.received_date
-                                                "
-                                                placeholder="Ngày nhận"
-                                                :class="{
-                                                    'is-invalid':
+                                                    {{
                                                         formValidation
                                                             .receivedDate
-                                                            .required,
-                                                }"
-                                                :disabled="
-                                                    !canModifyDates.received
-                                                "
-                                            />
-                                            <div
-                                                v-if="
-                                                    formValidation.receivedDate
-                                                        .required
-                                                "
-                                                class="invalid-feedback"
-                                            >
-                                                {{
-                                                    formValidation.receivedDate
-                                                        .message
-                                                }}
+                                                            .message
+                                                    }}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            class="col-12 mb-3"
+                                            v-if="showReceiverField"
+                                        >
+                                            <div class="form-group">
+                                                <label class="form-label">
+                                                    Người nhận
+                                                    <i
+                                                        class="bx bx-lock-alt text-muted"
+                                                    ></i>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    :value="receiverName"
+                                                    disabled
+                                                />
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-12">
-                                        <div
-                                            class="form-group"
-                                            v-if="showReceiverField"
-                                        >
-                                            <label for=""
-                                                >Người nhận&nbsp;<span
-                                                    ><i
-                                                        class="bx bx-lock-alt"
-                                                    ></i></span
-                                            ></label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                :value="receiverName"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <!-- ส่วนที่ 3 ของการสร้าง รายละเอียดตาลาง -->
-                    <div
-                        v-if="showNghiemThu"
-                        class="card add-bienban-nghiemthu-dichvu"
-                    >
-                        <div class="card-body">
-                            <div class="row">
-                                <h5 class="col card-title">
-                                    BIÊN BẢN NGHIỆM THU DỊCH VỤ
-                                </h5>
-                                <div class="col text-end">
-                                    <button
-                                        v-if="canModifyMappings"
-                                        type="button"
-                                        class="btn btn-success btn-sm"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#extraLargeModal"
-                                    >
-                                        <i class="fa-solid fa-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="table-responsive mt-2">
-                                <table class="table table-bordered table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Action</th>
-                                            <th>Mã nghiệm thu</th>
-                                            <th>Trạm</th>
-                                            <th>Cán bộ nông vụ</th>
-                                            <th>Vụ đầu tư</th>
-                                            <th>Tiêu đề</th>
-                                            <th>Hợp đồng đầu tư mía</th>
-                                            <th>Hình thức thực hiện DV</th>
-                                            <th>Hợp đồng cung ứng dịch vụ</th>
-                                            <th>Tổng tiền</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr
-                                            v-for="item in mappedDocuments"
-                                            :key="item.mapping_id"
-                                        >
-                                            <td>
-                                                <button
-                                                    v-if="canModifyMappings"
-                                                    @click="
-                                                        deleteMapping(
-                                                            item.mapping_id
-                                                        )
-                                                    "
-                                                    class="btn btn-danger btn-sm"
-                                                >
-                                                    <i
-                                                        class="fa-solid fa-trash"
-                                                    ></i>
-                                                </button>
-                                            </td>
-                                            <td>{{ item.ma_nghiem_thu }}</td>
-                                            <td>{{ item.tram }}</td>
-                                            <td>{{ item.can_bo_nong_vu }}</td>
-                                            <td>{{ item.vu_dau_tu }}</td>
-                                            <td>{{ item.tieu_de }}</td>
 
-                                            <td>
-                                                {{ item.hop_dong_dau_tu_mia }}
-                                            </td>
-                                            <td>
-                                                {{
-                                                    item.hinh_thuc_thuc_hien_dv
-                                                }}
-                                            </td>
-                                            <td>
-                                                {{
-                                                    item.hop_dong_cung_ung_dich_vu
-                                                }}
-                                            </td>
-                                            <td>
-                                                {{
-                                                    formatNumber(item.tong_tien)
-                                                }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                    <!-- Nghiệm Thu Dịch Vụ Table -->
+                    <div v-if="showNghiemThu" class="data-section mb-4">
+                        <div class="section-card">
+                            <div class="section-header">
+                                <div class="section-title">
+                                    <i class="bx bx-clipboard"></i>
+                                    <h5>BIÊN BẢN NGHIỆM THU DỊCH VỤ</h5>
+                                </div>
+                                <button
+                                    v-if="canModifyMappings"
+                                    type="button"
+                                    class="btn btn-add"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#extraLargeModal"
+                                >
+                                    <i class="fa-solid fa-plus"></i>
+                                    <span>Thêm</span>
+                                </button>
+                            </div>
+                            <div class="section-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 80px">
+                                                    Thao tác
+                                                </th>
+                                                <th>Mã nghiệm thu</th>
+                                                <th>Trạm</th>
+                                                <th>Cán bộ nông vụ</th>
+                                                <th>Vụ đầu tư</th>
+                                                <th>Tiêu đề</th>
+                                                <th>Hợp đồng đầu tư mía</th>
+                                                <th>Hình thức thực hiện DV</th>
+                                                <th>
+                                                    Hợp đồng cung ứng dịch vụ
+                                                </th>
+                                                <th>Tổng tiền</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr
+                                                v-if="
+                                                    mappedDocuments.length === 0
+                                                "
+                                            >
+                                                <td
+                                                    colspan="10"
+                                                    class="text-center py-4"
+                                                >
+                                                    <div class="empty-state">
+                                                        <i
+                                                            class="bx bx-file-find empty-icon"
+                                                        ></i>
+                                                        <p>
+                                                            Chưa có dữ liệu
+                                                            nghiệm thu dịch vụ
+                                                        </p>
+                                                        <button
+                                                            v-if="
+                                                                canModifyMappings
+                                                            "
+                                                            class="btn btn-sm btn-success"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#extraLargeModal"
+                                                        >
+                                                            <i
+                                                                class="fa-solid fa-plus"
+                                                            ></i>
+                                                            Thêm nghiệm thu
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr
+                                                v-for="item in mappedDocuments"
+                                                :key="item.mapping_id"
+                                                class="data-row"
+                                            >
+                                                <td>
+                                                    <button
+                                                        v-if="canModifyMappings"
+                                                        @click="
+                                                            deleteMapping(
+                                                                item.mapping_id
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-danger"
+                                                        title="Xóa"
+                                                    >
+                                                        <i
+                                                            class="fa-solid fa-trash"
+                                                        ></i>
+                                                    </button>
+                                                </td>
+                                                <td
+                                                    class="text-primary fw-medium"
+                                                >
+                                                    {{ item.ma_nghiem_thu }}
+                                                </td>
+                                                <td>{{ item.tram }}</td>
+                                                <td>
+                                                    {{ item.can_bo_nong_vu }}
+                                                </td>
+                                                <td>{{ item.vu_dau_tu }}</td>
+                                                <td>{{ item.tieu_de }}</td>
+                                                <td>
+                                                    {{
+                                                        item.hop_dong_dau_tu_mia
+                                                    }}
+                                                </td>
+                                                <td>
+                                                    {{
+                                                        item.hinh_thuc_thuc_hien_dv
+                                                    }}
+                                                </td>
+                                                <td>
+                                                    {{
+                                                        item.hop_dong_cung_ung_dich_vu
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-medium">
+                                                    {{
+                                                        formatNumber(
+                                                            item.tong_tien
+                                                        )
+                                                    }}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <!-- ส่วนที่ 4 ของการสร้าง รายละเอียดตาลาง -->
-                    <div v-if="showHomGiong" class="card add-bienban-hom-giong">
-                        <div class="card-body">
-                            <div class="row">
-                                <h5 class="col card-title">
-                                    BIÊN BẢN HOM GIỐNG
-                                </h5>
-                                <div class="col text-end">
-                                    <button
-                                        v-if="canModifyMappings"
-                                        type="button"
-                                        class="btn btn-success btn-sm"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#homGiongModal"
-                                    >
-                                        <i class="fa-solid fa-plus"></i>
-                                    </button>
+
+                    <!-- Hom Giong Table -->
+                    <div v-if="showHomGiong" class="data-section mb-4">
+                        <div class="section-card">
+                            <div class="section-header">
+                                <div class="section-title">
+                                    <i class="bx bx-leaf"></i>
+                                    <h5>BIÊN BẢN HOM GIỐNG</h5>
                                 </div>
+                                <button
+                                    v-if="canModifyMappings"
+                                    type="button"
+                                    class="btn btn-add"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#homGiongModal"
+                                >
+                                    <i class="fa-solid fa-plus"></i>
+                                    <span>Thêm</span>
+                                </button>
                             </div>
-                            <div class="table-responsive mt-2">
-                                <table class="table table-bordered table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Action</th>
-                                            <th>Mã số phiếu</th>
-                                            <th>Cán bộ nông vụ</th>
-                                            <th>Vụ đầu tư</th>
-                                            <th>Tên phiếu</th>
-                                            <th>
-                                                Hợp đồng đầu tư mía bên giao
-                                            </th>
-                                            <th>
-                                                Hợp đồng đầu tư mía bên nhận
-                                            </th>
-                                            <th>Tổng thực nhận</th>
-                                            <th>Tổng tiền</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr
-                                            v-for="item in mappedHomGiongDocuments"
-                                            :key="item.mapping_id"
-                                        >
-                                            <td>
-                                                <button
-                                                    v-if="canModifyMappings"
-                                                    @click="
-                                                        deleteHomGiongMapping(
-                                                            item.mapping_id
-                                                        )
-                                                    "
-                                                    class="btn btn-danger btn-sm"
+                            <div class="section-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 80px">
+                                                    Thao tác
+                                                </th>
+                                                <th>Mã số phiếu</th>
+                                                <th>Cán bộ nông vụ</th>
+                                                <th>Vụ đầu tư</th>
+                                                <th>Tên phiếu</th>
+                                                <th>
+                                                    Hợp đồng đầu tư mía bên giao
+                                                </th>
+                                                <th>
+                                                    Hợp đồng đầu tư mía bên nhận
+                                                </th>
+                                                <th>Tổng thực nhận</th>
+                                                <th>Tổng tiền</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr
+                                                v-if="
+                                                    mappedHomGiongDocuments.length ===
+                                                    0
+                                                "
+                                            >
+                                                <td
+                                                    colspan="9"
+                                                    class="text-center py-4"
                                                 >
-                                                    <i
-                                                        class="fa-solid fa-trash"
-                                                    ></i>
-                                                </button>
-                                            </td>
-                                            <td>{{ item.ma_so_phieu }}</td>
-                                            <td>{{ item.can_bo_nong_vu }}</td>
-                                            <td>{{ item.vu_dau_tu }}</td>
-                                            <td>{{ item.ten_phieu }}</td>
-                                            <td>
-                                                {{ item.hop_dong_dau_tu_mia }}
-                                            </td>
-                                            <td>
-                                                {{
-                                                    item.hop_dong_dau_tu_mia_ben_giao_hom
-                                                }}
-                                            </td>
-                                            <td>{{ item.tong_thuc_nhan }}</td>
-                                            <td>
-                                                {{
-                                                    formatNumber(item.tong_tien)
-                                                }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                                    <div class="empty-state">
+                                                        <i
+                                                            class="bx bx-file-find empty-icon"
+                                                        ></i>
+                                                        <p>
+                                                            Chưa có dữ liệu hom
+                                                            giống
+                                                        </p>
+                                                        <button
+                                                            v-if="
+                                                                canModifyMappings
+                                                            "
+                                                            class="btn btn-sm btn-success"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#homGiongModal"
+                                                        >
+                                                            <i
+                                                                class="fa-solid fa-plus"
+                                                            ></i>
+                                                            Thêm hom giống
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr
+                                                v-for="item in mappedHomGiongDocuments"
+                                                :key="item.mapping_id"
+                                                class="data-row"
+                                            >
+                                                <td>
+                                                    <button
+                                                        v-if="canModifyMappings"
+                                                        @click="
+                                                            deleteHomGiongMapping(
+                                                                item.mapping_id
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-danger"
+                                                        title="Xóa"
+                                                    >
+                                                        <i
+                                                            class="fa-solid fa-trash"
+                                                        ></i>
+                                                    </button>
+                                                </td>
+                                                <td
+                                                    class="text-primary fw-medium"
+                                                >
+                                                    {{ item.ma_so_phieu }}
+                                                </td>
+                                                <td>
+                                                    {{ item.can_bo_nong_vu }}
+                                                </td>
+                                                <td>{{ item.vu_dau_tu }}</td>
+                                                <td>{{ item.ten_phieu }}</td>
+                                                <td>
+                                                    {{
+                                                        item.hop_dong_dau_tu_mia_ben_giao_hom
+                                                    }}
+                                                </td>
+                                                <td>
+                                                    {{
+                                                        item.hop_dong_dau_tu_mia
+                                                    }}
+                                                </td>
+                                                <td>
+                                                    {{ item.tong_thuc_nhan }}
+                                                </td>
+                                                <td class="text-end fw-medium">
+                                                    {{
+                                                        formatNumber(
+                                                            item.tong_tien
+                                                        )
+                                                    }}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </PerfectScrollbar>
-        </div>
+            </div>
+        </PerfectScrollbar>
     </div>
-    <!-- Modal add nghiem thu dich vu -->
+
+    <!-- Modal nghiem thu dich vu - styled version -->
     <div
         class="modal fade"
         id="extraLargeModal"
@@ -655,12 +799,13 @@
         aria-labelledby="extraLargeModalLabel"
         aria-hidden="true"
     >
-        <div class="modal-dialog modal-lg modal-sm">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h6 class="modal-title" id="extraLargeModalLabel">
-                        ADD BIÊN BẢN NGHIỆM THU DỊCH VỤ
-                    </h6>
+                    <h5 class="modal-title" id="extraLargeModalLabel">
+                        <i class="bx bx-clipboard me-2"></i>
+                        Thêm biên bản nghiệm thu dịch vụ
+                    </h5>
                     <button
                         type="button"
                         class="btn-close"
@@ -668,13 +813,12 @@
                         aria-label="Close"
                     ></button>
                 </div>
-                <div class="modal-body justify-content-center">
-                    <div class="col">
-                        <div class="form-group">
-                            <label for="bienBanSearch"
-                                >Tìm kiếm Mã nghiệm thu + Chọn Mã nghiệm
-                                thu</label
-                            >
+                <div class="modal-body">
+                    <div class="search-container mb-4">
+                        <label for="bienBanSearch" class="form-label"
+                            >Tìm kiếm mã nghiệm thu</label
+                        >
+                        <div class="search-input-wrapper">
                             <input
                                 type="search"
                                 class="form-control"
@@ -686,97 +830,120 @@
                                         : 'Nhập mã nghiệm thu...'
                                 "
                             />
+                            <i class="search-icon bx bx-search"></i>
+                        </div>
+                        <div class="search-results-container">
                             <ul
                                 v-if="bienBanResults.length"
-                                class="dropdown-menu show"
+                                class="search-results-list"
                             >
                                 <li
                                     v-for="item in bienBanResults"
                                     :key="item.ma_nghiem_thu"
                                     @click="selectBienBan(item)"
-                                    class="dropdown-item"
+                                    class="search-result-item"
                                 >
                                     {{ item.ma_nghiem_thu }}
                                 </li>
                             </ul>
                         </div>
-                        <div class="form-group mt-2">
-                            <label for="hopDongDauTuMia"
-                                >Hợp đồng đầu tư mía</label
-                            >
-                            <input
-                                type="text"
-                                class="form-control"
-                                :value="
-                                    selectedBienBan
-                                        ? selectedBienBan.hop_dong_dau_tu_mia
-                                        : ''
-                                "
-                                disabled
-                            />
+                    </div>
+
+                    <div class="selected-item-details" v-if="selectedBienBan">
+                        <div class="details-header">
+                            <h6>Thông tin nghiệm thu dịch vụ</h6>
                         </div>
-                        <div class="form-group mt-2">
-                            <label for="hinhThucThucHienDV"
-                                >Hình thức thực hiện DV</label
-                            >
-                            <input
-                                type="text"
-                                class="form-control"
-                                :value="
-                                    selectedBienBan
-                                        ? selectedBienBan.hinh_thuc_thuc_hien_dv
-                                        : ''
-                                "
-                                disabled
-                            />
-                        </div>
-                        <div class="form-group mt-2">
-                            <label for="hopDongCungUngDV"
-                                >Hợp đồng cung ứng dịch vụ</label
-                            >
-                            <input
-                                type="text"
-                                class="form-control"
-                                :value="
-                                    selectedBienBan
-                                        ? selectedBienBan.hop_dong_cung_ung_dich_vu
-                                        : ''
-                                "
-                                disabled
-                            />
-                        </div>
-                        <div class="form-group mt-2">
-                            <label for="tongTienDichVu"
-                                >Tổng tiền dịch vụ</label
-                            >
-                            <input
-                                type="text"
-                                class="form-control"
-                                :value="
-                                    selectedBienBan
-                                        ? formatNumber(
-                                              selectedBienBan.tong_tien_dich_vu
-                                          )
-                                        : ''
-                                "
-                                disabled
-                            />
-                        </div>
-                        <div class="col d-flex gap-3 mt-3">
-                            <button
-                                type="button"
-                                class="button-30-save"
-                                @click="addMapping(selectedBienBan)"
-                            >
-                                <i class="fa-solid fa-plus"></i>Add & Close
-                            </button>
+                        <div class="details-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"
+                                        >Hợp đồng đầu tư mía</label
+                                    >
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        :value="
+                                            selectedBienBan
+                                                ? selectedBienBan.hop_dong_dau_tu_mia
+                                                : ''
+                                        "
+                                        disabled
+                                    />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"
+                                        >Hình thức thực hiện DV</label
+                                    >
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        :value="
+                                            selectedBienBan
+                                                ? selectedBienBan.hinh_thuc_thuc_hien_dv
+                                                : ''
+                                        "
+                                        disabled
+                                    />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"
+                                        >Hợp đồng cung ứng dịch vụ</label
+                                    >
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        :value="
+                                            selectedBienBan
+                                                ? selectedBienBan.hop_dong_cung_ung_dich_vu
+                                                : ''
+                                        "
+                                        disabled
+                                    />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"
+                                        >Tổng tiền dịch vụ</label
+                                    >
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        :value="
+                                            selectedBienBan
+                                                ? formatNumber(
+                                                      selectedBienBan.tong_tien_dich_vu
+                                                  )
+                                                : ''
+                                        "
+                                        disabled
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Đóng
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-success"
+                        @click="addMapping(selectedBienBan)"
+                        :disabled="!selectedBienBan"
+                    >
+                        <i class="fa-solid fa-plus me-1"></i>
+                        Thêm nghiệm thu
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-    <!--modal  Add bien ban nghiem thu hom giong -->
+
+    <!-- Modal hom giong - styled version -->
     <div
         class="modal fade"
         id="homGiongModal"
@@ -784,12 +951,13 @@
         aria-labelledby="homGiongModalLabel"
         aria-hidden="true"
     >
-        <div class="modal-dialog modal-lg modal-sm">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h6 class="modal-title" id="homGiongModalLabel">
-                        ADD BIÊN BẢN HOM GIỐNG
-                    </h6>
+                    <h5 class="modal-title" id="homGiongModalLabel">
+                        <i class="bx bx-leaf me-2"></i>
+                        Thêm biên bản hom giống
+                    </h5>
                     <button
                         type="button"
                         class="btn-close"
@@ -797,12 +965,12 @@
                         aria-label="Close"
                     ></button>
                 </div>
-                <div class="modal-body justify-content-center">
-                    <div class="col">
-                        <div class="form-group">
-                            <label for="homGiongSearch"
-                                >Tìm kiếm Mã số phiếu</label
-                            >
+                <div class="modal-body">
+                    <div class="search-container mb-4">
+                        <label for="homGiongSearch" class="form-label"
+                            >Tìm kiếm mã số phiếu</label
+                        >
+                        <div class="search-input-wrapper">
                             <input
                                 type="search"
                                 class="form-control"
@@ -814,84 +982,112 @@
                                         : 'Nhập mã số phiếu...'
                                 "
                             />
+                            <i class="search-icon bx bx-search"></i>
+                        </div>
+                        <div class="search-results-container">
                             <ul
                                 v-if="homGiongResults.length"
-                                class="dropdown-menu show"
+                                class="search-results-list"
                             >
                                 <li
                                     v-for="item in homGiongResults"
                                     :key="item.ma_so_phieu"
                                     @click="selectHomGiong(item)"
-                                    class="dropdown-item"
+                                    class="search-result-item"
                                 >
                                     {{ item.ma_so_phieu }}
                                 </li>
                             </ul>
                         </div>
-                        <div class="form-group mt-2">
-                            <label>Hợp đồng đầu tư mía bên giao</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                :value="
-                                    selectedHomGiong
-                                        ? selectedHomGiong.hop_dong_dau_tu_mia_ben_giao_hom
-                                        : ''
-                                "
-                                disabled
-                            />
+                    </div>
+
+                    <div class="selected-item-details" v-if="selectedHomGiong">
+                        <div class="details-header">
+                            <h6>Thông tin biên bản hom giống</h6>
                         </div>
-                        <div class="form-group mt-2">
-                            <label> Hợp đồng đầu tư mía bên nhận</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                :value="
-                                    selectedHomGiong
-                                        ? selectedHomGiong.hop_dong_dau_tu_mia
-                                        : ''
-                                "
-                                disabled
-                            />
-                        </div>
-                        <div class="form-group mt-2">
-                            <label>Tổng thực nhận</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                :value="
-                                    selectedHomGiong
-                                        ? selectedHomGiong.tong_thuc_nhan
-                                        : ''
-                                "
-                                disabled
-                            />
-                        </div>
-                        <div class="form-group mt-2">
-                            <label>Tổng tiền</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                :value="
-                                    selectedHomGiong
-                                        ? formatNumber(
-                                              selectedHomGiong.tong_tien
-                                          )
-                                        : ''
-                                "
-                                disabled
-                            />
-                        </div>
-                        <div class="col d-flex gap-3 mt-3">
-                            <button
-                                type="button"
-                                class="button-30-save"
-                                @click="addHomGiongMapping(selectedHomGiong)"
-                            >
-                                <i class="fa-solid fa-plus"></i>Add & Close
-                            </button>
+                        <div class="details-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"
+                                        >Hợp đồng đầu tư mía bên giao</label
+                                    >
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        :value="
+                                            selectedHomGiong
+                                                ? selectedHomGiong.hop_dong_dau_tu_mia_ben_giao_hom
+                                                : ''
+                                        "
+                                        disabled
+                                    />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"
+                                        >Hợp đồng đầu tư mía bên nhận</label
+                                    >
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        :value="
+                                            selectedHomGiong
+                                                ? selectedHomGiong.hop_dong_dau_tu_mia
+                                                : ''
+                                        "
+                                        disabled
+                                    />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"
+                                        >Tổng thực nhận</label
+                                    >
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        :value="
+                                            selectedHomGiong
+                                                ? selectedHomGiong.tong_thuc_nhan
+                                                : ''
+                                        "
+                                        disabled
+                                    />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tổng tiền</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        :value="
+                                            selectedHomGiong
+                                                ? formatNumber(
+                                                      selectedHomGiong.tong_tien
+                                                  )
+                                                : ''
+                                        "
+                                        disabled
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Đóng
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-success"
+                        @click="addHomGiongMapping(selectedHomGiong)"
+                        :disabled="!selectedHomGiong"
+                    >
+                        <i class="fa-solid fa-plus me-1"></i>
+                        Thêm hom giống
+                    </button>
                 </div>
             </div>
         </div>
@@ -1924,56 +2120,213 @@ export default {
 </script>
 
 <style scoped>
-/* Sticky container */
-.sticky-wrapper {
+/* ======== MAIN LAYOUT ======== */
+.document-delivery-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 60px);
+    background-color: #f8f9fa;
+    position: relative;
+}
+
+.scroll-area {
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* ======== HEADER SECTION ======== */
+.header-controls-wrapper {
     position: sticky;
-    top: 0px; /* Adjust based on your header height */
-    left: 230px; /* Adjust based on your sidebar width */
+    top: 0;
+    left: 0;
     right: 0;
     z-index: 999;
-    background: white;
-    padding: 1rem 0;
-    border-bottom: 1px solid #e0e3e8;
-    transition: box-shadow 0.3s ease;
+    background-color: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 0.75rem 0;
+    transition: all 0.3s ease;
 }
 
-/* Container for buttons and progress */
-.container-fluid {
-    max-width: inherit;
-    margin: 0 auto;
-    background: white;
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
 }
 
-/* Main content wrapper */
-.main-content-wrapper {
-    margin-top: 10px; /* Adjust based on sticky container height */
-    padding: 1rem;
+/* Document status indicator */
+.document-status-indicator {
+    display: flex;
+    flex-direction: column;
 }
 
-/* Responsive styles */
-@media (max-width: 768px) {
-    .sticky-wrapper {
-        top: 0px; /* Adjust based on your header height */
-        left: 0;
-        padding: 0.5rem 0;
-        z-index: 100;
-    }
-
-    .main-content-wrapper {
-        margin-top: 10px;
-    }
+.document-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    font-size: 1.2rem;
+    max-width: 400px;
 }
 
-/* Shadow effect on scroll */
-.sticky-wrapper.scrolled {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+.document-id {
+    font-size: 0.85rem;
+    color: #6c757d;
 }
-.table th,
-.table td {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 12px;
+
+.id-label {
+    font-weight: 500;
+}
+
+/* Status badge */
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    width: fit-content;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.status-badge.creating {
+    background-color: #fff8e1;
+    color: #f57c00;
+    border: 1px solid #ffca28;
+}
+
+.status-badge.sending {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border: 1px solid #90caf9;
+}
+
+.status-badge.received {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+}
+
+.status-badge.cancelled {
+    background-color: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ef9a9a;
+}
+
+/* Action buttons */
+.action-button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+    border: none;
+    transition: all 0.2s;
+    box-shadow: none;
+}
+
+.btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn i {
+    font-size: 1rem;
+}
+
+.btn-save {
+    background-color: #198754;
+    color: white;
+}
+
+.btn-save:hover {
+    background-color: #1976d2;
+}
+
+.btn-new {
+    background-color: #4caf50;
+    color: white;
+}
+
+.btn-new:hover {
+    background-color: #388e3c;
+}
+
+.btn-submit {
+    background-color: #00897b;
+    color: white;
+}
+
+.btn-submit:hover {
+    background-color: #00695c;
+}
+
+.btn-reject {
+    background-color: #f44336;
+    color: white;
+}
+
+.btn-reject:hover {
+    background-color: #d32f2f;
+}
+
+.btn-approve {
+    background-color: #4caf50;
+    color: white;
+}
+
+.btn-approve:hover {
+    background-color: #388e3c;
+}
+
+.btn-cancel {
+    background-color: #ff9800;
+    color: white;
+}
+
+.btn-cancel:hover {
+    background-color: #f57c00;
+}
+
+.btn-delete {
+    background-color: #d32f2f;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #b71c1c;
+}
+
+.btn-print {
+    background-color: #607d8b;
+    color: white;
+}
+
+.btn-print:hover {
+    background-color: #455a64;
+}
+
+.btn-add {
+    background-color: #198754;
+    color: white;
+    padding: 0.375rem 0.75rem;
+}
+
+.btn-add:hover {
+    background-color: #1976d2;
+}
+
+/* ======== PROGRESS TRACKER ======== */
+.progress-tracker-container {
+    margin-top: 0.5rem;
 }
 
 .progress-tracker {
@@ -1981,7 +2334,9 @@ export default {
     display: flex;
     justify-content: space-between;
     margin: 0.5rem 0;
+    padding: 0 1rem;
 }
+
 .progress-tracker::before {
     content: "";
     position: absolute;
@@ -1992,18 +2347,23 @@ export default {
     z-index: 0;
     transition: background-color 0.3s;
 }
+
 .progress-tracker.creating::before {
     background-color: #fdd835;
 }
+
 .progress-tracker.sending::before {
     background-color: #1e88e5;
 }
+
 .progress-tracker.received::before {
     background-color: #198754;
 }
+
 .progress-tracker.cancelled::before {
-    background-color: #dc3545;
+    background-color: #d32f2f;
 }
+
 .track-step {
     position: relative;
     display: flex;
@@ -2011,6 +2371,7 @@ export default {
     align-items: center;
     z-index: 1;
 }
+
 .step-icon {
     width: 40px;
     height: 40px;
@@ -2019,72 +2380,425 @@ export default {
     justify-content: center;
     border-radius: 50%;
     background: white;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     margin-bottom: 0.5rem;
     border: 2px solid #dee2e6;
     transition: all 0.3s;
 }
+
 .track-step.active .step-icon {
-    width: 50px;
-    height: 50px;
-    font-size: 1.5rem;
+    width: 46px;
+    height: 46px;
+    font-size: 1.3rem;
     border: none;
 }
-.status-creating .step-icon {
+
+.status-creating {
     color: #fdd835;
 }
-.status-sending .step-icon {
+
+.status-sending {
     color: #1e88e5;
 }
-.status-received .step-icon {
+
+.status-received {
     color: #198754;
 }
-.status-cancelled .step-icon {
-    color: #dc3545;
+
+.status-cancelled {
+    color: #d32f2f;
 }
+
 .track-step.active .status-creating {
     background-color: #fdd835;
     color: white;
 }
+
 .track-step.active .status-sending {
     background-color: #1e88e5;
     color: white;
 }
+
 .track-step.active .status-received {
     background-color: #198754;
     color: white;
 }
+
 .track-step.active .status-cancelled {
-    background-color: #dc3545;
+    background-color: #d32f2f;
     color: white;
 }
+
 .step-label {
     text-align: center;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 500;
     max-width: 100px;
 }
-/* ซ่อน scrollbar สำหรับ Chrome, Safari และ Opera */
-.scroll-area::-webkit-scrollbar {
-    display: none;
+
+/* ======== MAIN CONTENT AREA ======== */
+.main-content {
+    padding: 1.5rem 0;
+    background-color: #f8f9fa;
+    flex-grow: 1;
 }
 
-/* ซ่อน scrollbar สำหรับ IE, Edge */
-.scroll-area {
-    -ms-overflow-style: none;
+/* Cards styling */
+.info-card {
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    height: 100%;
+    border: 1px solid #e9ecef;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
-/* ซ่อน scrollbar สำหรับ Firefox */
-.scroll-area {
-    scrollbar-width: none;
+.info-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* เพิ่ม style สำหรับ scroll area */
-.scroll-area {
-    height: calc(90vh - 60px); /* ปรับความสูงตามต้องการ */
-    -webkit-overflow-scrolling: touch;
+.info-card-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e9ecef;
 }
 
-/* ปรับแต่ง scrollbar style */
+.info-card-header h5 {
+    margin-bottom: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+    display: flex;
+    align-items: center;
+}
+
+.info-card-header h5 i {
+    margin-right: 0.5rem;
+    color: #198754;
+    font-size: 1.1rem;
+}
+
+.info-card-body {
+    padding: 1.25rem;
+}
+
+/* Form elements styling */
+.form-label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #495057;
+    margin-bottom: 0.375rem;
+    display: flex;
+    align-items: center;
+}
+
+.form-control,
+.form-select {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    transition: border-color 0.2s ease-in-out;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #90caf9;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.25);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+    background-color: #f8f9fa;
+    opacity: 0.8;
+}
+
+.required-indicator {
+    color: #d32f2f;
+    margin-left: 0.25rem;
+}
+
+/* Document stats */
+.document-stats {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: center;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #e3f2fd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon i {
+    font-size: 1.5rem;
+    color: #198754;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #198754;
+    line-height: 1;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+/* ======== DATA SECTION STYLING ======== */
+.data-section {
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e9ecef;
+}
+
+.section-card {
+    height: 100%;
+}
+
+.section-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-title i {
+    font-size: 1.25rem;
+    color: #198754;
+}
+
+.section-title h5 {
+    margin-bottom: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #343a40;
+}
+
+.section-body {
+    padding: 0;
+}
+
+/* Table styling */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    color: #495057;
+    padding: 0.75rem;
+    vertical-align: middle;
+    border-color: #e9ecef;
+    white-space: nowrap;
+}
+
+.table td {
+    font-size: 0.875rem;
+    padding: 0.625rem 0.75rem;
+    vertical-align: middle;
+    border-color: #e9ecef;
+    white-space: nowrap;
+}
+
+.table .data-row {
+    transition: background-color 0.15s;
+}
+
+.table .data-row:hover {
+    background-color: #f8f9fa;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    color: #adb5bd;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+/* ======== MODAL STYLING ======== */
+.modal-header {
+    background-color: #198754;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+    color: white;
+}
+
+.modal-title {
+    font-weight: 600;
+    font-size: 1.125rem;
+    display: flex;
+    align-items: center;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+}
+
+/* Search styling */
+.search-container {
+    position: relative;
+}
+
+.search-input-wrapper {
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+
+.search-results-container {
+    position: relative;
+}
+
+.search-results-list {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background-color: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    z-index: 1050;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-result-item {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.search-result-item:hover {
+    background-color: #e9ecef;
+}
+
+/* Selected item details */
+.selected-item-details {
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    margin-top: 1.5rem;
+    border: 1px solid #e9ecef;
+}
+
+.details-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.details-header h6 {
+    margin-bottom: 0;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: #495057;
+}
+
+.details-body {
+    padding: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .action-button-group {
+        width: 100%;
+    }
+
+    .table th,
+    .table td {
+        font-size: 0.8125rem;
+    }
+
+    .form-label {
+        font-size: 0.8125rem;
+    }
+}
+
+@media (max-width: 767px) {
+    .progress-tracker::before {
+        width: 95%;
+    }
+
+    .step-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    .track-step.active .step-icon {
+        width: 42px;
+        height: 42px;
+        font-size: 1.2rem;
+    }
+
+    .step-label {
+        font-size: 0.75rem;
+    }
+}
+
+/* Perfect scrollbar custom styling */
 .ps__rail-y {
     width: 9px;
     background-color: transparent !important;
@@ -2094,9 +2808,9 @@ export default {
     width: 6px;
     background-color: rgba(0, 0, 0, 0.2);
     border-radius: 6px;
+    transition: background-color 0.2s;
 }
 
-/* เมื่อ hover ที่ scrollbar */
 .ps__rail-y:hover > .ps__thumb-y,
 .ps__rail-y:focus > .ps__thumb-y,
 .ps__rail-y.ps--clicking .ps__thumb-y {

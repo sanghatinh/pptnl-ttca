@@ -11,14 +11,14 @@
         </div>
         <div class="header-items">
             <!-- Custom search start -->
-            <div class="custom-search">
+            <!-- <div class="custom-search">
                 <input
                     type="text"
                     class="search-query"
                     placeholder="Search here ..."
                 />
                 <i class="icon-search1"></i>
-            </div>
+            </div> -->
             <!-- Custom search end -->
 
             <!-- Header actions start -->
