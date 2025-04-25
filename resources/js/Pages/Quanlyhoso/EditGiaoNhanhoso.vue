@@ -2140,7 +2140,7 @@ export default {
     top: 0;
     left: 0;
     right: 0;
-    z-index: 999;
+    z-index: 1;
     background-color: #ffffff;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     padding: 0.75rem 0;

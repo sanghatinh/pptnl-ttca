@@ -2375,7 +2375,7 @@ export default {
     position: absolute;
     right: 5px;
     top: 25px;
-    z-index: 100;
+    z-index: 99;
     font-size: 1rem;
     cursor: pointer;
     color: #fff;

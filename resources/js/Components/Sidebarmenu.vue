@@ -40,6 +40,7 @@
                                                 ? 'current-page'
                                                 : ''
                                         "
+                                        @click="closeSidebar"
                                     >
                                         <span class="menu-text"
                                             >Danh sách giao nhận hồ sơ</span
@@ -58,6 +59,7 @@
                                                 ? 'current-page'
                                                 : ''
                                         "
+                                        @click="closeSidebar"
                                     >
                                         <span class="menu-text"
                                             >Biên bản nghiệm thu dịch vụ</span
@@ -75,6 +77,7 @@
                                                 ? 'current-page'
                                                 : ''
                                         "
+                                        @click="closeSidebar"
                                     >
                                         <span class="menu-text"
                                             >Phiêu giao nhận hom giống</span
@@ -110,6 +113,7 @@
                                                 ? 'current-page'
                                                 : ''
                                         "
+                                        @click="closeSidebar"
                                     >
                                         <span class="menu-text"
                                             >Tổng quan tài chính</span
@@ -124,6 +128,7 @@
                                                 ? 'current-page'
                                                 : ''
                                         "
+                                        @click="closeSidebar"
                                     >
                                         <span class="menu-text">Giao dịch</span>
                                     </router-link>
@@ -136,6 +141,7 @@
                                                 ? 'current-page'
                                                 : ''
                                         "
+                                        @click="closeSidebar"
                                     >
                                         <span class="menu-text"
                                             >Báo cáo tài chính</span
@@ -168,6 +174,7 @@
                                                 ? 'current-page'
                                                 : ''
                                         "
+                                        @click="closeSidebar"
                                     >
                                         <span>Danh sách User</span>
                                     </router-link>
@@ -180,6 +187,7 @@
                                                 ? 'current-page'
                                                 : ''
                                         "
+                                        @click="closeSidebar"
                                     >
                                         <span>Cấp quyền</span>
                                     </router-link>
@@ -196,6 +204,7 @@
                                                 ? 'current-page'
                                                 : ''
                                         "
+                                        @click="closeSidebar"
                                     >
                                         <span>Nhóm Cấp quyền</span>
                                     </router-link>
@@ -208,6 +217,7 @@
                                                 ? 'current-page'
                                                 : ''
                                         "
+                                        @click="closeSidebar"
                                     >
                                         <span>Profile</span>
                                     </router-link>
@@ -239,6 +249,7 @@ export default {
             url: window.location.origin,
             userPermissions: [],
             userComponents: [],
+            isMobile: false,
         };
     },
     methods: {
@@ -274,9 +285,31 @@ export default {
         userCanViewComponent(componentName) {
             return this.userComponents.includes(componentName);
         },
+        // เพิ่มฟังก์ชันใหม่สำหรับการปิด sidebar บนมือถือ
+        closeSidebar() {
+            // เช็คว่าอุปกรณ์มีขนาดหน้าจอเล็กหรือไม่ (เช่น มือถือ)
+            if (window.innerWidth <= 768) {
+                // ปิด sidebar โดยการลบ class "toggled"
+                document
+                    .querySelector(".page-wrapper")
+                    ?.classList.remove("toggled");
+            }
+        },
+        // เพิ่มฟังก์ชันตรวจสอบขนาดหน้าจอ
+        checkScreenSize() {
+            this.isMobile = window.innerWidth <= 768;
+        },
     },
     mounted() {
         this.fetchUserData();
+        // ตรวจจับขนาดหน้าจอเมื่อโหลดครั้งแรก
+        this.checkScreenSize();
+        // ตรวจจับการเปลี่ยนแปลงขนาดหน้าจอ
+        window.addEventListener("resize", this.checkScreenSize);
+    },
+    unmounted() {
+        // ลบ event listener เมื่อคอมโพเนนต์ถูกทำลาย
+        window.removeEventListener("resize", this.checkScreenSize);
     },
 };
 </script>
