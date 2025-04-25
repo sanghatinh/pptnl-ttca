@@ -1084,6 +1084,11 @@ export default {
                     this.statusFilter === "all" ||
                     item.status.code === this.statusFilter;
 
+                // Investment filter (add this new condition)
+                const matchesInvestment =
+                    this.investmentFilter === "all" ||
+                    item.investment_project === this.investmentFilter;
+
                 // Column filters (new)
                 const matchesColumnFilters =
                     // Mã số phiếu
@@ -1159,7 +1164,12 @@ export default {
                             )));
 
                 // Return true if it matches all filters
-                return matchesSearch && matchesStatus && matchesColumnFilters;
+                return (
+                    matchesSearch &&
+                    matchesStatus &&
+                    matchesInvestment &&
+                    matchesColumnFilters
+                );
             });
         },
         paginatedDeliveries() {
@@ -1352,6 +1362,10 @@ export default {
                         status:
                             this.statusFilter !== "all"
                                 ? this.statusFilter
+                                : undefined,
+                        investment_project:
+                            this.investmentFilter !== "all"
+                                ? this.investmentFilter
                                 : undefined,
                         per_page: 1000,
                         role: this.userRole,
@@ -1560,6 +1574,11 @@ export default {
                 ].includes(column)
             ) {
                 this.selectedFilterValues[column] = [];
+
+                // If resetting investment_project, also reset the top filter
+                if (column === "investment_project") {
+                    this.investmentFilter = "all";
+                }
             } else {
                 this.columnFilters[column] = "";
             }
@@ -1567,6 +1586,16 @@ export default {
         },
 
         applyFilter(column) {
+            // If applying investment_project filter, update the top filter
+            if (column === "investment_project") {
+                if (this.selectedFilterValues.investment_project.length === 1) {
+                    this.investmentFilter =
+                        this.selectedFilterValues.investment_project[0];
+                } else {
+                    this.investmentFilter = "all";
+                }
+            }
+
             this.activeFilter = null; // Close the dropdown
             this.currentPage = 1; // Reset to first page
         },
@@ -1633,6 +1662,40 @@ export default {
         documentDeliveries() {
             // This will recalculate statusCounts when the document data changes
             this.$forceUpdate();
+        },
+        // Add this new watch
+        "selectedFilterValues.investment_project": {
+            handler(newValue) {
+                if (newValue.length === 1) {
+                    // When exactly one value is selected in the column filter
+                    this.investmentFilter = newValue[0];
+                } else if (newValue.length === 0) {
+                    // When the column filter is cleared
+                    this.investmentFilter = "all";
+                }
+            },
+        },
+
+        // Also watch the top filter to sync with column filter
+        investmentFilter: {
+            handler(newValue) {
+                if (newValue === "all") {
+                    // Clear the column filter when "all" is selected
+                    if (
+                        this.selectedFilterValues.investment_project.length > 0
+                    ) {
+                        this.selectedFilterValues.investment_project = [];
+                    }
+                } else if (
+                    !this.selectedFilterValues.investment_project.includes(
+                        newValue
+                    )
+                ) {
+                    // Set column filter to match the top filter
+                    this.selectedFilterValues.investment_project = [newValue];
+                }
+                this.currentPage = 1; // Reset to first page when filter changes
+            },
         },
     },
 };
