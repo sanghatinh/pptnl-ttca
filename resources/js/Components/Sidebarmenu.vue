@@ -93,7 +93,7 @@
                 <ul>
                     <li class="sidebar-dropdown active">
                         <a href="#">
-                            <i class="fa-solid fa-money-bill-trend-up"></i>
+                            <i class="fa-solid fa-hand-holding-dollar"></i>
                             <span class="menu-text">Quản lý tài chính</span>
                         </a>
                         <div class="sidebar-submenu">
@@ -157,7 +157,7 @@
                 <ul>
                     <li class="sidebar-dropdown active">
                         <a href="#">
-                            <i class="fa-solid fa-gears"></i>
+                            <i class="fa-solid fa-screwdriver-wrench"></i>
                             <span class="menu-text">Quản lý hệ thống</span>
                         </a>
                         <div class="sidebar-submenu">
