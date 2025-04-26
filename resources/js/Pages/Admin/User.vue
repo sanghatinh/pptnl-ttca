@@ -2341,11 +2341,9 @@ export default {
         width: 70%; /* Take 70% of width on mobile */
         margin-top: 0;
     }
-
     .button-container {
-        width: 30%; /* Take 30% of width on mobile */
+        width: 30%;
     }
-
     .button-30-save {
         width: 100%;
         justify-content: center;
@@ -2360,7 +2358,7 @@ export default {
 
     /* Ensure the search box fits properly */
     .search-input {
-        height: 38px;
+        height: 40px;
         min-width: 0;
     }
 }
@@ -2587,51 +2585,12 @@ export default {
     border-color: #dee2e6;
 }
 
-/* Loading styles */
-#loading-wrapper {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .search-container {
-        max-width: none;
-        width: 100%;
-    }
-
-    .button-container {
-        width: 100%;
-    }
-
-    .button-30-save {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .table th,
-    .table td {
-        min-width: auto;
-    }
-
-    .pagination li a {
-        padding: 0.4rem 0.6rem;
-    }
-
-    /* CSS สำหรับมือถือคงเดิม */
-
-    /* ตารางบนมือถือควรมีการปรับแต่ง */
-    .table-responsive {
-        border: 0; /* ลบเส้นขอบ */
-        margin-bottom: 0;
-    }
+/* Add this to set appropriate width for the row number column */
+.table th:first-child,
+.table td:first-child {
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+    text-align: center;
 }
 </style>
