@@ -14,6 +14,7 @@ use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\Print\PrintGiaoNhanHSController;
 use App\Http\Controllers\QuanlyHS\BienBanNghiemThuController;
 use App\Http\Controllers\QuanlyHS\PhieuGiaoNhanHomGiongController;
+use App\Http\Controllers\QuanlyHS\PaymentRequestController;
 
 
 Route::apiResource('roles', RoleController::class);
@@ -123,6 +124,23 @@ Route::get('/import-homgiong-progress/{importId}', [PhieuGiaoNhanHomGiongControl
 Route::get('/bienban-nghiemthu-homgiong/{id}', [PhieuGiaoNhanHomGiongController::class, 'show']);
 Route::get('/bienban-nghiemthu-homgiong/{id}/check-access', [PhieuGiaoNhanHomGiongController::class, 'checkAccess']);
 
+// ตรวจสอบรายการซ้ำซ้อน
+Route::post('/check-payment-request-duplicates', [PaymentRequestController::class, 'checkDuplicates']);
+
+// สร้างเอกสารขอเบิกเงิน
+Route::post('/create-payment-request', [PaymentRequestController::class, 'createPaymentRequest']);
+
+// ดึงรายการเอกสารขอเบิกเงินทั้งหมด
+Route::get('/payment-requests', [PaymentRequestController::class, 'index']);
+
+// ดึงข้อมูลโครงการลงทุน
+Route::get('/investment-projects', [PaymentRequestController::class, 'getInvestmentProjects']);
+
+// ดึงรายละเอียดเอกสารขอเบิกเงิน
+Route::get('/payment-requests/{id}', [PaymentRequestController::class, 'show']);
+
+// อัพเดตสถานะเอกสารขอเบิกเงิน
+Route::patch('/payment-requests/{id}/status', [PaymentRequestController::class, 'updateStatus']);
 
 
 

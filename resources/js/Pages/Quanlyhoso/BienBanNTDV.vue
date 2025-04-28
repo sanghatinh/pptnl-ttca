@@ -74,6 +74,15 @@
                         </ul>
                     </div>
                 </div>
+                <!-- Add this button next to actions-menu in the toolbar -->
+                <button
+                    class="btn btn-success d-flex align-items-center gap-2"
+                    @click="showCreatePaymentRequestModal"
+                    :disabled="selectedItems.length === 0"
+                >
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Tạo phiếu trình thanh toán</span>
+                </button>
                 <div
                     class="col d-flex justify-content-end gap-3 align-items-center"
                 >
@@ -187,6 +196,14 @@
                         <table class="table-auto w-full">
                             <thead>
                                 <tr>
+                                    <th class="px-4 py-2">
+                                        <input
+                                            type="checkbox"
+                                            @click="toggleSelectAll($event)"
+                                            :checked="isAllSelected"
+                                            class="form-checkbox h-4 w-4 text-green-600"
+                                        />
+                                    </th>
                                     <th class="px-4 py-2">
                                         <div
                                             class="flex items-center justify-between"
@@ -1038,6 +1055,16 @@
                                     class="desktop-row"
                                     @click="viewDetails(item)"
                                 >
+                                    <td class="border px-4 py-2" @click.stop>
+                                        <input
+                                            type="checkbox"
+                                            :value="item.ma_nghiem_thu"
+                                            v-model="selectedItems"
+                                            :disabled="!canBeSelected(item)"
+                                            class="form-checkbox h-4 w-4 text-green-600"
+                                            @click.stop
+                                        />
+                                    </td>
                                     <td class="border px-4 py-2">
                                         {{ item.ma_nghiem_thu }}
                                     </td>
@@ -1385,6 +1412,183 @@
             </div>
         </div>
     </div>
+
+    <!-- Payment Request Modal -->
+    <div
+        class="modal fade"
+        id="paymentRequestModal"
+        tabindex="-1"
+        aria-labelledby="paymentRequestModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title" id="paymentRequestModalLabel">
+                        <i class="fas fa-file-invoice me-2 text-success"></i>
+                        Tạo phiếu trình thanh toán
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        @click="closePaymentRequestModal"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <form @submit.prevent="submitPaymentRequest">
+                        <div class="mb-3">
+                            <label for="requestTitle" class="form-label"
+                                >Tiêu đề</label
+                            >
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="requestTitle"
+                                v-model="paymentRequest.title"
+                                readonly
+                            />
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="requestDate" class="form-label"
+                                    >Ngày tạo</label
+                                >
+                                <input
+                                    type="date"
+                                    class="form-control"
+                                    id="requestDate"
+                                    v-model="paymentRequest.created_date"
+                                    required
+                                />
+                            </div>
+                            <div class="col-md-6">
+                                <label
+                                    for="investmentProject"
+                                    class="form-label"
+                                    >Vụ đầu tư</label
+                                >
+                                <select
+                                    class="form-select"
+                                    id="investmentProject"
+                                    v-model="paymentRequest.investment_project"
+                                    required
+                                >
+                                    <option value="" disabled selected>
+                                        Chọn vụ đầu tư
+                                    </option>
+                                    <option
+                                        v-for="project in investmentProjectsList"
+                                        :key="project.Ma_Vudautu"
+                                        :value="project.Ma_Vudautu"
+                                    >
+                                        {{ project.Ten_Vudautu }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="paymentType" class="form-label"
+                                    >Loại thanh toán</label
+                                >
+                                <select
+                                    class="form-select"
+                                    id="paymentType"
+                                    v-model="paymentRequest.payment_type"
+                                    required
+                                >
+                                    <option value="" disabled selected>
+                                        Chọn loại thanh toán
+                                    </option>
+                                    <option value="Nghiệm thu dịch vụ">
+                                        Nghiệm thu dịch vụ
+                                    </option>
+                                    <option value="Phiếu giao nhận hom giống">
+                                        Phiếu giao nhận hom giống
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label
+                                    for="paymentInstallment"
+                                    class="form-label"
+                                    >Số đợt thanh toán</label
+                                >
+                                <input
+                                    type="number"
+                                    class="form-control"
+                                    id="paymentInstallment"
+                                    v-model="paymentRequest.payment_installment"
+                                    min="1"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="proposalNumber" class="form-label"
+                                >Số tờ trình</label
+                            >
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="proposalNumber"
+                                v-model="paymentRequest.proposal_number"
+                                maxlength="50"
+                                required
+                            />
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Đã chọn
+                            <strong>{{ selectedItems.length }}</strong> biên bản
+                            nghiệm thu để tạo phiếu trình thanh toán
+                        </div>
+
+                        <div
+                            v-if="duplicateRecords.length > 0"
+                            class="alert alert-warning"
+                        >
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Lưu ý:</strong> Một số biên bản nghiệm thu
+                            đã được sử dụng trong phiếu trình thanh toán khác:
+                            <ul class="mb-0 mt-2">
+                                <li
+                                    v-for="(item, index) in duplicateRecords"
+                                    :key="index"
+                                >
+                                    {{ item.ma_nghiem_thu }} - Đã được sử dụng
+                                    trong phiếu {{ item.ma_trinh_thanh_toan }}
+                                </li>
+                            </ul>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                        @click="closePaymentRequestModal"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-success"
+                        @click="submitPaymentRequest"
+                        :disabled="isSubmitting || duplicateRecords.length > 0"
+                    >
+                        <i class="fas fa-save me-1"></i>
+                        <span v-if="isSubmitting">Đang lưu...</span>
+                        <span v-else>Lưu phiếu trình</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -1429,7 +1633,6 @@ export default {
             ],
             paginationClasses: {
                 ul: "flex list-none pagination",
-                li: "page-item mx-1",
                 a: "page-link px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100",
                 active: "bg-green-500 text-white active",
                 disabled: "opacity-50 cursor-not-allowed disabled",
@@ -1472,6 +1675,19 @@ export default {
             totalRecords: 0,
             importErrors: [],
             isImporting: false,
+            selectedItems: [],
+            paymentRequestModal: null,
+            paymentRequest: {
+                title: "",
+                created_date: new Date().toISOString().split("T")[0], // Today's date in YYYY-MM-DD format
+                investment_project: "",
+                payment_type: "",
+                payment_installment: 1,
+                proposal_number: "",
+            },
+            investmentProjectsList: [],
+            duplicateRecords: [],
+            isSubmitting: false,
         };
     },
     computed: {
@@ -1660,6 +1876,15 @@ export default {
                 prev_page_url: page > 1 ? `?page=${page - 1}` : null,
                 next_page_url: page < lastPage ? `?page=${page + 1}` : null,
             };
+        },
+        isAllSelected() {
+            return (
+                this.filteredItems.length > 0 &&
+                this.selectedItems.length ===
+                    this.filteredItems.filter(
+                        (item) => item.trang_thai_nhan_hs === "received"
+                    ).length
+            );
         },
     },
     methods: {
@@ -2217,7 +2442,7 @@ export default {
                 // Validate file type
                 const fileType = file.name.split(".").pop().toLowerCase();
                 if (!["csv", "xlsx"].includes(fileType)) {
-                    alert("Vui lòng chọn đúng tập tin. (CSV หรือ Excel)");
+                    alert("Vui lòng chọn đúng tập tin. (CSV hoặc Excel)");
                     event.target.value = ""; // Clear the file input
                     this.selectedFile = null;
                     return;
@@ -2540,6 +2765,265 @@ export default {
                 }
             }
         },
+        toggleSelectAll(event) {
+            if (event.target.checked) {
+                // Select all eligible items
+                this.selectedItems = this.filteredItems
+                    .filter((item) => item.trang_thai_nhan_hs === "received")
+                    .map((item) => item.ma_nghiem_thu);
+            } else {
+                // Deselect all
+                this.selectedItems = [];
+            }
+
+            // Check for duplicates after selection changes
+            this.checkForDuplicates();
+        },
+
+        canBeSelected(item) {
+            return item.trang_thai_nhan_hs === "received";
+        },
+
+        async checkForDuplicates() {
+            if (this.selectedItems.length === 0) {
+                this.duplicateRecords = [];
+                return;
+            }
+
+            try {
+                const response = await axios.post(
+                    "/api/check-payment-request-duplicates",
+                    {
+                        receipt_ids: this.selectedItems,
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${this.store.getToken}`,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    this.duplicateRecords = response.data.duplicates || [];
+                }
+            } catch (error) {
+                console.error("Error checking for duplicates:", error);
+                if (error.response && error.response.status === 401) {
+                    this.handleAuthError();
+                }
+            }
+        },
+
+        async fetchInvestmentProjects() {
+            try {
+                const response = await axios.get("/api/investment-projects", {
+                    headers: {
+                        Authorization: `Bearer ${this.store.getToken}`,
+                    },
+                });
+
+                if (response.data.success) {
+                    this.investmentProjectsList = response.data.data;
+                }
+            } catch (error) {
+                console.error("Error fetching investment projects:", error);
+                if (error.response && error.response.status === 401) {
+                    this.handleAuthError();
+                }
+            }
+        },
+
+        showCreatePaymentRequestModal() {
+            if (this.selectedItems.length === 0) {
+                Swal.fire({
+                    title: "Thông báo",
+                    text: "Vui lòng chọn ít nhất một biên bản nghiệm thu để tạo phiếu trình thanh toán",
+                    icon: "info",
+                    confirmButtonText: "Đồng ý",
+                });
+                return;
+            }
+
+            // Check if we have any duplicates
+            this.checkForDuplicates();
+
+            // Reset the form
+            this.paymentRequest = {
+                title: "",
+                created_date: new Date().toISOString().split("T")[0],
+                investment_project: "",
+                payment_type: "",
+                payment_installment: 1,
+                proposal_number: "",
+            };
+
+            // Show the modal
+            try {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js")
+                    .then((bootstrap) => {
+                        const Modal = bootstrap.Modal;
+                        const modalElement = document.getElementById(
+                            "paymentRequestModal"
+                        );
+
+                        if (modalElement) {
+                            this.paymentRequestModal = new Modal(modalElement);
+                            this.paymentRequestModal.show();
+                        } else {
+                            console.error("Modal element not found");
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("Failed to load Bootstrap:", err);
+                        // Fallback method
+                        const modalElement = document.getElementById(
+                            "paymentRequestModal"
+                        );
+                        if (modalElement) {
+                            modalElement.classList.add("show");
+                            modalElement.style.display = "block";
+                            document.body.classList.add("modal-open");
+
+                            // Add backdrop
+                            const backdrop = document.createElement("div");
+                            backdrop.classList.add(
+                                "modal-backdrop",
+                                "fade",
+                                "show"
+                            );
+                            document.body.appendChild(backdrop);
+                        }
+                    });
+            } catch (error) {
+                console.error("Error showing payment request modal:", error);
+            }
+        },
+
+        closePaymentRequestModal() {
+            if (this.paymentRequestModal) {
+                this.paymentRequestModal.hide();
+            } else {
+                const modalElement = document.getElementById(
+                    "paymentRequestModal"
+                );
+                if (modalElement) {
+                    modalElement.classList.remove("show");
+                    modalElement.style.display = "none";
+                    document.body.classList.remove("modal-open");
+
+                    // Remove backdrop
+                    const backdrop = document.querySelector(".modal-backdrop");
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }
+            }
+
+            // Clear form and selections
+            this.paymentRequest = {
+                title: "",
+                created_date: new Date().toISOString().split("T")[0],
+                investment_project: "",
+                payment_type: "",
+                payment_installment: 1,
+                proposal_number: "",
+            };
+            this.duplicateRecords = [];
+        },
+
+        async submitPaymentRequest() {
+            // Validate form
+            if (
+                !this.paymentRequest.created_date ||
+                !this.paymentRequest.investment_project ||
+                !this.paymentRequest.payment_type ||
+                !this.paymentRequest.payment_installment ||
+                !this.paymentRequest.proposal_number
+            ) {
+                Swal.fire({
+                    title: "Lỗi!",
+                    text: "Vui lòng điền đầy đủ thông tin",
+                    icon: "error",
+                    confirmButtonText: "Đồng ý",
+                });
+                return;
+            }
+
+            // Check if we have any duplicates
+            if (this.duplicateRecords.length > 0) {
+                Swal.fire({
+                    title: "Không thể tiếp tục",
+                    text: "Có biên bản nghiệm thu đã được sử dụng trong phiếu trình thanh toán khác",
+                    icon: "warning",
+                    confirmButtonText: "Đồng ý",
+                });
+                return;
+            }
+
+            this.isSubmitting = true;
+
+            try {
+                // Generate the auto ID format will be handled by the backend
+                // The title will also be generated on the backend based on the format
+
+                const response = await axios.post(
+                    "/api/create-payment-request",
+                    {
+                        investment_project:
+                            this.paymentRequest.investment_project,
+                        payment_type: this.paymentRequest.payment_type,
+                        payment_installment:
+                            this.paymentRequest.payment_installment,
+                        proposal_number: this.paymentRequest.proposal_number,
+                        created_date: this.paymentRequest.created_date,
+                        receipt_ids: this.selectedItems,
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${this.store.getToken}`,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    Swal.fire({
+                        title: "Thành công!",
+                        text: "Đã tạo phiếu trình thanh toán mới",
+                        icon: "success",
+                        confirmButtonText: "Đồng ý",
+                    });
+
+                    // Close the modal
+                    this.closePaymentRequestModal();
+
+                    // Reset selections
+                    this.selectedItems = [];
+
+                    // Option: Navigate to the payment request detail page
+                    if (response.data.payment_request_id) {
+                        // this.$router.push(`/payment-request/${response.data.payment_request_id}`);
+                    }
+                } else {
+                    throw new Error(response.data.message || "Unknown error");
+                }
+            } catch (error) {
+                console.error("Error creating payment request:", error);
+                Swal.fire({
+                    title: "Lỗi!",
+                    text:
+                        error.response?.data?.message ||
+                        "Đã xảy ra lỗi khi tạo phiếu trình thanh toán",
+                    icon: "error",
+                    confirmButtonText: "Đồng ý",
+                });
+
+                if (error.response && error.response.status === 401) {
+                    this.handleAuthError();
+                }
+            } finally {
+                this.isSubmitting = false;
+            }
+        },
     },
     watch: {
         search() {
@@ -2560,6 +3044,19 @@ export default {
         selectedFilterValues: {
             handler() {
                 this.currentPage = 1;
+            },
+            deep: true,
+        },
+        selectedItems: {
+            handler() {
+                // Auto-generate title when ID is set
+                if (this.paymentRequest.investment_project) {
+                    // The actual title will be generated on the server, this is just for preview
+                    this.paymentRequest.title = `TIEUDE-MTTT-TTCA-${this.paymentRequest.investment_project}-[ID]`;
+                }
+
+                // Check for duplicates
+                this.checkForDuplicates();
             },
             deep: true,
         },
@@ -2585,6 +3082,7 @@ export default {
             .catch((err) => {
                 console.error("Failed to load Bootstrap:", err);
             });
+        this.fetchInvestmentProjects();
     },
     beforeUnmount() {
         window.removeEventListener("resize", this.checkScreenSize);
@@ -2664,8 +3162,10 @@ export default {
     border-color: #10b981;
 }
 
-.form-checkbox:hover {
-    border-color: #10b981;
+.form-checkbox:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #e5e7eb;
 }
 
 .status-filter {
