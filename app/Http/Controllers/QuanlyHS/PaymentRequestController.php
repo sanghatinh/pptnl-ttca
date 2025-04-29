@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use App\Models\QuanlyHS\BienBanNghiemThu;
 use App\Models\User;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 class PaymentRequestController extends Controller
 {
     /**
@@ -557,6 +558,150 @@ class PaymentRequestController extends Controller
         }
     }
 
-   
-  
+    /**
+     * Import data from CSV/Excel to update payment details
+     */
+    public function importData(Request $request, $id)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,xlsx,xls|max:10240' // 10MB max
+        ]);
+
+        try {
+            // Check if payment request exists
+            $paymentRequest = PaymentRequest::where('ma_trinh_thanh_toan', $id)->first();
+            
+            if (!$paymentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request not found'
+                ], 404);
+            }
+            
+            $file = $request->file('file');
+            $filePath = $file->getPathname();
+            $extension = $file->getClientOriginalExtension();
+            
+            // Process the file based on its extension
+            if ($extension == 'csv') {
+                $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Csv');
+                $reader->setDelimiter(',');
+                $reader->setEnclosure('"');
+                $reader->setSheetIndex(0);
+            } else {
+                $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+            }
+            
+            $spreadsheet = $reader->load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+            $rows = $worksheet->toArray();
+            
+            // Get headers from first row
+            if (empty($rows) || count($rows) < 2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File is empty or does not contain data rows',
+                    'errors' => ['Please check the file format and try again.']
+                ], 422);
+            }
+            
+            $headers = array_map('trim', $rows[0]);
+            
+            // Find indices of required columns
+            $maIndex = array_search('ma_nghiem_thu', array_map('strtolower', $headers));
+            $maGiaiNganIndex = array_search('ma_de_nghi_giai_ngan', array_map('strtolower', $headers));
+            
+            // Alternative column names that might be used
+            if ($maIndex === false) {
+                $maIndex = array_search('ma nghiem thu', array_map('strtolower', $headers)) !== false ? 
+                           array_search('ma nghiem thu', array_map('strtolower', $headers)) : 
+                           array_search('ma_nghiem_thu', array_map('strtolower', $headers));
+            }
+            
+            if ($maGiaiNganIndex === false) {
+                $maGiaiNganIndex = array_search('ma giai ngan', array_map('strtolower', $headers)) !== false ? 
+                                   array_search('ma giai ngan', array_map('strtolower', $headers)) : 
+                                   array_search('ma de nghi giai ngan', array_map('strtolower', $headers));
+            }
+            
+            if ($maIndex === false || $maGiaiNganIndex === false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Required columns are missing',
+                    'errors' => ['File must contain columns for ma_nghiem_thu and ma_de_nghi_giai_ngan.']
+                ], 422);
+            }
+            
+            // Skip header row
+            array_shift($rows);
+            
+            $updatedCount = 0;
+            $errorRows = [];
+            $errors = [];
+            
+            // Process rows
+            DB::beginTransaction();
+            try {
+                foreach ($rows as $index => $row) {
+                    // Skip empty rows
+                    if (empty(array_filter($row))) {
+                        continue;
+                    }
+                    
+                    $maValue = trim($row[$maIndex] ?? '');
+                    $maGiaiNganValue = trim($row[$maGiaiNganIndex] ?? '');
+                    
+                    if (empty($maValue)) {
+                        $errorRows[] = $index + 2; // +2 for 1-indexed and header row
+                        continue;
+                    }
+                    
+                    // Update the record in Logs_phieu_trinh_thanh_toan
+                    $updated = DB::table('Logs_phieu_trinh_thanh_toan')
+                        ->where('ma_trinh_thanh_toan', $id)
+                        ->where('ma_nghiem_thu', $maValue)
+                        ->update(['ma_de_nghi_giai_ngan' => $maGiaiNganValue]);
+                    
+                    if ($updated) {
+                        $updatedCount++;
+                    } else {
+                        $errorRows[] = $index + 2;
+                    }
+                }
+                
+                if (!empty($errorRows)) {
+                    $errors[] = 'Could not update rows: ' . implode(', ', $errorRows) . '. These rows may not exist in the payment request.';
+                }
+                
+                DB::commit();
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => "Successfully updated {$updatedCount} records" . 
+                                (!empty($errors) ? " with {$errors} warnings" : ""),
+                    'updated_count' => $updatedCount,
+                    'errors' => $errors
+                ]);
+                
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Error importing payment request data: ' . $e->getMessage());
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error processing import file',
+                    'errors' => [$e->getMessage()]
+                ], 500);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Error in import process: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing import file',
+                'errors' => [$e->getMessage()]
+            ], 500);
+        }
+    }
 }

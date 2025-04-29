@@ -338,6 +338,13 @@
                     <div class="card mt-3">
                         <div class="card-body">
                             <span
+                                class="import-data-btn"
+                                title="Import data"
+                                @click="openImportModal"
+                            >
+                                <i class="fas fa-file-import"></i>
+                            </span>
+                            <span
                                 class="export-excel-btn"
                                 title="Export to Excel"
                                 @click="exportToExcel"
@@ -1452,6 +1459,130 @@
             </div>
         </div>
     </div>
+    <!-- Import Data Modal -->
+    <div
+        class="modal fade"
+        id="importModal"
+        tabindex="-1"
+        aria-labelledby="importModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title text-primary" id="importModalLabel">
+                        <i class="fas fa-file-import text-primary me-2"></i>
+                        Import Data
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        @click="closeImportModal"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <small
+                            >Import data to update payment details. The file
+                            should contain columns for Mã nghiệm thu and Mã đề
+                            nghị giải ngân.</small
+                        >
+                    </div>
+
+                    <!-- Add this inside the modal-body, before the file input -->
+                    <div class="d-flex justify-content-end mb-2">
+                        <button
+                            @click.prevent="downloadImportTemplate"
+                            class="btn btn-sm btn-outline-secondary"
+                        >
+                            <i class="fas fa-download me-1"></i>
+                            Download Template
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="importFile" class="form-label"
+                            >Select file</label
+                        >
+                        <input
+                            class="form-control"
+                            type="file"
+                            id="importFile"
+                            @change="handleFileSelected"
+                            accept=".csv,.xlsx"
+                        />
+                        <div class="form-text">Support files: .csv, .xlsx</div>
+                    </div>
+
+                    <div v-if="uploadProgress > 0" class="mb-3">
+                        <label class="form-label">Upload progress</label>
+                        <div class="progress">
+                            <div
+                                class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                                role="progressbar"
+                                :style="`width: ${uploadProgress}%`"
+                                :aria-valuenow="uploadProgress"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                {{ uploadProgress }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="importErrors.length > 0" class="mt-3">
+                        <div class="alert alert-danger">
+                            <h6 class="alert-heading">Import errors</h6>
+                            <ul class="mb-0 ps-3">
+                                <li
+                                    v-for="(error, index) in importErrors.slice(
+                                        0,
+                                        5
+                                    )"
+                                    :key="index"
+                                >
+                                    {{ error }}
+                                </li>
+                            </ul>
+                            <div
+                                v-if="importErrors.length > 5"
+                                class="mt-2 text-center"
+                            >
+                                <small
+                                    >And
+                                    {{ importErrors.length - 5 }}
+                                    more errors...</small
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                        @click="closeImportModal"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        @click="startImport"
+                        :disabled="!selectedFile || isImporting"
+                    >
+                        <i class="fas fa-upload me-2"></i>
+                        <span v-if="isImporting">Importing...</span>
+                        <span v-else>Import</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Add Receipt Modal -->
     <div
@@ -1752,6 +1883,12 @@ export default {
             isAdding: false,
             addReceiptModal: null,
             existingReceiptIds: [], // Will store already mapped receipt IDs
+            // Import related properties
+            selectedFile: null,
+            isImporting: false,
+            uploadProgress: 0,
+            importErrors: [],
+            importModal: null,
         };
     },
     computed: {
@@ -2604,6 +2741,191 @@ export default {
             if (!value) return "0";
             return new Intl.NumberFormat("vi-VN").format(value);
         },
+        // Import related methods
+        openImportModal() {
+            // Reset import state
+            this.selectedFile = null;
+            this.uploadProgress = 0;
+            this.importErrors = [];
+
+            // Show modal using Bootstrap
+            if (!this.importModal) {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                    (bootstrap) => {
+                        const modalElement =
+                            document.getElementById("importModal");
+                        if (modalElement) {
+                            this.importModal = new bootstrap.Modal(
+                                modalElement
+                            );
+                            this.importModal.show();
+                        }
+                    }
+                );
+            } else {
+                this.importModal.show();
+            }
+        },
+
+        handleFileSelected(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Validate file type
+                const fileType = file.name.split(".").pop().toLowerCase();
+                if (!["csv", "xlsx", "xls"].includes(fileType)) {
+                    this.showError("Please select a valid file (CSV or Excel)");
+                    event.target.value = ""; // Clear the file input
+                    this.selectedFile = null;
+                    return;
+                }
+
+                this.selectedFile = file;
+                this.importErrors = [];
+            } else {
+                this.selectedFile = null;
+            }
+        },
+
+        closeImportModal() {
+            if (this.importModal) {
+                this.importModal.hide();
+            }
+
+            // Reset import state
+            this.selectedFile = null;
+            this.uploadProgress = 0;
+            this.importErrors = [];
+        },
+
+        async startImport() {
+            if (!this.selectedFile) {
+                this.showError("Please select a file to upload");
+                return;
+            }
+
+            // Confirm before proceeding
+            const result = await Swal.fire({
+                title: "Confirm Import",
+                text: "This will update payment details based on the import file. Continue?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes, import",
+                cancelButtonText: "Cancel",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-secondary",
+                },
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            this.isImporting = true;
+
+            // Create form data for the file upload
+            const formData = new FormData();
+            formData.append("file", this.selectedFile);
+            formData.append("payment_code", this.document.payment_code);
+
+            try {
+                const response = await axios.post(
+                    `/api/payment-requests/${this.document.payment_code}/import-data`,
+                    formData,
+                    {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                        onUploadProgress: (progressEvent) => {
+                            // Calculate the upload progress
+                            if (progressEvent.total) {
+                                this.uploadProgress = Math.round(
+                                    (progressEvent.loaded * 100) /
+                                        progressEvent.total
+                                );
+                            } else {
+                                this.uploadProgress = 50; // Show 50% if total is unknown
+                            }
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    this.closeImportModal();
+
+                    // Show success notification
+                    Swal.fire({
+                        title: "Import Successful",
+                        text:
+                            response.data.message ||
+                            "Data imported successfully",
+                        icon: "success",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
+
+                    // Refresh the data to show updated values
+                    this.fetchDocument();
+                } else {
+                    this.importErrors = response.data.errors || [
+                        "Unknown error occurred during import.",
+                    ];
+                }
+            } catch (error) {
+                console.error("Import error:", error);
+
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                } else {
+                    this.importErrors = error.response?.data?.errors || [
+                        error.response?.data?.message ||
+                            "Error occurred during import.",
+                    ];
+                }
+            } finally {
+                this.isImporting = false;
+            }
+        },
+        downloadImportTemplate() {
+            try {
+                // Create a workbook with a worksheet
+                const wb = XLSX.utils.book_new();
+
+                // Create sample data
+                const data = [
+                    {
+                        ma_nghiem_thu: "Example-001",
+                        ma_de_nghi_giai_ngan: "DN-001",
+                    },
+                    {
+                        ma_nghiem_thu: "Example-002",
+                        ma_de_nghi_giai_ngan: "DN-002",
+                    },
+                ];
+
+                // Create worksheet from data
+                const ws = XLSX.utils.json_to_sheet(data);
+
+                // Add the worksheet to the workbook
+                XLSX.utils.book_append_sheet(wb, ws, "Import Template");
+
+                // Generate filename
+                const fileName = `import_template.xlsx`;
+
+                // Export the file
+                XLSX.writeFile(wb, fileName);
+
+                this.showSuccess("Template downloaded successfully!");
+            } catch (error) {
+                console.error("Error creating template:", error);
+                this.showError("Could not create template file");
+            }
+        },
     },
 };
 </script>
@@ -3356,6 +3678,30 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 
 .export-excel-btn:hover {
     background: #105325;
+    transform: scale(1.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.import-data-btn {
+    position: absolute;
+    right: 180px;
+    top: 25px;
+    z-index: 99;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #fff;
+    background: #6366f1;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.import-data-btn:hover {
+    background: #4f46e5;
     transform: scale(1.1);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }

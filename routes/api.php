@@ -147,6 +147,8 @@ Route::get('/bienban-nghiemthu-search-pttt', [DocumentDeliveryController::class,
 
 //Add receive records to a payment request
 Route::post('/payment-requests/{id}/add-receipts', [PaymentRequestController::class, 'addReceipts']);
+//Import records for a payment request
+Route::post('/payment-requests/{id}/import-data', [PaymentRequestController::class, 'importData']);
  // Update records for a payment request
  Route::post('/payment-requests/{id}/update-records', [PaymentRequestController::class, 'updateRecords']);
  
