@@ -338,6 +338,13 @@
                     <div class="card mt-3">
                         <div class="card-body">
                             <span
+                                class="export-excel-btn"
+                                title="Export to Excel"
+                                @click="exportToExcel"
+                            >
+                                <i class="fas fa-file-excel"></i>
+                            </span>
+                            <span
                                 class="reset-all-filters-btn"
                                 title="Reset all filters"
                                 @click="resetAllFilters"
@@ -1404,7 +1411,7 @@
                     ></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info mb-3">
+                    <div class="alert alert-info text-white mb-3">
                         <i class="fas fa-info-circle me-2"></i>
                         Đang chỉnh sửa
                         <strong>{{ selectedRecords.length }}</strong> bản ghi
@@ -1657,6 +1664,7 @@
 </template>
 
 <script>
+import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
 import axios from "axios";
 import { useStore } from "../../Store/Auth";
@@ -2458,6 +2466,144 @@ export default {
                 this.isAdding = false;
             }
         },
+        exportToExcel() {
+            // Show loading indicator
+            Swal.fire({
+                title: "Đang xuất dữ liệu",
+                html: "Vui lòng đợi trong giây lát...",
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+            });
+
+            try {
+                // Create a workbook with a worksheet
+                const wb = XLSX.utils.book_new();
+
+                // Format the data for export
+                const paymentDetailsForExport = this.prepareDataForExport();
+
+                // Create worksheet from data
+                const ws = XLSX.utils.json_to_sheet(paymentDetailsForExport);
+
+                // Set column widths
+                const columnWidths = this.calculateColumnWidths(
+                    paymentDetailsForExport
+                );
+                ws["!cols"] = columnWidths;
+
+                // Add header styling (bold)
+                this.styleWorksheet(ws);
+
+                // Add the worksheet to the workbook
+                XLSX.utils.book_append_sheet(wb, ws, "Chi tiết thanh toán");
+
+                // Generate filename with document code and date
+                const fileName = `PhieuTrinhTT_${
+                    this.document.payment_code
+                }_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+                // Export the file
+                XLSX.writeFile(wb, fileName);
+
+                // Close loading and show success
+                Swal.close();
+                this.showSuccess("Xuất Excel thành công!");
+            } catch (error) {
+                console.error("Error exporting to Excel:", error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi xuất Excel",
+                    text: "Đã xảy ra lỗi khi xuất dữ liệu sang Excel.",
+                });
+            }
+        },
+
+        prepareDataForExport() {
+            // Get filtered data or all data if no filters applied
+            const dataToExport = this.filteredPaymentDetails;
+
+            // Create translated headers and mapped data
+            return dataToExport.map((item) => {
+                return {
+                    "Mã nghiệm thu": item.document_code,
+                    Trạm: item.tram || "N/A",
+                    "Tiêu đề": item.title,
+                    "Vụ đầu tư": item.investment_project,
+                    "KH Cá nhân": item.khach_hang_ca_nhan_dt_mia || "N/A",
+                    "KH Doanh nghiệp":
+                        item.khach_hang_doanh_nghiep_dt_mia || "N/A",
+                    "Hợp đồng đầu tư": item.contract_number,
+                    "Hình thức DV": item.service_type,
+                    "Hợp đồng cung ứng DV":
+                        item.hop_dong_cung_ung_dich_vu || "N/A",
+                    "Mã đề nghị giải ngân": item.disbursement_code || "N/A",
+                    "Đợt TT": item.installment,
+                    "Số tiền": this.formatCurrencyRaw(item.amount),
+                };
+            });
+        },
+
+        calculateColumnWidths(data) {
+            // Base column widths
+            const baseWidths = {
+                "Mã nghiệm thu": 15,
+                Trạm: 10,
+                "Tiêu đề": 30,
+                "Vụ đầu tư": 15,
+                "KH Cá nhân": 25,
+                "KH Doanh nghiệp": 25,
+                "Hợp đồng đầu tư": 20,
+                "Hình thức DV": 15,
+                "Hợp đồng cung ứng DV": 20,
+                "Mã đề nghị giải ngân": 20,
+                "Đợt TT": 8,
+                "Số tiền": 15,
+            };
+
+            // Convert to column width objects
+            return Object.keys(baseWidths).map((key) => ({
+                wch: baseWidths[key],
+            }));
+        },
+
+        styleWorksheet(worksheet) {
+            // Add header styling
+            if (!worksheet["!rows"]) worksheet["!rows"] = [];
+
+            // Make first row (header) bold
+            worksheet["!rows"][0] = { hpt: 18, hpx: 18 }; // Height
+
+            // Get the range of all cells
+            const range = XLSX.utils.decode_range(worksheet["!ref"]);
+
+            // Create styles for header row
+            for (let col = range.s.c; col <= range.e.c; col++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+                if (!worksheet[cellAddress]) continue;
+
+                // Create cell object if it doesn't exist
+                if (typeof worksheet[cellAddress] !== "object") {
+                    worksheet[cellAddress] = {
+                        t: "s",
+                        v: worksheet[cellAddress],
+                    };
+                }
+
+                // Add styles to cell
+                worksheet[cellAddress].s = {
+                    font: { bold: true },
+                    fill: { fgColor: { rgb: "EEEEEE" } },
+                    alignment: { horizontal: "center", vertical: "center" },
+                };
+            }
+        },
+
+        formatCurrencyRaw(value) {
+            if (!value) return "0";
+            return new Intl.NumberFormat("vi-VN").format(value);
+        },
     },
 };
 </script>
@@ -3092,5 +3238,125 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 
 .table-warning {
     background-color: rgba(255, 243, 205, 0.5);
+}
+/* Table Professional Enhancement */
+.table {
+    font-size: 0.8125rem; /* 13px - เพิ่มขนาดตัวอักษรเล็กน้อยเพื่อการอ่านง่าย */
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e6e6e6;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Table Header Styling */
+.table thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
+    padding: 12px 10px;
+    border-bottom: 2px solid #e9ecef;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+/* Improved cell padding for better readability */
+.table td {
+    padding: 10px;
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+    border-top: 1px solid #f0f0f0;
+    transition: all 0.2s;
+}
+
+/* Tooltip for truncated content */
+.table td[title] {
+    cursor: help;
+}
+
+/* Add hover style to see more of truncated content */
+.table td:hover {
+    overflow: visible;
+    white-space: normal;
+    max-width: none;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+}
+
+/* Zebra striping for easier row scanning */
+.table tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.01);
+}
+
+/* Row hover effect */
+.table-hover tbody tr:hover {
+    background-color: rgba(16, 185, 129, 0.05);
+}
+
+/* Warning state with softer color */
+.table-warning {
+    background-color: rgba(255, 243, 205, 0.5) !important;
+}
+
+/* Align numerical data right */
+.table td.text-end,
+.table th.text-end {
+    text-align: right;
+}
+
+/* Highlight active row - add .active class to tr when needed */
+.table tr.active {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+/* Highlight selected row - add .selected class to tr when needed */
+.table tr.selected td {
+    background-color: rgba(30, 136, 229, 0.08);
+    border-left: 3px solid #1e88e5;
+}
+
+/* Footer styling */
+.table tfoot {
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+.table tfoot td {
+    border-top: 2px solid #e9ecef;
+}
+.export-excel-btn {
+    position: absolute;
+    right: 145px;
+    top: 25px;
+    z-index: 99;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #fff;
+    background: #217346;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.export-excel-btn:hover {
+    background: #105325;
+    transform: scale(1.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 </style>
