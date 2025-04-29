@@ -344,6 +344,28 @@
                             >
                                 <i class="fas fa-redo-alt"></i>
                             </span>
+                            <!-- Add edit button -->
+                            <span
+                                class="edit-records-btn"
+                                title="Edit selected records"
+                                @click="editSelectedRecords"
+                                :class="{
+                                    disabled: selectedRecords.length === 0,
+                                }"
+                            >
+                                <i class="fas fa-edit"></i>
+                            </span>
+                            <!-- Add delete button -->
+                            <span
+                                class="delete-records-btn"
+                                title="Delete selected records"
+                                @click="deleteSelectedRecords"
+                                :class="{
+                                    disabled: selectedRecords.length === 0,
+                                }"
+                            >
+                                <i class="fas fa-trash"></i>
+                            </span>
                             <h5 class="card-title">
                                 Chi tiết hồ sơ thanh toán
                             </h5>
@@ -354,8 +376,16 @@
                                     >
                                         <thead class="table-light text-center">
                                             <tr>
-                                                <th>STT</th>
-
+                                                <th>
+                                                    <input
+                                                        type="checkbox"
+                                                        :checked="isAllSelected"
+                                                        @change="
+                                                            toggleSelectAll
+                                                        "
+                                                        class="form-check-input"
+                                                    />
+                                                </th>
                                                 <th>
                                                     Mã nghiệm thu
                                                     <button
@@ -1118,7 +1148,16 @@
                                                 :key="index"
                                             >
                                                 <td class="text-center">
-                                                    {{ index + 1 }}
+                                                    <input
+                                                        type="checkbox"
+                                                        :value="
+                                                            item.document_code
+                                                        "
+                                                        v-model="
+                                                            selectedRecords
+                                                        "
+                                                        class="form-check-input"
+                                                    />
                                                 </td>
                                                 <td>
                                                     {{ item.document_code }}
@@ -1333,6 +1372,72 @@
             </PerfectScrollbar>
         </div>
     </div>
+
+    <!-- Add this modal at the end of the template -->
+    <!-- Edit Modal -->
+    <div
+        class="modal fade"
+        id="editModal"
+        tabindex="-1"
+        aria-labelledby="editModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">
+                        <i class="fas fa-edit me-2"></i>
+                        Chỉnh sửa chi tiết nghiệm thu
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Đang chỉnh sửa
+                        <strong>{{ selectedRecords.length }}</strong> bản ghi
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="disbursementCode" class="form-label"
+                            >Mã đề nghị giải ngân</label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="disbursementCode"
+                            v-model="editForm.disbursementCode"
+                            placeholder="Nhập mã đề nghị giải ngân"
+                        />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-success"
+                        @click="updateRecords"
+                        :disabled="isUpdating"
+                    >
+                        <i class="fas fa-save me-1"></i>
+                        <span v-if="isUpdating">Đang lưu...</span>
+                        <span v-else>Lưu thay đổi</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -1410,6 +1515,12 @@ export default {
                 investment_project: [], // Vụ đầu tư
                 service_type: [], // Hình thức DV
             },
+            selectedRecords: [],
+            editForm: {
+                disbursementCode: "",
+            },
+            isUpdating: false,
+            editModal: null,
         };
     },
     computed: {
@@ -1505,6 +1616,13 @@ export default {
 
                 return matchesTextFilters && matchesDropdownFilters;
             });
+        },
+        isAllSelected() {
+            return (
+                this.filteredPaymentDetails.length > 0 &&
+                this.selectedRecords.length ===
+                    this.filteredPaymentDetails.length
+            );
         },
     },
     mounted() {
@@ -1806,6 +1924,160 @@ export default {
 
             // Reset active filter (close any open filter dropdown)
             this.activeFilter = null;
+        },
+        toggleSelectAll() {
+            if (this.isAllSelected) {
+                this.selectedRecords = [];
+            } else {
+                this.selectedRecords = this.filteredPaymentDetails.map(
+                    (item) => item.document_code
+                );
+            }
+        },
+
+        editSelectedRecords() {
+            if (this.selectedRecords.length === 0) {
+                this.showError(
+                    "Vui lòng chọn ít nhất một bản ghi để chỉnh sửa"
+                );
+                return;
+            }
+
+            this.editForm.disbursementCode = "";
+
+            // Show the modal using Bootstrap's modal
+            if (!this.editModal) {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                    (bootstrap) => {
+                        const modalElement =
+                            document.getElementById("editModal");
+                        if (modalElement) {
+                            this.editModal = new bootstrap.Modal(modalElement);
+                            this.editModal.show();
+                        }
+                    }
+                );
+            } else {
+                this.editModal.show();
+            }
+        },
+
+        async updateRecords() {
+            if (this.selectedRecords.length === 0) return;
+
+            this.isUpdating = true;
+
+            try {
+                const response = await axios.post(
+                    `/api/payment-requests/${this.document.payment_code}/update-records`,
+                    {
+                        receipt_ids: this.selectedRecords,
+                        disbursement_code: this.editForm.disbursementCode,
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    // Close the modal
+                    this.editModal.hide();
+
+                    // Update local data
+                    this.selectedRecords.forEach((receiptId) => {
+                        const record = this.paymentDetails.find(
+                            (item) => item.document_code === receiptId
+                        );
+                        if (record) {
+                            record.disbursement_code =
+                                this.editForm.disbursementCode;
+                        }
+                    });
+
+                    // Clear selection
+                    this.selectedRecords = [];
+
+                    this.showSuccess("Cập nhật thành công");
+                    this.fetchDocument(); // Refresh data
+                } else {
+                    throw new Error(response.data.message || "Unknown error");
+                }
+            } catch (error) {
+                console.error("Error updating records:", error);
+                this.showError("Đã xảy ra lỗi khi cập nhật bản ghi");
+
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            } finally {
+                this.isUpdating = false;
+            }
+        },
+
+        async deleteSelectedRecords() {
+            if (this.selectedRecords.length === 0) {
+                this.showError("Vui lòng chọn ít nhất một bản ghi để xóa");
+                return;
+            }
+
+            const result = await Swal.fire({
+                title: "Xác nhận xóa?",
+                html: `Bạn có chắc chắn muốn xóa <b>${this.selectedRecords.length}</b> bản ghi đã chọn?`,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Xóa",
+                cancelButtonText: "Hủy",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-danger me-2",
+                    cancelButton: "btn btn-outline-secondary",
+                },
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await axios.post(
+                        `/api/payment-requests/${this.document.payment_code}/delete-records`,
+                        {
+                            receipt_ids: this.selectedRecords,
+                        },
+                        {
+                            headers: {
+                                Authorization: "Bearer " + this.store.getToken,
+                            },
+                        }
+                    );
+
+                    if (response.data.success) {
+                        // Remove deleted records from the local array
+                        this.paymentDetails = this.paymentDetails.filter(
+                            (item) =>
+                                !this.selectedRecords.includes(
+                                    item.document_code
+                                )
+                        );
+
+                        // Clear selection
+                        this.selectedRecords = [];
+
+                        this.showSuccess("Xóa thành công");
+                        this.fetchDocument(); // Refresh data
+                    } else {
+                        throw new Error(
+                            response.data.message || "Unknown error"
+                        );
+                    }
+                } catch (error) {
+                    console.error("Error deleting records:", error);
+                    this.showError("Đã xảy ra lỗi khi xóa bản ghi");
+
+                    if (error.response?.status === 401) {
+                        this.handleAuthError();
+                    }
+                }
+            }
         },
     },
 };
@@ -2348,5 +2620,60 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 /* Add hover effect to table rows */
 .table-hover tbody tr:hover {
     background-color: rgba(16, 185, 129, 0.05);
+}
+
+/* Button styling for action buttons */
+.edit-records-btn,
+.delete-records-btn {
+    position: absolute;
+    z-index: 99;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #fff;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.edit-records-btn {
+    right: 40px;
+    top: 25px;
+    background: #1e88e5;
+}
+
+.delete-records-btn {
+    right: 75px;
+    top: 25px;
+    background: #dc3545;
+}
+
+.edit-records-btn:hover {
+    background: #0d6efd;
+    transform: scale(1.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.delete-records-btn:hover {
+    background: #c82333;
+    transform: scale(1.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.edit-records-btn.disabled,
+.delete-records-btn.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Checkbox styling */
+.form-check-input {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
 }
 </style>

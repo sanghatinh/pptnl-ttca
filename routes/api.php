@@ -143,6 +143,11 @@ Route::get('/investment-projects', [PaymentRequestController::class, 'getInvestm
 // อัพเดตสถานะเอกสารขอเบิกเงิน
 Route::patch('/payment-requests/{id}/status', [PaymentRequestController::class, 'updateStatus']);
 
-
+ // Update records for a payment request
+ Route::post('/payment-requests/{id}/update-records', [PaymentRequestController::class, 'updateRecords']);
+    
+ // Delete records from a payment request
+ Route::post('/payment-requests/{id}/delete-records', [PaymentRequestController::class, 'deleteRecords']);
 
 });
+

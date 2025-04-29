@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\QuanlyHS;
 use App\Http\Controllers\Controller; // Add this import
+use App\Models\QuanlyHS\PaymentRequestAction; // เพิ่ม model สำหรับตาราง Action
 use App\Models\QuanlyHS\PaymentRequest;
 use App\Models\QuanlyHS\PaymentRequestLog;
 use Illuminate\Http\Request;
@@ -89,15 +90,21 @@ class PaymentRequestController extends Controller
             
             // 5. สร้างประวัติ (logs) สำหรับแต่ละรายการที่เลือก
             foreach ($request->receipt_ids as $receiptId) {
+                // บันทึกความสัมพันธ์ระหว่างใบเบิกเงินและรายการที่เบิก
                 PaymentRequestLog::create([
                     'ma_trinh_thanh_toan' => $maTrinh,
                     'ma_nghiem_thu' => $receiptId,
-                    'action' => 'processing', // สถานะเริ่มต้น
-                    'action_by' => Auth::id(),
-                    'action_date' => now(),
-                    'comments' => 'Created payment request'
                 ]);
             }
+
+            // บันทึกประวัติการดำเนินการสร้างใบเบิกเงิน
+            PaymentRequestAction::create([
+                'ma_trinh_thanh_toan' => $maTrinh,
+                'action' => 'processing', // สถานะเริ่มต้น
+                'action_by' => Auth::id(),
+                'action_date' => now(),
+                'comments' => 'Created payment request'
+            ]);
             
             DB::commit();
             
@@ -183,41 +190,48 @@ class PaymentRequestController extends Controller
             }
             
             // Get all receipt IDs associated with this payment request from logs
-            $receiptIds = DB::table('Logs_phieu_trinh_thanh_toan')
+            $receiptLogs = DB::table('Logs_phieu_trinh_thanh_toan')
                 ->where('ma_trinh_thanh_toan', $id)
-                ->pluck('ma_nghiem_thu')
-                ->toArray();
+                ->select('ma_nghiem_thu', 'ma_de_nghi_giai_ngan') // Select both receipt ID and disbursement code
+                ->get();
+            
+            $receiptIds = $receiptLogs->pluck('ma_nghiem_thu')->toArray();
+            
+            // Create a mapping of receipt IDs to disbursement codes
+            $disbursementCodeMap = [];
+            foreach ($receiptLogs as $log) {
+                $disbursementCodeMap[$log->ma_nghiem_thu] = $log->ma_de_nghi_giai_ngan;
+            }
             
             // Get detailed information for each receipt from tb_bien_ban_nghiemthu_dv
-            // Adding the requested additional columns
             $paymentDetails = DB::table('tb_bien_ban_nghiemthu_dv')
                 ->whereIn('ma_nghiem_thu', $receiptIds)
                 ->select(
                     'ma_nghiem_thu as document_code',
                     'tieu_de as title',
                     'vu_dau_tu as investment_project',
-                    'khach_hang_ca_nhan_dt_mia', // Added as requested
-                    'khach_hang_doanh_nghiep_dt_mia', // Added as requested
+                    'khach_hang_ca_nhan_dt_mia',
+                    'khach_hang_doanh_nghiep_dt_mia',
                     'hop_dong_dau_tu_mia as contract_number',
                     'hinh_thuc_thuc_hien_dv as service_type',
-                    'hop_dong_cung_ung_dich_vu', // Added as requested 
-                    'tram', // Added new tram column
+                    'hop_dong_cung_ung_dich_vu',
+                    'tram',
                     'tong_tien as amount'
                 )
                 ->get();
             
-            // Map the payment details and add a default empty value for disbursement_code
-            $mappedPaymentDetails = $paymentDetails->map(function($item) {
-                $item->disbursement_code = ''; // Add default empty value
+            // Map the payment details and add the disbursement_code from our mapping
+            $mappedPaymentDetails = $paymentDetails->map(function($item) use ($disbursementCodeMap) {
+                $item->disbursement_code = $disbursementCodeMap[$item->document_code] ?? '';
+                $item->installment = 1; // Set default installment value
                 return $item;
             });
             
-            // Get processing history/logs - WITHOUT joining the users table
-            $processingHistory = DB::table('Logs_phieu_trinh_thanh_toan')
+            // Get processing history/logs from the Action table
+            $processingHistory = DB::table('Action_phieu_trinh_thanh_toan')
                 ->select(
                     'id',
                     'ma_trinh_thanh_toan',
-                    'ma_nghiem_thu',
                     'action',
                     'comments as note',
                     'created_at',
@@ -288,7 +302,16 @@ class PaymentRequestController extends Controller
             $paymentRequest->save();
             
             // เพิ่มประวัติการดำเนินการ
-            PaymentRequestLog::create([
+            PaymentRequestAction::create([
+                'ma_trinh_thanh_toan' => $id,
+                'action' => $request->status,
+                'action_by' => Auth::id(),
+                'action_date' => now(),
+                'comments' => $request->comments ?? 'Updated status to ' . $request->status
+            ]);
+            
+            // เพิ่มประวัติการดำเนินการ
+            PaymentRequestAction::create([
                 'ma_trinh_thanh_toan' => $id,
                 'action' => $request->status,
                 'action_by' => Auth::id(),
@@ -337,6 +360,118 @@ class PaymentRequestController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching investment projects: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * อัพเดตรายการ receipt records เพื่อแก้ไขข้อมูล ma_de_nghi_giai_ngan
+     */
+    public function updateRecords(Request $request, $id)
+    {
+        $request->validate([
+            'receipt_ids' => 'required|array',
+            'receipt_ids.*' => 'string',
+            'disbursement_code' => 'required|string|max:255',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Check if payment request exists
+            $paymentRequest = PaymentRequest::where('ma_trinh_thanh_toan', $id)->first();
+            
+            if (!$paymentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request not found'
+                ], 404);
+            }
+            
+            // Update ONLY the ma_de_nghi_giai_ngan field in the logs table
+            $affected = DB::table('Logs_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->whereIn('ma_nghiem_thu', $request->receipt_ids)
+                ->update(['ma_de_nghi_giai_ngan' => $request->disbursement_code]);
+            
+            // ลบการบันทึกประวัติการดำเนินการในตาราง Action
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Records updated successfully',
+                'affected_rows' => $affected
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating payment request records: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating records: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ลบรายการ receipt records จากตาราง Logs_phieu_trinh_thanh_toan
+     */
+    public function deleteRecords(Request $request, $id)
+    {
+        $request->validate([
+            'receipt_ids' => 'required|array',
+            'receipt_ids.*' => 'string',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Check if payment request exists
+            $paymentRequest = PaymentRequest::where('ma_trinh_thanh_toan', $id)->first();
+            
+            if (!$paymentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request not found'
+                ], 404);
+            }
+            
+            // Delete records from the logs table based on ma_nghiem_thu
+            $affected = DB::table('Logs_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->whereIn('ma_nghiem_thu', $request->receipt_ids)
+                ->delete();
+            
+            // Recalculate total amount after deletion
+            $remainingReceipts = DB::table('Logs_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->pluck('ma_nghiem_thu')
+                ->toArray();
+            
+            $newTotalAmount = $this->calculateTotalAmount($remainingReceipts);
+            
+            // Update the payment request with new total amount
+            $paymentRequest->tong_tien_thanh_toan = $newTotalAmount;
+            $paymentRequest->save();
+            
+            // ลบการบันทึกประวัติการดำเนินการในตาราง Action
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Records deleted successfully',
+                'affected_rows' => $affected,
+                'new_total_amount' => $newTotalAmount
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting payment request records: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting records: ' . $e->getMessage()
             ], 500);
         }
     }
