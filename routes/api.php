@@ -142,10 +142,14 @@ Route::get('/investment-projects', [PaymentRequestController::class, 'getInvestm
 
 // อัพเดตสถานะเอกสารขอเบิกเงิน
 Route::patch('/payment-requests/{id}/status', [PaymentRequestController::class, 'updateStatus']);
+//ค้นหาเอกสารขอเบิกเงิน
+Route::get('/bienban-nghiemthu-search-pttt', [DocumentDeliveryController::class, 'searchBienBanNgheThu_PTTT']);
 
+//Add receive records to a payment request
+Route::post('/payment-requests/{id}/add-receipts', [PaymentRequestController::class, 'addReceipts']);
  // Update records for a payment request
  Route::post('/payment-requests/{id}/update-records', [PaymentRequestController::class, 'updateRecords']);
-    
+ 
  // Delete records from a payment request
  Route::post('/payment-requests/{id}/delete-records', [PaymentRequestController::class, 'deleteRecords']);
 

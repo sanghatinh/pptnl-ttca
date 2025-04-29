@@ -366,6 +366,13 @@
                             >
                                 <i class="fas fa-trash"></i>
                             </span>
+                            <span
+                                class="add-records-btn"
+                                title="Add new receipt"
+                                @click="openAddReceiptModal"
+                            >
+                                <i class="fas fa-plus"></i>
+                            </span>
                             <h5 class="card-title">
                                 Chi tiết hồ sơ thanh toán
                             </h5>
@@ -1438,6 +1445,215 @@
             </div>
         </div>
     </div>
+
+    <!-- Add Receipt Modal -->
+    <div
+        class="modal fade"
+        id="addReceiptModal"
+        tabindex="-1"
+        aria-labelledby="addReceiptModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addReceiptModalLabel">
+                        <i class="fas fa-plus me-2"></i>
+                        Thêm biên bản nghiệm thu dịch vụ
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <div class="search-container mb-4">
+                        <label for="receiptSearch" class="form-label"
+                            >Tìm kiếm mã nghiệm thu</label
+                        >
+                        <div class="search-input-wrapper">
+                            <input
+                                type="search"
+                                class="form-control"
+                                v-model="searchQuery"
+                                @input="searchReceipts"
+                                placeholder="Nhập mã nghiệm thu..."
+                            />
+                            <i class="search-icon bx bx-search"></i>
+                        </div>
+                    </div>
+
+                    <!-- Update the table in the addReceiptModal to show more details -->
+                    <div
+                        class="search-results"
+                        v-if="receiptResults.length > 0"
+                    >
+                        <h6 class="results-title mb-2">Kết quả tìm kiếm</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Mã nghiệm thu</th>
+                                        <th>Trạm</th>
+                                        <th>Cán bộ nông vụ</th>
+                                        <th>Vụ đầu tư</th>
+                                        <th>Tiêu đề</th>
+                                        <th>Hợp đồng đầu tư mía</th>
+                                        <th>Hình thức DV</th>
+                                        <th>Hợp đồng cung ứng DV</th>
+                                        <th>Tổng tiền</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="item in receiptResults"
+                                        :key="item.ma_nghiem_thu"
+                                        :class="{
+                                            'table-warning': isDuplicate(
+                                                item.ma_nghiem_thu
+                                            ),
+                                        }"
+                                    >
+                                        <td>{{ item.ma_nghiem_thu }}</td>
+                                        <td>{{ item.tram }}</td>
+                                        <td>{{ item.can_bo_nong_vu }}</td>
+                                        <td>{{ item.vu_dau_tu }}</td>
+                                        <td>{{ item.tieu_de }}</td>
+                                        <td>{{ item.hop_dong_dau_tu_mia }}</td>
+                                        <td>
+                                            {{ item.hinh_thuc_thuc_hien_dv }}
+                                        </td>
+                                        <td>
+                                            {{ item.hop_dong_cung_ung_dich_vu }}
+                                        </td>
+                                        <td>
+                                            {{ formatCurrency(item.tong_tien) }}
+                                        </td>
+                                        <td>
+                                            <button
+                                                @click="selectReceipt(item)"
+                                                class="btn btn-sm btn-success"
+                                                :disabled="
+                                                    isDuplicate(
+                                                        item.ma_nghiem_thu
+                                                    )
+                                                "
+                                                title="Thêm biên bản này vào phiếu trình thanh toán"
+                                            >
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div
+                        v-else-if="searchQuery && searchQuery.length > 0"
+                        class="text-center py-4"
+                    >
+                        <i class="bx bx-search-alt empty-icon d-block mb-2"></i>
+                        <p class="text-muted">Không tìm thấy kết quả phù hợp</p>
+                    </div>
+
+                    <div
+                        class="selected-receipts mt-4"
+                        v-if="selectedReceipts.length > 0"
+                    >
+                        <h6 class="mb-2">
+                            Biên bản đã chọn ({{ selectedReceipts.length }})
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Mã nghiệm thu</th>
+                                        <th>Tiêu đề</th>
+                                        <th>Hợp đồng đầu tư mía</th>
+                                        <th>Hình thức DV</th>
+                                        <th>Hợp đồng cung ứng DV</th>
+                                        <th>Số tiền</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="(
+                                            item, index
+                                        ) in selectedReceipts"
+                                        :key="index"
+                                    >
+                                        <td>{{ item.ma_nghiem_thu }}</td>
+                                        <td>{{ item.tieu_de }}</td>
+                                        <td>{{ item.hop_dong_dau_tu_mia }}</td>
+                                        <td>
+                                            {{ item.hinh_thuc_thuc_hien_dv }}
+                                        </td>
+                                        <td>
+                                            {{ item.hop_dong_cung_ung_dich_vu }}
+                                        </td>
+                                        <td>
+                                            {{ formatCurrency(item.tong_tien) }}
+                                        </td>
+                                        <td>
+                                            <button
+                                                @click="
+                                                    removeSelectedReceipt(index)
+                                                "
+                                                class="btn btn-sm btn-danger"
+                                                title="Xóa khỏi danh sách"
+                                            >
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="5" class="text-end">
+                                            Tổng tiền:
+                                        </td>
+                                        <td colspan="2">
+                                            <strong>{{
+                                                formatCurrency(
+                                                    calculateTotalSelected()
+                                                )
+                                            }}</strong>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-success"
+                        @click="addSelectedReceipts"
+                        :disabled="selectedReceipts.length === 0 || isAdding"
+                    >
+                        <i class="fas fa-save me-1"></i>
+                        <span v-if="isAdding">Đang thêm...</span>
+                        <span v-else
+                            >Thêm {{ selectedReceipts.length }} biên bản</span
+                        >
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -1521,6 +1737,13 @@ export default {
             },
             isUpdating: false,
             editModal: null,
+            // Properties for adding receipts
+            searchQuery: "",
+            receiptResults: [],
+            selectedReceipts: [],
+            isAdding: false,
+            addReceiptModal: null,
+            existingReceiptIds: [], // Will store already mapped receipt IDs
         };
     },
     computed: {
@@ -2079,6 +2302,162 @@ export default {
                 }
             }
         },
+        openAddReceiptModal() {
+            // Clear previous data
+            this.searchQuery = "";
+            this.receiptResults = [];
+            this.selectedReceipts = [];
+
+            // Store existing receipt IDs to prevent duplicates
+            this.existingReceiptIds = this.paymentDetails.map(
+                (item) => item.document_code
+            );
+
+            // Show modal using Bootstrap
+            if (!this.addReceiptModal) {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                    (bootstrap) => {
+                        const modalElement =
+                            document.getElementById("addReceiptModal");
+                        if (modalElement) {
+                            this.addReceiptModal = new bootstrap.Modal(
+                                modalElement
+                            );
+                            this.addReceiptModal.show();
+                        }
+                    }
+                );
+            } else {
+                this.addReceiptModal.show();
+            }
+        },
+
+        async searchReceipts() {
+            if (!this.searchQuery || this.searchQuery.length < 2) {
+                this.receiptResults = [];
+                return;
+            }
+
+            try {
+                this.isSearching = true; // Add a loading state
+
+                const response = await axios.get(
+                    "/api/bienban-nghiemthu-search-pttt",
+                    {
+                        params: {
+                            search: this.searchQuery,
+                            investment_project:
+                                this.document.investment_project,
+                        },
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                console.log("Search response:", response.data); // Debug log
+
+                if (response.data && Array.isArray(response.data)) {
+                    // Map the response to include all required fields
+                    this.receiptResults = response.data.map((item) => ({
+                        ma_nghiem_thu: item.ma_nghiem_thu,
+                        tieu_de: item.tieu_de,
+                        tram: item.tram,
+                        can_bo_nong_vu: item.can_bo_nong_vu,
+                        vu_dau_tu: item.vu_dau_tu,
+                        hop_dong_dau_tu_mia: item.hop_dong_dau_tu_mia,
+                        hinh_thuc_thuc_hien_dv: item.hinh_thuc_thuc_hien_dv,
+                        hop_dong_cung_ung_dich_vu:
+                            item.hop_dong_cung_ung_dich_vu,
+                        tong_tien: item.tong_tien || 0,
+                    }));
+                } else {
+                    this.receiptResults = [];
+                }
+            } catch (error) {
+                console.error("Error searching receipts:", error);
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            } finally {
+                this.isSearching = false; // Clear loading state
+            }
+        },
+
+        isDuplicate(receiptId) {
+            // Check if receipt is already in the payment request
+            return this.existingReceiptIds.includes(receiptId);
+        },
+
+        selectReceipt(item) {
+            // Check if receipt is not already selected
+            const isAlreadySelected = this.selectedReceipts.some(
+                (selected) => selected.ma_nghiem_thu === item.ma_nghiem_thu
+            );
+
+            if (!isAlreadySelected) {
+                this.selectedReceipts.push(item);
+            }
+        },
+
+        removeSelectedReceipt(index) {
+            this.selectedReceipts.splice(index, 1);
+        },
+
+        calculateTotalSelected() {
+            return this.selectedReceipts.reduce(
+                (sum, item) => sum + (parseFloat(item.tong_tien) || 0),
+                0
+            );
+        },
+
+        async addSelectedReceipts() {
+            if (this.selectedReceipts.length === 0) return;
+
+            this.isAdding = true;
+
+            try {
+                const receiptIds = this.selectedReceipts.map(
+                    (item) => item.ma_nghiem_thu
+                );
+
+                const response = await axios.post(
+                    `/api/payment-requests/${this.document.payment_code}/add-receipts`,
+                    {
+                        receipt_ids: receiptIds,
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    // Close the modal
+                    this.addReceiptModal.hide();
+
+                    // Show success message
+                    this.showSuccess(
+                        `Đã thêm ${this.selectedReceipts.length} biên bản thành công`
+                    );
+
+                    // Refresh data
+                    this.fetchDocument();
+                } else {
+                    throw new Error(response.data.message || "Unknown error");
+                }
+            } catch (error) {
+                console.error("Error adding receipts:", error);
+                this.showError("Đã xảy ra lỗi khi thêm biên bản");
+
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            } finally {
+                this.isAdding = false;
+            }
+        },
     },
 };
 </script>
@@ -2624,7 +3003,8 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 
 /* Button styling for action buttons */
 .edit-records-btn,
-.delete-records-btn {
+.delete-records-btn,
+.add-records-btn {
     position: absolute;
     z-index: 99;
     font-size: 1rem;
@@ -2652,6 +3032,12 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     background: #dc3545;
 }
 
+.add-records-btn {
+    right: 110px;
+    top: 25px;
+    background: #198754;
+}
+
 .edit-records-btn:hover {
     background: #0d6efd;
     transform: scale(1.1);
@@ -2660,6 +3046,12 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 
 .delete-records-btn:hover {
     background: #c82333;
+    transform: scale(1.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.add-records-btn:hover {
+    background: #157347;
     transform: scale(1.1);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
@@ -2675,5 +3067,30 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     cursor: pointer;
     width: 18px;
     height: 18px;
+}
+
+/* Search input styling */
+.search-input-wrapper {
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    font-size: 1.2rem;
+}
+
+/* Search results styling */
+.results-title {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.table-warning {
+    background-color: rgba(255, 243, 205, 0.5);
 }
 </style>

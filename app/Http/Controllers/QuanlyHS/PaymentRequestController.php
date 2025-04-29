@@ -475,4 +475,88 @@ class PaymentRequestController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Add receipts to a payment request
+     */
+    public function addReceipts(Request $request, $id)
+    {
+        $request->validate([
+            'receipt_ids' => 'required|array',
+            'receipt_ids.*' => 'string',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Check if payment request exists
+            $paymentRequest = PaymentRequest::where('ma_trinh_thanh_toan', $id)->first();
+            
+            if (!$paymentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request not found'
+                ], 404);
+            }
+            
+            // Get receipt details to calculate total amount
+            $receipts = DB::table('tb_bien_ban_nghiemthu_dv')
+                ->whereIn('ma_nghiem_thu', $request->receipt_ids)
+                ->select(
+                    'ma_nghiem_thu',
+                    'tong_tien_thanh_toan'
+                )
+                ->get();
+                
+            $receiptMap = [];
+            foreach ($receipts as $receipt) {
+                $receiptMap[$receipt->ma_nghiem_thu] = $receipt->tong_tien_thanh_toan;
+            }
+            
+            // Add records to logs table
+            $logsData = [];
+            foreach ($request->receipt_ids as $receiptId) {
+                $logsData[] = [
+                    'ma_trinh_thanh_toan' => $id,
+                    'ma_nghiem_thu' => $receiptId,
+                    'ma_de_nghi_giai_ngan' => null, // Will be updated later
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ];
+            }
+            
+            // Insert new logs
+            DB::table('Logs_phieu_trinh_thanh_toan')->insert($logsData);
+            
+            // Update total amount for payment request
+            $totalAmount = $paymentRequest->tong_tien_thanh_toan;
+            foreach ($request->receipt_ids as $receiptId) {
+                $totalAmount += $receiptMap[$receiptId] ?? 0;
+            }
+            
+            $paymentRequest->tong_tien_thanh_toan = $totalAmount;
+            $paymentRequest->save();
+            
+           
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Receipts added successfully',
+                'new_total_amount' => $totalAmount
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error adding receipts to payment request: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error adding receipts: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+   
+  
 }

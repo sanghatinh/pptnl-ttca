@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Log; 
 use App\Models\DocumentDelivery;
 use App\Models\DocumentMapping;
 use App\Models\DocumentMappingHomGiong;
 use App\Models\BienBanNghiemThuHomGiong;
 use App\Models\Log\DocumentLog; // Add this import
 use App\Models\Log\StatusDocumentDelivery; // Add this import
+use App\Models\QuanlyHS\PaymentRequestLog;
 
 use Illuminate\Http\Request;
 
@@ -541,6 +542,29 @@ public function checkAccess($id)
     } catch (\Exception $e) {
         \Log::error('Error in checkAccess: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
         return response()->json(['hasAccess' => false, 'message' => 'Error checking access', 'error' => $e->getMessage()], 500);
+    }
+}
+
+ /**
+ * ค้นหารายการบันทึกการตรวจรับสำหรับการเพิ่มเข้าใบเบิกเงิน
+ */
+public function searchBienBanNgheThu_PTTT(Request $request)
+{
+    try {
+        $searchTerm = $request->get('search', '');
+        
+        // ลองค้นหาอย่างง่ายที่สุดก่อน
+        $results = DB::table('tb_bien_ban_nghiemthu_dv')
+            ->where('ma_nghiem_thu', 'like', "%{$searchTerm}%")
+            ->limit(10)
+            ->get();
+            
+        Log::info("Simple search results count: " . count($results));
+        
+        return response()->json($results);
+    } catch (\Exception $e) {
+        Log::error('Error searching for receipts: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to search for receipts', 'message' => $e->getMessage()], 500);
     }
 }
 
