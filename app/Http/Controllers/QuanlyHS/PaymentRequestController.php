@@ -8,7 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Facades\Schema;
+use App\Models\QuanlyHS\BienBanNghiemThu;
+use App\Models\User;
 class PaymentRequestController extends Controller
 {
     /**
@@ -64,10 +66,10 @@ class PaymentRequestController extends Controller
             $lastId = DB::table('tb_phieu_trinh_thanh_toan')->max('id') ?? 0;
             $newId = $lastId + 1;
             $codeId = str_pad($newId, 6, '0', STR_PAD_LEFT);
-            $maTrinh = "MTTT-TTCA-{$request->investment_project}-{$codeId}";
+            $maTrinh = "PTTT-TTCA-{$request->investment_project}-{$codeId}";
             
             // 2. สร้างชื่อเรื่อง (Tiêu đề) ในรูปแบบ TIEUDE-MTTT-TTCA-{Ma_Vudautu}-{ID}
-            $tieuDe = "TIEUDE-{$maTrinh}";
+            $tieuDe = "PTTT-{$request->payment_type}-{$request->investment_project}-{$codeId}";
             
             // 3. คำนวณยอดเงินรวมจาก receipt_ids
             $totalAmount = $this->calculateTotalAmount($request->receipt_ids);
@@ -157,40 +159,97 @@ class PaymentRequestController extends Controller
     public function show($id)
     {
         try {
-            $paymentRequest = PaymentRequest::where('ma_trinh_thanh_toan', $id)->first();
+            // Get the main payment request record
+            $document = DB::table('tb_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->first();
             
-            if (!$paymentRequest) {
+            if (!$document) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Payment request not found'
                 ], 404);
             }
             
-            // ดึงข้อมูลประวัติ log ทั้งหมด
-            $logs = PaymentRequestLog::with('user')
+            // Get the creator information (assuming we have a creator ID field)
+            $creatorInfo = null;
+            if (isset($document->nguoi_tao)) {
+                // Check if the users table exists and has the correct columns
+                if (Schema::hasTable('users') && Schema::hasColumn('users', 'id')) {
+                    $creatorInfo = DB::table('users')
+                        ->where('id', $document->nguoi_tao)
+                        ->first();
+                }
+            }
+            
+            // Get all receipt IDs associated with this payment request from logs
+            $receiptIds = DB::table('Logs_phieu_trinh_thanh_toan')
                 ->where('ma_trinh_thanh_toan', $id)
-                ->get();
+                ->pluck('ma_nghiem_thu')
+                ->toArray();
             
-            // ดึงข้อมูลของคนที่สร้างเอกสาร
-            $creator = $logs->sortBy('created_at')->first()->user ?? null;
-            
-            // ดึงข้อมูลรายละเอียดของทุกรายการที่เลือกไว้
-            $receiptIds = $logs->pluck('ma_nghiem_thu')->toArray();
-            $receipts = DB::table('tb_bien_ban_nghiemthu_dv')
+            // Get detailed information for each receipt from tb_bien_ban_nghiemthu_dv
+            // Adding the requested additional columns
+            $paymentDetails = DB::table('tb_bien_ban_nghiemthu_dv')
                 ->whereIn('ma_nghiem_thu', $receiptIds)
+                ->select(
+                    'ma_nghiem_thu as document_code',
+                    'tieu_de as title',
+                    'vu_dau_tu as investment_project',
+                    'khach_hang_ca_nhan_dt_mia', // Added as requested
+                    'khach_hang_doanh_nghiep_dt_mia', // Added as requested
+                    'hop_dong_dau_tu_mia as contract_number',
+                    'hinh_thuc_thuc_hien_dv as service_type',
+                    'hop_dong_cung_ung_dich_vu', // Added as requested 
+                    'tram', // Added new tram column
+                    'tong_tien as amount'
+                )
                 ->get();
+            
+            // Map the payment details and add a default empty value for disbursement_code
+            $mappedPaymentDetails = $paymentDetails->map(function($item) {
+                $item->disbursement_code = ''; // Add default empty value
+                return $item;
+            });
+            
+            // Get processing history/logs - WITHOUT joining the users table
+            $processingHistory = DB::table('Logs_phieu_trinh_thanh_toan')
+                ->select(
+                    'id',
+                    'ma_trinh_thanh_toan',
+                    'ma_nghiem_thu',
+                    'action',
+                    'comments as note',
+                    'created_at',
+                    'action_by' // Keep the action_by field for reference
+                )
+                ->where('ma_trinh_thanh_toan', $id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            // Add a default user_name for each log entry
+            $processingHistory = $processingHistory->map(function($log) {
+                $log->user_name = "Người dùng #" . $log->action_by; // Default user name with ID
+                return $log;
+            });
             
             return response()->json([
                 'success' => true,
-                'payment_request' => $paymentRequest,
-                'logs' => $logs,
-                'receipts' => $receipts,
-                'creator' => $creator ? [
-                    'id' => $creator->id,
-                    'name' => $creator->name ?? $creator->full_name,
-                    'position' => $creator->position,
-                    'station' => $creator->station
-                ] : null
+                'document' => [
+                    'payment_code' => $document->ma_trinh_thanh_toan,
+                    'title' => $document->tieu_de,
+                    'investment_project' => $document->vu_dau_tu,
+                    'payment_type' => $document->loai_thanh_toan,
+                    'status' => $document->trang_thai_thanh_toan,
+                    'payment_installment' => $document->so_dot_thanh_toan,
+                    'proposal_number' => $document->so_to_trinh,
+                    'created_at' => $document->ngay_tao,
+                    'total_amount' => $document->tong_tien_thanh_toan,
+                    'creator_name' => $creatorInfo ? ($creatorInfo->full_name ?? $creatorInfo->name ?? "Người dùng #" . $document->nguoi_tao) : 'Unknown',
+                    // 'notes' => $document->ghi_chu
+                ],
+                'paymentDetails' => $mappedPaymentDetails,
+                'processingHistory' => $processingHistory
             ]);
             
         } catch (\Exception $e) {

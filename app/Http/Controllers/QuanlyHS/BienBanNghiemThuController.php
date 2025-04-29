@@ -377,7 +377,12 @@ class BienBanNghiemThuController extends Controller
             'tinh_trang' => ['tình trạng', 'tinh trang', 'status'],
             'tinh_trang_duyet' => ['tình trạng duyệt', 'tinh trang duyet', 'approval status', 'approval'],
             //เพี่ม column ma_nhan_vien
-            'ma_nhan_vien' => ['mã nhân viên', 'ma nhan vien', 'employee code', 'employee id', 'Mã nhân viên (Cán bộ nông vụ) (Nhân viên)']
+            'ma_nhan_vien' => ['mã nhân viên', 'ma nhan vien', 'employee code', 'employee id', 'Mã nhân viên (Cán bộ nông vụ) (Nhân viên)'],
+            // New columns for customer IDs
+            'MaKH_DTDV_Canhan' => ['Mã khách hàng (Đối tác cá nhân cung cấp dịch vụ) (Khách hàng)'],
+            'MaKH_DTDV_DN' => ['Mã khách hàng (Đối tác cung cấp dịch vụ (KHDN)) (Khách hàng doanh nghiệp)'],
+            'MaKH_Chumia_Canhan' => ['Mã khách hàng (Khách hàng cá nhân ĐT mía) (Khách hàng)'],
+            'MaKH_Chumia_DN' => ['Mã khách hàng (Khách hàng doanh nghiệp ĐT mía) (Khách hàng doanh nghiệp)']
         ];
         
         $columnMap = [];

@@ -1423,9 +1423,9 @@
     >
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-light">
+                <div class="modal-header">
                     <h5 class="modal-title" id="paymentRequestModalLabel">
-                        <i class="fas fa-file-invoice me-2 text-success"></i>
+                        <i class="fas fa-file-invoice me-2"></i>
                         Tạo phiếu trình thanh toán
                     </h5>
                     <button
@@ -1540,7 +1540,7 @@
                             />
                         </div>
 
-                        <div class="alert alert-info">
+                        <div class="alert alert-info text-white mb-3">
                             <i class="fas fa-info-circle me-2"></i>
                             Đã chọn
                             <strong>{{ selectedItems.length }}</strong> biên bản

@@ -9,6 +9,8 @@ import BienBanNTDV from "../Pages/Quanlyhoso/BienBanNTDV.vue";
 import Details_NghiemthuDV from "../Pages/Quanlyhoso/Details_NghiemthuDV.vue";
 import Details_Phieugiaonhanhomgiong from "../Pages/Quanlyhoso/Details_Phieugiaonhanhomgiong.vue";
 import Phieugiaonhanhomgiong from "../Pages/Quanlyhoso/Phieugiaonhanhomgiong.vue";
+import Phieutrinhthanhtoan from "../Pages/QuanlyTaichinh/Phieutrinhthanhtoan.vue";
+import Details_Phieutrinhthanhtoan from "../Pages/QuanlyTaichinh/Details_Phieutrinhthanhtoan.vue";
 import login from "../Pages/Login.vue";
 import Nopage from "../Pages/404.vue";
 import Register from "../Pages/Register.vue";
@@ -222,6 +224,22 @@ const routes = [
                     next("/unauthorized");
                 }
             }
+        },
+    },
+    {
+        name: "Phieutrinhthanhtoan",
+        path: "/Phieutrinhthanhtoan",
+        component: Phieutrinhthanhtoan,
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
+        name: "Details_Phieutrinhthanhtoan",
+        path: "/Details_Phieutrinhthanhtoan/:id",
+        component: Details_Phieutrinhthanhtoan,
+        meta: {
+            middleware: [authMiddleware],
         },
     },
     {

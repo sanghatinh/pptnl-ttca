@@ -98,25 +98,19 @@
                         </a>
                         <div class="sidebar-submenu">
                             <ul>
-                                <li
-                                    v-if="
-                                        userCanViewComponent(
-                                            'Financial Dashboard'
-                                        )
-                                    "
-                                >
+                                <li>
                                     <router-link
-                                        to="/financial-overview"
+                                        to="/Phieutrinhthanhtoan"
                                         :class="
                                             $route.path ===
-                                            '/financial-overview'
+                                            '/Phieutrinhthanhtoan'
                                                 ? 'current-page'
                                                 : ''
                                         "
                                         @click="closeSidebar"
                                     >
                                         <span class="menu-text"
-                                            >Tổng quan tài chính</span
+                                            >Phiêu trình thanh toán</span
                                         >
                                     </router-link>
                                 </li>

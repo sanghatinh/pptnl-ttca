@@ -137,7 +137,8 @@ Route::get('/payment-requests', [PaymentRequestController::class, 'index']);
 Route::get('/investment-projects', [PaymentRequestController::class, 'getInvestmentProjects']);
 
 // ดึงรายละเอียดเอกสารขอเบิกเงิน
-Route::get('/payment-requests/{id}', [PaymentRequestController::class, 'show']);
+// Add or modify this route:
+    Route::get('/payment-requests/{id}', [PaymentRequestController::class, 'show']);
 
 // อัพเดตสถานะเอกสารขอเบิกเงิน
 Route::patch('/payment-requests/{id}/status', [PaymentRequestController::class, 'updateStatus']);

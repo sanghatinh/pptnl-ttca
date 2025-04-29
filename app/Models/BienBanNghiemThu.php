@@ -28,6 +28,10 @@ class BienBanNghiemThu extends Model
         'tinh_trang',
         'tinh_trang_duyet',
         'ma_nhan_vien',
+        'MaKH_DTDV_Canhan',
+        'MaKH_DTDV_DN',
+        'MaKH_Chumia_Canhan',
+        'MaKH_Chumia_DN',
     ];
 
     // เพิ่ม scope สำหรับการค้นหา
