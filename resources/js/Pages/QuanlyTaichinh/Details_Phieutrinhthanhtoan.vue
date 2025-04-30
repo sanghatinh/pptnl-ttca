@@ -1283,6 +1283,1019 @@
                         </div>
                     </div>
 
+                    <!-- Phiếu đề nghị thanh toán table -->
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <span
+                                class="import-data-btn"
+                                title="Import data"
+                                @click="openPaymentImportModal"
+                            >
+                                <i class="fas fa-file-import"></i>
+                            </span>
+                            <span
+                                class="export-excel-btn"
+                                title="Export to Excel"
+                                @click="exportPaymentRequestsToExcel"
+                            >
+                                <i class="fas fa-file-excel"></i>
+                            </span>
+                            <span
+                                class="reset-all-filters-btn"
+                                title="Reset all filters"
+                                @click="resetPaymentRequestFilters"
+                            >
+                                <i class="fas fa-redo-alt"></i>
+                            </span>
+                            <!-- Add edit button -->
+                            <span
+                                class="edit-records-btn"
+                                title="Edit selected records"
+                                @click="editSelectedPaymentRecords"
+                                :class="{
+                                    disabled:
+                                        selectedPaymentRequests.length === 0,
+                                }"
+                            >
+                                <i class="fas fa-edit"></i>
+                            </span>
+                            <!-- Add delete button -->
+                            <span
+                                class="delete-records-btn"
+                                title="Delete selected records"
+                                @click="deleteSelectedPaymentRecords"
+                                :class="{
+                                    disabled:
+                                        selectedPaymentRequests.length === 0,
+                                }"
+                            >
+                                <i class="fas fa-trash"></i>
+                            </span>
+                            <span
+                                class="add-records-btn"
+                                title="Add new payment request"
+                                @click="openAddPaymentRequestModal"
+                            >
+                                <i class="fas fa-plus"></i>
+                            </span>
+                            <h5 class="card-title">Phiếu đề nghị thanh toán</h5>
+                            <div class="table-container">
+                                <div class="table-responsive mt-2">
+                                    <table
+                                        class="table table-bordered table-hover align-middle"
+                                    >
+                                        <thead class="table-light text-center">
+                                            <tr>
+                                                <th>
+                                                    <input
+                                                        type="checkbox"
+                                                        :checked="
+                                                            isAllPaymentRequestsSelected
+                                                        "
+                                                        @change="
+                                                            toggleSelectAllPaymentRequests
+                                                        "
+                                                        class="form-check-input"
+                                                    />
+                                                </th>
+                                                <th>
+                                                    Mã giải ngân
+                                                    <button
+                                                        @click="
+                                                            togglePaymentFilter(
+                                                                'disbursement_code'
+                                                            )
+                                                        "
+                                                        class="filter-btn"
+                                                    >
+                                                        <i
+                                                            class="fas fa-filter"
+                                                            :class="{
+                                                                'text-green-500':
+                                                                    paymentFilters.disbursement_code,
+                                                            }"
+                                                        ></i>
+                                                    </button>
+                                                    <div
+                                                        v-if="
+                                                            activePaymentFilter ===
+                                                            'disbursement_code'
+                                                        "
+                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                                    >
+                                                        <input
+                                                            type="text"
+                                                            v-model="
+                                                                paymentFilters.disbursement_code
+                                                            "
+                                                            class="form-control mb-2"
+                                                            placeholder="Lọc theo mã..."
+                                                        />
+                                                        <div
+                                                            class="flex justify-between"
+                                                        >
+                                                            <button
+                                                                @click="
+                                                                    resetPaymentFilter(
+                                                                        'disbursement_code'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-light"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                            <button
+                                                                @click="
+                                                                    applyPaymentFilter(
+                                                                        'disbursement_code'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-success"
+                                                            >
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                                <th>
+                                                    Trạm
+                                                    <button
+                                                        @click="
+                                                            togglePaymentFilter(
+                                                                'tram'
+                                                            )
+                                                        "
+                                                        class="filter-btn"
+                                                    >
+                                                        <i
+                                                            class="fas fa-filter"
+                                                            :class="{
+                                                                'text-green-500':
+                                                                    selectedPaymentFilterValues.tram &&
+                                                                    selectedPaymentFilterValues
+                                                                        .tram
+                                                                        .length >
+                                                                        0,
+                                                            }"
+                                                        ></i>
+                                                    </button>
+                                                    <div
+                                                        v-if="
+                                                            activePaymentFilter ===
+                                                            'tram'
+                                                        "
+                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                                    >
+                                                        <div
+                                                            class="max-h-40 overflow-y-auto mb-2"
+                                                        >
+                                                            <div
+                                                                v-for="option in uniquePaymentValues.tram"
+                                                                :key="option"
+                                                                class="flex items-center mb-2"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    :id="`payment-tram-${option}`"
+                                                                    :value="
+                                                                        option
+                                                                    "
+                                                                    v-model="
+                                                                        selectedPaymentFilterValues.tram
+                                                                    "
+                                                                    class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                                />
+                                                                <label
+                                                                    :for="`payment-tram-${option}`"
+                                                                    class="select-none"
+                                                                    >{{
+                                                                        option
+                                                                    }}</label
+                                                                >
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            class="flex justify-between"
+                                                        >
+                                                            <button
+                                                                @click="
+                                                                    resetPaymentFilter(
+                                                                        'tram'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-light"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                            <button
+                                                                @click="
+                                                                    applyPaymentFilter(
+                                                                        'tram'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-success"
+                                                            >
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                                <th>
+                                                    Vụ đầu tư
+                                                    <button
+                                                        @click="
+                                                            togglePaymentFilter(
+                                                                'investment_project'
+                                                            )
+                                                        "
+                                                        class="filter-btn"
+                                                    >
+                                                        <i
+                                                            class="fas fa-filter"
+                                                            :class="{
+                                                                'text-green-500':
+                                                                    selectedPaymentFilterValues.investment_project &&
+                                                                    selectedPaymentFilterValues
+                                                                        .investment_project
+                                                                        .length >
+                                                                        0,
+                                                            }"
+                                                        ></i>
+                                                    </button>
+                                                    <div
+                                                        v-if="
+                                                            activePaymentFilter ===
+                                                            'investment_project'
+                                                        "
+                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                                    >
+                                                        <div
+                                                            class="max-h-40 overflow-y-auto mb-2"
+                                                        >
+                                                            <div
+                                                                v-for="option in uniquePaymentValues.investment_project"
+                                                                :key="option"
+                                                                class="flex items-center mb-2"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    :id="`payment-investment-${option}`"
+                                                                    :value="
+                                                                        option
+                                                                    "
+                                                                    v-model="
+                                                                        selectedPaymentFilterValues.investment_project
+                                                                    "
+                                                                    class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                                />
+                                                                <label
+                                                                    :for="`payment-investment-${option}`"
+                                                                    class="select-none"
+                                                                    >{{
+                                                                        option
+                                                                    }}</label
+                                                                >
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            class="flex justify-between"
+                                                        >
+                                                            <button
+                                                                @click="
+                                                                    resetPaymentFilter(
+                                                                        'investment_project'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-light"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                            <button
+                                                                @click="
+                                                                    applyPaymentFilter(
+                                                                        'investment_project'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-success"
+                                                            >
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                                <th>
+                                                    Loại thanh toán
+                                                    <button
+                                                        @click="
+                                                            togglePaymentFilter(
+                                                                'payment_type'
+                                                            )
+                                                        "
+                                                        class="filter-btn"
+                                                    >
+                                                        <i
+                                                            class="fas fa-filter"
+                                                            :class="{
+                                                                'text-green-500':
+                                                                    selectedPaymentFilterValues.payment_type &&
+                                                                    selectedPaymentFilterValues
+                                                                        .payment_type
+                                                                        .length >
+                                                                        0,
+                                                            }"
+                                                        ></i>
+                                                    </button>
+                                                    <div
+                                                        v-if="
+                                                            activePaymentFilter ===
+                                                            'payment_type'
+                                                        "
+                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                                    >
+                                                        <div
+                                                            class="max-h-40 overflow-y-auto mb-2"
+                                                        >
+                                                            <div
+                                                                v-for="option in uniquePaymentValues.payment_type"
+                                                                :key="option"
+                                                                class="flex items-center mb-2"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    :id="`payment-type-${option}`"
+                                                                    :value="
+                                                                        option
+                                                                    "
+                                                                    v-model="
+                                                                        selectedPaymentFilterValues.payment_type
+                                                                    "
+                                                                    class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                                />
+                                                                <label
+                                                                    :for="`payment-type-${option}`"
+                                                                    class="select-none"
+                                                                    >{{
+                                                                        option
+                                                                    }}</label
+                                                                >
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            class="flex justify-between"
+                                                        >
+                                                            <button
+                                                                @click="
+                                                                    resetPaymentFilter(
+                                                                        'payment_type'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-light"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                            <button
+                                                                @click="
+                                                                    applyPaymentFilter(
+                                                                        'payment_type'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-success"
+                                                            >
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                                <th>
+                                                    Khách hàng cá nhân
+                                                    <button
+                                                        @click="
+                                                            togglePaymentFilter(
+                                                                'individual_customer'
+                                                            )
+                                                        "
+                                                        class="filter-btn"
+                                                    >
+                                                        <i
+                                                            class="fas fa-filter"
+                                                            :class="{
+                                                                'text-green-500':
+                                                                    paymentFilters.individual_customer,
+                                                            }"
+                                                        ></i>
+                                                    </button>
+                                                    <div
+                                                        v-if="
+                                                            activePaymentFilter ===
+                                                            'individual_customer'
+                                                        "
+                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                                    >
+                                                        <input
+                                                            type="text"
+                                                            v-model="
+                                                                paymentFilters.individual_customer
+                                                            "
+                                                            class="form-control mb-2"
+                                                            placeholder="Lọc theo khách hàng..."
+                                                        />
+                                                        <div
+                                                            class="flex justify-between"
+                                                        >
+                                                            <button
+                                                                @click="
+                                                                    resetPaymentFilter(
+                                                                        'individual_customer'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-light"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                            <button
+                                                                @click="
+                                                                    applyPaymentFilter(
+                                                                        'individual_customer'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-success"
+                                                            >
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                                <th>
+                                                    Mã KH cá nhân
+                                                    <button
+                                                        @click="
+                                                            togglePaymentFilter(
+                                                                'individual_customer_code'
+                                                            )
+                                                        "
+                                                        class="filter-btn"
+                                                    >
+                                                        <i
+                                                            class="fas fa-filter"
+                                                            :class="{
+                                                                'text-green-500':
+                                                                    paymentFilters.individual_customer_code,
+                                                            }"
+                                                        ></i>
+                                                    </button>
+                                                    <div
+                                                        v-if="
+                                                            activePaymentFilter ===
+                                                            'individual_customer_code'
+                                                        "
+                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                                    >
+                                                        <input
+                                                            type="text"
+                                                            v-model="
+                                                                paymentFilters.individual_customer_code
+                                                            "
+                                                            class="form-control mb-2"
+                                                            placeholder="Lọc theo mã khách hàng..."
+                                                        />
+                                                        <div
+                                                            class="flex justify-between"
+                                                        >
+                                                            <button
+                                                                @click="
+                                                                    resetPaymentFilter(
+                                                                        'individual_customer_code'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-light"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                            <button
+                                                                @click="
+                                                                    applyPaymentFilter(
+                                                                        'individual_customer_code'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-success"
+                                                            >
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                                <th>
+                                                    Khách hàng doanh nghiệp
+                                                    <button
+                                                        @click="
+                                                            togglePaymentFilter(
+                                                                'corporate_customer'
+                                                            )
+                                                        "
+                                                        class="filter-btn"
+                                                    >
+                                                        <i
+                                                            class="fas fa-filter"
+                                                            :class="{
+                                                                'text-green-500':
+                                                                    paymentFilters.corporate_customer,
+                                                            }"
+                                                        ></i>
+                                                    </button>
+                                                    <div
+                                                        v-if="
+                                                            activePaymentFilter ===
+                                                            'corporate_customer'
+                                                        "
+                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                                    >
+                                                        <input
+                                                            type="text"
+                                                            v-model="
+                                                                paymentFilters.corporate_customer
+                                                            "
+                                                            class="form-control mb-2"
+                                                            placeholder="Lọc theo doanh nghiệp..."
+                                                        />
+                                                        <div
+                                                            class="flex justify-between"
+                                                        >
+                                                            <button
+                                                                @click="
+                                                                    resetPaymentFilter(
+                                                                        'corporate_customer'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-light"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                            <button
+                                                                @click="
+                                                                    applyPaymentFilter(
+                                                                        'corporate_customer'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-success"
+                                                            >
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                                <th>
+                                                    Mã KH doanh nghiệp
+                                                    <button
+                                                        @click="
+                                                            togglePaymentFilter(
+                                                                'corporate_customer_code'
+                                                            )
+                                                        "
+                                                        class="filter-btn"
+                                                    >
+                                                        <i
+                                                            class="fas fa-filter"
+                                                            :class="{
+                                                                'text-green-500':
+                                                                    paymentFilters.corporate_customer_code,
+                                                            }"
+                                                        ></i>
+                                                    </button>
+                                                    <div
+                                                        v-if="
+                                                            activePaymentFilter ===
+                                                            'corporate_customer_code'
+                                                        "
+                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                                    >
+                                                        <input
+                                                            type="text"
+                                                            v-model="
+                                                                paymentFilters.corporate_customer_code
+                                                            "
+                                                            class="form-control mb-2"
+                                                            placeholder="Lọc theo mã doanh nghiệp..."
+                                                        />
+                                                        <div
+                                                            class="flex justify-between"
+                                                        >
+                                                            <button
+                                                                @click="
+                                                                    resetPaymentFilter(
+                                                                        'corporate_customer_code'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-light"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                            <button
+                                                                @click="
+                                                                    applyPaymentFilter(
+                                                                        'corporate_customer_code'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-success"
+                                                            >
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                                <th>Tổng tiền</th>
+                                                <th>Tổng tiền tạm giữ</th>
+                                                <th>Tổng tiền khấu trừ</th>
+                                                <th>Tổng tiền lãi suất</th>
+                                                <th>
+                                                    Tổng tiền thanh toán còn lại
+                                                </th>
+                                                <th>
+                                                    Ngày thanh toán
+                                                    <button
+                                                        @click="
+                                                            togglePaymentFilter(
+                                                                'payment_date'
+                                                            )
+                                                        "
+                                                        class="filter-btn"
+                                                    >
+                                                        <i
+                                                            class="fas fa-filter"
+                                                            :class="{
+                                                                'text-green-500':
+                                                                    paymentFilters.payment_date,
+                                                            }"
+                                                        ></i>
+                                                    </button>
+                                                    <div
+                                                        v-if="
+                                                            activePaymentFilter ===
+                                                            'payment_date'
+                                                        "
+                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                                    >
+                                                        <input
+                                                            type="date"
+                                                            v-model="
+                                                                paymentFilters.payment_date
+                                                            "
+                                                            class="form-control mb-2"
+                                                        />
+                                                        <div
+                                                            class="flex justify-between"
+                                                        >
+                                                            <button
+                                                                @click="
+                                                                    resetPaymentFilter(
+                                                                        'payment_date'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-light"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                            <button
+                                                                @click="
+                                                                    applyPaymentFilter(
+                                                                        'payment_date'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-success"
+                                                            >
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                                <th>
+                                                    Số tờ trình
+                                                    <button
+                                                        @click="
+                                                            togglePaymentFilter(
+                                                                'proposal_number'
+                                                            )
+                                                        "
+                                                        class="filter-btn"
+                                                    >
+                                                        <i
+                                                            class="fas fa-filter"
+                                                            :class="{
+                                                                'text-green-500':
+                                                                    paymentFilters.proposal_number,
+                                                            }"
+                                                        ></i>
+                                                    </button>
+                                                    <div
+                                                        v-if="
+                                                            activePaymentFilter ===
+                                                            'proposal_number'
+                                                        "
+                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                                    >
+                                                        <input
+                                                            type="text"
+                                                            v-model="
+                                                                paymentFilters.proposal_number
+                                                            "
+                                                            class="form-control mb-2"
+                                                            placeholder="Lọc theo số tờ trình..."
+                                                        />
+                                                        <div
+                                                            class="flex justify-between"
+                                                        >
+                                                            <button
+                                                                @click="
+                                                                    resetPaymentFilter(
+                                                                        'proposal_number'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-light"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                            <button
+                                                                @click="
+                                                                    applyPaymentFilter(
+                                                                        'proposal_number'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-success"
+                                                            >
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                                <th>
+                                                    Đợt thanh toán
+                                                    <button
+                                                        @click="
+                                                            togglePaymentFilter(
+                                                                'installment'
+                                                            )
+                                                        "
+                                                        class="filter-btn"
+                                                    >
+                                                        <i
+                                                            class="fas fa-filter"
+                                                            :class="{
+                                                                'text-green-500':
+                                                                    paymentFilters.installment,
+                                                            }"
+                                                        ></i>
+                                                    </button>
+                                                    <div
+                                                        v-if="
+                                                            activePaymentFilter ===
+                                                            'installment'
+                                                        "
+                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                                    >
+                                                        <input
+                                                            type="text"
+                                                            v-model="
+                                                                paymentFilters.installment
+                                                            "
+                                                            class="form-control mb-2"
+                                                            placeholder="Lọc theo đợt..."
+                                                        />
+                                                        <div
+                                                            class="flex justify-between"
+                                                        >
+                                                            <button
+                                                                @click="
+                                                                    resetPaymentFilter(
+                                                                        'installment'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-light"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                            <button
+                                                                @click="
+                                                                    applyPaymentFilter(
+                                                                        'installment'
+                                                                    )
+                                                                "
+                                                                class="btn btn-sm btn-success"
+                                                            >
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr
+                                                v-if="
+                                                    paginatedPaymentRequests
+                                                        .data.length === 0
+                                                "
+                                            >
+                                                <td
+                                                    colspan="17"
+                                                    class="text-center py-4"
+                                                >
+                                                    <div class="empty-state">
+                                                        <i
+                                                            class="fas fa-file-invoice empty-icon"
+                                                        ></i>
+                                                        <p>
+                                                            Chưa có dữ liệu
+                                                            phiếu đề nghị thanh
+                                                            toán
+                                                        </p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr
+                                                v-for="(
+                                                    item, index
+                                                ) in paginatedPaymentRequests.data"
+                                                :key="index"
+                                            >
+                                                <td class="text-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        :value="
+                                                            item.disbursement_code
+                                                        "
+                                                        v-model="
+                                                            selectedPaymentRequests
+                                                        "
+                                                        class="form-check-input"
+                                                    />
+                                                </td>
+                                                <td>
+                                                    {{ item.disbursement_code }}
+                                                </td>
+                                                <td>
+                                                    {{ item.tram || "N/A" }}
+                                                </td>
+                                                <td>
+                                                    {{
+                                                        item.investment_project
+                                                    }}
+                                                </td>
+                                                <td>{{ item.payment_type }}</td>
+                                                <td>
+                                                    {{
+                                                        item.individual_customer ||
+                                                        "N/A"
+                                                    }}
+                                                </td>
+                                                <td>
+                                                    {{
+                                                        item.individual_customer_code ||
+                                                        "N/A"
+                                                    }}
+                                                </td>
+                                                <td>
+                                                    {{
+                                                        item.corporate_customer ||
+                                                        "N/A"
+                                                    }}
+                                                </td>
+                                                <td>
+                                                    {{
+                                                        item.corporate_customer_code ||
+                                                        "N/A"
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-medium">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.total_amount
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-medium">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.total_hold_amount
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-medium">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.total_deduction
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-medium">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.total_interest
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-medium">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.total_remaining
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td>
+                                                    {{
+                                                        formatDate(
+                                                            item.payment_date
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td>
+                                                    {{ item.proposal_number }}
+                                                </td>
+                                                <td class="text-center">
+                                                    {{ item.installment }}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot
+                                            v-if="paymentRequests.length > 0"
+                                        >
+                                            <tr>
+                                                <td
+                                                    colspan="9"
+                                                    class="text-end fw-bold"
+                                                >
+                                                    Tổng cộng:
+                                                </td>
+                                                <td class="text-end fw-bold">
+                                                    {{
+                                                        formatCurrency(
+                                                            totalPaymentAmount
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-bold">
+                                                    {{
+                                                        formatCurrency(
+                                                            totalHoldAmount
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-bold">
+                                                    {{
+                                                        formatCurrency(
+                                                            totalDeductionAmount
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-bold">
+                                                    {{
+                                                        formatCurrency(
+                                                            totalInterestAmount
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-bold">
+                                                    {{
+                                                        formatCurrency(
+                                                            totalRemainingAmount
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td colspan="3"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                    <!-- Pagination for payment requests -->
+                                    <div
+                                        class="pagination-wrapper mt-4 d-flex justify-content-between align-items-center"
+                                    >
+                                        <div class="pagination-info text-muted">
+                                            <small
+                                                >Hiển thị
+                                                {{
+                                                    paginatedPaymentRequests.from
+                                                }}-{{
+                                                    paginatedPaymentRequests.to
+                                                }}
+                                                trên tổng số
+                                                {{
+                                                    filteredPaymentRequests.length
+                                                }}
+                                                bản ghi</small
+                                            >
+                                        </div>
+                                        <Bootstrap5Pagination
+                                            :data="paginatedPaymentRequests"
+                                            @pagination-change-page="
+                                                paymentPageChanged
+                                            "
+                                            :limit="3"
+                                            :classes="paginationClasses"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Ghi chú -->
                     <div class="card mt-3">
                         <div class="card-body">
@@ -1742,6 +2755,132 @@
             </div>
         </div>
     </div>
+    <!-- Payment Import Modal -->
+    <div
+        class="modal fade"
+        id="paymentImportModal"
+        tabindex="-1"
+        aria-labelledby="paymentImportModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5
+                        class="modal-title text-primary"
+                        id="paymentImportModalLabel"
+                    >
+                        <i class="fas fa-file-import text-primary me-2"></i>
+                        Import Phiếu đề nghị thanh toán
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        @click="closePaymentImportModal"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <small>
+                            Import dữ liệu đề nghị thanh toán. File cần chứa các
+                            cột: ma_giai_ngan, vu_dau_tu, loai_thanh_toan và các
+                            thông tin khách hàng nếu có.
+                        </small>
+                    </div>
+
+                    <!-- Template download button -->
+                    <div class="d-flex justify-content-end mb-2">
+                        <button
+                            @click.prevent="downloadPaymentImportTemplate"
+                            class="btn btn-sm btn-outline-secondary"
+                        >
+                            <i class="fas fa-download me-1"></i>
+                            Download Template
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="paymentImportFile" class="form-label"
+                            >Select file</label
+                        >
+                        <input
+                            class="form-control"
+                            type="file"
+                            id="paymentImportFile"
+                            @change="handlePaymentFileSelected"
+                            accept=".csv,.xlsx"
+                        />
+                        <div class="form-text">Support files: .csv, .xlsx</div>
+                    </div>
+
+                    <div v-if="paymentUploadProgress > 0" class="mb-3">
+                        <label class="form-label">Upload progress</label>
+                        <div class="progress">
+                            <div
+                                class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                                role="progressbar"
+                                :style="`width: ${paymentUploadProgress}%`"
+                                :aria-valuenow="paymentUploadProgress"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                {{ paymentUploadProgress }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="paymentImportErrors.length > 0" class="mt-3">
+                        <div class="alert alert-danger">
+                            <h6 class="alert-heading">Import errors</h6>
+                            <ul class="mb-0 ps-3">
+                                <li
+                                    v-for="(
+                                        error, index
+                                    ) in paymentImportErrors.slice(0, 5)"
+                                    :key="index"
+                                >
+                                    {{ error }}
+                                </li>
+                            </ul>
+                            <div
+                                v-if="paymentImportErrors.length > 5"
+                                class="mt-2 text-center"
+                            >
+                                <small
+                                    >And
+                                    {{ paymentImportErrors.length - 5 }}
+                                    more errors...</small
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                        @click="closePaymentImportModal"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        @click="startPaymentImport"
+                        :disabled="!selectedPaymentFile || isPaymentImporting"
+                    >
+                        <i class="fas fa-upload me-2"></i>
+                        <span v-if="isPaymentImporting">Importing...</span>
+                        <span v-else>Import</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -1776,6 +2915,13 @@ export default {
                 creator_name: "", // Người tạo
                 notes: "",
             },
+
+            // Payment import related properties
+            selectedPaymentFile: null,
+            isPaymentImporting: false,
+            paymentUploadProgress: 0,
+            paymentImportErrors: [],
+            paymentImportModal: null,
             paymentDetails: [
                 {
                     document_code: "", // ma_nghiem_thu (Mã nghiệm thu)
@@ -1852,6 +2998,32 @@ export default {
                 active: "active bg-success border-success",
                 disabled: "disabled opacity-50",
             },
+            // Payment request related properties
+            paymentRequests: [],
+            activePaymentFilter: null,
+            paymentFilters: {
+                disbursement_code: "",
+                individual_customer: "",
+                individual_customer_code: "",
+                corporate_customer: "",
+                corporate_customer_code: "",
+                payment_date: "",
+                proposal_number: "",
+                installment: "",
+            },
+            uniquePaymentValues: {
+                tram: [],
+                investment_project: [],
+                payment_type: [],
+            },
+            selectedPaymentFilterValues: {
+                tram: [],
+                investment_project: [],
+                payment_type: [],
+            },
+            selectedPaymentRequests: [],
+            currentPaymentPage: 1,
+            perPaymentPage: 15,
         };
     },
     computed: {
@@ -1982,12 +3154,398 @@ export default {
                         : null,
             };
         },
+        // Filtered payment requests
+        filteredPaymentRequests() {
+            return this.paymentRequests.filter((item) => {
+                // Apply text search filters
+                const matchesTextFilters =
+                    (!this.paymentFilters.disbursement_code ||
+                        (item.disbursement_code &&
+                            item.disbursement_code
+                                .toLowerCase()
+                                .includes(
+                                    this.paymentFilters.disbursement_code.toLowerCase()
+                                ))) &&
+                    (!this.paymentFilters.individual_customer ||
+                        (item.individual_customer &&
+                            item.individual_customer
+                                .toLowerCase()
+                                .includes(
+                                    this.paymentFilters.individual_customer.toLowerCase()
+                                ))) &&
+                    (!this.paymentFilters.individual_customer_code ||
+                        (item.individual_customer_code &&
+                            item.individual_customer_code
+                                .toLowerCase()
+                                .includes(
+                                    this.paymentFilters.individual_customer_code.toLowerCase()
+                                ))) &&
+                    (!this.paymentFilters.corporate_customer ||
+                        (item.corporate_customer &&
+                            item.corporate_customer
+                                .toLowerCase()
+                                .includes(
+                                    this.paymentFilters.corporate_customer.toLowerCase()
+                                ))) &&
+                    (!this.paymentFilters.corporate_customer_code ||
+                        (item.corporate_customer_code &&
+                            item.corporate_customer_code
+                                .toLowerCase()
+                                .includes(
+                                    this.paymentFilters.corporate_customer_code.toLowerCase()
+                                ))) &&
+                    (!this.paymentFilters.payment_date ||
+                        (item.payment_date &&
+                            item.payment_date
+                                .toLowerCase()
+                                .includes(
+                                    this.paymentFilters.payment_date.toLowerCase()
+                                ))) &&
+                    (!this.paymentFilters.proposal_number ||
+                        (item.proposal_number &&
+                            item.proposal_number
+                                .toLowerCase()
+                                .includes(
+                                    this.paymentFilters.proposal_number.toLowerCase()
+                                ))) &&
+                    (!this.paymentFilters.installment ||
+                        (item.installment &&
+                            item.installment
+                                .toString()
+                                .includes(this.paymentFilters.installment)));
+
+                // Apply dropdown filters
+                const matchesDropdownFilters =
+                    (this.selectedPaymentFilterValues.tram.length === 0 ||
+                        (item.tram &&
+                            this.selectedPaymentFilterValues.tram.includes(
+                                item.tram
+                            ))) &&
+                    (this.selectedPaymentFilterValues.investment_project
+                        .length === 0 ||
+                        (item.investment_project &&
+                            this.selectedPaymentFilterValues.investment_project.includes(
+                                item.investment_project
+                            ))) &&
+                    (this.selectedPaymentFilterValues.payment_type.length ===
+                        0 ||
+                        (item.payment_type &&
+                            this.selectedPaymentFilterValues.payment_type.includes(
+                                item.payment_type
+                            )));
+
+                return matchesTextFilters && matchesDropdownFilters;
+            });
+        },
+        isAllPaymentRequestsSelected() {
+            return (
+                this.filteredPaymentRequests.length > 0 &&
+                this.selectedPaymentRequests.length ===
+                    this.filteredPaymentRequests.length
+            );
+        },
+        // Paginated payment requests
+        paginatedPaymentRequests() {
+            const startIndex =
+                (this.currentPaymentPage - 1) * this.perPaymentPage;
+            const endIndex = startIndex + this.perPaymentPage;
+
+            return {
+                data: this.filteredPaymentRequests.slice(startIndex, endIndex),
+                current_page: this.currentPaymentPage,
+                from:
+                    this.filteredPaymentRequests.length > 0
+                        ? startIndex + 1
+                        : 0,
+                to: Math.min(endIndex, this.filteredPaymentRequests.length),
+                total: this.filteredPaymentRequests.length,
+                per_page: this.perPaymentPage,
+                last_page: Math.ceil(
+                    this.filteredPaymentRequests.length / this.perPaymentPage
+                ),
+                prev_page_url:
+                    this.currentPaymentPage > 1
+                        ? `?page=${this.currentPaymentPage - 1}`
+                        : null,
+                next_page_url:
+                    this.currentPaymentPage <
+                    Math.ceil(
+                        this.filteredPaymentRequests.length /
+                            this.perPaymentPage
+                    )
+                        ? `?page=${this.currentPaymentPage + 1}`
+                        : null,
+            };
+        },
+        totalPaymentAmount() {
+            return this.filteredPaymentRequests.reduce(
+                (sum, item) => sum + (parseFloat(item.total_amount) || 0),
+                0
+            );
+        },
+        totalHoldAmount() {
+            return this.filteredPaymentRequests.reduce(
+                (sum, item) => sum + (parseFloat(item.total_hold_amount) || 0),
+                0
+            );
+        },
+        totalDeductionAmount() {
+            return this.filteredPaymentRequests.reduce(
+                (sum, item) => sum + (parseFloat(item.total_deduction) || 0),
+                0
+            );
+        },
+        totalInterestAmount() {
+            return this.filteredPaymentRequests.reduce(
+                (sum, item) => sum + (parseFloat(item.total_interest) || 0),
+                0
+            );
+        },
+        totalRemainingAmount() {
+            return this.filteredPaymentRequests.reduce(
+                (sum, item) => sum + (parseFloat(item.total_remaining) || 0),
+                0
+            );
+        },
     },
     mounted() {
         this.fetchUserData();
         this.fetchDocument();
     },
     methods: {
+        // ... existing methods
+
+        /**
+         * Open the payment import modal
+         */
+        openPaymentImportModal() {
+            // Reset state
+
+            this.selectedPaymentFile = null;
+            this.paymentUploadProgress = 0;
+            this.paymentImportErrors = [];
+
+            // Show the modal
+            if (!this.paymentImportModal) {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                    (bootstrap) => {
+                        const modalElement =
+                            document.getElementById("paymentImportModal");
+                        if (modalElement) {
+                            this.paymentImportModal = new bootstrap.Modal(
+                                modalElement
+                            );
+                            this.paymentImportModal.show();
+                        }
+                    }
+                );
+            } else {
+                this.paymentImportModal.show();
+            }
+        },
+
+        /**
+         * Close the payment import modal
+         */
+
+        /**
+         * Handle file selection for payment import
+         */
+        handlePaymentFileSelected(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Validate file type
+                const fileType = file.name.split(".").pop().toLowerCase();
+                if (!["csv", "xlsx", "xls"].includes(fileType)) {
+                    this.showError("Please select a valid file (CSV or Excel)");
+                    event.target.value = ""; // Clear the file input
+                    this.selectedPaymentFile = null;
+                    return;
+                }
+
+                this.selectedPaymentFile = file;
+                this.paymentImportErrors = [];
+            } else {
+                this.selectedPaymentFile = null;
+            }
+        },
+        closePaymentImportModal() {
+            if (this.paymentImportModal) {
+                this.paymentImportModal.hide();
+            }
+
+            // Reset import state
+            this.selectedPaymentFile = null;
+            this.paymentUploadProgress = 0;
+            this.paymentImportErrors = [];
+        },
+
+        /**
+         * Start the payment import process
+         */
+        async startPaymentImport() {
+            if (!this.selectedPaymentFile) {
+                this.showError("Please select a file to upload");
+                return;
+            }
+
+            // Confirm before proceeding
+            const result = await Swal.fire({
+                title: "Confirm Import",
+                text: "This will import payment requests based on the file. Continue?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes, import",
+                cancelButtonText: "Cancel",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-secondary",
+                },
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            this.isPaymentImporting = true;
+
+            // Create form data for the file upload
+            const formData = new FormData();
+            formData.append("file", this.selectedPaymentFile);
+            formData.append("payment_code", this.document.payment_code);
+
+            try {
+                const response = await axios.post(
+                    `/api/disbursements/import`,
+                    formData,
+                    {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                        onUploadProgress: (progressEvent) => {
+                            // Calculate the upload progress
+                            if (progressEvent.total) {
+                                this.paymentUploadProgress = Math.round(
+                                    (progressEvent.loaded * 100) /
+                                        progressEvent.total
+                                );
+                            } else {
+                                this.paymentUploadProgress = 50; // Show 50% if total is unknown
+                            }
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    this.closePaymentImportModal();
+
+                    // Show success notification
+                    Swal.fire({
+                        title: "Import Successful",
+                        text:
+                            response.data.message ||
+                            "Payment requests imported successfully",
+                        icon: "success",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
+
+                    // Refresh the payment requests data
+                    this.fetchPaymentRequests();
+                } else {
+                    this.paymentImportErrors = response.data.errors || [
+                        "Unknown error occurred during import.",
+                    ];
+                }
+            } catch (error) {
+                console.error("Import error:", error);
+
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                } else {
+                    this.paymentImportErrors = error.response?.data?.errors || [
+                        error.response?.data?.message ||
+                            "Error occurred during import.",
+                    ];
+                }
+            } finally {
+                this.isPaymentImporting = false;
+            }
+        },
+
+        /**
+         * Download template for payment import
+         */
+        downloadPaymentImportTemplate() {
+            // Create workbook with headers
+            const wb = XLSX.utils.book_new();
+            const headers = [
+                "ma_giai_ngan",
+                "vu_dau_tu",
+                "loai_thanh_toan",
+                "khach_hang_ca_nhan",
+                "ma_khach_hang_ca_nhan",
+                "khach_hang_doanh_nghiep",
+                "ma_khach_hang_doanh_nghiep",
+            ];
+
+            // Add example row
+            const exampleData = [
+                [
+                    "GN-001",
+                    this.document.investment_project,
+                    this.document.payment_type,
+                    "Nguyen Van A",
+                    "KH001",
+                    "Cong ty ABC",
+                    "DN001",
+                ],
+            ];
+
+            // Create worksheet with headers and example data
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...exampleData]);
+
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Template");
+
+            // Save file
+            XLSX.writeFile(wb, "payment_request_import_template.xlsx");
+        },
+
+        /**
+         * Fetch payment requests data
+         */
+         async fetchPaymentRequests() {
+    try {
+        const response = await axios.get(
+            `/api/payment-requests/${this.document.payment_code}/disbursements`,
+            {
+                headers: {
+                    Authorization: "Bearer " + this.store.getToken,
+                },
+            }
+        );
+
+        if (response.data.success) {
+            this.paymentRequests = response.data.data;
+        } else {
+            this.showError("Failed to fetch payment requests data");
+        }
+    } catch (error) {
+        console.error("Error fetching payment requests:", error);
+        if (error.response?.status === 401) {
+            this.handleAuthError();
+        } else {
+            this.showError("Error loading payment requests data");
+        }
+    }
+},
+
         fetchUserData() {
             const user = localStorage.getItem("web_user");
             if (user) {
@@ -2010,7 +3568,7 @@ export default {
                 })
                 .then((response) => {
                     if (response.data.success) {
-                        // Map the payment request data
+                        // Map main document data
                         this.document = {
                             payment_code:
                                 response.data.document.payment_code || "",
@@ -2034,14 +3592,14 @@ export default {
                         };
                         this.noteText = this.document.notes || "";
 
-                        // Map the payment details with fields from tb_bien_ban_nghiemthu_dv
+                        // Map payment details
                         this.paymentDetails = Array.isArray(
                             response.data.paymentDetails
                         )
                             ? response.data.paymentDetails.map((item) => ({
                                   document_code: item.document_code || "",
                                   document_type: "Biên bản nghiệm thu DV",
-                                  tram: item.tram || "", // Add tram field
+                                  tram: item.tram || "",
                                   title: item.title || "",
                                   investment_project:
                                       item.investment_project || "",
@@ -2060,17 +3618,58 @@ export default {
                               }))
                             : [];
 
-                        // Process history/logs
-                        this.processingHistory = Array.isArray(
-                            response.data.processingHistory
-                        )
-                            ? response.data.processingHistory
-                            : [];
+                        // Now fetch the payment requests (disbursements)
+                        return axios.get(
+                            `/api/payment-requests/${id}/disbursements`,
+                            {
+                                headers: {
+                                    Authorization:
+                                        "Bearer " + this.store.getToken,
+                                },
+                            }
+                        );
                     } else {
-                        this.showError(
+                        throw new Error(
                             response.data.message ||
                                 "Không tìm thấy thông tin phiếu trình thanh toán"
                         );
+                    }
+                })
+                .then((disbResponse) => {
+                    if (disbResponse && disbResponse.data.success) {
+                        // Map the payment requests data
+                        this.paymentRequests = Array.isArray(
+                            disbResponse.data.data
+                        )
+                            ? disbResponse.data.data.map((item) => ({
+                                  disbursement_code:
+                                      item.disbursement_code || "",
+                                  tram: item.tram || "",
+                                  investment_project:
+                                      item.investment_project || "",
+                                  payment_type: item.payment_type || "",
+                                  individual_customer:
+                                      item.individual_customer || "",
+                                  individual_customer_code:
+                                      item.individual_customer_code || "",
+                                  corporate_customer:
+                                      item.corporate_customer || "",
+                                  corporate_customer_code:
+                                      item.corporate_customer_code || "",
+                                  total_amount: item.total_amount || 0,
+                                  total_hold_amount:
+                                      item.total_hold_amount || 0,
+                                  total_deduction: item.total_deduction || 0,
+                                  total_interest: item.total_interest || 0,
+                                  total_remaining: item.total_remaining || 0,
+                                  payment_date: item.payment_date || null,
+                                  proposal_number: item.proposal_number || "",
+                                  installment: item.installment || 1,
+                              }))
+                            : [];
+
+                        // Update unique values for payment filters
+                        this.updatePaymentFilterValues();
                     }
                 })
                 .catch((error) => {
@@ -2085,6 +3684,34 @@ export default {
                 .finally(() => {
                     this.isLoading = false;
                 });
+        },
+
+        // Add this helper method to update payment filter values
+        updatePaymentFilterValues() {
+            // Extract unique values for dropdown filters
+            this.uniquePaymentValues = {
+                tram: [
+                    ...new Set(
+                        this.paymentRequests
+                            .map((item) => item.tram)
+                            .filter(Boolean)
+                    ),
+                ],
+                investment_project: [
+                    ...new Set(
+                        this.paymentRequests
+                            .map((item) => item.investment_project)
+                            .filter(Boolean)
+                    ),
+                ],
+                payment_type: [
+                    ...new Set(
+                        this.paymentRequests
+                            .map((item) => item.payment_type)
+                            .filter(Boolean)
+                    ),
+                ],
+            };
         },
         formatCurrency(value) {
             if (!value) return "0 VNĐ";
@@ -2918,6 +4545,88 @@ export default {
         },
         pageChanged(page) {
             this.currentPage = page;
+            // Scroll to the top of the table for better UX
+            const tableElement = document.querySelector(".table-container");
+            if (tableElement) {
+                tableElement.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+            }
+        },
+        // Payment request filter management
+        togglePaymentFilter(column) {
+            this.activePaymentFilter =
+                this.activePaymentFilter === column ? null : column;
+
+            // If opening a dropdown filter, ensure unique values are populated
+            if (
+                (column === "tram" ||
+                    column === "investment_project" ||
+                    column === "payment_type") &&
+                this.activePaymentFilter === column
+            ) {
+                this.updateUniquePaymentValues(column);
+            }
+        },
+
+        updateUniquePaymentValues(column) {
+            if (
+                column === "tram" ||
+                column === "investment_project" ||
+                column === "payment_type"
+            ) {
+                this.uniquePaymentValues[column] = [
+                    ...new Set(
+                        this.paymentRequests
+                            .map((item) => item[column])
+                            .filter(Boolean) // Remove null/undefined values
+                    ),
+                ];
+            }
+        },
+
+        resetPaymentFilter(column) {
+            if (
+                column === "tram" ||
+                column === "investment_project" ||
+                column === "payment_type"
+            ) {
+                this.selectedPaymentFilterValues[column] = [];
+            } else {
+                this.paymentFilters[column] = "";
+            }
+        },
+
+        applyPaymentFilter(column) {
+            this.activePaymentFilter = null; // Close the filter dropdown
+        },
+
+        resetPaymentRequestFilters() {
+            // Reset all column filters
+            for (const key in this.paymentFilters) {
+                this.paymentFilters[key] = "";
+            }
+
+            // Reset dropdown filters
+            for (const key in this.selectedPaymentFilterValues) {
+                this.selectedPaymentFilterValues[key] = [];
+            }
+
+            // Reset active filter (close any open filter dropdown)
+            this.activePaymentFilter = null;
+        },
+        toggleSelectAllPaymentRequests() {
+            if (this.isAllPaymentRequestsSelected) {
+                this.selectedPaymentRequests = [];
+            } else {
+                this.selectedPaymentRequests = this.filteredPaymentRequests.map(
+                    (item) => item.disbursement_code
+                );
+            }
+        },
+        paymentPageChanged(page) {
+            this.currentPaymentPage = page;
             // Scroll to the top of the table for better UX
             const tableElement = document.querySelector(".table-container");
             if (tableElement) {
@@ -3763,5 +5472,53 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         padding: 0.375rem 0.75rem;
         min-width: 32px;
     }
+}
+.export-excel-btn-payment {
+    position: absolute;
+    right: 40px;
+    top: 25px;
+    z-index: 99;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #fff;
+    background: #217346;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.export-excel-btn-payment:hover {
+    background: #105325;
+    transform: scale(1.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.reset-filters-btn-payment {
+    position: absolute;
+    right: 75px;
+    top: 25px;
+    z-index: 99;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #fff;
+    background: #198754;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.reset-filters-btn-payment:hover {
+    background: #10b981;
+    transform: rotate(30deg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 </style>

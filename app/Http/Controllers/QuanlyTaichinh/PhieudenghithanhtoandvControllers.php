@@ -1,0 +1,546 @@
+<?php
+
+namespace App\Http\Controllers\QuanlyTaichinh;
+
+use App\Http\Controllers\Controller;
+use App\Models\Quanlytaichinh\Phieudenghithanhtoandv;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use App\Models\QuanlyHS\PaymentRequestAction; // เพิ่ม model สำหรับตาราง Action
+use App\Models\QuanlyHS\PaymentRequest;
+use App\Models\QuanlyHS\PaymentRequestLog;
+
+class PhieudenghithanhtoandvControllers extends Controller
+{
+    /**
+     * Display a listing of the payment requests
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function index(Request $request)
+    {
+        try {
+            $paymentRequestId = $request->input('payment_request_id');
+            
+            if (!$paymentRequestId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request ID is required'
+                ], 400);
+            }
+            
+            // First, get all disbursement requests for the given payment request
+            $disbursementRequests = DB::table('tb_de_nghi_thanhtoan_dv as dntd')
+                ->where('dntd.ma_trinh_thanh_toan', $paymentRequestId)
+                ->get();
+                
+            if ($disbursementRequests->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => []
+                ]);
+            }
+            
+            // Process each disbursement request to collect all required information
+            $result = [];
+            foreach ($disbursementRequests as $request) {
+                // Get associated receipt IDs through Logs_phieu_trinh_thanh_toan
+                $receiptIds = DB::table('Logs_phieu_trinh_thanh_toan')
+                    ->where('ma_de_nghi_giai_ngan', $request->ma_giai_ngan)
+                    ->pluck('ma_nghiem_thu');
+                    
+                // Calculate totals from the associated receipts
+                $totals = DB::table('tb_bien_ban_nghiemthu_dv')
+                    ->whereIn('ma_nghiem_thu', $receiptIds)
+                    ->select(
+                        DB::raw('SUM(tong_tien) as total_amount'),
+                        DB::raw('SUM(tong_tien_tam_giu) as total_hold_amount')
+                    )
+                    ->first();
+                
+                // Get payment date from Action_phieu_trinh_thanh_toan
+                $paymentAction = DB::table('Action_phieu_trinh_thanh_toan')
+                    ->where('ma_trinh_thanh_toan', $request->ma_trinh_thanh_toan)
+                    ->where('action', 'paid')
+                    ->orderBy('action_date', 'desc')
+                    ->first();
+                
+                // Get payment request details from tb_phieu_trinh_thanh_toan
+                $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+                    ->where('ma_trinh_thanh_toan', $request->ma_trinh_thanh_toan)
+                    ->first();
+                
+                // Calculate the remaining amount
+                $totalAmount = $totals->total_amount ?? 0;
+                $totalHoldAmount = $totals->total_hold_amount ?? 0;
+                $totalDeduction = 0; // For future implementation
+                $totalInterest = 0; // For future implementation
+                $totalRemaining = $totalAmount - $totalHoldAmount - $totalDeduction - $totalInterest;
+                
+                // Create the result item with all required fields
+                $result[] = [
+                    'disbursement_code' => $request->ma_giai_ngan,
+                    'investment_project' => $request->vu_dau_tu,
+                    'payment_type' => $request->loai_thanh_toan,
+                    'individual_customer' => $request->khach_hang_ca_nhan,
+                    'individual_customer_code' => $request->ma_khach_hang_ca_nhan,
+                    'corporate_customer' => $request->khach_hang_doanh_nghiep,
+                    'corporate_customer_code' => $request->ma_khach_hang_doanh_nghiep,
+                    'total_amount' => $totalAmount,
+                    'total_hold_amount' => $totalHoldAmount,
+                    'total_deduction' => $totalDeduction,
+                    'total_interest' => $totalInterest,
+                    'total_remaining' => $totalRemaining,
+                    'payment_date' => $paymentAction ? $paymentAction->action_date : null,
+                    'proposal_number' => $paymentRequest ? $paymentRequest->so_to_trinh : null,
+                    'installment' => $paymentRequest ? $paymentRequest->so_dot_thanh_toan : null,
+                ];
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $result
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching payment requests: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching payment requests',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a newly created payment request
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function store(Request $request)
+    {
+        try {
+            // Validate input
+            $request->validate([
+                'ma_giai_ngan' => 'required|string|unique:tb_de_nghi_thanhtoan_dv,ma_giai_ngan',
+                'vu_dau_tu' => 'required|string',
+                'loai_thanh_toan' => 'required|string',
+                'ma_trinh_thanh_toan' => 'required|string',
+                // Other fields can be optional
+            ]);
+            
+            // Create new payment request
+            $paymentRequest = Phieudenghithanhtoandv::create($request->all());
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment request created successfully',
+                'data' => $paymentRequest
+            ], 201);
+            
+        } catch (\Exception $e) {
+            Log::error('Error creating payment request: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating payment request',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified payment request
+     *
+     * @param string $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function show($id)
+    {
+        try {
+            // Get the payment request by ID
+            $paymentRequest = Phieudenghithanhtoandv::where('ma_giai_ngan', $id)->first();
+            
+            if (!$paymentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request not found'
+                ], 404);
+            }
+            
+            // Get associated receipt IDs through Logs_phieu_trinh_thanh_toan
+            $receiptIds = DB::table('Logs_phieu_trinh_thanh_toan')
+                ->where('ma_de_nghi_giai_ngan', $paymentRequest->ma_giai_ngan)
+                ->pluck('ma_nghiem_thu');
+                
+            // Calculate totals from the associated receipts
+            $totals = DB::table('tb_bien_ban_nghiemthu_dv')
+                ->whereIn('ma_nghiem_thu', $receiptIds)
+                ->select(
+                    DB::raw('SUM(tong_tien) as total_amount'),
+                    DB::raw('SUM(tong_tien_tam_giu) as total_hold_amount')
+                )
+                ->first();
+            
+            // Get payment date from Action_phieu_trinh_thanh_toan
+            $paymentAction = DB::table('Action_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $paymentRequest->ma_trinh_thanh_toan)
+                ->where('action', 'paid')
+                ->orderBy('action_date', 'desc')
+                ->first();
+            
+            // Get payment request details from tb_phieu_trinh_thanh_toan
+            $parentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $paymentRequest->ma_trinh_thanh_toan)
+                ->first();
+            
+            // Calculate the remaining amount
+            $totalAmount = $totals->total_amount ?? 0;
+            $totalHoldAmount = $totals->total_hold_amount ?? 0;
+            $totalDeduction = 0; // For future implementation
+            $totalInterest = 0; // For future implementation
+            $totalRemaining = $totalAmount - $totalHoldAmount - $totalDeduction - $totalInterest;
+            
+            // Prepare the response data
+            $result = [
+                'disbursement_code' => $paymentRequest->ma_giai_ngan,
+                'investment_project' => $paymentRequest->vu_dau_tu,
+                'payment_type' => $paymentRequest->loai_thanh_toan,
+                'individual_customer' => $paymentRequest->khach_hang_ca_nhan,
+                'individual_customer_code' => $paymentRequest->ma_khach_hang_ca_nhan,
+                'corporate_customer' => $paymentRequest->khach_hang_doanh_nghiep,
+                'corporate_customer_code' => $paymentRequest->ma_khach_hang_doanh_nghiep,
+                'total_amount' => $totalAmount,
+                'total_hold_amount' => $totalHoldAmount,
+                'total_deduction' => $totalDeduction,
+                'total_interest' => $totalInterest,
+                'total_remaining' => $totalRemaining,
+                'payment_date' => $paymentAction ? $paymentAction->action_date : null,
+                'proposal_number' => $parentRequest ? $parentRequest->so_to_trinh : null,
+                'installment' => $parentRequest ? $parentRequest->so_dot_thanh_toan : null,
+                'receipts' => $receiptIds
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'data' => $result
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching payment request details: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching payment request details',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified payment request
+     *
+     * @param Request $request
+     * @param string $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function update(Request $request, $id)
+    {
+        try {
+            // Find the payment request
+            $paymentRequest = Phieudenghithanhtoandv::where('ma_giai_ngan', $id)->first();
+            
+            if (!$paymentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request not found'
+                ], 404);
+            }
+            
+            // Update payment request fields
+            $paymentRequest->update($request->all());
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment request updated successfully',
+                'data' => $paymentRequest
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error updating payment request: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating payment request',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified payment request
+     *
+     * @param string $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function destroy($id)
+    {
+        try {
+            // Find the payment request
+            $paymentRequest = Phieudenghithanhtoandv::where('ma_giai_ngan', $id)->first();
+            
+            if (!$paymentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request not found'
+                ], 404);
+            }
+            
+            // Delete the payment request
+            $paymentRequest->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment request deleted successfully'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error deleting payment request: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting payment request',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get payment requests by parent payment request ID
+     *
+     * @param string $paymentRequestId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getByPaymentRequest($paymentRequestId)
+    {
+        try {
+            // This method delegates to index with the necessary parameter
+            // It's just a convenience wrapper for a cleaner API
+            $request = new Request();
+            $request->merge(['payment_request_id' => $paymentRequestId]);
+            
+            return $this->index($request);
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching payment requests: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching payment requests',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Export payment requests to Excel
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function export(Request $request)
+    {
+        try {
+            $paymentRequestId = $request->input('payment_request_id');
+            
+            if (!$paymentRequestId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request ID is required'
+                ], 400);
+            }
+            
+            // Get all payment requests for export
+            $request = new Request();
+            $request->merge(['payment_request_id' => $paymentRequestId]);
+            $response = $this->index($request);
+            
+            // Convert the response to array
+            $data = json_decode($response->getContent(), true);
+            
+            if (!$data['success'] || empty($data['data'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No data to export'
+                ], 404);
+            }
+            
+            // Process data for export (you'll implement the actual Excel export)
+            // ...
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Export functionality to be implemented',
+                'data' => $data['data']
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error exporting payment requests: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error exporting payment requests',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Import payment requests from Excel/CSV
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function import(Request $request)
+    {
+        try {
+            // Validate input
+            $request->validate([
+                'file' => 'required|file|mimes:csv,xlsx,xls|max:10240', // 10MB max
+                'payment_code' => 'required|string'
+            ]);
+
+            $file = $request->file('file');
+            $paymentCode = $request->input('payment_code');
+            
+            // Check if payment request exists
+            $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $paymentCode)
+                ->first();
+                
+            if (!$paymentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request not found',
+                    'errors' => ['Invalid payment request code']
+                ], 404);
+            }
+
+            // Process the file
+            $path = $file->getRealPath();
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($path);
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($path);
+            $worksheet = $spreadsheet->getActiveSheet();
+            $rows = $worksheet->toArray();
+            
+            // Remove header row
+            $headers = array_shift($rows);
+            
+            // Map headers to database columns
+            $columnMap = [
+                'ma_giai_ngan' => array_search('ma_giai_ngan', array_map('strtolower', $headers)),
+                'vu_dau_tu' => array_search('vu_dau_tu', array_map('strtolower', $headers)),
+                'loai_thanh_toan' => array_search('loai_thanh_toan', array_map('strtolower', $headers)),
+                'khach_hang_ca_nhan' => array_search('khach_hang_ca_nhan', array_map('strtolower', $headers)),
+                'ma_khach_hang_ca_nhan' => array_search('ma_khach_hang_ca_nhan', array_map('strtolower', $headers)),
+                'khach_hang_doanh_nghiep' => array_search('khach_hang_doanh_nghiep', array_map('strtolower', $headers)),
+                'ma_khach_hang_doanh_nghiep' => array_search('ma_khach_hang_doanh_nghiep', array_map('strtolower', $headers))
+            ];
+            
+            // Validate required columns
+            if ($columnMap['ma_giai_ngan'] === false || 
+                $columnMap['vu_dau_tu'] === false || 
+                $columnMap['loai_thanh_toan'] === false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Required columns missing in the import file',
+                    'errors' => ['File must contain ma_giai_ngan, vu_dau_tu, and loai_thanh_toan columns']
+                ], 400);
+            }
+            
+            // Process rows
+            $importedCount = 0;
+            $errors = [];
+            $importedIds = [];
+            
+            DB::beginTransaction();
+            try {
+                foreach ($rows as $index => $row) {
+                    $rowNum = $index + 2; // +2 because of 0-indexing and header row
+                    
+                    // Skip empty rows
+                    if (empty($row[$columnMap['ma_giai_ngan']])) {
+                        continue;
+                    }
+                    
+                    $ma_giai_ngan = trim($row[$columnMap['ma_giai_ngan']]);
+                    $vu_dau_tu = trim($row[$columnMap['vu_dau_tu']]);
+                    $loai_thanh_toan = trim($row[$columnMap['loai_thanh_toan']]);
+                    
+                    // Check for required fields
+                    if (empty($ma_giai_ngan) || empty($vu_dau_tu) || empty($loai_thanh_toan)) {
+                        $errors[] = "Row {$rowNum}: Required fields cannot be empty";
+                        continue;
+                    }
+                    
+                    // Prepare data for insert/update
+                    $data = [
+                        'ma_giai_ngan' => $ma_giai_ngan,
+                        'vu_dau_tu' => $vu_dau_tu,
+                        'loai_thanh_toan' => $loai_thanh_toan,
+                        'ma_trinh_thanh_toan' => $paymentCode,
+                        'khach_hang_ca_nhan' => $columnMap['khach_hang_ca_nhan'] !== false && !empty($row[$columnMap['khach_hang_ca_nhan']]) 
+                            ? trim($row[$columnMap['khach_hang_ca_nhan']]) : null,
+                        'ma_khach_hang_ca_nhan' => $columnMap['ma_khach_hang_ca_nhan'] !== false && !empty($row[$columnMap['ma_khach_hang_ca_nhan']]) 
+                            ? trim($row[$columnMap['ma_khach_hang_ca_nhan']]) : null,
+                        'khach_hang_doanh_nghiep' => $columnMap['khach_hang_doanh_nghiep'] !== false && !empty($row[$columnMap['khach_hang_doanh_nghiep']]) 
+                            ? trim($row[$columnMap['khach_hang_doanh_nghiep']]) : null,
+                        'ma_khach_hang_doanh_nghiep' => $columnMap['ma_khach_hang_doanh_nghiep'] !== false && !empty($row[$columnMap['ma_khach_hang_doanh_nghiep']]) 
+                            ? trim($row[$columnMap['ma_khach_hang_doanh_nghiep']]) : null
+                    ];
+                    
+                    // Check if record already exists
+                    $existingRecord = Phieudenghithanhtoandv::where('ma_giai_ngan', $ma_giai_ngan)->first();
+                    
+                    if ($existingRecord) {
+                        // Update existing record
+                        $existingRecord->update($data);
+                    } else {
+                        // Create new record
+                        Phieudenghithanhtoandv::create($data);
+                    }
+                    
+                    $importedIds[] = $ma_giai_ngan;
+                    $importedCount++;
+                }
+                
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Error importing payment requests: ' . $e->getMessage());
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error importing payment requests',
+                    'errors' => [$e->getMessage()]
+                ], 500);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => "{$importedCount} payment requests imported successfully",
+                'imported_count' => $importedCount,
+                'errors' => $errors,
+                'imported_ids' => $importedIds
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error in import process: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing import file',
+                'errors' => [$e->getMessage()]
+            ], 500);
+        }
+    }
+}

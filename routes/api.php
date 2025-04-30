@@ -15,6 +15,7 @@ use App\Http\Controllers\Print\PrintGiaoNhanHSController;
 use App\Http\Controllers\QuanlyHS\BienBanNghiemThuController;
 use App\Http\Controllers\QuanlyHS\PhieuGiaoNhanHomGiongController;
 use App\Http\Controllers\QuanlyHS\PaymentRequestController;
+use App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers;
 
 
 Route::apiResource('roles', RoleController::class);
@@ -154,6 +155,17 @@ Route::post('/payment-requests/{id}/import-data', [PaymentRequestController::cla
  
  // Delete records from a payment request
  Route::post('/payment-requests/{id}/delete-records', [PaymentRequestController::class, 'deleteRecords']);
+
+//Phiếu đề nghi thanh toán trong phiếu trình thanh toán
+Route::get('/payment-requests/{id}/disbursements', [PhieudenghithanhtoandvControllers::class, 'getByPaymentRequest']);
+Route::post('/disbursements', [PhieudenghithanhtoandvControllers::class, 'store']);
+Route::get('/disbursements/{id}', [PhieudenghithanhtoandvControllers::class, 'show']);
+Route::put('/disbursements/{id}', [PhieudenghithanhtoandvControllers::class, 'update']);
+Route::delete('/disbursements/{id}', [PhieudenghithanhtoandvControllers::class, 'destroy']);
+Route::post('/disbursements/export', [PhieudenghithanhtoandvControllers::class, 'export']);
+Route::post('/disbursements/import', [PhieudenghithanhtoandvControllers::class, 'import']);
+
+
 
 });
 
