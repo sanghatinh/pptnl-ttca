@@ -242,11 +242,7 @@ class PaymentRequestController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
             
-            // Add a default user_name for each log entry
-            $processingHistory = $processingHistory->map(function($log) {
-                $log->user_name = "Người dùng #" . $log->action_by; // Default user name with ID
-                return $log;
-            });
+            
             
             return response()->json([
                 'success' => true,

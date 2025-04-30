@@ -1143,8 +1143,8 @@
                                         <tbody>
                                             <tr
                                                 v-if="
-                                                    filteredPaymentDetails.length ===
-                                                    0
+                                                    paginatedPaymentDetails.data
+                                                        .length === 0
                                                 "
                                             >
                                                 <td
@@ -1165,7 +1165,7 @@
                                             <tr
                                                 v-for="(
                                                     item, index
-                                                ) in filteredPaymentDetails"
+                                                ) in paginatedPaymentDetails.data"
                                                 :key="index"
                                             >
                                                 <td class="text-center">
@@ -1250,84 +1250,34 @@
                                             </tr>
                                         </tfoot>
                                     </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Lịch sử xử lý -->
-                    <div class="card mt-3">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <i class="fas fa-history me-2"></i>Lịch sử xử lý
-                            </h5>
-                            <div class="timeline-wrapper">
-                                <ul
-                                    class="timeline"
-                                    v-if="processingHistory.length > 0"
-                                >
-                                    <li
-                                        v-for="(
-                                            history, index
-                                        ) in processingHistory"
-                                        :key="index"
-                                        class="timeline-item"
+                                    <!-- Pagination -->
+                                    <div
+                                        class="pagination-wrapper mt-4 d-flex justify-content-between align-items-center"
                                     >
-                                        <div
-                                            :class="[
-                                                'timeline-badge',
-                                                getActionClass(history.action),
-                                            ]"
-                                        >
-                                            <i
-                                                :class="
-                                                    getActionIcon(
-                                                        history.action
-                                                    )
-                                                "
-                                            ></i>
+                                        <div class="pagination-info text-muted">
+                                            <small
+                                                >Hiển thị
+                                                {{
+                                                    paginatedPaymentDetails.from
+                                                }}-{{
+                                                    paginatedPaymentDetails.to
+                                                }}
+                                                trên tổng số
+                                                {{
+                                                    filteredPaymentDetails.length
+                                                }}
+                                                bản ghi</small
+                                            >
                                         </div>
-                                        <div class="timeline-panel">
-                                            <div class="timeline-heading">
-                                                <h6 class="timeline-title">
-                                                    {{
-                                                        formatActionText(
-                                                            history.action
-                                                        )
-                                                    }}
-                                                </h6>
-                                                <small class="text-muted">
-                                                    <i
-                                                        class="fas fa-calendar-alt me-1"
-                                                    ></i>
-                                                    {{
-                                                        formatDateTime(
-                                                            history.created_at
-                                                        )
-                                                    }}
-                                                </small>
-                                            </div>
-                                            <div class="timeline-body">
-                                                <p class="mb-0">
-                                                    {{
-                                                        history.user_name ||
-                                                        "Người dùng"
-                                                    }}:
-                                                    {{
-                                                        history.note ||
-                                                        "Xử lý phiếu trình thanh toán"
-                                                    }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </li>
-                                </ul>
-                                <div
-                                    v-else
-                                    class="empty-state text-center py-4"
-                                >
-                                    <i class="fas fa-history empty-icon"></i>
-                                    <p>Chưa có lịch sử xử lý</p>
+                                        <Bootstrap5Pagination
+                                            :data="paginatedPaymentDetails"
+                                            @pagination-change-page="
+                                                pageChanged
+                                            "
+                                            :limit="3"
+                                            :classes="paginationClasses"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1799,8 +1749,12 @@ import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
 import axios from "axios";
 import { useStore } from "../../Store/Auth";
+import { Bootstrap5Pagination } from "laravel-vue-pagination";
 
 export default {
+    components: {
+        Bootstrap5Pagination,
+    },
     setup() {
         const store = useStore();
         return {
@@ -1842,7 +1796,7 @@ export default {
                     tram: "",
                 },
             ],
-            processingHistory: [],
+
             user: null,
             isEditingNote: false,
             noteText: "",
@@ -1889,6 +1843,15 @@ export default {
             uploadProgress: 0,
             importErrors: [],
             importModal: null,
+            currentPage: 1,
+            perPage: 15, // Set to 15 rows per page
+            paginationClasses: {
+                ul: "pagination rounded justify-content-center",
+                li: "page-item mx-1",
+                a: "page-link px-3 py-2 rounded border",
+                active: "active bg-success border-success",
+                disabled: "disabled opacity-50",
+            },
         };
     },
     computed: {
@@ -1991,6 +1954,33 @@ export default {
                 this.selectedRecords.length ===
                     this.filteredPaymentDetails.length
             );
+        },
+        // Paginated payment details
+        paginatedPaymentDetails() {
+            const startIndex = (this.currentPage - 1) * this.perPage;
+            const endIndex = startIndex + this.perPage;
+
+            return {
+                data: this.filteredPaymentDetails.slice(startIndex, endIndex),
+                current_page: this.currentPage,
+                from:
+                    this.filteredPaymentDetails.length > 0 ? startIndex + 1 : 0,
+                to: Math.min(endIndex, this.filteredPaymentDetails.length),
+                total: this.filteredPaymentDetails.length,
+                per_page: this.perPage,
+                last_page: Math.ceil(
+                    this.filteredPaymentDetails.length / this.perPage
+                ),
+                prev_page_url:
+                    this.currentPage > 1
+                        ? `?page=${this.currentPage - 1}`
+                        : null,
+                next_page_url:
+                    this.currentPage <
+                    Math.ceil(this.filteredPaymentDetails.length / this.perPage)
+                        ? `?page=${this.currentPage + 1}`
+                        : null,
+            };
         },
     },
     mounted() {
@@ -2926,6 +2916,17 @@ export default {
                 this.showError("Could not create template file");
             }
         },
+        pageChanged(page) {
+            this.currentPage = page;
+            // Scroll to the top of the table for better UX
+            const tableElement = document.querySelector(".table-container");
+            if (tableElement) {
+                tableElement.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+            }
+        },
     },
 };
 </script>
@@ -3704,5 +3705,63 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     background: #4f46e5;
     transform: scale(1.1);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Enhanced pagination styling */
+.pagination-wrapper {
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.pagination {
+    margin-bottom: 0;
+}
+
+.page-link {
+    border-radius: 4px !important;
+    color: #198754;
+    font-weight: 500;
+    min-width: 38px;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.page-link:hover {
+    background-color: #f0fff4;
+    color: #198754;
+    z-index: 2;
+}
+
+.page-item.active .page-link {
+    background-color: #198754;
+    border-color: #198754;
+    color: white;
+    box-shadow: 0 2px 5px rgba(25, 135, 84, 0.2);
+    z-index: 3;
+}
+
+.page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+}
+
+@media (max-width: 576px) {
+    .pagination-wrapper {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .pagination-info {
+        text-align: center;
+    }
+
+    .page-link {
+        padding: 0.375rem 0.75rem;
+        min-width: 32px;
+    }
 }
 </style>
