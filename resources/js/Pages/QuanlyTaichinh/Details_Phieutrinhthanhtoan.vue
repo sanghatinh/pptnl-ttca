@@ -336,60 +336,77 @@
 
                     <!-- Bảng chi tiết -->
                     <div class="card mt-3">
-                        <div class="card-body">
-                            <span
-                                class="import-data-btn"
-                                title="Import data"
-                                @click="openImportModal"
-                            >
-                                <i class="fas fa-file-import"></i>
-                            </span>
-                            <span
-                                class="export-excel-btn"
-                                title="Export to Excel"
-                                @click="exportToExcel"
-                            >
-                                <i class="fas fa-file-excel"></i>
-                            </span>
-                            <span
-                                class="reset-all-filters-btn"
-                                title="Reset all filters"
-                                @click="resetAllFilters"
-                            >
-                                <i class="fas fa-redo-alt"></i>
-                            </span>
-                            <!-- Add edit button -->
-                            <span
-                                class="edit-records-btn"
-                                title="Edit selected records"
-                                @click="editSelectedRecords"
-                                :class="{
-                                    disabled: selectedRecords.length === 0,
-                                }"
-                            >
-                                <i class="fas fa-edit"></i>
-                            </span>
-                            <!-- Add delete button -->
-                            <span
-                                class="delete-records-btn"
-                                title="Delete selected records"
-                                @click="deleteSelectedRecords"
-                                :class="{
-                                    disabled: selectedRecords.length === 0,
-                                }"
-                            >
-                                <i class="fas fa-trash"></i>
-                            </span>
-                            <span
-                                class="add-records-btn"
-                                title="Add new receipt"
-                                @click="openAddReceiptModal"
-                            >
-                                <i class="fas fa-plus"></i>
-                            </span>
-                            <h5 class="card-title">
-                                Chi tiết hồ sơ thanh toán
+                        <div
+                            class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center"
+                        >
+                            <h5 class="card-title mb-0">
+                                <span
+                                    @click="togglePaymentDetails"
+                                    class="toggle-section cursor-pointer"
+                                >
+                                    <i
+                                        :class="
+                                            showPaymentDetails
+                                                ? 'fas fa-angle-down'
+                                                : 'fas fa-angle-right'
+                                        "
+                                        class="me-2 toggle-icon"
+                                    ></i>
+                                    Chi tiết hồ sơ thanh toán
+                                </span>
                             </h5>
+                            <div class="card-actions" v-if="showPaymentDetails">
+                                <span
+                                    class="import-data-btn"
+                                    title="Import data"
+                                    @click="openImportModal"
+                                >
+                                    <i class="fas fa-file-import"></i>
+                                </span>
+                                <span
+                                    class="export-excel-btn"
+                                    title="Export to Excel"
+                                    @click="exportToExcel"
+                                >
+                                    <i class="fas fa-file-excel"></i>
+                                </span>
+                                <span
+                                    class="reset-all-filters-btn"
+                                    title="Reset all filters"
+                                    @click="resetAllFilters"
+                                >
+                                    <i class="fas fa-redo-alt"></i>
+                                </span>
+                                <span
+                                    class="edit-records-btn"
+                                    title="Edit selected records"
+                                    @click="editSelectedRecords"
+                                    :class="{
+                                        disabled: selectedRecords.length === 0,
+                                    }"
+                                >
+                                    <i class="fas fa-edit"></i>
+                                </span>
+                                <span
+                                    class="delete-records-btn"
+                                    title="Delete selected records"
+                                    @click="deleteSelectedRecords"
+                                    :class="{
+                                        disabled: selectedRecords.length === 0,
+                                    }"
+                                >
+                                    <i class="fas fa-trash"></i>
+                                </span>
+                                <span
+                                    class="add-records-btn"
+                                    title="Add new receipt"
+                                    @click="openAddReceiptModal"
+                                >
+                                    <i class="fas fa-plus"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body" v-if="showPaymentDetails">
                             <div class="table-container">
                                 <div class="table-responsive mt-2">
                                     <table
@@ -1281,64 +1298,97 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="card-body text-center py-4" v-else>
+                            <button
+                                class="btn btn-outline-secondary"
+                                @click="togglePaymentDetails"
+                            >
+                                <i class="fas fa-eye me-1"></i> Hiển thị chi
+                                tiết hồ sơ thanh toán
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Phiếu đề nghị thanh toán table -->
                     <div class="card mt-3">
-                        <div class="card-body">
-                            <span
-                                class="import-data-btn"
-                                title="Import data"
-                                @click="openPaymentImportModal"
+                        <div
+                            class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center"
+                        >
+                            <h5 class="card-title mb-0">
+                                <span
+                                    @click="togglePaymentRequests"
+                                    class="toggle-section cursor-pointer"
+                                >
+                                    <i
+                                        :class="
+                                            showPaymentRequests
+                                                ? 'fas fa-angle-down'
+                                                : 'fas fa-angle-right'
+                                        "
+                                        class="me-2 toggle-icon"
+                                    ></i>
+                                    Phiếu đề nghị thanh toán
+                                </span>
+                            </h5>
+                            <div
+                                class="card-actions"
+                                v-if="showPaymentRequests"
                             >
-                                <i class="fas fa-file-import"></i>
-                            </span>
-                            <span
-                                class="export-excel-btn"
-                                title="Export to Excel"
-                                @click="exportPaymentRequestsToExcel"
-                            >
-                                <i class="fas fa-file-excel"></i>
-                            </span>
-                            <span
-                                class="reset-all-filters-btn"
-                                title="Reset all filters"
-                                @click="resetPaymentRequestFilters"
-                            >
-                                <i class="fas fa-redo-alt"></i>
-                            </span>
-                            <!-- Add edit button -->
-                            <span
-                                class="edit-records-btn"
-                                title="Edit selected records"
-                                @click="editSelectedPaymentRecords"
-                                :class="{
-                                    disabled:
-                                        selectedPaymentRequests.length === 0,
-                                }"
-                            >
-                                <i class="fas fa-edit"></i>
-                            </span>
-                            <!-- Add delete button -->
-                            <span
-                                class="delete-records-btn"
-                                title="Delete selected records"
-                                @click="deleteSelectedPaymentRecords"
-                                :class="{
-                                    disabled:
-                                        selectedPaymentRequests.length === 0,
-                                }"
-                            >
-                                <i class="fas fa-trash"></i>
-                            </span>
-                            <span
-                                class="add-records-btn"
-                                title="Add new payment request"
-                                @click="openAddPaymentRequestModal"
-                            >
-                                <i class="fas fa-plus"></i>
-                            </span>
-                            <h5 class="card-title">Phiếu đề nghị thanh toán</h5>
+                                <span
+                                    class="import-data-btn"
+                                    title="Import data"
+                                    @click="openPaymentImportModal"
+                                >
+                                    <i class="fas fa-file-import"></i>
+                                </span>
+                                <span
+                                    class="export-excel-btn"
+                                    title="Export to Excel"
+                                    @click="exportPaymentRequestsToExcel"
+                                >
+                                    <i class="fas fa-file-excel"></i>
+                                </span>
+                                <span
+                                    class="reset-all-filters-btn"
+                                    title="Reset all filters"
+                                    @click="resetPaymentRequestFilters"
+                                >
+                                    <i class="fas fa-redo-alt"></i>
+                                </span>
+                                <span
+                                    class="edit-records-btn"
+                                    title="Edit selected records"
+                                    @click="editSelectedPaymentRecords"
+                                    :class="{
+                                        disabled:
+                                            selectedPaymentRequests.length ===
+                                            0,
+                                    }"
+                                >
+                                    <i class="fas fa-edit"></i>
+                                </span>
+                                <span
+                                    class="delete-records-btn"
+                                    title="Delete selected records"
+                                    @click="deleteSelectedPaymentRecords"
+                                    :class="{
+                                        disabled:
+                                            selectedPaymentRequests.length ===
+                                            0,
+                                    }"
+                                >
+                                    <i class="fas fa-trash"></i>
+                                </span>
+                                <span
+                                    class="add-records-btn"
+                                    title="Add new payment request"
+                                    @click="openAddPaymentRequestModal"
+                                >
+                                    <i class="fas fa-plus"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body" v-if="showPaymentRequests">
                             <div class="table-container">
                                 <div class="table-responsive mt-2">
                                     <table
@@ -2293,6 +2343,15 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                        <div class="card-body text-center py-4" v-else>
+                            <button
+                                class="btn btn-outline-secondary"
+                                @click="togglePaymentRequests"
+                            >
+                                <i class="fas fa-eye me-1"></i> Hiển thị phiếu
+                                đề nghị thanh toán
+                            </button>
                         </div>
                     </div>
 
@@ -3367,6 +3426,8 @@ export default {
             selectedPaymentRequests: [],
             currentPaymentPage: 1,
             perPaymentPage: 15,
+            showPaymentDetails: true,
+            showPaymentRequests: true,
         };
     },
     computed: {
@@ -3654,9 +3715,37 @@ export default {
     mounted() {
         this.fetchUserData();
         this.fetchDocument();
+
+        // Restore visibility state from localStorage
+        const savedShowPaymentDetails =
+            localStorage.getItem("showPaymentDetails");
+        const savedShowPaymentRequests = localStorage.getItem(
+            "showPaymentRequests"
+        );
+
+        if (savedShowPaymentDetails !== null) {
+            this.showPaymentDetails = savedShowPaymentDetails === "true";
+        }
+
+        if (savedShowPaymentRequests !== null) {
+            this.showPaymentRequests = savedShowPaymentRequests === "true";
+        }
     },
     methods: {
         // ... existing methods
+
+        togglePaymentDetails() {
+            this.showPaymentDetails = !this.showPaymentDetails;
+            localStorage.setItem("showPaymentDetails", this.showPaymentDetails);
+        },
+
+        togglePaymentRequests() {
+            this.showPaymentRequests = !this.showPaymentRequests;
+            localStorage.setItem(
+                "showPaymentRequests",
+                this.showPaymentRequests
+            );
+        },
 
         openAddPaymentRequestModal() {
             // Reset form
@@ -5303,6 +5392,69 @@ export default {
     padding: 1rem 0;
     border-bottom: 1px solid #e0e3e8;
     transition: box-shadow 0.3s ease;
+}
+
+/* Toggle section styles */
+.toggle-section {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-icon {
+    transition: transform 0.3s ease;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.card-header {
+    padding: 1rem 1.25rem;
+    transition: background-color 0.2s ease;
+}
+
+.card-header:hover {
+    background-color: rgba(0, 0, 0, 0.01);
+}
+
+/* Transition effects for card body */
+.card-body {
+    transition: all 0.3s ease;
+}
+
+.card-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    position: relative;
+    right: 0;
+    top: 0;
+}
+
+.card-actions > span {
+    position: relative;
+    right: auto;
+    top: auto;
+}
+
+/* Better positioning for action buttons */
+.import-data-btn,
+.export-excel-btn,
+.reset-all-filters-btn,
+.edit-records-btn,
+.delete-records-btn,
+.add-records-btn {
+    position: relative;
+    right: auto;
+    top: auto;
 }
 
 /* Container for buttons and progress */
