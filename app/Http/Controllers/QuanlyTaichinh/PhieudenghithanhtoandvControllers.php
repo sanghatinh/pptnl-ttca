@@ -614,11 +614,13 @@ class PhieudenghithanhtoandvControllers extends Controller
             $request->validate([
                 'disbursement_codes' => 'required|array',
                 'disbursement_codes.*' => 'string',
-                'data' => 'required|array'
+                'data' => 'required|array',
+                'original_code' => 'nullable|string',
             ]);
             
             $disbursementCodes = $request->input('disbursement_codes');
             $updateData = $request->input('data');
+            $originalCode = $request->input('original_code');
             
             // Remove empty values from update data
             $updateData = array_filter($updateData, function($value) {
@@ -636,13 +638,69 @@ class PhieudenghithanhtoandvControllers extends Controller
             
             // Update the payment requests
             $updatedCount = 0;
-            foreach ($disbursementCodes as $code) {
-                // Find the payment request
-                $paymentRequest = Phieudenghithanhtoandv::where('ma_giai_ngan', $code)->first();
+            
+            // ตรวจสอบว่าเป็นการเลือกแค่รายการเดียวและมีการเปลี่ยน ma_giai_ngan หรือไม่
+            if (count($disbursementCodes) === 1 && $originalCode && 
+                isset($updateData['ma_giai_ngan']) && 
+                $updateData['ma_giai_ngan'] !== $originalCode) {
+                
+                // ต้องการเปลี่ยนรหัสใหม่
+                $newCode = $updateData['ma_giai_ngan'];
+                
+                // ตรวจสอบว่ารหัสใหม่ซ้ำกับอันที่มีอยู่หรือไม่
+                $existingWithNewCode = Phieudenghithanhtoandv::where('ma_giai_ngan', $newCode)->first();
+                if ($existingWithNewCode) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => "รหัสเบิกจ่าย {$newCode} มีอยู่ในระบบแล้ว ไม่สามารถใช้รหัสซ้ำได้",
+                    ], 400);
+                }
+                
+                // Get the payment request with old code
+                $paymentRequest = Phieudenghithanhtoandv::where('ma_giai_ngan', $originalCode)->first();
                 
                 if ($paymentRequest) {
-                    $paymentRequest->update($updateData);
-                    $updatedCount++;
+                    // Update ma_giai_ngan in logs table first
+                    DB::table('Logs_phieu_trinh_thanh_toan')
+                        ->where('ma_de_nghi_giai_ngan', $originalCode)
+                        ->update(['ma_de_nghi_giai_ngan' => $newCode]);
+                    
+                    // สร้างเรคอร์ดใหม่แบบไม่คัดลอก id เดิม
+                    $newPaymentRequestData = $paymentRequest->toArray();
+                    unset($newPaymentRequestData['id']); // ลบ id ออกเพื่อให้ระบบสร้าง id ใหม่
+                    $newPaymentRequestData['ma_giai_ngan'] = $newCode;
+                    
+                    // Update other fields from the form
+                    foreach ($updateData as $key => $value) {
+                        if ($key != 'ma_giai_ngan') {
+                            $newPaymentRequestData[$key] = $value;
+                        }
+                    }
+                    
+                    // สร้างเรคอร์ดใหม่แทนการใช้ replicate()
+                    Phieudenghithanhtoandv::create($newPaymentRequestData);
+                    
+                    // Delete the old record
+                    $paymentRequest->delete();
+                    
+                    $updatedCount = 1;
+                }
+            } else {
+                // Normal bulk update for multiple records (without changing ma_giai_ngan)
+                // Remove ma_giai_ngan from update data if it exists
+                if (isset($updateData['ma_giai_ngan'])) {
+                    unset($updateData['ma_giai_ngan']);
+                }
+                
+                foreach ($disbursementCodes as $code) {
+                    // Find the payment request
+                    $paymentRequest = Phieudenghithanhtoandv::where('ma_giai_ngan', $code)->first();
+                    
+                    if ($paymentRequest) {
+                        $paymentRequest->update($updateData);
+                        $updatedCount++;
+                    }
                 }
             }
             

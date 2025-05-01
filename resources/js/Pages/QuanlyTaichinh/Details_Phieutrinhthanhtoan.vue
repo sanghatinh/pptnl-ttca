@@ -2607,6 +2607,28 @@
                         </span>
                     </div>
 
+                    <!-- เพิ่มฟิลด์ Mã giải ngân ตรงนี้ -->
+                    <div class="mb-3">
+                        <label for="disbursementCode" class="form-label"
+                            >Mã giải ngân</label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="disbursementCode"
+                            v-model="paymentEditForm.ma_giai_ngan"
+                            placeholder="Nhập mã giải ngân"
+                            :disabled="selectedPaymentRequests.length > 1"
+                        />
+
+                        <div
+                            class="form-text text-warning"
+                            v-if="selectedPaymentRequests.length > 1"
+                        >
+                            Không thể chỉnh sửa mã giải ngân khi chọn nhiều
+                            phiếu
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label for="individualCustomer" class="form-label"
                             >Khách hàng cá nhân</label
@@ -2917,7 +2939,7 @@
                     ></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info mb-3">
+                    <div class="alert alert-info text-white mb-3">
                         <i class="fas fa-info-circle me-2"></i>
                         <small>
                             Import dữ liệu đề nghị thanh toán. File cần chứa các
@@ -3138,7 +3160,7 @@
                     </div>
 
                     <div
-                        class="alert alert-info"
+                        class="alert alert-info text-white"
                         v-if="paymentReceiptIds.length > 0"
                     >
                         <i class="fas fa-info-circle me-2"></i>
@@ -3228,6 +3250,7 @@ export default {
 
             // Add to data() function in your component
             paymentEditForm: {
+                ma_giai_ngan: "",
                 khach_hang_ca_nhan: "",
                 ma_khach_hang_ca_nhan: "",
                 khach_hang_doanh_nghiep: "",
@@ -3748,6 +3771,7 @@ export default {
 
             // Reset form first
             this.paymentEditForm = {
+                ma_giai_ngan: "",
                 khach_hang_ca_nhan: "",
                 ma_khach_hang_ca_nhan: "",
                 khach_hang_doanh_nghiep: "",
@@ -3764,6 +3788,7 @@ export default {
                 if (selectedRecord) {
                     // Populate form with existing data
                     this.paymentEditForm = {
+                        ma_giai_ngan: selectedRecord.disbursement_code || "", // เติมข้อมูลรหัสเบิกจ่ายเดิม
                         khach_hang_ca_nhan:
                             selectedRecord.individual_customer || "",
                         ma_khach_hang_ca_nhan:
@@ -3824,6 +3849,10 @@ export default {
                     {
                         disbursement_codes: this.selectedPaymentRequests,
                         data: this.paymentEditForm,
+                        original_code:
+                            this.selectedPaymentRequests.length === 1
+                                ? this.selectedPaymentRequests[0]
+                                : null,
                     },
                     {
                         headers: {
@@ -3836,32 +3865,15 @@ export default {
                     // Close the modal
                     this.paymentEditModal.hide();
 
-                    // Update local data
-                    this.selectedPaymentRequests.forEach((code) => {
-                        const record = this.paymentRequests.find(
-                            (item) => item.disbursement_code === code
-                        );
-                        if (record) {
-                            // Update each field if it was provided in the form
-                            for (const [key, value] of Object.entries(
-                                this.paymentEditForm
-                            )) {
-                                if (value !== null && value !== "") {
-                                    record[key] = value;
-                                }
-                            }
-                        }
-                    });
-
-                    // Clear selection
-                    this.selectedPaymentRequests = [];
-
+                    // Show success message
                     this.showSuccess(
                         `Đã cập nhật thành công ${response.data.updated_count} phiếu đề nghị`
                     );
 
-                    // Refresh data to get updated totals
+                    // Clear selection and refresh data
+                    this.selectedPaymentRequests = [];
                     this.fetchPaymentRequests();
+                    this.fetchDocument(); // เพิ่มการเรียก fetchDocument() เพื่อรีเฟรชข้อมูล Chi tiết hồ sơ thanh toán ด้วย
                 } else {
                     throw new Error(response.data.message || "Unknown error");
                 }
