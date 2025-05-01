@@ -2547,6 +2547,141 @@
         </div>
     </div>
 
+    <!-- Payment Request Edit Modal -->
+    <div
+        class="modal fade"
+        id="paymentEditModal"
+        tabindex="-1"
+        aria-labelledby="paymentEditModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentEditModalLabel">
+                        <i class="fas fa-edit me-2"></i>
+                        Chỉnh sửa phiếu đề nghị thanh toán
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                    ></button>
+                </div>
+                <!-- ในส่วนของ Payment Request Edit Modal -->
+                <div class="modal-body">
+                    <div
+                        class="alert"
+                        :class="{
+                            'alert-info text-white':
+                                selectedPaymentRequests.length > 1,
+                            'alert-success':
+                                selectedPaymentRequests.length === 1,
+                        }"
+                    >
+                        <i
+                            class="fas"
+                            :class="{
+                                'fa-info-circle me-2':
+                                    selectedPaymentRequests.length > 1,
+                                'fa-edit me-2':
+                                    selectedPaymentRequests.length === 1,
+                            }"
+                        ></i>
+                        <span v-if="selectedPaymentRequests.length === 1">
+                            Đang chỉnh sửa phiếu đề nghị:
+                            <strong>{{ selectedPaymentRequests[0] }}</strong>
+                        </span>
+                        <span v-else>
+                            Đang chỉnh sửa
+                            <strong>{{
+                                selectedPaymentRequests.length
+                            }}</strong>
+                            phiếu đề nghị
+                            <div class="mt-2 small">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Lưu ý: Khi chỉnh sửa nhiều phiếu cùng lúc, tất
+                                cả phiếu sẽ được cập nhật với cùng giá trị mới.
+                            </div>
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="individualCustomer" class="form-label"
+                            >Khách hàng cá nhân</label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="individualCustomer"
+                            v-model="paymentEditForm.khach_hang_ca_nhan"
+                            placeholder="Nhập tên khách hàng cá nhân"
+                        />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="individualCustomerCode" class="form-label"
+                            >Mã khách hàng cá nhân</label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="individualCustomerCode"
+                            v-model="paymentEditForm.ma_khach_hang_ca_nhan"
+                            placeholder="Nhập mã khách hàng cá nhân"
+                        />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="corporateCustomer" class="form-label"
+                            >Khách hàng doanh nghiệp</label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="corporateCustomer"
+                            v-model="paymentEditForm.khach_hang_doanh_nghiep"
+                            placeholder="Nhập tên khách hàng doanh nghiệp"
+                        />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="corporateCustomerCode" class="form-label"
+                            >Mã khách hàng doanh nghiệp</label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="corporateCustomerCode"
+                            v-model="paymentEditForm.ma_khach_hang_doanh_nghiep"
+                            placeholder="Nhập mã khách hàng doanh nghiệp"
+                        />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-success"
+                        @click="updatePaymentRecords"
+                        :disabled="isPaymentUpdating"
+                    >
+                        <i class="fas fa-save me-1"></i>
+                        <span v-if="isPaymentUpdating">Đang lưu...</span>
+                        <span v-else>Lưu thay đổi</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Receipt Modal -->
     <div
         class="modal fade"
@@ -2881,6 +3016,167 @@
             </div>
         </div>
     </div>
+    <!-- Add Payment Request Modal -->
+    <div
+        class="modal fade"
+        id="addPaymentModal"
+        tabindex="-1"
+        aria-labelledby="addPaymentModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addPaymentModalLabel">
+                        <i class="fas fa-plus me-2"></i>
+                        Thêm phiếu đề nghị thanh toán
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="disbursementCode" class="form-label"
+                            >Mã giải ngân
+                            <span class="text-danger">*</span></label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="disbursementCode"
+                            v-model="newPaymentRequest.ma_giai_ngan"
+                            placeholder="Nhập mã giải ngân"
+                            required
+                        />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="investmentProject" class="form-label"
+                            >Vụ đầu tư <span class="text-danger">*</span></label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="investmentProject"
+                            v-model="newPaymentRequest.vu_dau_tu"
+                            placeholder="Nhập vụ đầu tư"
+                            required
+                        />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="paymentType" class="form-label"
+                            >Loại thanh toán
+                            <span class="text-danger">*</span></label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="paymentType"
+                            v-model="newPaymentRequest.loai_thanh_toan"
+                            placeholder="Nhập loại thanh toán"
+                            required
+                        />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="individualCustomer" class="form-label"
+                            >Khách hàng cá nhân</label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="individualCustomer"
+                            v-model="newPaymentRequest.khach_hang_ca_nhan"
+                            placeholder="Nhập tên khách hàng cá nhân"
+                        />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="individualCustomerCode" class="form-label"
+                            >Mã khách hàng cá nhân</label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="individualCustomerCode"
+                            v-model="newPaymentRequest.ma_khach_hang_ca_nhan"
+                            placeholder="Nhập mã khách hàng cá nhân"
+                        />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="corporateCustomer" class="form-label"
+                            >Khách hàng doanh nghiệp</label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="corporateCustomer"
+                            v-model="newPaymentRequest.khach_hang_doanh_nghiep"
+                            placeholder="Nhập tên khách hàng doanh nghiệp"
+                        />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="corporateCustomerCode" class="form-label"
+                            >Mã khách hàng doanh nghiệp</label
+                        >
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="corporateCustomerCode"
+                            v-model="
+                                newPaymentRequest.ma_khach_hang_doanh_nghiep
+                            "
+                            placeholder="Nhập mã khách hàng doanh nghiệp"
+                        />
+                    </div>
+
+                    <div
+                        class="alert alert-info"
+                        v-if="paymentReceiptIds.length > 0"
+                    >
+                        <i class="fas fa-info-circle me-2"></i>
+                        Phiếu đề nghị sẽ được liên kết với
+                        <strong>{{ paymentReceiptIds.length }}</strong> biên bản
+                        nghiệm thu đã chọn
+                    </div>
+                    <div class="alert alert-warning" v-else>
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Vui lòng chọn ít nhất một biên bản nghiệm thu trong bảng
+                        chi tiết
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-success"
+                        @click="addPaymentRequest"
+                        :disabled="
+                            isAddingPaymentRequest ||
+                            paymentReceiptIds.length === 0
+                        "
+                    >
+                        <i class="fas fa-save me-1"></i>
+                        <span v-if="isAddingPaymentRequest">Đang lưu...</span>
+                        <span v-else>Tạo phiếu đề nghị</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -2915,6 +3211,30 @@ export default {
                 creator_name: "", // Người tạo
                 notes: "",
             },
+            // Add to data() function in your component
+            newPaymentRequest: {
+                ma_giai_ngan: "",
+                ma_trinh_thanh_toan: "",
+                vu_dau_tu: "",
+                loai_thanh_toan: "",
+                khach_hang_ca_nhan: "",
+                ma_khach_hang_ca_nhan: "",
+                khach_hang_doanh_nghiep: "",
+                ma_khach_hang_doanh_nghiep: "",
+            },
+            isAddingPaymentRequest: false,
+            addPaymentModal: null,
+            paymentReceiptIds: [],
+
+            // Add to data() function in your component
+            paymentEditForm: {
+                khach_hang_ca_nhan: "",
+                ma_khach_hang_ca_nhan: "",
+                khach_hang_doanh_nghiep: "",
+                ma_khach_hang_doanh_nghiep: "",
+            },
+            isPaymentUpdating: false,
+            paymentEditModal: null,
 
             // Payment import related properties
             selectedPaymentFile: null,
@@ -3315,6 +3635,325 @@ export default {
     methods: {
         // ... existing methods
 
+        openAddPaymentRequestModal() {
+            // Reset form
+            this.newPaymentRequest = {
+                ma_giai_ngan: "",
+                ma_trinh_thanh_toan: this.document.payment_code, // Set parent payment request ID
+                vu_dau_tu: this.document.investment_project,
+                loai_thanh_toan: this.document.payment_type,
+                khach_hang_ca_nhan: "",
+                ma_khach_hang_ca_nhan: "",
+                khach_hang_doanh_nghiep: "",
+                ma_khach_hang_doanh_nghiep: "",
+            };
+
+            // Get selected receipt IDs (if any)
+            this.paymentReceiptIds = this.selectedRecords;
+
+            // Show the modal using Bootstrap's modal
+            if (!this.addPaymentModal) {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                    (bootstrap) => {
+                        const modalElement =
+                            document.getElementById("addPaymentModal");
+                        if (modalElement) {
+                            this.addPaymentModal = new bootstrap.Modal(
+                                modalElement
+                            );
+                            this.addPaymentModal.show();
+                        }
+                    }
+                );
+            } else {
+                this.addPaymentModal.show();
+            }
+        },
+
+        async addPaymentRequest() {
+            // Validate required fields
+            if (
+                !this.newPaymentRequest.ma_giai_ngan ||
+                !this.newPaymentRequest.vu_dau_tu ||
+                !this.newPaymentRequest.loai_thanh_toan
+            ) {
+                this.showError("Vui lòng nhập đầy đủ thông tin bắt buộc");
+                return;
+            }
+
+            // Ensure we have receipt IDs to associate
+            if (this.paymentReceiptIds.length === 0) {
+                this.showError("Vui lòng chọn ít nhất một biên bản nghiệm thu");
+                return;
+            }
+
+            this.isAddingPaymentRequest = true;
+
+            try {
+                const response = await axios.post(
+                    `/api/disbursements/with-receipts`,
+                    {
+                        payment_request_data: this.newPaymentRequest,
+                        receipt_ids: this.paymentReceiptIds,
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    // Close the modal
+                    this.addPaymentModal.hide();
+
+                    // Clear selection
+                    this.selectedRecords = [];
+                    this.paymentReceiptIds = [];
+
+                    this.showSuccess(
+                        "Đã tạo phiếu đề nghị thanh toán thành công"
+                    );
+
+                    // Refresh data
+                    this.fetchPaymentRequests();
+                    this.fetchDocument(); // Also refresh receipt details as we've changed their associations
+                } else {
+                    throw new Error(response.data.message || "Unknown error");
+                }
+            } catch (error) {
+                console.error("Error adding payment request:", error);
+                this.showError(
+                    "Đã xảy ra lỗi khi tạo phiếu đề nghị thanh toán"
+                );
+
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            } finally {
+                this.isAddingPaymentRequest = false;
+            }
+        },
+
+        /**
+         * Edit selected payment records
+         */
+        editSelectedPaymentRecords() {
+            if (this.selectedPaymentRequests.length === 0) {
+                this.showError(
+                    "Vui lòng chọn ít nhất một phiếu đề nghị để chỉnh sửa"
+                );
+                return;
+            }
+
+            // Reset form first
+            this.paymentEditForm = {
+                khach_hang_ca_nhan: "",
+                ma_khach_hang_ca_nhan: "",
+                khach_hang_doanh_nghiep: "",
+                ma_khach_hang_doanh_nghiep: "",
+            };
+
+            // If only one record is selected, populate the form with its data
+            if (this.selectedPaymentRequests.length === 1) {
+                const selectedCode = this.selectedPaymentRequests[0];
+                const selectedRecord = this.paymentRequests.find(
+                    (item) => item.disbursement_code === selectedCode
+                );
+
+                if (selectedRecord) {
+                    // Populate form with existing data
+                    this.paymentEditForm = {
+                        khach_hang_ca_nhan:
+                            selectedRecord.individual_customer || "",
+                        ma_khach_hang_ca_nhan:
+                            selectedRecord.individual_customer_code || "",
+                        khach_hang_doanh_nghiep:
+                            selectedRecord.corporate_customer || "",
+                        ma_khach_hang_doanh_nghiep:
+                            selectedRecord.corporate_customer_code || "",
+                    };
+                }
+            } else {
+                // If multiple records selected, show a message in the modal
+                // This will be handled in the modal template
+            }
+
+            // Show the modal using Bootstrap's modal
+            if (!this.paymentEditModal) {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                    (bootstrap) => {
+                        const modalElement =
+                            document.getElementById("paymentEditModal");
+                        if (modalElement) {
+                            this.paymentEditModal = new bootstrap.Modal(
+                                modalElement
+                            );
+                            this.paymentEditModal.show();
+                        }
+                    }
+                );
+            } else {
+                this.paymentEditModal.show();
+            }
+        },
+
+        /**
+         * Update payment records
+         */
+        async updatePaymentRecords() {
+            if (this.selectedPaymentRequests.length === 0) return;
+
+            // Check if at least one field is filled
+            const hasValue = Object.values(this.paymentEditForm).some(
+                (value) => value !== null && value !== ""
+            );
+
+            if (!hasValue) {
+                this.showError(
+                    "Vui lòng nhập ít nhất một thông tin để cập nhật"
+                );
+                return;
+            }
+
+            this.isPaymentUpdating = true;
+
+            try {
+                const response = await axios.put(
+                    `/api/disbursements/bulk`,
+                    {
+                        disbursement_codes: this.selectedPaymentRequests,
+                        data: this.paymentEditForm,
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    // Close the modal
+                    this.paymentEditModal.hide();
+
+                    // Update local data
+                    this.selectedPaymentRequests.forEach((code) => {
+                        const record = this.paymentRequests.find(
+                            (item) => item.disbursement_code === code
+                        );
+                        if (record) {
+                            // Update each field if it was provided in the form
+                            for (const [key, value] of Object.entries(
+                                this.paymentEditForm
+                            )) {
+                                if (value !== null && value !== "") {
+                                    record[key] = value;
+                                }
+                            }
+                        }
+                    });
+
+                    // Clear selection
+                    this.selectedPaymentRequests = [];
+
+                    this.showSuccess(
+                        `Đã cập nhật thành công ${response.data.updated_count} phiếu đề nghị`
+                    );
+
+                    // Refresh data to get updated totals
+                    this.fetchPaymentRequests();
+                } else {
+                    throw new Error(response.data.message || "Unknown error");
+                }
+            } catch (error) {
+                console.error("Error updating payment requests:", error);
+                this.showError(
+                    "Đã xảy ra lỗi khi cập nhật phiếu đề nghị thanh toán"
+                );
+
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            } finally {
+                this.isPaymentUpdating = false;
+            }
+        },
+
+        /**
+         * Delete selected payment records
+         */
+        async deleteSelectedPaymentRecords() {
+            if (this.selectedPaymentRequests.length === 0) {
+                this.showError(
+                    "Vui lòng chọn ít nhất một phiếu đề nghị để xóa"
+                );
+                return;
+            }
+
+            const result = await Swal.fire({
+                title: "Xác nhận xóa?",
+                html: `Bạn có chắc chắn muốn xóa <b>${this.selectedPaymentRequests.length}</b> phiếu đề nghị thanh toán đã chọn?`,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Xóa",
+                cancelButtonText: "Hủy",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-danger me-2",
+                    cancelButton: "btn btn-outline-secondary",
+                },
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await axios.delete(
+                        `/api/disbursements/bulk`,
+                        {
+                            data: {
+                                disbursement_codes:
+                                    this.selectedPaymentRequests,
+                            },
+                            headers: {
+                                Authorization: "Bearer " + this.store.getToken,
+                            },
+                        }
+                    );
+
+                    if (response.data.success) {
+                        // Remove deleted records from the local array
+                        this.paymentRequests = this.paymentRequests.filter(
+                            (item) =>
+                                !this.selectedPaymentRequests.includes(
+                                    item.disbursement_code
+                                )
+                        );
+
+                        // Clear selection
+                        this.selectedPaymentRequests = [];
+
+                        this.showSuccess(
+                            `Đã xóa thành công ${response.data.deleted_count} phiếu đề nghị`
+                        );
+                        // Refresh data
+                        this.fetchPaymentRequests();
+                    } else {
+                        throw new Error(
+                            response.data.message || "Unknown error"
+                        );
+                    }
+                } catch (error) {
+                    console.error("Error deleting payment requests:", error);
+                    this.showError(
+                        "Đã xảy ra lỗi khi xóa phiếu đề nghị thanh toán"
+                    );
+
+                    if (error.response?.status === 401) {
+                        this.handleAuthError();
+                    }
+                }
+            }
+        },
+
         /**
          * Open the payment import modal
          */
@@ -3520,31 +4159,31 @@ export default {
         /**
          * Fetch payment requests data
          */
-         async fetchPaymentRequests() {
-    try {
-        const response = await axios.get(
-            `/api/payment-requests/${this.document.payment_code}/disbursements`,
-            {
-                headers: {
-                    Authorization: "Bearer " + this.store.getToken,
-                },
-            }
-        );
+        async fetchPaymentRequests() {
+            try {
+                const response = await axios.get(
+                    `/api/payment-requests/${this.document.payment_code}/disbursements`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
 
-        if (response.data.success) {
-            this.paymentRequests = response.data.data;
-        } else {
-            this.showError("Failed to fetch payment requests data");
-        }
-    } catch (error) {
-        console.error("Error fetching payment requests:", error);
-        if (error.response?.status === 401) {
-            this.handleAuthError();
-        } else {
-            this.showError("Error loading payment requests data");
-        }
-    }
-},
+                if (response.data.success) {
+                    this.paymentRequests = response.data.data;
+                } else {
+                    this.showError("Failed to fetch payment requests data");
+                }
+            } catch (error) {
+                console.error("Error fetching payment requests:", error);
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                } else {
+                    this.showError("Error loading payment requests data");
+                }
+            }
+        },
 
         fetchUserData() {
             const user = localStorage.getItem("web_user");

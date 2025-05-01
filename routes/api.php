@@ -158,10 +158,9 @@ Route::post('/payment-requests/{id}/import-data', [PaymentRequestController::cla
 
 //Phiếu đề nghi thanh toán trong phiếu trình thanh toán
 Route::get('/payment-requests/{id}/disbursements', [PhieudenghithanhtoandvControllers::class, 'getByPaymentRequest']);
-Route::post('/disbursements', [PhieudenghithanhtoandvControllers::class, 'store']);
-Route::get('/disbursements/{id}', [PhieudenghithanhtoandvControllers::class, 'show']);
-Route::put('/disbursements/{id}', [PhieudenghithanhtoandvControllers::class, 'update']);
-Route::delete('/disbursements/{id}', [PhieudenghithanhtoandvControllers::class, 'destroy']);
+Route::delete('/disbursements/bulk', [PhieudenghithanhtoandvControllers::class, 'bulkDelete']);
+Route::put('/disbursements/bulk', [PhieudenghithanhtoandvControllers::class, 'bulkUpdate']);
+Route::post('/disbursements/with-receipts', [PhieudenghithanhtoandvControllers::class, 'addWithReceipts']);
 Route::post('/disbursements/export', [PhieudenghithanhtoandvControllers::class, 'export']);
 Route::post('/disbursements/import', [PhieudenghithanhtoandvControllers::class, 'import']);
 

@@ -543,4 +543,190 @@ class PhieudenghithanhtoandvControllers extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Bulk delete payment requests
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function bulkDelete(Request $request)
+    {
+        try {
+            // Validate input
+            $request->validate([
+                'disbursement_codes' => 'required|array',
+                'disbursement_codes.*' => 'string'
+            ]);
+            
+            $disbursementCodes = $request->input('disbursement_codes');
+            
+            DB::beginTransaction();
+            
+            // Delete the payment requests and their associated logs
+            $deletedCount = 0;
+            foreach ($disbursementCodes as $code) {
+                // Find the payment request
+                $paymentRequest = Phieudenghithanhtoandv::where('ma_giai_ngan', $code)->first();
+                
+                if ($paymentRequest) {
+                    // Delete associated logs in Logs_phieu_trinh_thanh_toan
+                    DB::table('Logs_phieu_trinh_thanh_toan')
+                        ->where('ma_de_nghi_giai_ngan', $code)
+                        ->update(['ma_de_nghi_giai_ngan' => null]);
+                    
+                    // Delete the payment request itself
+                    $paymentRequest->delete();
+                    $deletedCount++;
+                }
+            }
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => "{$deletedCount} payment requests deleted successfully",
+                'deleted_count' => $deletedCount
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error bulk deleting payment requests: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting payment requests',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk update payment requests
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function bulkUpdate(Request $request)
+    {
+        try {
+            // Validate input
+            $request->validate([
+                'disbursement_codes' => 'required|array',
+                'disbursement_codes.*' => 'string',
+                'data' => 'required|array'
+            ]);
+            
+            $disbursementCodes = $request->input('disbursement_codes');
+            $updateData = $request->input('data');
+            
+            // Remove empty values from update data
+            $updateData = array_filter($updateData, function($value) {
+                return $value !== null && $value !== '';
+            });
+            
+            if (empty($updateData)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No data provided for update'
+                ], 400);
+            }
+            
+            DB::beginTransaction();
+            
+            // Update the payment requests
+            $updatedCount = 0;
+            foreach ($disbursementCodes as $code) {
+                // Find the payment request
+                $paymentRequest = Phieudenghithanhtoandv::where('ma_giai_ngan', $code)->first();
+                
+                if ($paymentRequest) {
+                    $paymentRequest->update($updateData);
+                    $updatedCount++;
+                }
+            }
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => "{$updatedCount} payment requests updated successfully",
+                'updated_count' => $updatedCount
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error bulk updating payment requests: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating payment requests',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Add new payment request with multiple receipts assignment
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function addWithReceipts(Request $request)
+    {
+        try {
+            // Validate input
+            $request->validate([
+                'payment_request_data' => 'required|array',
+                'receipt_ids' => 'required|array',
+                'receipt_ids.*' => 'string'
+            ]);
+            
+            $paymentRequestData = $request->input('payment_request_data');
+            $receiptIds = $request->input('receipt_ids');
+            
+            // Required fields validation
+            if (empty($paymentRequestData['ma_giai_ngan']) || 
+                empty($paymentRequestData['vu_dau_tu']) || 
+                empty($paymentRequestData['loai_thanh_toan']) ||
+                empty($paymentRequestData['ma_trinh_thanh_toan'])) {
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Missing required fields for payment request'
+                ], 400);
+            }
+            
+            DB::beginTransaction();
+            
+            // Create the payment request
+            $paymentRequest = Phieudenghithanhtoandv::create($paymentRequestData);
+            
+            // Assign receipts to this payment request
+            foreach ($receiptIds as $receiptId) {
+                DB::table('Logs_phieu_trinh_thanh_toan')
+                    ->where('ma_trinh_thanh_toan', $paymentRequestData['ma_trinh_thanh_toan'])
+                    ->where('ma_nghiem_thu', $receiptId)
+                    ->update(['ma_de_nghi_giai_ngan' => $paymentRequestData['ma_giai_ngan']]);
+            }
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment request created and assigned to receipts successfully',
+                'data' => $paymentRequest
+            ], 201);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating payment request with receipts: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating payment request',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
