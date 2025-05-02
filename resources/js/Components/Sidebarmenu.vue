@@ -110,35 +110,24 @@
                                         @click="closeSidebar"
                                     >
                                         <span class="menu-text"
-                                            >Phiêu trình thanh toán</span
+                                            >Phiêu trình thanh toán dịch
+                                            vụ</span
                                         >
                                     </router-link>
                                 </li>
-                                <li v-if="userCanViewComponent('Transactions')">
+
+                                <li>
                                     <router-link
-                                        to="/transactions"
+                                        to="/Phieuthunodichvu"
                                         :class="
-                                            $route.path === '/transactions'
-                                                ? 'current-page'
-                                                : ''
-                                        "
-                                        @click="closeSidebar"
-                                    >
-                                        <span class="menu-text">Giao dịch</span>
-                                    </router-link>
-                                </li>
-                                <li v-if="userCanViewComponent('Reports')">
-                                    <router-link
-                                        to="/financial-reports"
-                                        :class="
-                                            $route.path === '/financial-reports'
+                                            $route.path === '/Phieuthunodichvu'
                                                 ? 'current-page'
                                                 : ''
                                         "
                                         @click="closeSidebar"
                                     >
                                         <span class="menu-text"
-                                            >Báo cáo tài chính</span
+                                            >Phiếu thu nợ dịch vụ</span
                                         >
                                     </router-link>
                                 </li>

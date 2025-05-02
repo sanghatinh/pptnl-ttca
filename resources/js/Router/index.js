@@ -10,6 +10,7 @@ import Details_NghiemthuDV from "../Pages/Quanlyhoso/Details_NghiemthuDV.vue";
 import Details_Phieugiaonhanhomgiong from "../Pages/Quanlyhoso/Details_Phieugiaonhanhomgiong.vue";
 import Phieugiaonhanhomgiong from "../Pages/Quanlyhoso/Phieugiaonhanhomgiong.vue";
 import Phieutrinhthanhtoan from "../Pages/QuanlyTaichinh/Phieutrinhthanhtoan.vue";
+import Phieuthunodichvu from "../Pages/QuanlyTaichinh/Phieuthunodichvu.vue";
 import Details_Phieutrinhthanhtoan from "../Pages/QuanlyTaichinh/Details_Phieutrinhthanhtoan.vue";
 import login from "../Pages/Login.vue";
 import Nopage from "../Pages/404.vue";
@@ -238,6 +239,14 @@ const routes = [
         name: "Details_Phieutrinhthanhtoan",
         path: "/Details_Phieutrinhthanhtoan/:id",
         component: Details_Phieutrinhthanhtoan,
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
+        name: "Phieuthunodichvu",
+        path: "/Phieuthunodichvu",
+        component: Phieuthunodichvu,
         meta: {
             middleware: [authMiddleware],
         },

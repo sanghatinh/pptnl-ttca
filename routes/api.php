@@ -16,6 +16,7 @@ use App\Http\Controllers\QuanlyHS\BienBanNghiemThuController;
 use App\Http\Controllers\QuanlyHS\PhieuGiaoNhanHomGiongController;
 use App\Http\Controllers\QuanlyHS\PaymentRequestController;
 use App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers;
+use App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController;
 
 
 Route::apiResource('roles', RoleController::class);
@@ -163,6 +164,13 @@ Route::put('/disbursements/bulk', [PhieudenghithanhtoandvControllers::class, 'bu
 Route::post('/disbursements/with-receipts', [PhieudenghithanhtoandvControllers::class, 'addWithReceipts']);
 Route::post('/disbursements/export', [PhieudenghithanhtoandvControllers::class, 'export']);
 Route::post('/disbursements/import', [PhieudenghithanhtoandvControllers::class, 'import']);
+//Phiếu thu nợ dịch vụ
+Route::get('/phieu-thu-no-dich-vu', [App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController::class, 'index']);
+Route::get('/phieu-thu-no-dich-vu/{id}', [App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController::class, 'show']);
+Route::get('/phieu-thu-no-dich-vu/{id}/check-access', [App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController::class, 'checkAccess']);
+// Import Phieu Thu No Dich Vu routes
+Route::post('/import-phieu-thu-no-dich-vu', [PhieuthunodichvuController::class, 'import']);
+Route::get('/import-thu-no-dich-vu-progress/{importId}', [PhieuthunodichvuController::class, 'importProgress']);
 
 
 
