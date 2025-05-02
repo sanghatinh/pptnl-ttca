@@ -85,7 +85,7 @@
                         <!-- Thông tin phiếu trình -->
                         <div class="card col-12 col-md-6">
                             <div class="card-body">
-                                <h5 class="card-title">
+                                <h5 class="card-title mb-3 border-bottom pb-2">
                                     Thông tin phiếu trình
                                 </h5>
                                 <div class="row gutters">
@@ -174,18 +174,73 @@
                                             />
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
+                                    <!-- Người tạo -->
+                                    <div
+                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                    >
+                                        <div class="form-group mb-3">
+                                            <label
+                                                for="nguoiTao"
+                                                class="form-label"
+                                            >
+                                                Người tạo
+                                            </label>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="nguoiTao"
+                                                :value="document.creator_name"
+                                                disabled
+                                            />
+                                        </div>
+                                    </div>
+                                    <!-- Số tờ trình -->
+                                    <div
+                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                    >
+                                        <div class="form-group mb-3">
+                                            <label
+                                                for="soToTrinh"
+                                                class="form-label"
+                                            >
+                                                Số tờ trình
+                                            </label>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="soToTrinh"
+                                                :value="
+                                                    document.proposal_number
+                                                "
+                                                disabled
+                                            />
+                                        </div>
+                                    </div>
 
-                        <!-- Thông tin tài chính -->
-                        <div class="card col-12 col-md-6">
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    Thông tin tài chính và trạng thái
-                                </h5>
-                                <div class="row gutters">
-                                    <!-- Trạng thái thanh toán -->
+                                    <!-- Ngày tạo -->
+                                    <div
+                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                    >
+                                        <div class="form-group mb-3">
+                                            <label
+                                                for="ngayTao"
+                                                class="form-label"
+                                            >
+                                                Ngày tạo
+                                            </label>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="ngayTao"
+                                                :value="
+                                                    formatDate(
+                                                        document.created_at
+                                                    )
+                                                "
+                                                disabled
+                                            />
+                                        </div>
+                                    </div>
                                     <div
                                         class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
                                     >
@@ -235,55 +290,20 @@
                                             />
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
 
-                                    <!-- Số tờ trình -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="soToTrinh"
-                                                class="form-label"
-                                            >
-                                                Số tờ trình
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="soToTrinh"
-                                                :value="
-                                                    document.proposal_number
-                                                "
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <!-- Ngày tạo -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="ngayTao"
-                                                class="form-label"
-                                            >
-                                                Ngày tạo
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="ngayTao"
-                                                :value="
-                                                    formatDate(
-                                                        document.created_at
-                                                    )
-                                                "
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
+                        <!-- Thông tin tài chính -->
+                        <!-- filepath: f:\Webpoject\TTCA_PTNL\ttca_ptnl\resources\js\Pages\QuanlyTaichinh\Details_Phieutrinhthanhtoan.vue -->
+                        <!-- Replace the existing Thông tin tài chính card with this improved version -->
+                        <div class="card col-12 col-md-6">
+                            <div class="card-body">
+                                <!-- Financial Summary -->
+                                <h6 class="mb-3 border-bottom pb-2">
+                                    Tổng hợp tài chính
+                                </h6>
+                                <div class="row gutters">
                                     <!-- Tổng tiền thanh toán -->
                                     <div
                                         class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
@@ -297,11 +317,11 @@
                                             </label>
                                             <input
                                                 type="text"
-                                                class="form-control"
+                                                class="form-control text-end fw-medium"
                                                 id="tongTien"
                                                 :value="
                                                     formatCurrency(
-                                                        document.total_amount
+                                                        totalPaymentAmount
                                                     )
                                                 "
                                                 disabled
@@ -309,22 +329,99 @@
                                         </div>
                                     </div>
 
-                                    <!-- Người tạo -->
+                                    <!-- Tổng tiền tạm giữ -->
                                     <div
                                         class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
                                     >
                                         <div class="form-group mb-3">
                                             <label
-                                                for="nguoiTao"
+                                                for="tongTienTamGiu"
                                                 class="form-label"
                                             >
-                                                Người tạo
+                                                Tổng tiền tạm giữ
                                             </label>
                                             <input
                                                 type="text"
-                                                class="form-control"
-                                                id="nguoiTao"
-                                                :value="document.creator_name"
+                                                class="form-control text-end fw-medium"
+                                                id="tongTienTamGiu"
+                                                :value="
+                                                    formatCurrency(
+                                                        totalHoldAmount
+                                                    )
+                                                "
+                                                disabled
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <!-- Tổng tiền khấu trừ -->
+                                    <div
+                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                    >
+                                        <div class="form-group mb-3">
+                                            <label
+                                                for="tongTienKhauTru"
+                                                class="form-label"
+                                            >
+                                                Tổng tiền khấu trừ
+                                            </label>
+                                            <input
+                                                type="text"
+                                                class="form-control text-end fw-medium"
+                                                id="tongTienKhauTru"
+                                                :value="
+                                                    formatCurrency(
+                                                        totalDeductionAmount
+                                                    )
+                                                "
+                                                disabled
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <!-- Tổng tiền lãi suất -->
+                                    <div
+                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                    >
+                                        <div class="form-group mb-3">
+                                            <label
+                                                for="tongTienLaiSuat"
+                                                class="form-label"
+                                            >
+                                                Tổng tiền lãi suất
+                                            </label>
+                                            <input
+                                                type="text"
+                                                class="form-control text-end fw-medium"
+                                                id="tongTienLaiSuat"
+                                                :value="
+                                                    formatCurrency(
+                                                        totalInterestAmount
+                                                    )
+                                                "
+                                                disabled
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <!-- Tổng tiền thanh toán còn lại -->
+                                    <div class="col-12">
+                                        <div class="form-group mb-1">
+                                            <label
+                                                for="tongTienConLai"
+                                                class="form-label fw-bold"
+                                            >
+                                                Tổng tiền thanh toán còn lại
+                                            </label>
+                                            <input
+                                                type="text"
+                                                class="form-control text-end fw-bold bg-light"
+                                                id="tongTienConLai"
+                                                :value="
+                                                    formatCurrency(
+                                                        totalRemainingAmount
+                                                    )
+                                                "
                                                 disabled
                                             />
                                         </div>
