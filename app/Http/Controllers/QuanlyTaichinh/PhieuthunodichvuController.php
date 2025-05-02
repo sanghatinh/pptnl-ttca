@@ -22,7 +22,7 @@ class PhieuthunodichvuController extends Controller
             $query = Phieuthunodichvu::query();
 
             // Apply pagination
-            $perPage = $request->input('per_page', 10);
+            $perPage = $request->input('per_page', 50);
             $page = $request->input('page', 1);
             
             $records = $query->get()->map(function ($item) {
@@ -458,7 +458,7 @@ class PhieuthunodichvuController extends Controller
             'Ngay_Vay' => ['ngay vay', 'ngay_vay', 'ngày vay', 'thoi gian vay', 'ngày mượn', 'ngay muon', 'ngày tạo'],
             'Ngay_Tra' => ['ngay tra', 'ngay_tra', 'ngày trả', 'thoi gian tra', 'ngày hoàn thành', 'ngay hoan thanh'],
             'Lai_Suat_Phan_Bo_Dau_Tu' => ['lãi suất', 'lai suat', 'lai_suat', '% lãi', '% lai', 'tỷ lệ', 'ty le'],
-            'Tien_Lai' => ['tien lai', 'tien_lai', 'tiền lãi', 'lãi', 'lai', 'tiền lãi suất'],
+            'Tien_Lai' => ['Tiền lãi'],
             'Tinh_Trang_PDN_Thu_No' => ['tình trạng', 'tinh trang', 'trạng thái', 'trang thai', 'tình trạng thu nợ', 'status'],
             'Tinh_Trang_Duyet_PDN_Thu_No' => ['tình trạng duyệt', 'tinh trang duyet', 'duyệt', 'duyet', 'approval status'],
             'Da_Ho_Tro_Lai' => ['da ho tro lai', 'da_ho_tro_lai', 'đã hỗ trợ lãi', 'ho tro lai', 'hỗ trợ'],

@@ -204,65 +204,6 @@
                                         </div>
                                     </th>
 
-                                    <!-- Mã số phiếu Phân bổ đầu tư -->
-                                    <th>
-                                        Mã PB đầu tư
-                                        <button
-                                            @click="
-                                                toggleFilter(
-                                                    'ma_so_phieu_phan_bo'
-                                                )
-                                            "
-                                            class="filter-btn"
-                                        >
-                                            <i
-                                                class="fas fa-filter"
-                                                :class="{
-                                                    'text-green-500':
-                                                        columnFilters.ma_so_phieu_phan_bo,
-                                                }"
-                                            ></i>
-                                        </button>
-                                        <div
-                                            v-if="
-                                                activeFilter ===
-                                                'ma_so_phieu_phan_bo'
-                                            "
-                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                        >
-                                            <input
-                                                type="text"
-                                                v-model="
-                                                    columnFilters.ma_so_phieu_phan_bo
-                                                "
-                                                class="form-control mb-2"
-                                                placeholder="Lọc theo mã số phân bổ..."
-                                            />
-                                            <div class="flex justify-between">
-                                                <button
-                                                    @click="
-                                                        resetFilter(
-                                                            'ma_so_phieu_phan_bo'
-                                                        )
-                                                    "
-                                                    class="btn btn-sm btn-light"
-                                                >
-                                                    Reset
-                                                </button>
-                                                <button
-                                                    @click="
-                                                        applyFilter(
-                                                            'ma_so_phieu_phan_bo'
-                                                        )
-                                                    "
-                                                    class="btn btn-sm btn-success"
-                                                >
-                                                    Apply
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </th>
-
                                     <!-- Phân bổ đầu tư -->
                                     <th>
                                         Phân bổ đầu tư
@@ -611,6 +552,575 @@
                                         </div>
                                     </th>
 
+                                    <!-- Vụ đầu tư -->
+                                    <th>
+                                        Vụ đầu tư
+                                        <button
+                                            @click="toggleFilter('vu_dau_tu')"
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        selectedFilterValues.vu_dau_tu &&
+                                                        selectedFilterValues
+                                                            .vu_dau_tu.length >
+                                                            0,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="activeFilter === 'vu_dau_tu'"
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto"
+                                            >
+                                                <div
+                                                    v-for="(
+                                                        option, index
+                                                    ) in uniqueValues.vu_dau_tu"
+                                                    :key="index"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`vu_dau_tu-${index}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.vu_dau_tu
+                                                        "
+                                                        class="form-checkbox h-4 w-4 text-green-600"
+                                                    />
+                                                    <label
+                                                        :for="`vu_dau_tu-${index}`"
+                                                        class="ml-2 text-gray-700"
+                                                        >{{ option }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter('vu_dau_tu')
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter('vu_dau_tu')
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Vụ thanh toán -->
+                                    <th>
+                                        Vụ thanh toán
+                                        <button
+                                            @click="
+                                                toggleFilter('vu_thanh_toan')
+                                            "
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        selectedFilterValues.vu_thanh_toan &&
+                                                        selectedFilterValues
+                                                            .vu_thanh_toan
+                                                            .length > 0,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter === 'vu_thanh_toan'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto"
+                                            >
+                                                <div
+                                                    v-for="(
+                                                        option, index
+                                                    ) in uniqueValues.vu_thanh_toan"
+                                                    :key="index"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`vu_thanh_toan-${index}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.vu_thanh_toan
+                                                        "
+                                                        class="form-checkbox h-4 w-4 text-green-600"
+                                                    />
+                                                    <label
+                                                        :for="`vu_thanh_toan-${index}`"
+                                                        class="ml-2 text-gray-700"
+                                                        >{{ option }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'vu_thanh_toan'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'vu_thanh_toan'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Khách hàng cá nhân -->
+                                    <th>
+                                        Khách hàng cá nhân
+                                        <button
+                                            @click="
+                                                toggleFilter(
+                                                    'khach_hang_ca_nhan'
+                                                )
+                                            "
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        columnFilters.khach_hang_ca_nhan,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'khach_hang_ca_nhan'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <input
+                                                type="text"
+                                                v-model="
+                                                    columnFilters.khach_hang_ca_nhan
+                                                "
+                                                class="form-control mb-2"
+                                                placeholder="Lọc theo tên khách hàng..."
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'khach_hang_ca_nhan'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'khach_hang_ca_nhan'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Mã khách hàng cá nhân -->
+                                    <th>
+                                        Mã KH cá nhân
+                                        <button
+                                            @click="
+                                                toggleFilter(
+                                                    'ma_khach_hang_ca_nhan'
+                                                )
+                                            "
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        columnFilters.ma_khach_hang_ca_nhan,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'ma_khach_hang_ca_nhan'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <input
+                                                type="text"
+                                                v-model="
+                                                    columnFilters.ma_khach_hang_ca_nhan
+                                                "
+                                                class="form-control mb-2"
+                                                placeholder="Lọc theo mã KH..."
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'ma_khach_hang_ca_nhan'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'ma_khach_hang_ca_nhan'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Khách hàng doanh nghiệp -->
+                                    <th>
+                                        KH doanh nghiệp
+                                        <button
+                                            @click="
+                                                toggleFilter(
+                                                    'khach_hang_doanh_nghiep'
+                                                )
+                                            "
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        columnFilters.khach_hang_doanh_nghiep,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'khach_hang_doanh_nghiep'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <input
+                                                type="text"
+                                                v-model="
+                                                    columnFilters.khach_hang_doanh_nghiep
+                                                "
+                                                class="form-control mb-2"
+                                                placeholder="Lọc theo tên doanh nghiệp..."
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'khach_hang_doanh_nghiep'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'khach_hang_doanh_nghiep'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Mã khách hàng doanh nghiệp -->
+                                    <th>
+                                        Mã KH DN
+                                        <button
+                                            @click="
+                                                toggleFilter(
+                                                    'ma_khach_hang_doanh_nghiep'
+                                                )
+                                            "
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        columnFilters.ma_khach_hang_doanh_nghiep,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'ma_khach_hang_doanh_nghiep'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <input
+                                                type="text"
+                                                v-model="
+                                                    columnFilters.ma_khach_hang_doanh_nghiep
+                                                "
+                                                class="form-control mb-2"
+                                                placeholder="Lọc theo mã KH..."
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'ma_khach_hang_doanh_nghiep'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'ma_khach_hang_doanh_nghiep'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Số trờ trình -->
+                                    <th>
+                                        Số trờ trình
+                                        <button
+                                            @click="
+                                                toggleFilter('so_tro_trinh')
+                                            "
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        columnFilters.so_tro_trinh,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter === 'so_tro_trinh'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <input
+                                                type="text"
+                                                v-model="
+                                                    columnFilters.so_tro_trinh
+                                                "
+                                                class="form-control mb-2"
+                                                placeholder="Lọc theo số trờ trình..."
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'so_tro_trinh'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'so_tro_trinh'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Category Debt -->
+                                    <th>
+                                        Category Debt
+                                        <button
+                                            @click="
+                                                toggleFilter('category_debt')
+                                            "
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        selectedFilterValues.category_debt &&
+                                                        selectedFilterValues
+                                                            .category_debt
+                                                            .length > 0,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter === 'category_debt'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto"
+                                            >
+                                                <div
+                                                    v-for="(
+                                                        option, index
+                                                    ) in uniqueValues.category_debt"
+                                                    :key="index"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`category_debt-${index}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.category_debt
+                                                        "
+                                                        class="form-checkbox h-4 w-4 text-green-600"
+                                                    />
+                                                    <label
+                                                        :for="`category_debt-${index}`"
+                                                        class="ml-2 text-gray-700"
+                                                        >{{ option }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'category_debt'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'category_debt'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Description -->
+                                    <th>
+                                        Description
+                                        <button
+                                            @click="toggleFilter('description')"
+                                            class="filter-btn"
+                                        >
+                                            <i
+                                                class="fas fa-filter"
+                                                :class="{
+                                                    'text-green-500':
+                                                        columnFilters.description,
+                                                }"
+                                            ></i>
+                                        </button>
+                                        <div
+                                            v-if="
+                                                activeFilter === 'description'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                        >
+                                            <input
+                                                type="text"
+                                                v-model="
+                                                    columnFilters.description
+                                                "
+                                                class="form-control mb-2"
+                                                placeholder="Lọc theo mô tả..."
+                                            />
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'description'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-light"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'description'
+                                                        )
+                                                    "
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+
                                     <!-- Tình trạng -->
                                     <th>
                                         <div
@@ -689,211 +1199,6 @@
                                             </div>
                                         </div>
                                     </th>
-
-                                    <!-- Tình trạng duyệt -->
-                                    <th>
-                                        <div
-                                            class="flex items-center justify-between"
-                                        >
-                                            <span>Tình trạng duyệt</span>
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'tinh_trang_duyet'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.tinh_trang_duyet &&
-                                                            selectedFilterValues
-                                                                .tinh_trang_duyet
-                                                                .length > 0,
-                                                    }"
-                                                ></i>
-                                            </button>
-                                        </div>
-                                        <div
-                                            v-if="
-                                                activeFilter ===
-                                                'tinh_trang_duyet'
-                                            "
-                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                        >
-                                            <div
-                                                class="max-h-40 overflow-y-auto"
-                                            >
-                                                <div
-                                                    v-for="(
-                                                        option, index
-                                                    ) in uniqueValues.tinh_trang_duyet"
-                                                    :key="index"
-                                                    class="flex items-center mb-2"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        :id="`tinh_trang_duyet-${index}`"
-                                                        :value="option"
-                                                        v-model="
-                                                            selectedFilterValues.tinh_trang_duyet
-                                                        "
-                                                        class="form-checkbox h-4 w-4 text-green-600"
-                                                    />
-                                                    <label
-                                                        :for="`tinh_trang_duyet-${index}`"
-                                                        class="ml-2 text-gray-700"
-                                                        >{{ option }}</label
-                                                    >
-                                                </div>
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <button
-                                                    @click="
-                                                        resetFilter(
-                                                            'tinh_trang_duyet'
-                                                        )
-                                                    "
-                                                    class="btn btn-sm btn-light"
-                                                >
-                                                    Reset
-                                                </button>
-                                                <button
-                                                    @click="
-                                                        applyFilter(
-                                                            'tinh_trang_duyet'
-                                                        )
-                                                    "
-                                                    class="btn btn-sm btn-success"
-                                                >
-                                                    Apply
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </th>
-
-                                    <!-- Khách hàng -->
-                                    <th>
-                                        Khách hàng
-                                        <button
-                                            @click="toggleFilter('khach_hang')"
-                                            class="filter-btn"
-                                        >
-                                            <i
-                                                class="fas fa-filter"
-                                                :class="{
-                                                    'text-green-500':
-                                                        columnFilters.khach_hang,
-                                                }"
-                                            ></i>
-                                        </button>
-                                        <div
-                                            v-if="activeFilter === 'khach_hang'"
-                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                        >
-                                            <input
-                                                type="text"
-                                                v-model="
-                                                    columnFilters.khach_hang
-                                                "
-                                                class="form-control mb-2"
-                                                placeholder="Lọc theo khách hàng..."
-                                            />
-                                            <div class="flex justify-between">
-                                                <button
-                                                    @click="
-                                                        resetFilter(
-                                                            'khach_hang'
-                                                        )
-                                                    "
-                                                    class="btn btn-sm btn-light"
-                                                >
-                                                    Reset
-                                                </button>
-                                                <button
-                                                    @click="
-                                                        applyFilter(
-                                                            'khach_hang'
-                                                        )
-                                                    "
-                                                    class="btn btn-sm btn-success"
-                                                >
-                                                    Apply
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </th>
-
-                                    <!-- Vụ đầu tư -->
-                                    <th>
-                                        Vụ đầu tư
-                                        <button
-                                            @click="toggleFilter('vu_dau_tu')"
-                                            class="filter-btn"
-                                        >
-                                            <i
-                                                class="fas fa-filter"
-                                                :class="{
-                                                    'text-green-500':
-                                                        selectedFilterValues.vu_dau_tu &&
-                                                        selectedFilterValues
-                                                            .vu_dau_tu.length >
-                                                            0,
-                                                }"
-                                            ></i>
-                                        </button>
-                                        <div
-                                            v-if="activeFilter === 'vu_dau_tu'"
-                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                        >
-                                            <div
-                                                class="max-h-40 overflow-y-auto"
-                                            >
-                                                <div
-                                                    v-for="(
-                                                        option, index
-                                                    ) in uniqueValues.vu_dau_tu"
-                                                    :key="index"
-                                                    class="flex items-center mb-2"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        :id="`vu_dau_tu-${index}`"
-                                                        :value="option"
-                                                        v-model="
-                                                            selectedFilterValues.vu_dau_tu
-                                                        "
-                                                        class="form-checkbox h-4 w-4 text-green-600"
-                                                    />
-                                                    <label
-                                                        :for="`vu_dau_tu-${index}`"
-                                                        class="ml-2 text-gray-700"
-                                                        >{{ option }}</label
-                                                    >
-                                                </div>
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <button
-                                                    @click="
-                                                        resetFilter('vu_dau_tu')
-                                                    "
-                                                    class="btn btn-sm btn-light"
-                                                >
-                                                    Reset
-                                                </button>
-                                                <button
-                                                    @click="
-                                                        applyFilter('vu_dau_tu')
-                                                    "
-                                                    class="btn btn-sm btn-success"
-                                                >
-                                                    Apply
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -904,7 +1209,6 @@
                                     class="desktop-row cursor-pointer"
                                 >
                                     <td>{{ item.ma_so_phieu }}</td>
-                                    <td>{{ item.ma_so_phieu_phan_bo }}</td>
                                     <td>{{ item.phan_bo_dau_tu }}</td>
                                     <td>{{ item.invoice_number }}</td>
                                     <td>
@@ -914,6 +1218,17 @@
                                     <td>{{ formatDate(item.ngay_tra) }}</td>
                                     <td>{{ item.lai_suat }}%</td>
                                     <td>{{ formatCurrency(item.tien_lai) }}</td>
+                                    <td>{{ item.vu_dau_tu }}</td>
+                                    <td>{{ item.vu_thanh_toan }}</td>
+                                    <td>{{ item.khach_hang_ca_nhan }}</td>
+                                    <td>{{ item.ma_khach_hang_ca_nhan }}</td>
+                                    <td>{{ item.khach_hang_doanh_nghiep }}</td>
+                                    <td>
+                                        {{ item.ma_khach_hang_doanh_nghiep }}
+                                    </td>
+                                    <td>{{ item.so_tro_trinh }}</td>
+                                    <td>{{ item.category_debt }}</td>
+                                    <td>{{ item.description }}</td>
                                     <td>
                                         <span
                                             :class="
@@ -930,32 +1245,6 @@
                                             {{ formatStatus(item.tinh_trang) }}
                                         </span>
                                     </td>
-                                    <td>
-                                        <span
-                                            :class="
-                                                statusClass(
-                                                    item.tinh_trang_duyet
-                                                )
-                                            "
-                                            class="flex items-center"
-                                        >
-                                            <i
-                                                :class="
-                                                    statusIcons(
-                                                        item.tinh_trang_duyet
-                                                    )
-                                                "
-                                                class="mr-1"
-                                            ></i>
-                                            {{
-                                                formatStatus(
-                                                    item.tinh_trang_duyet
-                                                )
-                                            }}
-                                        </span>
-                                    </td>
-                                    <td>{{ item.khach_hang }}</td>
-                                    <td>{{ item.vu_dau_tu }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1253,7 +1542,7 @@ export default {
             statusFilter: "all",
             isMobile: window.innerWidth < 768,
             currentPage: 1,
-            perPage: 10,
+            perPage: 50,
             statusOptions: [
                 { code: "all", name: "Tất cả" },
                 { code: "active", name: "Đang nợ" },
@@ -2804,6 +3093,13 @@ export default {
     width: 100%;
 }
 
+/* Ensure table wrapper handles the overflow context properly */
+.table-responsive-wrapper {
+    position: relative;
+    overflow: visible;
+    width: 100%;
+}
+
 /* Make the filter dropdowns look more professional */
 .absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
     padding: 12px;
@@ -3082,6 +3378,8 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     padding: 0.75rem;
     border: 1px solid #e5e7eb;
     vertical-align: middle;
+    font-size: 12px;
+    white-space: nowrap;
 }
 
 /* Loading indicator */
