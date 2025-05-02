@@ -1564,89 +1564,7 @@
                                                         </div>
                                                     </div>
                                                 </th>
-                                                <th>
-                                                    Trạm
-                                                    <button
-                                                        @click="
-                                                            togglePaymentFilter(
-                                                                'tram'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    selectedPaymentFilterValues.tram &&
-                                                                    selectedPaymentFilterValues
-                                                                        .tram
-                                                                        .length >
-                                                                        0,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activePaymentFilter ===
-                                                            'tram'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <div
-                                                            class="max-h-40 overflow-y-auto mb-2"
-                                                        >
-                                                            <div
-                                                                v-for="option in uniquePaymentValues.tram"
-                                                                :key="option"
-                                                                class="flex items-center mb-2"
-                                                            >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    :id="`payment-tram-${option}`"
-                                                                    :value="
-                                                                        option
-                                                                    "
-                                                                    v-model="
-                                                                        selectedPaymentFilterValues.tram
-                                                                    "
-                                                                    class="mr-2 rounded text-green-500 focus:ring-green-500"
-                                                                />
-                                                                <label
-                                                                    :for="`payment-tram-${option}`"
-                                                                    class="select-none"
-                                                                    >{{
-                                                                        option
-                                                                    }}</label
-                                                                >
-                                                            </div>
-                                                        </div>
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetPaymentFilter(
-                                                                        'tram'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyPaymentFilter(
-                                                                        'tram'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
+
                                                 <th>
                                                     Vụ đầu tư
                                                     <button
@@ -2242,7 +2160,7 @@
                                                 "
                                             >
                                                 <td
-                                                    colspan="17"
+                                                    colspan="16"
                                                     class="text-center py-4"
                                                 >
                                                     <div class="empty-state">
@@ -2278,9 +2196,7 @@
                                                 <td>
                                                     {{ item.disbursement_code }}
                                                 </td>
-                                                <td>
-                                                    {{ item.tram || "N/A" }}
-                                                </td>
+
                                                 <td>
                                                     {{
                                                         item.investment_project
@@ -2366,7 +2282,7 @@
                                         >
                                             <tr>
                                                 <td
-                                                    colspan="9"
+                                                    colspan="8"
                                                     class="text-end fw-bold"
                                                 >
                                                     Tổng cộng:
@@ -2728,7 +2644,7 @@
                 <!-- ในส่วนของ Payment Request Edit Modal -->
                 <div class="modal-body">
                     <div
-                        class="alert"
+                        class="alert text-white"
                         :class="{
                             'alert-info text-white':
                                 selectedPaymentRequests.length > 1,
@@ -4552,7 +4468,7 @@ export default {
             };
         },
         formatCurrency(value) {
-            if (!value) return "0 VNĐ";
+            if (!value) return "0 KIP";
             return new Intl.NumberFormat("vi-VN", {
                 style: "currency",
                 currency: "KIP",
