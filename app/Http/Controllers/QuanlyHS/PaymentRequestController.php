@@ -179,16 +179,13 @@ class PaymentRequestController extends Controller
                 ], 404);
             }
             
-            // Get the creator information (assuming we have a creator ID field)
-            $creatorInfo = null;
-            if (isset($document->nguoi_tao)) {
-                // Check if the users table exists and has the correct columns
-                if (Schema::hasTable('users') && Schema::hasColumn('users', 'id')) {
-                    $creatorInfo = DB::table('users')
-                        ->where('id', $document->nguoi_tao)
-                        ->first();
-                }
-            }
+            // Get the creator information by finding the 'processing' action
+            $creatorInfo = DB::table('Action_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->where('action', 'processing')
+                ->join('users', 'Action_phieu_trinh_thanh_toan.action_by', '=', 'users.id')
+                ->select('users.full_name')
+                ->first();
             
             // Get all receipt IDs associated with this payment request from logs
             $receiptLogs = DB::table('Logs_phieu_trinh_thanh_toan')
@@ -242,8 +239,6 @@ class PaymentRequestController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
             
-            
-            
             return response()->json([
                 'success' => true,
                 'document' => [
@@ -256,7 +251,7 @@ class PaymentRequestController extends Controller
                     'proposal_number' => $document->so_to_trinh,
                     'created_at' => $document->ngay_tao,
                     'total_amount' => $document->tong_tien_thanh_toan,
-                    'creator_name' => $creatorInfo ? ($creatorInfo->full_name ?? $creatorInfo->name ?? "Người dùng #" . $document->nguoi_tao) : 'Unknown',
+                    'creator_name' => $creatorInfo ? $creatorInfo->full_name : 'Unknown',
                     // 'notes' => $document->ghi_chu
                 ],
                 'paymentDetails' => $mappedPaymentDetails,

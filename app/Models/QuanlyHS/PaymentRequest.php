@@ -30,4 +30,8 @@ class PaymentRequest extends Model
     {
         return $this->hasMany(PaymentRequestLog::class, 'ma_trinh_thanh_toan', 'ma_trinh_thanh_toan');
     }
+    public function creator()
+{
+    return $this->belongsTo(User::class, 'creator_id');
+}
 }

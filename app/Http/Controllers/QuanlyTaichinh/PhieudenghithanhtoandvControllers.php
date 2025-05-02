@@ -4,6 +4,7 @@ namespace App\Http\Controllers\QuanlyTaichinh;
 
 use App\Http\Controllers\Controller;
 use App\Models\Quanlytaichinh\Phieudenghithanhtoandv;
+use App\Models\Quanlytaichinh\Phieuthunodichvu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +12,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use App\Models\QuanlyHS\PaymentRequestAction; // เพิ่ม model สำหรับตาราง Action
 use App\Models\QuanlyHS\PaymentRequest;
 use App\Models\QuanlyHS\PaymentRequestLog;
+
 
 class PhieudenghithanhtoandvControllers extends Controller
 {
@@ -44,6 +46,13 @@ class PhieudenghithanhtoandvControllers extends Controller
                 ]);
             }
             
+            // Get parent payment request details to get the proposal number (so_to_trinh)
+            $parentPaymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $paymentRequestId)
+                ->first();
+                
+            $proposalNumber = $parentPaymentRequest ? $parentPaymentRequest->so_to_trinh : null;
+            
             // Process each disbursement request to collect all required information
             $result = [];
             foreach ($disbursementRequests as $request) {
@@ -56,10 +65,46 @@ class PhieudenghithanhtoandvControllers extends Controller
                 $totals = DB::table('tb_bien_ban_nghiemthu_dv')
                     ->whereIn('ma_nghiem_thu', $receiptIds)
                     ->select(
-                        DB::raw('SUM(tong_tien) as total_amount'),
+                        DB::raw('SUM(tong_tien_dich_vu) as total_amount'),
                         DB::raw('SUM(tong_tien_tam_giu) as total_hold_amount')
                     )
                     ->first();
+                
+                // Set customer identifiers for debt deduction and interest calculation
+                $customerRef = null;
+                $customerField = null;
+                
+                if (!empty($request->ma_khach_hang_ca_nhan)) {
+                    $customerRef = $request->ma_khach_hang_ca_nhan;
+                    $customerField = 'Ma_Khach_Hang_Ca_Nhan';
+                } elseif (!empty($request->ma_khach_hang_doanh_nghiep)) {
+                    $customerRef = $request->ma_khach_hang_doanh_nghiep;
+                    $customerField = 'Ma_Khach_Hang_Doanh_Nghiep';
+                }
+                
+                // Calculate total debt deduction (Da_Tra_Goc) and interest (Tien_Lai)
+                $debtAndInterest = [
+                    'total_deduction' => 0,
+                    'total_interest' => 0
+                ];
+                
+                if ($customerRef && $proposalNumber) {
+                    $debtRecords = DB::table('Logs_Phieu_Tinh_Lai_dv')
+                        ->where($customerField, $customerRef)
+                        ->where('So_Tro_Trinh', $proposalNumber)
+                        ->select(
+                            DB::raw('SUM(Da_Tra_Goc) as total_deduction'),
+                            DB::raw('SUM(Tien_Lai) as total_interest')
+                        )
+                        ->first();
+                        
+                    if ($debtRecords) {
+                        $debtAndInterest = [
+                            'total_deduction' => $debtRecords->total_deduction ?? 0,
+                            'total_interest' => $debtRecords->total_interest ?? 0
+                        ];
+                    }
+                }
                 
                 // Get payment date from Action_phieu_trinh_thanh_toan
                 $paymentAction = DB::table('Action_phieu_trinh_thanh_toan')
@@ -67,24 +112,20 @@ class PhieudenghithanhtoandvControllers extends Controller
                     ->where('action', 'paid')
                     ->orderBy('action_date', 'desc')
                     ->first();
-                
-                // Get payment request details from tb_phieu_trinh_thanh_toan
-                $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
-                    ->where('ma_trinh_thanh_toan', $request->ma_trinh_thanh_toan)
-                    ->first();
-                
+                    
                 // Calculate the remaining amount
                 $totalAmount = $totals->total_amount ?? 0;
                 $totalHoldAmount = $totals->total_hold_amount ?? 0;
-                $totalDeduction = 0; // For future implementation
-                $totalInterest = 0; // For future implementation
-                $totalRemaining = $totalAmount - $totalHoldAmount - $totalDeduction - $totalInterest;
+                $totalDeduction = $debtAndInterest['total_deduction'];
+                $totalInterest = $debtAndInterest['total_interest'];
+                $totalRemaining = $totalAmount - $totalHoldAmount - $totalDeduction + $totalInterest;
                 
                 // Create the result item with all required fields
                 $result[] = [
                     'disbursement_code' => $request->ma_giai_ngan,
                     'investment_project' => $request->vu_dau_tu,
                     'payment_type' => $request->loai_thanh_toan,
+                    'tram' => $request->tram ?? null,
                     'individual_customer' => $request->khach_hang_ca_nhan,
                     'individual_customer_code' => $request->ma_khach_hang_ca_nhan,
                     'corporate_customer' => $request->khach_hang_doanh_nghiep,
@@ -95,8 +136,8 @@ class PhieudenghithanhtoandvControllers extends Controller
                     'total_interest' => $totalInterest,
                     'total_remaining' => $totalRemaining,
                     'payment_date' => $paymentAction ? $paymentAction->action_date : null,
-                    'proposal_number' => $paymentRequest ? $paymentRequest->so_to_trinh : null,
-                    'installment' => $paymentRequest ? $paymentRequest->so_dot_thanh_toan : null,
+                    'proposal_number' => $proposalNumber,
+                    'installment' => $parentPaymentRequest ? $parentPaymentRequest->so_dot_thanh_toan : null,
                 ];
             }
             

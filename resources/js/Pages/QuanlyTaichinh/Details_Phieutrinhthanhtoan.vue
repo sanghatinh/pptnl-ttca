@@ -3295,13 +3295,14 @@ export default {
             // Add to data() function in your component
             newPaymentRequest: {
                 ma_giai_ngan: "",
-                ma_trinh_thanh_toan: "",
+                ma_trinh_thanh_toan: this.$route.params.id, // Set the parent payment request ID
                 vu_dau_tu: "",
                 loai_thanh_toan: "",
                 khach_hang_ca_nhan: "",
-                ma_khach_hang_ca_nhan: "",
+                ma_khach_hang_ca_nhan: "", // Added field for customer code
                 khach_hang_doanh_nghiep: "",
-                ma_khach_hang_doanh_nghiep: "",
+                ma_khach_hang_doanh_nghiep: "", // Added field for corporate code
+                tram: "",
             },
             isAddingPaymentRequest: false,
             addPaymentModal: null,
@@ -3311,9 +3312,9 @@ export default {
             paymentEditForm: {
                 ma_giai_ngan: "",
                 khach_hang_ca_nhan: "",
-                ma_khach_hang_ca_nhan: "",
+                ma_khach_hang_ca_nhan: "", // Added field for customer code
                 khach_hang_doanh_nghiep: "",
-                ma_khach_hang_doanh_nghiep: "",
+                ma_khach_hang_doanh_nghiep: "", // Added field for corporate code
             },
             isPaymentUpdating: false,
             paymentEditModal: null,
