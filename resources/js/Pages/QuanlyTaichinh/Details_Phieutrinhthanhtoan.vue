@@ -147,7 +147,9 @@
                                                 class="form-control"
                                                 id="vuDauTu"
                                                 :value="
-                                                    document.investment_project
+                                                    getInvestmentProjectName(
+                                                        document.investment_project
+                                                    )
                                                 "
                                                 disabled
                                             />
@@ -3320,6 +3322,7 @@ export default {
             isAddingPaymentRequest: false,
             addPaymentModal: null,
             paymentReceiptIds: [],
+            investmentProjects: [],
 
             // Add to data() function in your component
             paymentEditForm: {
@@ -3729,6 +3732,7 @@ export default {
     mounted() {
         this.fetchUserData();
         this.fetchDocument();
+        this.fetchInvestmentProjects(); // Add this line
 
         // Restore visibility state from localStorage
         const savedShowPaymentDetails =
@@ -3747,6 +3751,36 @@ export default {
     },
     methods: {
         // ... existing methods
+
+        async fetchInvestmentProjects() {
+            try {
+                const response = await axios.get("/api/investment-projects", {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                });
+
+                if (response.data.success) {
+                    this.investmentProjects = response.data.data || [];
+                } else {
+                    console.error("Failed to fetch investment projects");
+                }
+            } catch (error) {
+                console.error("Error fetching investment projects:", error);
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            }
+        },
+        // Add a helper method to get investment project name from code
+        getInvestmentProjectName(code) {
+            if (!code) return "N/A";
+
+            const project = this.investmentProjects.find(
+                (p) => p.Ma_Vudautu === code
+            );
+            return project ? project.Ten_Vudautu : code;
+        },
 
         togglePaymentDetails() {
             this.showPaymentDetails = !this.showPaymentDetails;
