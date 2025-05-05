@@ -235,26 +235,27 @@
                                     </div>
 
                                     <!-- Vụ đầu tư -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="vuDauTu"
-                                                class="form-label"
-                                            >
-                                                Vụ đầu tư
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="vuDauTu"
-                                                v-model="
-                                                    document.investment_project
-                                                "
-                                            />
-                                        </div>
-                                    </div>
+                                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
+    <div class="form-group mb-3">
+        <label for="vuDauTu" class="form-label">
+            Vụ đầu tư
+        </label>
+        <select
+            class="form-select"
+            id="vuDauTu"
+            v-model="document.investment_project"
+        >
+            <option value="" disabled>-- Chọn vụ đầu tư --</option>
+            <option
+                v-for="project in investmentProjects"
+                :key="project.Ma_Vudautu"
+                :value="project.Ma_Vudautu"
+            >
+                {{ project.Ten_Vudautu }}
+            </option>
+        </select>
+    </div>
+</div>
 
                                     <!-- Loại thanh toán -->
                                     <div
@@ -267,12 +268,25 @@
                                             >
                                                 Loại thanh toán
                                             </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
+                                            <select
+                                                class="form-select"
                                                 id="loaiThanhToan"
                                                 v-model="document.payment_type"
-                                            />
+                                            >
+                                                <option value="" disabled>
+                                                    -- Chọn loại thanh toán --
+                                                </option>
+                                                <option
+                                                    value="Nghiệm thu dịch vụ"
+                                                >
+                                                    Nghiệm thu dịch vụ
+                                                </option>
+                                                <option
+                                                    value="Phiếu giao nhận hom giống"
+                                                >
+                                                    Phiếu giao nhận hom giống
+                                                </option>
+                                            </select>
                                         </div>
                                     </div>
                                     <!-- Người tạo -->
@@ -3846,82 +3860,87 @@ export default {
         // ... existing methods
         // Add this to your Vue component's methods section
         async deleteDocument() {
-    // Confirm deletion with the user
-    const result = await Swal.fire({
-        title: "Xác nhận xóa",
-        text: "Bạn có chắc chắn muốn xóa phiếu trình thanh toán này không? Hành động này không thể hoàn tác.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Xóa",
-        cancelButtonText: "Hủy",
-        buttonsStyling: false,
-        customClass: {
-            confirmButton: "btn btn-danger me-2",
-            cancelButton: "btn btn-outline-secondary",
-        },
-    });
-
-    if (!result.isConfirmed) {
-        return;
-    }
-    
-    try {
-        // Show loading indicator
-        Swal.fire({
-            title: "Đang xử lý",
-            text: "Vui lòng đợi...",
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            },
-        });
-
-        // Call API to delete the document
-        const response = await axios.delete(
-            `/api/payment-requests/${this.document.payment_code}`,
-            {
-                headers: {
-                    Authorization: "Bearer " + this.store.getToken,
-                },
-            }
-        );
-
-        if (response.data.success) {
-            Swal.fire({
-                title: "Thành công!",
-                text: "Phiếu trình thanh toán đã được xóa",
-                icon: "success",
-                confirmButtonText: "OK",
+            // Confirm deletion with the user
+            const result = await Swal.fire({
+                title: "Xác nhận xóa",
+                text: "Bạn có chắc chắn muốn xóa phiếu trình thanh toán này không? Hành động này không thể hoàn tác.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Xóa",
+                cancelButtonText: "Hủy",
                 buttonsStyling: false,
                 customClass: {
-                    confirmButton: "btn btn-success",
+                    confirmButton: "btn btn-danger me-2",
+                    cancelButton: "btn btn-outline-secondary",
                 },
             });
-            
-            // Redirect to the payment request list page
-            this.$router.push('/phieutrinhthanhtoan');
-        } else {
-            throw new Error(response.data.message || "Không thể xóa phiếu trình thanh toán");
-        }
-    } catch (error) {
-        console.error("Error deleting document:", error);
-        
-        Swal.fire({
-            title: "Lỗi!",
-            text: error.response?.data?.message || "Đã xảy ra lỗi khi xóa phiếu trình thanh toán",
-            icon: "error",
-            confirmButtonText: "OK",
-            buttonsStyling: false,
-            customClass: {
-                confirmButton: "btn btn-success",
-            },
-        });
 
-        if (error.response?.status === 401) {
-            this.handleAuthError();
-        }
-    }
-},
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            try {
+                // Show loading indicator
+                Swal.fire({
+                    title: "Đang xử lý",
+                    text: "Vui lòng đợi...",
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    },
+                });
+
+                // Call API to delete the document
+                const response = await axios.delete(
+                    `/api/payment-requests/${this.document.payment_code}`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    Swal.fire({
+                        title: "Thành công!",
+                        text: "Phiếu trình thanh toán đã được xóa",
+                        icon: "success",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
+
+                    // Redirect to the payment request list page
+                    this.$router.push("/phieutrinhthanhtoan");
+                } else {
+                    throw new Error(
+                        response.data.message ||
+                            "Không thể xóa phiếu trình thanh toán"
+                    );
+                }
+            } catch (error) {
+                console.error("Error deleting document:", error);
+
+                Swal.fire({
+                    title: "Lỗi!",
+                    text:
+                        error.response?.data?.message ||
+                        "Đã xảy ra lỗi khi xóa phiếu trình thanh toán",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            }
+        },
         confirmUpdateStatus(status, title, text) {
             Swal.fire({
                 title: title,
