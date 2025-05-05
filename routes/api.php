@@ -59,7 +59,7 @@ Route::get('/role/{role}/components', [RolePermissionController::class, 'getComp
 //PAGE TAO BIEN BAN GIAO NHAN HO SO
 Route::group(['middleware' => ['auth:api']], function () {
 Route::get('/bienban-nghiemthu-search', [DocumentDeliveryController::class, 'searchBienBanNgheThu']);
-Route::get('/investment-projects', function () {
+Route::get('/investment-projects-original', function () {
     return DB::table('tb_vudautu')
         ->select('id', 'Ma_Vudautu', 'Ten_Vudautu')
         ->get();

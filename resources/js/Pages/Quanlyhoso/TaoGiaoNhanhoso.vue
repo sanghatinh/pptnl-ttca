@@ -1428,7 +1428,7 @@ export default {
         },
         fetchInvestmentProjects() {
             axios
-                .get("/api/investment-projects", {
+                .get("/api/investment-projects-original", {
                     headers: {
                         Authorization: "Bearer " + this.store.getToken,
                     },

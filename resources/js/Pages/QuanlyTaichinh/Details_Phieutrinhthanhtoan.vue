@@ -228,13 +228,7 @@
                                     v-if="document.status === 'submitted'"
                                     type="button"
                                     class="button-30-text-green"
-                                    @click="
-                                        confirmUpdateStatus(
-                                            'paid',
-                                            'Xác nhận đã thanh toán?',
-                                            'Bạn có chắc chắn muốn đánh dấu phiếu này là đã thanh toán không?'
-                                        )
-                                    "
+                                    @click="confirmPaymentStatus"
                                 >
                                     <i class="bx bx-check-square"></i>
                                     <span>Đã thanh toán</span>
@@ -570,6 +564,25 @@
                                                 v-model="
                                                     document.payment_installment
                                                 "
+                                            />
+                                        </div>
+                                    </div>
+                                    <!-- Ngày thanh toánoán -->
+                                    <div
+                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                    >
+                                        <div class="form-group mb-3">
+                                            <label
+                                                for="ngaythanhtoan"
+                                                class="form-label"
+                                            >
+                                                Ngày thanh toán
+                                            </label>
+                                            <input
+                                                type="date"
+                                                class="form-control"
+                                                id="ngaythanhtoan"
+                                                v-model="document.payment_date"
                                             />
                                         </div>
                                     </div>
@@ -3584,6 +3597,7 @@ export default {
                 payment_installment: 0, // Số đợt thanh toán
                 proposal_number: "", // Số tờ trình
                 created_at: null, // Ngày tạo
+                payment_date: null, // Ngày thanh toán
                 total_amount: 0, // Tổng tiền thanh toán
                 creator_name: "", // Người tạo
                 notes: "",
@@ -4096,7 +4110,33 @@ export default {
         }
     },
     methods: {
+        // Add this method in the methods section
+        confirmPaymentStatus() {
+            // Check if payment date is selected
+            if (!this.document.payment_date) {
+                Swal.fire({
+                    title: "Cảnh báo",
+                    text: "Vui lòng nhập ngày thanh toán trước khi đánh dấu là đã thanh toán",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+                return;
+            }
+
+            // If payment date exists, proceed with confirmation
+            this.confirmUpdateStatus(
+                "paid",
+                "Xác nhận đã thanh toán?",
+                "Bạn có chắc chắn muốn đánh dấu phiếu này là đã thanh toán không?"
+            );
+        },
+
         // Add this method to fetch the processing history
+
         async fetchProcessingHistory() {
             try {
                 const response = await axios.get(
@@ -4349,13 +4389,20 @@ export default {
                         Swal.showLoading();
                     },
                 });
+                // Create request payload
+                const payload = {
+                    status: status,
+                    action_notes: note,
+                };
+
+                // Add payment_date to payload if status is 'paid'
+                if (status === "paid") {
+                    payload.payment_date = this.document.payment_date;
+                }
 
                 const response = await axios.put(
                     `/api/payment-requests/${this.document.payment_code}/status`,
-                    {
-                        status: status,
-                        action_notes: note,
-                    },
+                    payload,
                     {
                         headers: {
                             Authorization: "Bearer " + this.store.getToken,
@@ -4415,6 +4462,7 @@ export default {
                 so_dot_thanh_toan: this.document.payment_installment,
                 loai_thanh_toan: this.document.payment_type,
                 vu_dau_tu: this.document.investment_project,
+                ngay_thanh_toan: this.document.payment_date, // Add payment_date to the data payload
             };
 
             axios
@@ -4442,7 +4490,7 @@ export default {
                         });
 
                         // Update local data if needed
-                        // this.document = { ...this.document, ...response.data.data };
+                        this.fetchDocument(); // Refresh data to ensure payment_date is updated
                     } else {
                         Swal.fire({
                             title: "Lỗi",
@@ -5122,6 +5170,8 @@ export default {
                                 response.data.document.proposal_number || "",
                             created_at:
                                 response.data.document.created_at || null,
+                            payment_date:
+                                response.data.document.payment_date || "", // Add this line
                             total_amount:
                                 response.data.document.total_amount || 0,
                             creator_name:

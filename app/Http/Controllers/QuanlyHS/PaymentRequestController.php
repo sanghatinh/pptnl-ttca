@@ -250,9 +250,9 @@ class PaymentRequestController extends Controller
                     'payment_installment' => $document->so_dot_thanh_toan,
                     'proposal_number' => $document->so_to_trinh,
                     'created_at' => $document->ngay_tao,
+                    'payment_date' => $document->ngay_thanh_toan, // Add this line
                     'total_amount' => $document->tong_tien_thanh_toan,
                     'creator_name' => $creatorInfo ? $creatorInfo->full_name : 'Unknown',
-                    // 'notes' => $document->ghi_chu
                 ],
                 'paymentDetails' => $mappedPaymentDetails,
                 'processingHistory' => $processingHistory
@@ -276,58 +276,73 @@ class PaymentRequestController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function updateStatus(Request $request, $id)
-    {
-        try {
-            // Validate the request
-            $validated = $request->validate([
-                'status' => 'required|string|in:processing,submitted,paid,cancelled',
-                'action_notes' => 'nullable|string|max:255',
-            ]);
-    
-            // Find the payment request
-            $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
-                ->where('ma_trinh_thanh_toan', $id)
-                ->first();
-    
-            if (!$paymentRequest) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Không tìm thấy phiếu trình thanh toán',
-                ], 404);
-            }
-    
-            // Update the payment request status - ลบฟิลด์ updated_at ออก
-            DB::table('tb_phieu_trinh_thanh_toan')
-                ->where('ma_trinh_thanh_toan', $id)
-                ->update([
-                    'trang_thai_thanh_toan' => $validated['status'],
-                    // ลบบรรทัด 'updated_at' => now(), เนื่องจากคอลัมน์นี้ไม่มีในตาราง
-                ]);
-    
-            // Record the action in the action table
-            DB::table('Action_phieu_trinh_thanh_toan')->insert([
-                'ma_trinh_thanh_toan' => $id,
-                'action' => $validated['status'],
-                'action_by' => auth()->id(),
-                'action_date' => now(),
-                'comments' => $validated['action_notes'] ?? null,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-    
-            return response()->json([
-                'success' => true,
-                'message' => 'Cập nhật trạng thái phiếu trình thanh toán thành công',
-                'status' => $validated['status'],
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error updating payment request status: ' . $e->getMessage());
+{
+    try {
+        // Validate the request
+        $validationRules = [
+            'status' => 'required|string|in:processing,submitted,paid,cancelled',
+            'action_notes' => 'nullable|string|max:255',
+        ];
+        
+        // Add payment_date validation if status is 'paid'
+        if ($request->input('status') === 'paid') {
+            $validationRules['payment_date'] = 'required|date';
+        }
+        
+        $validated = $request->validate($validationRules);
+
+        // Find the payment request
+        $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->first();
+
+        if (!$paymentRequest) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error updating payment request status: ' . $e->getMessage(),
-            ], 500);
+                'message' => 'Không tìm thấy phiếu trình thanh toán',
+            ], 404);
         }
+
+        // Create update data array
+        $updateData = [
+            'trang_thai_thanh_toan' => $validated['status']
+        ];
+        
+        // Add payment_date to update data if status is 'paid'
+        if ($validated['status'] === 'paid' && isset($validated['payment_date'])) {
+            $updateData['ngay_thanh_toan'] = $validated['payment_date'];
+        }
+
+        // Update the payment request status
+        DB::table('tb_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->update($updateData);
+
+        // Record the action in the action table
+        DB::table('Action_phieu_trinh_thanh_toan')->insert([
+            'ma_trinh_thanh_toan' => $id,
+            'action' => $validated['status'],
+            'action_by' => auth()->id(),
+            'action_date' => now(),
+            'comments' => $validated['action_notes'] ?? null,
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật trạng thái phiếu trình thanh toán thành công',
+            'status' => $validated['status'],
+            'payment_date' => $validated['status'] === 'paid' ? $validated['payment_date'] : null,
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error updating payment request status: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating payment request status: ' . $e->getMessage(),
+        ], 500);
     }
+}
     
     /**
      * ดึงข้อมูลโครงการลงทุน (Vụ đầu tư)
@@ -696,92 +711,95 @@ class PaymentRequestController extends Controller
     }
 
     public function updateBasicInfo(Request $request, $id)
-{
-    try {
-        // Validate the request data
-        $validated = $request->validate([
-            'so_to_trinh' => 'nullable|string|max:100', // Số tờ trình
-            'ngay_tao' => 'nullable|date', // Ngày tạo
-            'so_dot_thanh_toan' => 'nullable|integer|min:1', // Số đợt thanh toán
-            'loai_thanh_toan' => 'nullable|string|max:100', // Loại thanh toán
-            'vu_dau_tu' => 'nullable|string|max:100', // Vụ đầu tư
-        ]);
-
-        // Find the payment request record
-        $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
-            ->where('ma_trinh_thanh_toan', $id)
-            ->first();
-        
-        if (!$paymentRequest) {
+    {
+        try {
+            // Validate the request data
+            $validated = $request->validate([
+                'so_to_trinh' => 'nullable|string|max:100', // Số tờ trình
+                'ngay_tao' => 'nullable|date', // Ngày tạo
+                'so_dot_thanh_toan' => 'nullable|integer|min:1', // Số đợt thanh toán
+                'loai_thanh_toan' => 'nullable|string|max:100', // Loại thanh toán
+                'vu_dau_tu' => 'nullable|string|max:100', // Vụ đầu tư
+                'ngay_thanh_toan' => 'nullable|date', // Ngày thanh toán
+            ]);
+    
+            // Find the payment request record
+            $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->first();
+            
+            if (!$paymentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy phiếu trình thanh toán'
+                ], 404);
+            }
+    
+            // Prepare update data
+            $updateData = [];
+            
+            if (isset($validated['so_to_trinh'])) {
+                $updateData['so_to_trinh'] = $validated['so_to_trinh'];
+            }
+            
+            if (isset($validated['ngay_tao'])) {
+                $updateData['ngay_tao'] = $validated['ngay_tao'];
+            }
+            
+            if (isset($validated['so_dot_thanh_toan'])) {
+                $updateData['so_dot_thanh_toan'] = $validated['so_dot_thanh_toan'];
+            }
+            
+            if (isset($validated['loai_thanh_toan'])) {
+                $updateData['loai_thanh_toan'] = $validated['loai_thanh_toan'];
+            }
+            
+            if (isset($validated['vu_dau_tu'])) {
+                $updateData['vu_dau_tu'] = $validated['vu_dau_tu'];
+            }
+            
+            if (isset($validated['ngay_thanh_toan'])) {
+                $updateData['ngay_thanh_toan'] = $validated['ngay_thanh_toan'];
+            }
+    
+            // Update the record if we have data to update
+            if (!empty($updateData)) {
+                DB::table('tb_phieu_trinh_thanh_toan')
+                    ->where('ma_trinh_thanh_toan', $id)
+                    ->update($updateData);
+                
+                // Add an action record to track the update
+                DB::table('Action_phieu_trinh_thanh_toan')->insert([
+                    'ma_trinh_thanh_toan' => $id,
+                    'action' => 'processing',
+                    'action_by' => Auth::id(),
+                    'action_date' => now(),
+                    'comments' => 'Cập nhật thông tin cơ bản phiếu trình thanh toán',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+    
+            // Get the updated record
+            $updatedRecord = DB::table('tb_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->first();
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật thông tin phiếu trình thanh toán thành công',
+                'data' => $updatedRecord
+            ]);
+    
+        } catch (\Exception $e) {
+            Log::error('Error updating payment request basic info: ' . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Không tìm thấy phiếu trình thanh toán'
-            ], 404);
+                'message' => 'Lỗi khi cập nhật phiếu trình thanh toán: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Prepare update data
-        $updateData = [];
-        
-        if (isset($validated['so_to_trinh'])) {
-            $updateData['so_to_trinh'] = $validated['so_to_trinh'];
-        }
-        
-        if (isset($validated['ngay_tao'])) {
-            $updateData['ngay_tao'] = $validated['ngay_tao'];
-        }
-        
-        if (isset($validated['so_dot_thanh_toan'])) {
-            $updateData['so_dot_thanh_toan'] = $validated['so_dot_thanh_toan'];
-        }
-        
-        if (isset($validated['loai_thanh_toan'])) {
-            $updateData['loai_thanh_toan'] = $validated['loai_thanh_toan'];
-        }
-        
-        if (isset($validated['vu_dau_tu'])) {
-            $updateData['vu_dau_tu'] = $validated['vu_dau_tu'];
-        }
-
-        // Update the record if we have data to update
-        if (!empty($updateData)) {
-            DB::table('tb_phieu_trinh_thanh_toan')
-                ->where('ma_trinh_thanh_toan', $id)
-                ->update($updateData);
-            
-            // Add an action record to track the update
-            // Use 'processing' instead of 'update_info' as the action value
-            // 'processing' is likely already an accepted value in the action column
-            DB::table('Action_phieu_trinh_thanh_toan')->insert([
-                'ma_trinh_thanh_toan' => $id,
-                'action' => 'processing', // Changed from 'update_info' to 'processing'
-                'action_by' => Auth::id(),
-                'action_date' => now(),
-                'comments' => 'Cập nhật thông tin cơ bản phiếu trình thanh toán',
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-        }
-
-        // Get the updated record
-        $updatedRecord = DB::table('tb_phieu_trinh_thanh_toan')
-            ->where('ma_trinh_thanh_toan', $id)
-            ->first();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Cập nhật thông tin phiếu trình thanh toán thành công',
-            'data' => $updatedRecord
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error updating payment request basic info: ' . $e->getMessage());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Lỗi khi cập nhật phiếu trình thanh toán: ' . $e->getMessage()
-        ], 500);
     }
-}
 
 
 /**
