@@ -47,84 +47,92 @@ class PaymentRequestController extends Controller
         }
     }
 
-    /**
-     * สร้างเอกสารขอเบิกเงินใหม่
-     */
-    public function createPaymentRequest(Request $request)
-    {
-        $request->validate([
-            'investment_project' => 'required|string',
-            'payment_type' => 'required|string',
-            'payment_installment' => 'required|integer|min:1',
-            'proposal_number' => 'required|string|max:50',
-            'created_date' => 'required|date',
-            'receipt_ids' => 'required|array',
-            'receipt_ids.*' => 'string',
+
+/**
+ * สร้างเอกสารขอเบิกเงินใหม่
+ */
+public function createPaymentRequest(Request $request)
+{
+    $request->validate([
+        'investment_project' => 'required|string',
+        'payment_type' => 'required|string',
+        'payment_installment' => 'required|integer|min:1',
+        'proposal_number' => 'required|string|max:50',
+        'created_date' => 'required|date',
+        'receipt_ids' => 'required|array',
+        'receipt_ids.*' => 'string',
+    ]);
+
+    DB::beginTransaction();
+    try {
+        // 1. สร้าง ID ในรูปแบบ MTTT-TTCA-{Ma_Vudautu}-{ID}
+        $lastId = DB::table('tb_phieu_trinh_thanh_toan')->max('id') ?? 0;
+        $newId = $lastId + 1;
+        $codeId = str_pad($newId, 6, '0', STR_PAD_LEFT);
+        $maTrinh = "PTTT-TTCA-{$request->investment_project}-{$codeId}";
+        
+        // 2. สร้างชื่อเรื่อง (Tiêu đề) ในรูปแบบ TIEUDE-MTTT-TTCA-{Ma_Vudautu}-{ID}
+        $tieuDe = "PTTT-{$request->payment_type}-{$request->investment_project}-{$codeId}";
+        
+        // 3. กำหนดค่าเริ่มต้นของยอดเงินรวมเป็น 0 ก่อน
+        $totalAmount = 0;
+        
+        // 4. สร้างเอกสารขอเบิกเงิน - แก้ไขชื่อ field ให้ตรงกับโครงสร้าง SQL
+        $paymentRequest = PaymentRequest::create([
+            'ma_trinh_thanh_toan' => $maTrinh,
+            'tieu_de' => $tieuDe,
+            'vu_dau_tu' => $request->investment_project,
+            'loai_thanh_toan' => $request->payment_type,
+            'trang_thai_thanh_toan' => 'processing', // ใช้ field trang_thai_thanh_toan
+            'so_to_trinh' => $request->proposal_number,
+            'ngay_tao' => $request->created_date,
+            'tong_tien_thanh_toan' => $totalAmount,
+            'so_dot_thanh_toan' => $request->payment_installment,
         ]);
-
-        DB::beginTransaction();
-        try {
-            // 1. สร้าง ID ในรูปแบบ MTTT-TTCA-{Ma_Vudautu}-{ID}
-            $lastId = DB::table('tb_phieu_trinh_thanh_toan')->max('id') ?? 0;
-            $newId = $lastId + 1;
-            $codeId = str_pad($newId, 6, '0', STR_PAD_LEFT);
-            $maTrinh = "PTTT-TTCA-{$request->investment_project}-{$codeId}";
-            
-            // 2. สร้างชื่อเรื่อง (Tiêu đề) ในรูปแบบ TIEUDE-MTTT-TTCA-{Ma_Vudautu}-{ID}
-            $tieuDe = "PTTT-{$request->payment_type}-{$request->investment_project}-{$codeId}";
-            
-            // 3. คำนวณยอดเงินรวมจาก receipt_ids
-            $totalAmount = $this->calculateTotalAmount($request->receipt_ids);
-            
-            // 4. สร้างเอกสารขอเบิกเงิน - แก้ไขชื่อ field ให้ตรงกับโครงสร้าง SQL
-            $paymentRequest = PaymentRequest::create([
+        
+        // 5. สร้างประวัติ (logs) สำหรับแต่ละรายการที่เลือก
+        foreach ($request->receipt_ids as $receiptId) {
+            // บันทึกความสัมพันธ์ระหว่างใบเบิกเงินและรายการที่เบิก
+            PaymentRequestLog::create([
                 'ma_trinh_thanh_toan' => $maTrinh,
-                'tieu_de' => $tieuDe,
-                'vu_dau_tu' => $request->investment_project,
-                'loai_thanh_toan' => $request->payment_type,
-                'trang_thai_thanh_toan' => 'processing', // ใช้ field trang_thai_thanh_toan
-                'so_to_trinh' => $request->proposal_number,
-                'ngay_tao' => $request->created_date,
-                'tong_tien_thanh_toan' => $totalAmount,
-                'so_dot_thanh_toan' => $request->payment_installment,
+                'ma_nghiem_thu' => $receiptId,
             ]);
-            
-            // 5. สร้างประวัติ (logs) สำหรับแต่ละรายการที่เลือก
-            foreach ($request->receipt_ids as $receiptId) {
-                // บันทึกความสัมพันธ์ระหว่างใบเบิกเงินและรายการที่เบิก
-                PaymentRequestLog::create([
-                    'ma_trinh_thanh_toan' => $maTrinh,
-                    'ma_nghiem_thu' => $receiptId,
-                ]);
-            }
-
-            // บันทึกประวัติการดำเนินการสร้างใบเบิกเงิน
-            PaymentRequestAction::create([
-                'ma_trinh_thanh_toan' => $maTrinh,
-                'action' => 'processing', // สถานะเริ่มต้น
-                'action_by' => Auth::id(),
-                'action_date' => now(),
-                'comments' => 'Created payment request'
-            ]);
-            
-            DB::commit();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Payment request created successfully',
-                'payment_request_id' => $maTrinh
-            ]);
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error creating payment request: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Error creating payment request: ' . $e->getMessage()
-            ], 500);
         }
+
+        // 6. คำนวณยอดเงินรวมจาก receipt_ids
+        $totalAmount = $this->calculateTotalAmount($request->receipt_ids);
+        
+        // 7. อัปเดตยอดเงินรวมในเอกสารขอเบิกเงิน
+        $paymentRequest->tong_tien_thanh_toan = $totalAmount;
+        $paymentRequest->save();
+
+        // บันทึกประวัติการดำเนินการสร้างใบเบิกเงิน
+        PaymentRequestAction::create([
+            'ma_trinh_thanh_toan' => $maTrinh,
+            'action' => 'processing', // สถานะเริ่มต้น
+            'action_by' => Auth::id(),
+            'action_date' => now(),
+            'comments' => 'Đã tạo hồ sơ trình thanh toán'
+        ]);
+        
+        DB::commit();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment request created successfully',
+            'payment_request_id' => $maTrinh
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error creating payment request: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error creating payment request: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * คำนวณยอดเงินรวมจาก receipt_ids
@@ -134,7 +142,7 @@ class PaymentRequestController extends Controller
         // เปลี่ยนชื่อตารางให้ตรงกับที่ใช้จริง - อาจจะต้องปรับตามชื่อตารางที่ถูกต้อง
         $totalAmount = DB::table('tb_bien_ban_nghiemthu_dv')
             ->whereIn('ma_nghiem_thu', $receiptIds)
-            ->sum('tong_tien_thanh_toan');
+            ->sum('tong_tien');
             
         return $totalAmount;
     }
@@ -253,6 +261,11 @@ class PaymentRequestController extends Controller
                     'payment_date' => $document->ngay_thanh_toan, // Add this line
                     'total_amount' => $document->tong_tien_thanh_toan,
                     'creator_name' => $creatorInfo ? $creatorInfo->full_name : 'Unknown',
+                    // Add new financial fields
+    'total_hold_amount' => $document->tong_tien_tam_giu,
+    'total_deduction' => $document->tong_tien_khau_tru,
+    'total_interest' => $document->tong_tien_lai_suat,
+    'total_remaining' => $document->tong_tien_thanh_toan_con_lai,
                 ],
                 'paymentDetails' => $mappedPaymentDetails,
                 'processingHistory' => $processingHistory
@@ -276,73 +289,99 @@ class PaymentRequestController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function updateStatus(Request $request, $id)
-{
-    try {
-        // Validate the request
-        $validationRules = [
-            'status' => 'required|string|in:processing,submitted,paid,cancelled',
-            'action_notes' => 'nullable|string|max:255',
-        ];
-        
-        // Add payment_date validation if status is 'paid'
-        if ($request->input('status') === 'paid') {
-            $validationRules['payment_date'] = 'required|date';
-        }
-        
-        $validated = $request->validate($validationRules);
-
-        // Find the payment request
-        $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
-            ->where('ma_trinh_thanh_toan', $id)
-            ->first();
-
-        if (!$paymentRequest) {
+    {
+        try {
+            // Validate the request
+            $validationRules = [
+                'status' => 'required|string|in:processing,submitted,paid,cancelled',
+                'action_notes' => 'nullable|string|max:255',
+                'tong_tien' => 'nullable|numeric', // Tổng tiền thanh toán
+                'tong_tien_tam_giu' => 'nullable|numeric', // Tổng tiền tạm giữ
+                'tong_tien_khau_tru' => 'nullable|numeric', // Tổng tiền khấu trừ
+                'tong_tien_lai_suat' => 'nullable|numeric', // Tổng tiền lãi suất
+                'tong_tien_thanh_toan_con_lai' => 'nullable|numeric', // Tổng tiền thanh toán còn lại
+            ];
+            
+            // Add payment_date validation if status is 'paid'
+            if ($request->input('status') === 'paid') {
+                $validationRules['payment_date'] = 'required|date';
+            }
+            
+            $validated = $request->validate($validationRules);
+    
+            // Find the payment request
+            $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->first();
+    
+            if (!$paymentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy phiếu trình thanh toán',
+                ], 404);
+            }
+    
+            // Create update data array
+            $updateData = [
+                'trang_thai_thanh_toan' => $validated['status']
+            ];
+            
+            // Add payment_date to update data if status is 'paid'
+            if ($validated['status'] === 'paid' && isset($validated['payment_date'])) {
+                $updateData['ngay_thanh_toan'] = $validated['payment_date'];
+            }
+            
+            // Add financial fields
+            if (isset($validated['tong_tien'])) {
+                $updateData['tong_tien_thanh_toan'] = $validated['tong_tien'];
+            }
+            
+            if (isset($validated['tong_tien_tam_giu'])) {
+                $updateData['tong_tien_tam_giu'] = $validated['tong_tien_tam_giu'];
+            }
+            
+            if (isset($validated['tong_tien_khau_tru'])) {
+                $updateData['tong_tien_khau_tru'] = $validated['tong_tien_khau_tru'];
+            }
+            
+            if (isset($validated['tong_tien_lai_suat'])) {
+                $updateData['tong_tien_lai_suat'] = $validated['tong_tien_lai_suat'];
+            }
+            
+            if (isset($validated['tong_tien_thanh_toan_con_lai'])) {
+                $updateData['tong_tien_thanh_toan_con_lai'] = $validated['tong_tien_thanh_toan_con_lai'];
+            }
+    
+            // Update the payment request status and financial fields
+            DB::table('tb_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->update($updateData);
+    
+            // Record the action in the action table
+            DB::table('Action_phieu_trinh_thanh_toan')->insert([
+                'ma_trinh_thanh_toan' => $id,
+                'action' => $validated['status'],
+                'action_by' => auth()->id(),
+                'action_date' => now(),
+                'comments' => $validated['action_notes'] ?? null,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật trạng thái phiếu trình thanh toán thành công',
+                'status' => $validated['status'],
+                'payment_date' => $validated['status'] === 'paid' ? $validated['payment_date'] : null,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error updating payment request status: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Không tìm thấy phiếu trình thanh toán',
-            ], 404);
+                'message' => 'Error updating payment request status: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // Create update data array
-        $updateData = [
-            'trang_thai_thanh_toan' => $validated['status']
-        ];
-        
-        // Add payment_date to update data if status is 'paid'
-        if ($validated['status'] === 'paid' && isset($validated['payment_date'])) {
-            $updateData['ngay_thanh_toan'] = $validated['payment_date'];
-        }
-
-        // Update the payment request status
-        DB::table('tb_phieu_trinh_thanh_toan')
-            ->where('ma_trinh_thanh_toan', $id)
-            ->update($updateData);
-
-        // Record the action in the action table
-        DB::table('Action_phieu_trinh_thanh_toan')->insert([
-            'ma_trinh_thanh_toan' => $id,
-            'action' => $validated['status'],
-            'action_by' => auth()->id(),
-            'action_date' => now(),
-            'comments' => $validated['action_notes'] ?? null,
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Cập nhật trạng thái phiếu trình thanh toán thành công',
-            'status' => $validated['status'],
-            'payment_date' => $validated['status'] === 'paid' ? $validated['payment_date'] : null,
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error updating payment request status: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Error updating payment request status: ' . $e->getMessage(),
-        ], 500);
     }
-}
     
     /**
      * ดึงข้อมูลโครงการลงทุน (Vụ đầu tư)
@@ -721,6 +760,11 @@ class PaymentRequestController extends Controller
                 'loai_thanh_toan' => 'nullable|string|max:100', // Loại thanh toán
                 'vu_dau_tu' => 'nullable|string|max:100', // Vụ đầu tư
                 'ngay_thanh_toan' => 'nullable|date', // Ngày thanh toán
+                'tong_tien' => 'nullable|numeric', // Tổng tiền thanh toán
+                'tong_tien_tam_giu' => 'nullable|numeric', // Tổng tiền tạm giữ
+                'tong_tien_khau_tru' => 'nullable|numeric', // Tổng tiền khấu trừ
+                'tong_tien_lai_suat' => 'nullable|numeric', // Tổng tiền lãi suất
+                'tong_tien_thanh_toan_con_lai' => 'nullable|numeric', // Tổng tiền thanh toán còn lại
             ]);
     
             // Find the payment request record
@@ -761,6 +805,27 @@ class PaymentRequestController extends Controller
             if (isset($validated['ngay_thanh_toan'])) {
                 $updateData['ngay_thanh_toan'] = $validated['ngay_thanh_toan'];
             }
+            
+            // Add new financial fields to update data
+            if (isset($validated['tong_tien'])) {
+                $updateData['tong_tien_thanh_toan'] = $validated['tong_tien'];
+            }
+            
+            if (isset($validated['tong_tien_tam_giu'])) {
+                $updateData['tong_tien_tam_giu'] = $validated['tong_tien_tam_giu'];
+            }
+            
+            if (isset($validated['tong_tien_khau_tru'])) {
+                $updateData['tong_tien_khau_tru'] = $validated['tong_tien_khau_tru'];
+            }
+            
+            if (isset($validated['tong_tien_lai_suat'])) {
+                $updateData['tong_tien_lai_suat'] = $validated['tong_tien_lai_suat'];
+            }
+            
+            if (isset($validated['tong_tien_thanh_toan_con_lai'])) {
+                $updateData['tong_tien_thanh_toan_con_lai'] = $validated['tong_tien_thanh_toan_con_lai'];
+            }
     
             // Update the record if we have data to update
             if (!empty($updateData)) {
@@ -769,15 +834,15 @@ class PaymentRequestController extends Controller
                     ->update($updateData);
                 
                 // Add an action record to track the update
-                DB::table('Action_phieu_trinh_thanh_toan')->insert([
-                    'ma_trinh_thanh_toan' => $id,
-                    'action' => 'processing',
-                    'action_by' => Auth::id(),
-                    'action_date' => now(),
-                    'comments' => 'Cập nhật thông tin cơ bản phiếu trình thanh toán',
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
+                // DB::table('Action_phieu_trinh_thanh_toan')->insert([
+                //     'ma_trinh_thanh_toan' => $id,
+                //     'action' => 'processing',
+                //     'action_by' => Auth::id(),
+                //     'action_date' => now(),
+                //     'comments' => 'Cập nhật thông tin cơ bản phiếu trình thanh toán',
+                //     'created_at' => now(),
+                //     'updated_at' => now()
+                // ]);
             }
     
             // Get the updated record
@@ -800,7 +865,6 @@ class PaymentRequestController extends Controller
             ], 500);
         }
     }
-
 
 /**
  * Delete a payment request

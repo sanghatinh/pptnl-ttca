@@ -236,7 +236,7 @@
 
                                 <!-- ปุ่มยกเลิก (แสดงเฉพาะเมื่อสถานะเป็น 'submitted') -->
                                 <button
-                                    v-if="document.status === 'submitted'"
+                                    v-if="document.status === 'paid'"
                                     type="button"
                                     class="button-30"
                                     @click="
@@ -577,12 +577,16 @@
                                                 class="form-label"
                                             >
                                                 Ngày thanh toán
+                                                <span class="text-danger"
+                                                    >*</span
+                                                >
                                             </label>
                                             <input
                                                 type="date"
                                                 class="form-control"
                                                 id="ngaythanhtoan"
                                                 v-model="document.payment_date"
+                                                ref="paymentDateInput"
                                             />
                                         </div>
                                     </div>
@@ -3748,6 +3752,10 @@ export default {
     },
     computed: {
         // เพิ่ม property นี้เพื่อให้สามารถอัปเดต UI ทันทีเมื่อมีการเปลี่ยนแปลงสถานะ
+        // Add this new computed property to track the payment date field reference
+        paymentDateRef() {
+            return this.$refs.paymentDateInput;
+        },
         documentStatusClass() {
             return {
                 processing: this.document.status === "processing",
@@ -4123,6 +4131,20 @@ export default {
                     customClass: {
                         confirmButton: "btn btn-success",
                     },
+                }).then(() => {
+                    // After the user closes the alert, focus on the payment date field
+                    this.$nextTick(() => {
+                        // Focus on the payment date input
+                        if (this.$refs.paymentDateInput) {
+                            this.$refs.paymentDateInput.focus();
+
+                            // Scroll the field into view if needed
+                            this.$refs.paymentDateInput.scrollIntoView({
+                                behavior: "smooth",
+                                block: "center",
+                            });
+                        }
+                    });
                 });
                 return;
             }
@@ -4134,7 +4156,6 @@ export default {
                 "Bạn có chắc chắn muốn đánh dấu phiếu này là đã thanh toán không?"
             );
         },
-
         // Add this method to fetch the processing history
 
         async fetchProcessingHistory() {
@@ -4393,6 +4414,12 @@ export default {
                 const payload = {
                     status: status,
                     action_notes: note,
+                    // Add financial fields
+                    tong_tien: this.totalPaymentAmount,
+                    tong_tien_tam_giu: this.totalHoldAmount,
+                    tong_tien_khau_tru: this.totalDeductionAmount,
+                    tong_tien_lai_suat: this.totalInterestAmount,
+                    tong_tien_thanh_toan_con_lai: this.totalRemainingAmount,
                 };
 
                 // Add payment_date to payload if status is 'paid'
@@ -4455,64 +4482,51 @@ export default {
                 }
             }
         },
-        saveBasicInfo() {
-            const data = {
-                so_to_trinh: this.document.proposal_number,
-                ngay_tao: this.document.created_at,
-                so_dot_thanh_toan: this.document.payment_installment,
-                loai_thanh_toan: this.document.payment_type,
-                vu_dau_tu: this.document.investment_project,
-                ngay_thanh_toan: this.document.payment_date, // Add payment_date to the data payload
-            };
-
-            axios
-                .put(
+        async saveBasicInfo() {
+            try {
+                const response = await axios.put(
                     `/api/payment-requests/${this.document.payment_code}/basic-info`,
-                    data,
+                    {
+                        so_to_trinh: this.document.proposal_number,
+                        ngay_tao: this.document.created_at,
+                        so_dot_thanh_toan: this.document.payment_installment,
+                        loai_thanh_toan: this.document.payment_type,
+                        vu_dau_tu: this.document.investment_project,
+                        ngay_thanh_toan: this.document.payment_date,
+                        // Add financial fields
+                        tong_tien: this.totalPaymentAmount,
+                        tong_tien_tam_giu: this.totalHoldAmount,
+                        tong_tien_khau_tru: this.totalDeductionAmount,
+                        tong_tien_lai_suat: this.totalInterestAmount,
+                        tong_tien_thanh_toan_con_lai: this.totalRemainingAmount,
+                    },
                     {
                         headers: {
                             Authorization: "Bearer " + this.store.getToken,
                         },
                     }
-                )
-                .then((response) => {
-                    if (response.data.success) {
-                        // Show success message
-                        Swal.fire({
-                            title: "Thành công",
-                            text: "Cập nhật thông tin phiếu trình thanh toán thành công",
-                            icon: "success",
-                            confirmButtonText: "OK",
-                            buttonsStyling: false,
-                            customClass: {
-                                confirmButton: "btn btn-success",
-                            },
-                        });
+                );
 
-                        // Update local data if needed
-                        this.fetchDocument(); // Refresh data to ensure payment_date is updated
-                    } else {
-                        Swal.fire({
-                            title: "Lỗi",
-                            text:
-                                response.data.message ||
-                                "Đã xảy ra lỗi khi cập nhật",
-                            icon: "error",
-                            confirmButtonText: "OK",
-                            buttonsStyling: false,
-                            customClass: {
-                                confirmButton: "btn btn-danger",
-                            },
-                        });
-                    }
-                })
-                .catch((error) => {
-                    console.error("Error updating basic info:", error);
+                if (response.data.success) {
+                    Swal.fire({
+                        title: "Thành công",
+                        text: "Cập nhật thông tin phiếu trình thanh toán thành công",
+                        icon: "success",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
+
+                    // Update local data if needed
+                    this.fetchDocument(); // Refresh data to ensure payment_date is updated
+                } else {
                     Swal.fire({
                         title: "Lỗi",
                         text:
-                            "Đã xảy ra lỗi khi cập nhật: " +
-                            (error.response?.data?.message || error.message),
+                            response.data.message ||
+                            "Đã xảy ra lỗi khi cập nhật",
                         icon: "error",
                         confirmButtonText: "OK",
                         buttonsStyling: false,
@@ -4520,9 +4534,23 @@ export default {
                             confirmButton: "btn btn-danger",
                         },
                     });
+                }
+            } catch (error) {
+                console.error("Error updating basic info:", error);
+                Swal.fire({
+                    title: "Lỗi",
+                    text:
+                        "Đã xảy ra lỗi khi cập nhật: " +
+                        (error.response?.data?.message || error.message),
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-danger",
+                    },
                 });
+            }
         },
-
         async fetchInvestmentProjects() {
             try {
                 const response = await axios.get("/api/investment-projects", {

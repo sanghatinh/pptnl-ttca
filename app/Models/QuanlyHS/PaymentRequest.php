@@ -24,6 +24,10 @@ class PaymentRequest extends Model
         'tong_tien_thanh_toan',
         'so_dot_thanh_toan',
         'ngay_thanh_toan',
+        'tong_tien_tam_giu',
+        'tong_tien_khau_tru',
+        'tong_tien_lai_suat',
+        'tong_tien_thanh_toan_con_lai',
     ];
     
     // Relationship กับ logs
