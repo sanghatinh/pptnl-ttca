@@ -15,6 +15,57 @@
                     <!-- Add container with padding -->
                     <div class="container-fluid px-4">
                         <div class="button-container">
+                            <div class="action-button-group">
+                                <button
+                                    type="button"
+                                    class="button-30"
+                                    @click="saveBasicInfo"
+                                >
+                                    <i class="bx bxs-save"></i>
+                                    <span>Lưu</span>
+                                </button>
+
+                                <button class="button-30-text-green">
+                                    <i class="bx bx-calendar-check"></i>
+                                    <span>Nộp phòng kế toán</span>
+                                </button>
+
+                                <button type="button" class="button-30">
+                                    <i class="bx bx-calendar-x"></i>
+                                    <span>Trả về</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="button-30-text-green"
+                                >
+                                    <i class="bx bx-check-square"></i>
+                                    <span>Đã thanh toán</span>
+                                </button>
+
+                                <button type="button" class="button-30">
+                                    <i class="fa-solid fa-xmark"></i>
+                                    <span>Hủy</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="button-30-del"
+                                    @click="deleteDocument"
+                                >
+                                    <i class="fa-solid fa-trash-can"></i>
+                                    <span>Xóa</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="button-30"
+                                    @click="printDocument"
+                                >
+                                    <i class="bx bxs-printer"></i>
+                                    <span>Print</span>
+                                </button>
+                            </div>
                             <div class="row align-items-center mb-2"></div>
                         </div>
                         <!-- progress-tracker-container -->
@@ -38,7 +89,9 @@
                                         <div class="step-icon status-pending">
                                             <i class="fas fa-file-invoice"></i>
                                         </div>
-                                        <span class="step-label">Đã trình</span>
+                                        <span class="step-label"
+                                            >Đang xử lý</span
+                                        >
                                     </div>
 
                                     <!-- Approved Step -->
@@ -54,7 +107,9 @@
                                         <div class="step-icon status-approved">
                                             <i class="fas fa-check-circle"></i>
                                         </div>
-                                        <span class="step-label">Đã duyệt</span>
+                                        <span class="step-label"
+                                            >Đã nộp kế toán</span
+                                        >
                                     </div>
 
                                     <!-- Paid Step -->
@@ -146,12 +201,9 @@
                                                 type="text"
                                                 class="form-control"
                                                 id="vuDauTu"
-                                                :value="
-                                                    getInvestmentProjectName(
-                                                        document.investment_project
-                                                    )
+                                                v-model="
+                                                    document.investment_project
                                                 "
-                                                disabled
                                             />
                                         </div>
                                     </div>
@@ -171,8 +223,7 @@
                                                 type="text"
                                                 class="form-control"
                                                 id="loaiThanhToan"
-                                                :value="document.payment_type"
-                                                disabled
+                                                v-model="document.payment_type"
                                             />
                                         </div>
                                     </div>
@@ -211,10 +262,9 @@
                                                 type="text"
                                                 class="form-control"
                                                 id="soToTrinh"
-                                                :value="
+                                                v-model="
                                                     document.proposal_number
                                                 "
-                                                disabled
                                             />
                                         </div>
                                     </div>
@@ -231,15 +281,10 @@
                                                 Ngày tạo
                                             </label>
                                             <input
-                                                type="text"
+                                                type="date"
                                                 class="form-control"
                                                 id="ngayTao"
-                                                :value="
-                                                    formatDate(
-                                                        document.created_at
-                                                    )
-                                                "
-                                                disabled
+                                                v-model="document.created_at"
                                             />
                                         </div>
                                     </div>
@@ -282,13 +327,13 @@
                                                 Số đợt thanh toán
                                             </label>
                                             <input
-                                                type="text"
+                                                type="number"
+                                                min="1"
                                                 class="form-control"
                                                 id="soDotTT"
-                                                :value="
+                                                v-model="
                                                     document.payment_installment
                                                 "
-                                                disabled
                                             />
                                         </div>
                                     </div>
@@ -3751,6 +3796,73 @@ export default {
     },
     methods: {
         // ... existing methods
+        // Add this to your Vue component's methods section
+        saveBasicInfo() {
+            const data = {
+                so_to_trinh: this.document.proposal_number,
+                ngay_tao: this.document.created_at,
+                so_dot_thanh_toan: this.document.payment_installment,
+                loai_thanh_toan: this.document.payment_type,
+                vu_dau_tu: this.document.investment_project,
+            };
+
+            axios
+                .put(
+                    `/api/payment-requests/${this.document.payment_code}/basic-info`,
+                    data,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                )
+                .then((response) => {
+                    if (response.data.success) {
+                        // Show success message
+                        Swal.fire({
+                            title: "Thành công",
+                            text: "Cập nhật thông tin phiếu trình thanh toán thành công",
+                            icon: "success",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        });
+
+                        // Update local data if needed
+                        // this.document = { ...this.document, ...response.data.data };
+                    } else {
+                        Swal.fire({
+                            title: "Lỗi",
+                            text:
+                                response.data.message ||
+                                "Đã xảy ra lỗi khi cập nhật",
+                            icon: "error",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-danger",
+                            },
+                        });
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error updating basic info:", error);
+                    Swal.fire({
+                        title: "Lỗi",
+                        text:
+                            "Đã xảy ra lỗi khi cập nhật: " +
+                            (error.response?.data?.message || error.message),
+                        icon: "error",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-danger",
+                        },
+                    });
+                });
+        },
 
         async fetchInvestmentProjects() {
             try {
@@ -5737,38 +5849,6 @@ export default {
     background-color: #6c757d !important;
 }
 
-/* Buttons */
-.button-30 {
-    align-items: center;
-    appearance: none;
-    background-color: #fcfcfd;
-    border-radius: 4px;
-    border-width: 0;
-    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
-    box-sizing: border-box;
-    color: #36395a;
-    cursor: pointer;
-    display: inline-flex;
-    height: 40px;
-    justify-content: center;
-    line-height: 1;
-    list-style: none;
-    overflow: hidden;
-    padding-left: 16px;
-    padding-right: 16px;
-    position: relative;
-    text-align: left;
-    text-decoration: none;
-    transition: box-shadow 0.15s, transform 0.15s;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-    white-space: nowrap;
-    will-change: box-shadow, transform;
-    font-size: 14px;
-}
-
 .button-30:focus {
     box-shadow: #d6d6e7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px,
         rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
@@ -5785,37 +5865,6 @@ export default {
     transform: translateY(2px);
 }
 
-.button-30-text-green {
-    align-items: center;
-    appearance: none;
-    background-color: #e6fff2;
-    border-radius: 4px;
-    border-width: 0;
-    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #92d9a7 0 -3px 0 inset;
-    box-sizing: border-box;
-    color: #03541c;
-    cursor: pointer;
-    display: inline-flex;
-    height: 40px;
-    justify-content: center;
-    line-height: 1;
-    list-style: none;
-    overflow: hidden;
-    padding-left: 16px;
-    padding-right: 16px;
-    position: relative;
-    text-align: left;
-    text-decoration: none;
-    transition: box-shadow 0.15s, transform 0.15s;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-    white-space: nowrap;
-    will-change: box-shadow, transform;
-    font-size: 14px;
-}
-
 .button-30-text-green:focus {
     box-shadow: #92d9a7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px,
         rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #92d9a7 0 -3px 0 inset;
@@ -5825,11 +5874,6 @@ export default {
     box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px,
         rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #92d9a7 0 -3px 0 inset;
     transform: translateY(-2px);
-}
-
-.button-30-text-green:active {
-    box-shadow: #92d9a7 0 3px 7px inset;
-    transform: translateY(2px);
 }
 
 /* Responsive styles */
@@ -6371,5 +6415,10 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     background: #10b981;
     transform: rotate(30deg);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.action-button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 </style>

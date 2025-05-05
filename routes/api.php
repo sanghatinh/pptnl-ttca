@@ -153,6 +153,8 @@ Route::post('/payment-requests/{id}/add-receipts', [PaymentRequestController::cl
 Route::post('/payment-requests/{id}/import-data', [PaymentRequestController::class, 'importData']);
  // Update records for a payment request
  Route::post('/payment-requests/{id}/update-records', [PaymentRequestController::class, 'updateRecords']);
+ // Update basic info for payment request
+ Route::put('/payment-requests/{id}/basic-info', [PaymentRequestController::class, 'updateBasicInfo']);
  
  // Delete records from a payment request
  Route::post('/payment-requests/{id}/delete-records', [PaymentRequestController::class, 'deleteRecords']);

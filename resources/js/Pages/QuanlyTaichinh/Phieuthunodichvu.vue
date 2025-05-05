@@ -3195,6 +3195,7 @@ export default {
 }
 
 .table-auto thead th {
+    font-size: 12px;
     position: sticky;
     top: 0;
     background-color: #f3f4f6;

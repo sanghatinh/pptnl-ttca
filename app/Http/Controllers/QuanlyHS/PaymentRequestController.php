@@ -695,4 +695,92 @@ class PaymentRequestController extends Controller
             ], 500);
         }
     }
+
+    public function updateBasicInfo(Request $request, $id)
+{
+    try {
+        // Validate the request data
+        $validated = $request->validate([
+            'so_to_trinh' => 'nullable|string|max:100', // Số tờ trình
+            'ngay_tao' => 'nullable|date', // Ngày tạo
+            'so_dot_thanh_toan' => 'nullable|integer|min:1', // Số đợt thanh toán
+            'loai_thanh_toan' => 'nullable|string|max:100', // Loại thanh toán
+            'vu_dau_tu' => 'nullable|string|max:100', // Vụ đầu tư
+        ]);
+
+        // Find the payment request record
+        $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->first();
+        
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy phiếu trình thanh toán'
+            ], 404);
+        }
+
+        // Prepare update data
+        $updateData = [];
+        
+        if (isset($validated['so_to_trinh'])) {
+            $updateData['so_to_trinh'] = $validated['so_to_trinh'];
+        }
+        
+        if (isset($validated['ngay_tao'])) {
+            $updateData['ngay_tao'] = $validated['ngay_tao'];
+        }
+        
+        if (isset($validated['so_dot_thanh_toan'])) {
+            $updateData['so_dot_thanh_toan'] = $validated['so_dot_thanh_toan'];
+        }
+        
+        if (isset($validated['loai_thanh_toan'])) {
+            $updateData['loai_thanh_toan'] = $validated['loai_thanh_toan'];
+        }
+        
+        if (isset($validated['vu_dau_tu'])) {
+            $updateData['vu_dau_tu'] = $validated['vu_dau_tu'];
+        }
+
+        // Update the record if we have data to update
+        if (!empty($updateData)) {
+            DB::table('tb_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->update($updateData);
+            
+            // Add an action record to track the update
+            // Use 'processing' instead of 'update_info' as the action value
+            // 'processing' is likely already an accepted value in the action column
+            DB::table('Action_phieu_trinh_thanh_toan')->insert([
+                'ma_trinh_thanh_toan' => $id,
+                'action' => 'processing', // Changed from 'update_info' to 'processing'
+                'action_by' => Auth::id(),
+                'action_date' => now(),
+                'comments' => 'Cập nhật thông tin cơ bản phiếu trình thanh toán',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
+
+        // Get the updated record
+        $updatedRecord = DB::table('tb_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật thông tin phiếu trình thanh toán thành công',
+            'data' => $updatedRecord
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error updating payment request basic info: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi cập nhật phiếu trình thanh toán: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }
