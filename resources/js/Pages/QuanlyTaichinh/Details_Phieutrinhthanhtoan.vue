@@ -1,6 +1,170 @@
 <template lang="">
     <breadcrumb-vue />
-    <div class="card shadow">
+
+    <!-- Timeline View (this will replace the main content when active) -->
+    <div class="text-center py-5" v-if="showTimeline">
+        <div
+            class="card-header d-flex justify-content-between align-items-center bg-light"
+        >
+            <h5 class="card-title mb-0">
+                <i class="fas fa-history me-2 text-primary"></i>
+                Lịch sử thanh toán
+            </h5>
+            <button
+                class="btn btn-sm btn-outline-secondary"
+                @click="toggleTimelineView"
+            >
+                <i class="fas fa-times"></i>
+                <span class="ms-1">Đóng</span>
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="timeline-container">
+                <!-- Processing Stage -->
+                <div class="timeline-item" v-if="processingAction">
+                    <div class="timeline-badge bg-primary">
+                        <i class="fas fa-spinner fa-pulse"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <h5 class="timeline-title">
+                            <span class="badge bg-primary">Đang xử lý</span>
+                        </h5>
+                        <p class="mb-1">
+                            <i class="far fa-calendar me-2"></i>
+                            <span class="fw-medium">{{
+                                formatDate(processingAction.created_at)
+                            }}</span>
+                        </p>
+                        <p class="mb-1">
+                            <i class="far fa-user me-2"></i>
+                            <span class="fw-medium">{{
+                                getUserName(processingAction.action_by)
+                            }}</span>
+                        </p>
+                        <div class="timeline-note" v-if="processingAction.note">
+                            <i class="far fa-comment me-2"></i>
+                            <span>{{ processingAction.note }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submitted Stage -->
+                <div class="timeline-item" v-if="submittedAction">
+                    <div class="timeline-badge bg-info">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <h5 class="timeline-title">
+                            <span class="badge bg-info">Đã nộp kế toán</span>
+                        </h5>
+                        <p class="mb-1">
+                            <i class="far fa-calendar me-2"></i>
+                            <span class="fw-medium">{{
+                                formatDate(submittedAction.created_at)
+                            }}</span>
+                        </p>
+                        <p class="mb-1">
+                            <i class="far fa-user me-2"></i>
+                            <span class="fw-medium">{{
+                                getUserName(submittedAction.action_by)
+                            }}</span>
+                        </p>
+                        <p
+                            class="mb-1"
+                            v-if="daysBetweenProcessingAndSubmitted !== null"
+                        >
+                            <i class="far fa-clock me-2"></i>
+                            <span
+                                >{{ daysBetweenProcessingAndSubmitted }} ngày
+                                sau khi xử lý</span
+                            >
+                        </p>
+                        <div class="timeline-note" v-if="submittedAction.note">
+                            <i class="far fa-comment me-2"></i>
+                            <span>{{ submittedAction.note }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paid Stage -->
+                <div class="timeline-item" v-if="paidAction">
+                    <div class="timeline-badge bg-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <h5 class="timeline-title">
+                            <span class="badge bg-success">Đã thanh toán</span>
+                        </h5>
+                        <p class="mb-1">
+                            <i class="far fa-calendar me-2"></i>
+                            <span class="fw-medium">{{
+                                formatDate(paidAction.created_at)
+                            }}</span>
+                        </p>
+                        <p class="mb-1">
+                            <i class="far fa-user me-2"></i>
+                            <span class="fw-medium">{{
+                                getUserName(paidAction.action_by)
+                            }}</span>
+                        </p>
+                        <p
+                            class="mb-1"
+                            v-if="daysBetweenSubmittedAndPaid !== null"
+                        >
+                            <i class="far fa-clock me-2"></i>
+                            <span
+                                >{{ daysBetweenSubmittedAndPaid }} ngày sau khi
+                                nộp kế toán</span
+                            >
+                        </p>
+                        <div class="timeline-note" v-if="paidAction.note">
+                            <i class="far fa-comment me-2"></i>
+                            <span>{{ paidAction.note }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cancelled Stage (if applicable) -->
+                <div class="timeline-item" v-if="cancelledAction">
+                    <div class="timeline-badge bg-danger">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <h5 class="timeline-title">
+                            <span class="badge bg-danger">Đã hủy</span>
+                        </h5>
+                        <p class="mb-1">
+                            <i class="far fa-calendar me-2"></i>
+                            <span class="fw-medium">{{
+                                formatDate(cancelledAction.created_at)
+                            }}</span>
+                        </p>
+                        <p class="mb-1">
+                            <i class="far fa-user me-2"></i>
+                            <span class="fw-medium">{{
+                                getUserName(cancelledAction.action_by)
+                            }}</span>
+                        </p>
+                        <div class="timeline-note" v-if="cancelledAction.note">
+                            <i class="far fa-comment me-2"></i>
+                            <span>{{ cancelledAction.note }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty state if no timeline data -->
+                <div class="text-center py-5" v-if="!processingAction">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <p class="lead text-muted">
+                        Không tìm thấy dữ liệu lịch sử
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Original content (hidden when timeline is shown) -->
+    <div class="card shadow" v-else>
         <div class="card-body p-0">
             <PerfectScrollbar
                 :options="{
@@ -121,6 +285,7 @@
                                 <div
                                     class="progress-tracker"
                                     :class="document.status || 'processing'"
+                                    @click="toggleTimelineView"
                                 >
                                     <!-- Pending Step -->
                                     <div
@@ -235,27 +400,36 @@
                                     </div>
 
                                     <!-- Vụ đầu tư -->
-                                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
-    <div class="form-group mb-3">
-        <label for="vuDauTu" class="form-label">
-            Vụ đầu tư
-        </label>
-        <select
-            class="form-select"
-            id="vuDauTu"
-            v-model="document.investment_project"
-        >
-            <option value="" disabled>-- Chọn vụ đầu tư --</option>
-            <option
-                v-for="project in investmentProjects"
-                :key="project.Ma_Vudautu"
-                :value="project.Ma_Vudautu"
-            >
-                {{ project.Ten_Vudautu }}
-            </option>
-        </select>
-    </div>
-</div>
+                                    <div
+                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                    >
+                                        <div class="form-group mb-3">
+                                            <label
+                                                for="vuDauTu"
+                                                class="form-label"
+                                            >
+                                                Vụ đầu tư
+                                            </label>
+                                            <select
+                                                class="form-select"
+                                                id="vuDauTu"
+                                                v-model="
+                                                    document.investment_project
+                                                "
+                                            >
+                                                <option value="" disabled>
+                                                    -- Chọn vụ đầu tư --
+                                                </option>
+                                                <option
+                                                    v-for="project in investmentProjects"
+                                                    :key="project.Ma_Vudautu"
+                                                    :value="project.Ma_Vudautu"
+                                                >
+                                                    {{ project.Ten_Vudautu }}
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
 
                                     <!-- Loại thanh toán -->
                                     <div
@@ -3414,6 +3588,10 @@ export default {
                 creator_name: "", // Người tạo
                 notes: "",
             },
+            // Timeline related properties
+            processingHistory: [], // Add this property to store timeline events
+            showTimeline: false,
+            users: {}, // Cache for user info
             // Add to data() function in your component
             newPaymentRequest: {
                 ma_giai_ngan: "",
@@ -3555,6 +3733,58 @@ export default {
         };
     },
     computed: {
+        // Timeline related computed properties
+        processingAction() {
+            if (!this.processingHistory) return null;
+            return this.processingHistory.find(
+                (item) => item.action === "processing"
+            );
+        },
+
+        submittedAction() {
+            if (!this.processingHistory) return null;
+            return this.processingHistory.find(
+                (item) => item.action === "submitted"
+            );
+        },
+
+        paidAction() {
+            if (!this.processingHistory) return null;
+            return this.processingHistory.find(
+                (item) => item.action === "paid"
+            );
+        },
+
+        cancelledAction() {
+            if (!this.processingHistory) return null;
+            return this.processingHistory.find(
+                (item) => item.action === "cancelled"
+            );
+        },
+
+        daysBetweenProcessingAndSubmitted() {
+            if (!this.processingAction || !this.submittedAction) return null;
+
+            const processingDate = new Date(this.processingAction.created_at);
+            const submittedDate = new Date(this.submittedAction.created_at);
+
+            const diffTime = Math.abs(submittedDate - processingDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            return diffDays;
+        },
+
+        daysBetweenSubmittedAndPaid() {
+            if (!this.submittedAction || !this.paidAction) return null;
+
+            const submittedDate = new Date(this.submittedAction.created_at);
+            const paidDate = new Date(this.paidAction.created_at);
+
+            const diffTime = Math.abs(paidDate - submittedDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            return diffDays;
+        },
         totalAmount() {
             return this.paymentDetails.reduce(
                 (sum, item) => sum + (parseFloat(item.amount) || 0),
@@ -3857,6 +4087,114 @@ export default {
         }
     },
     methods: {
+        // Add this method to fetch the processing history
+        async fetchProcessingHistory() {
+            try {
+                const response = await axios.get(
+                    `/api/payment-requests/${this.document.payment_code}/history`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    this.processingHistory = response.data.history;
+
+                    // อัปเดตสถานะเอกสารจากข้อมูลประวัติล่าสุด
+                    if (this.processingHistory.length > 0) {
+                        // จัดเรียงข้อมูลตามวันที่จากใหม่ไปเก่า
+                        const sortedHistory = [...this.processingHistory].sort(
+                            (a, b) =>
+                                new Date(b.created_at) - new Date(a.created_at)
+                        );
+                        this.document.status = sortedHistory[0].action;
+                    }
+
+                    // If timeline is being shown, load user data
+                    if (
+                        this.showTimeline &&
+                        this.processingHistory.length > 0
+                    ) {
+                        this.loadUsers();
+                    }
+                } else {
+                    console.error("Failed to fetch processing history");
+                }
+            } catch (error) {
+                console.error("Error fetching processing history:", error);
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            }
+        },
+        // Toggle timeline view
+        toggleTimelineView() {
+            this.showTimeline = !this.showTimeline;
+
+            // If showing timeline and no history data yet, fetch it
+            if (
+                this.showTimeline &&
+                (!this.processingHistory || this.processingHistory.length === 0)
+            ) {
+                this.fetchProcessingHistory();
+            }
+
+            // If showing timeline and users need to be loaded, do it
+            if (
+                this.showTimeline &&
+                this.processingHistory &&
+                this.processingHistory.length > 0 &&
+                Object.keys(this.users).length === 0
+            ) {
+                this.loadUsers();
+            }
+        },
+        // Load user data for timeline
+        async loadUsers() {
+            const userIds = this.processingHistory
+                .map((item) => item.action_by)
+                .filter((id) => id && !this.users[id]);
+
+            if (userIds.length === 0) return;
+
+            try {
+                const response = await axios.post(
+                    "/api/users/get-by-ids",
+                    {
+                        user_ids: [...new Set(userIds)], // Remove duplicates
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    const newUsers = response.data.users;
+                    // Use direct property assignment instead of this.$set
+                    newUsers.forEach((user) => {
+                        this.users[user.id] = user;
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading user data:", error);
+            }
+        },
+
+        // Get user name from cache
+        getUserName(userId) {
+            if (!userId) return "Unknown";
+
+            if (this.users[userId]) {
+                return this.users[userId].full_name || "User ID: " + userId;
+            }
+
+            return "Loading...";
+        },
+
         // ... existing methods
         // Add this to your Vue component's methods section
         async deleteDocument() {
@@ -3945,6 +4283,11 @@ export default {
             Swal.fire({
                 title: title,
                 text: text,
+                input: "textarea",
+                inputPlaceholder: "Thêm ghi chú (không bắt buộc)",
+                inputAttributes: {
+                    "aria-label": "Ghi chú",
+                },
                 icon: "question",
                 showCancelButton: true,
                 confirmButtonText: "Xác nhận",
@@ -3956,7 +4299,7 @@ export default {
                 },
             }).then((result) => {
                 if (result.isConfirmed) {
-                    this.updateStatus(status);
+                    this.updateStatus(status, result.value || ""); // Pass note text
                 }
             });
         },
@@ -3964,7 +4307,7 @@ export default {
         /**
          * Update payment request status
          */
-        async updateStatus(status) {
+        async updateStatus(status, note = "") {
             try {
                 // Optional: Show loading indicator
                 Swal.fire({
@@ -3976,12 +4319,11 @@ export default {
                     },
                 });
 
-                // Send status update request
                 const response = await axios.put(
                     `/api/payment-requests/${this.document.payment_code}/status`,
                     {
                         status: status,
-                        action_notes: "", // Có thể thêm ghi chú nếu cần
+                        action_notes: note,
                     },
                     {
                         headers: {
@@ -3991,7 +4333,7 @@ export default {
                 );
 
                 if (response.data.success) {
-                    // Update local document status จากค่า action ที่ได้อัพเดทไป
+                    // Update local document status
                     this.document.status = status;
 
                     // Show success message
@@ -4006,12 +4348,12 @@ export default {
                         },
                     });
 
-                    // Refresh document data to get updated info and latest processing history
-                    this.fetchDocument();
-                } else {
-                    throw new Error(
-                        response.data.message || "Lỗi không xác định"
-                    );
+                    // ดึงข้อมูลใหม่หลังจากอัปเดตสถานะ
+                    await this.fetchProcessingHistory();
+
+                    // อัปเดตการแสดงผล progress tracker
+                    // (เพิ่มบรรทัดนี้เพื่อให้แน่ใจว่า UI จะอัปเดต)
+                    this.$forceUpdate();
                 }
             } catch (error) {
                 console.error("Error updating status:", error);
@@ -4707,12 +5049,26 @@ export default {
                         // Map main document data
                         // ดึงข้อมูล action ล่าสุดจาก processingHistory (ซึ่งมาจากตาราง Action_phieu_trinh_thanh_toan)
                         let latestAction = "";
-                        if (
-                            response.data.processingHistory &&
-                            response.data.processingHistory.length > 0
-                        ) {
-                            latestAction =
-                                response.data.processingHistory[0].action;
+                        // Store processing history if it exists in the response
+                        if (response.data.processingHistory) {
+                            this.processingHistory =
+                                response.data.processingHistory;
+
+                            // ดึง action ล่าสุดจากประวัติการดำเนินการ (เพิ่มโค้ดนี้)
+                            if (this.processingHistory.length > 0) {
+                                // จัดเรียงข้อมูลตามวันที่จากใหม่ไปเก่า
+                                const sortedHistory = [
+                                    ...this.processingHistory,
+                                ].sort(
+                                    (a, b) =>
+                                        new Date(b.created_at) -
+                                        new Date(a.created_at)
+                                );
+                                latestAction = sortedHistory[0].action;
+                            }
+                        } else {
+                            // If it's not included in main response, fetch it separately
+                            this.fetchProcessingHistory();
                         }
                         this.document = {
                             payment_code:
@@ -6697,5 +7053,181 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     );
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1),
         0 0 8px rgba(220, 53, 69, 0.35);
+}
+/* Timeline Styles */
+.timeline-container {
+    position: relative;
+    padding: 1.5rem 1.5rem 1rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.timeline-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 24px; /* Adjusted for badge placement */
+    width: 3px;
+    background: linear-gradient(
+        to bottom,
+        #f0f0f0 0%,
+        #007bff 15%,
+        /* Primary/processing */ #17a2b8 50%,
+        /* Info/submitted */ #28a745 85%,
+        /* Success/paid */ #f0f0f0 100%
+    );
+    border-radius: 3px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2.5rem;
+    padding-left: 40px;
+}
+
+.timeline-badge {
+    position: absolute;
+    left: -16px;
+    top: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+}
+
+.timeline-badge i {
+    font-size: 1rem;
+}
+
+.timeline-content {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+    padding: 1rem;
+    position: relative;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.timeline-item:nth-child(1) .timeline-content {
+    border-left-color: #007bff; /* Primary/processing */
+}
+
+.timeline-item:nth-child(2) .timeline-content {
+    border-left-color: #17a2b8; /* Info/submitted */
+}
+
+.timeline-item:nth-child(3) .timeline-content {
+    border-left-color: #28a745; /* Success/paid */
+}
+
+.timeline-item:nth-child(4) .timeline-content {
+    border-left-color: #dc3545; /* Danger/cancelled */
+}
+
+.timeline-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.timeline-title .badge {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+}
+
+.timeline-note {
+    background: #f8f9fa;
+    padding: 0.5rem;
+    margin-top: 0.75rem;
+    border-radius: 0.25rem;
+    border-left: 3px solid #dee2e6;
+    font-style: italic;
+    color: #6c757d;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+    .timeline-container::before {
+        left: 50%;
+        margin-left: -1.5px;
+    }
+
+    .timeline-item {
+        padding-left: 0;
+        width: 50%;
+    }
+
+    .timeline-item:nth-child(odd) {
+        padding-right: 40px;
+        margin-left: 0;
+        text-align: right;
+    }
+
+    .timeline-item:nth-child(even) {
+        margin-left: 50%;
+        padding-left: 40px;
+    }
+
+    .timeline-badge {
+        left: 50%;
+        margin-left: -18px;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-content {
+        border-left: none;
+        border-right: 4px solid transparent;
+    }
+
+    /* Responsive content styling */
+    .timeline-item:nth-child(odd) .timeline-title {
+        justify-content: flex-end;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-note {
+        border-left: none;
+        border-right: 3px solid #dee2e6;
+    }
+
+    /* Icon alignment for odd items */
+    .timeline-item:nth-child(odd) p i,
+    .timeline-item:nth-child(odd) .timeline-note i {
+        margin-right: 0;
+        margin-left: 0.5rem;
+        order: 2;
+    }
+}
+
+/* Animation for timeline items */
+.timeline-item {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fade-in 0.5s ease forwards;
+}
+
+.timeline-item:nth-child(1) {
+    animation-delay: 0.1s;
+}
+.timeline-item:nth-child(2) {
+    animation-delay: 0.3s;
+}
+.timeline-item:nth-child(3) {
+    animation-delay: 0.5s;
+}
+.timeline-item:nth-child(4) {
+    animation-delay: 0.7s;
+}
+
+@keyframes fade-in {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 </style>

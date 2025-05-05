@@ -850,4 +850,27 @@ public function destroy($id)
         ], 500);
     }
 }
+
+//Timeline giải ngân
+public function getProcessingHistory($paymentCode)
+{
+    try {
+        $history = DB::table('action_phieu_trinh_thanh_toan')
+            ->where('payment_code', $paymentCode)
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        return response()->json([
+            'success' => true,
+            'history' => $history
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching processing history',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }

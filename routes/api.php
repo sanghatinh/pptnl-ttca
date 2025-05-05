@@ -33,7 +33,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
 
 
-    
+    Route::post('/users/get-by-ids', [UserController::class, 'getUsersByIds']);
 
     Route::get('/positions', [UserController::class, 'getPositions']);
     Route::get('/stations', [UserController::class, 'getStations']);
@@ -163,6 +163,7 @@ Route::post('/payment-requests/{id}/import-data', [PaymentRequestController::cla
  Route::post('/payment-requests/{id}/delete-records', [PaymentRequestController::class, 'deleteRecords']);
 
 //Phiếu đề nghi thanh toán trong phiếu trình thanh toán
+Route::get('/payment-requests/{paymentCode}/history', [PaymentRequestController::class, 'getProcessingHistory']);
 Route::get('/payment-requests/{id}/disbursements', [PhieudenghithanhtoandvControllers::class, 'getByPaymentRequest']);
 Route::delete('/disbursements/bulk', [PhieudenghithanhtoandvControllers::class, 'bulkDelete']);
 Route::put('/disbursements/bulk', [PhieudenghithanhtoandvControllers::class, 'bulkUpdate']);

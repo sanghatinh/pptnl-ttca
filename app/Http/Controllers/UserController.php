@@ -381,7 +381,39 @@ public function getUserInfo(Request $request)
 }
 
 
-
+/**
+ * Get users by IDs
+ * 
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getUsersByIds(Request $request)
+{
+    $request->validate([
+        'user_ids' => 'required|array',
+        'user_ids.*' => 'integer'
+    ]);
+    
+    try {
+        $users = User::whereIn('id', $request->user_ids)
+            ->select('id', 'full_name', 'email')
+            ->get();
+            
+        return response()->json([
+            'success' => true,
+            'users' => $users
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error fetching users by IDs: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching user data',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 
 
 
