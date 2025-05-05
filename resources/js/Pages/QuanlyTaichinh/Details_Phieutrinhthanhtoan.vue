@@ -15,6 +15,7 @@
                     <!-- Add container with padding -->
                     <div class="container-fluid px-4">
                         <div class="button-container">
+                            <!-- ปรับปรุงส่วนของปุ่มการกระทำ -->
                             <div class="action-button-group">
                                 <button
                                     type="button"
@@ -25,30 +26,76 @@
                                     <span>Lưu</span>
                                 </button>
 
-                                <button class="button-30-text-green">
+                                <!-- ปุ่มนำส่งฝ่ายบัญชี (แสดงเฉพาะเมื่อสถานะเป็น 'processing') -->
+                                <button
+                                    v-if="document.status === 'processing'"
+                                    class="button-30-text-green"
+                                    @click="
+                                        confirmUpdateStatus(
+                                            'submitted',
+                                            'Xác nhận nộp phòng kế toán?',
+                                            'Bạn có chắc chắn muốn nộp phiếu này cho phòng kế toán không?'
+                                        )
+                                    "
+                                >
                                     <i class="bx bx-calendar-check"></i>
                                     <span>Nộp phòng kế toán</span>
                                 </button>
 
-                                <button type="button" class="button-30">
+                                <!-- ปุ่มส่งคืน (แสดงเฉพาะเมื่อสถานะเป็น 'processing') -->
+                                <button
+                                    v-if="document.status === 'submitted'"
+                                    type="button"
+                                    class="button-30"
+                                    @click="
+                                        confirmUpdateStatus(
+                                            'processing',
+                                            'Xác nhận trả về?',
+                                            'Bạn có chắc chắn muốn trả về phiếu này không?'
+                                        )
+                                    "
+                                >
                                     <i class="bx bx-calendar-x"></i>
                                     <span>Trả về</span>
                                 </button>
 
+                                <!-- ปุ่มสถานะจ่ายเงินแล้ว (แสดงเฉพาะเมื่อสถานะเป็น 'submitted') -->
                                 <button
+                                    v-if="document.status === 'submitted'"
                                     type="button"
                                     class="button-30-text-green"
+                                    @click="
+                                        confirmUpdateStatus(
+                                            'paid',
+                                            'Xác nhận đã thanh toán?',
+                                            'Bạn có chắc chắn muốn đánh dấu phiếu này là đã thanh toán không?'
+                                        )
+                                    "
                                 >
                                     <i class="bx bx-check-square"></i>
                                     <span>Đã thanh toán</span>
                                 </button>
 
-                                <button type="button" class="button-30">
+                                <!-- ปุ่มยกเลิก (แสดงเฉพาะเมื่อสถานะเป็น 'submitted') -->
+                                <button
+                                    v-if="document.status === 'submitted'"
+                                    type="button"
+                                    class="button-30"
+                                    @click="
+                                        confirmUpdateStatus(
+                                            'cancelled',
+                                            'Xác nhận hủy?',
+                                            'Bạn có chắc chắn muốn hủy phiếu này không?'
+                                        )
+                                    "
+                                >
                                     <i class="fa-solid fa-xmark"></i>
                                     <span>Hủy</span>
                                 </button>
 
+                                <!-- ปุ่มลบ (แสดงเฉพาะเมื่อไม่ได้อยู่ในสถานะ paid) -->
                                 <button
+                                    v-if="document.status !== 'paid'"
                                     type="button"
                                     class="button-30-del"
                                     @click="deleteDocument"
@@ -73,16 +120,17 @@
                             <div class="col-12">
                                 <div
                                     class="progress-tracker"
-                                    :class="document.status || 'pending'"
+                                    :class="document.status || 'processing'"
                                 >
                                     <!-- Pending Step -->
                                     <div
                                         class="track-step"
                                         :class="{
                                             active:
-                                                document.status === 'pending' ||
                                                 document.status ===
-                                                    'approved' ||
+                                                    'processing' ||
+                                                document.status ===
+                                                    'submitted' ||
                                                 document.status === 'paid',
                                         }"
                                     >
@@ -100,7 +148,7 @@
                                         :class="{
                                             active:
                                                 document.status ===
-                                                    'approved' ||
+                                                    'submitted' ||
                                                 document.status === 'paid',
                                         }"
                                     >
@@ -3797,6 +3845,175 @@ export default {
     methods: {
         // ... existing methods
         // Add this to your Vue component's methods section
+        async deleteDocument() {
+    // Confirm deletion with the user
+    const result = await Swal.fire({
+        title: "Xác nhận xóa",
+        text: "Bạn có chắc chắn muốn xóa phiếu trình thanh toán này không? Hành động này không thể hoàn tác.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Xóa",
+        cancelButtonText: "Hủy",
+        buttonsStyling: false,
+        customClass: {
+            confirmButton: "btn btn-danger me-2",
+            cancelButton: "btn btn-outline-secondary",
+        },
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+    
+    try {
+        // Show loading indicator
+        Swal.fire({
+            title: "Đang xử lý",
+            text: "Vui lòng đợi...",
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            },
+        });
+
+        // Call API to delete the document
+        const response = await axios.delete(
+            `/api/payment-requests/${this.document.payment_code}`,
+            {
+                headers: {
+                    Authorization: "Bearer " + this.store.getToken,
+                },
+            }
+        );
+
+        if (response.data.success) {
+            Swal.fire({
+                title: "Thành công!",
+                text: "Phiếu trình thanh toán đã được xóa",
+                icon: "success",
+                confirmButtonText: "OK",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success",
+                },
+            });
+            
+            // Redirect to the payment request list page
+            this.$router.push('/phieutrinhthanhtoan');
+        } else {
+            throw new Error(response.data.message || "Không thể xóa phiếu trình thanh toán");
+        }
+    } catch (error) {
+        console.error("Error deleting document:", error);
+        
+        Swal.fire({
+            title: "Lỗi!",
+            text: error.response?.data?.message || "Đã xảy ra lỗi khi xóa phiếu trình thanh toán",
+            icon: "error",
+            confirmButtonText: "OK",
+            buttonsStyling: false,
+            customClass: {
+                confirmButton: "btn btn-success",
+            },
+        });
+
+        if (error.response?.status === 401) {
+            this.handleAuthError();
+        }
+    }
+},
+        confirmUpdateStatus(status, title, text) {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Xác nhận",
+                cancelButtonText: "Hủy",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-secondary",
+                },
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.updateStatus(status);
+                }
+            });
+        },
+
+        /**
+         * Update payment request status
+         */
+        async updateStatus(status) {
+            try {
+                // Optional: Show loading indicator
+                Swal.fire({
+                    title: "Đang xử lý",
+                    text: "Vui lòng đợi...",
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    },
+                });
+
+                // Send status update request
+                const response = await axios.put(
+                    `/api/payment-requests/${this.document.payment_code}/status`,
+                    {
+                        status: status,
+                        action_notes: "", // Có thể thêm ghi chú nếu cần
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    // Update local document status จากค่า action ที่ได้อัพเดทไป
+                    this.document.status = status;
+
+                    // Show success message
+                    Swal.fire({
+                        title: "Thành công",
+                        text: "Cập nhật trạng thái thành công",
+                        icon: "success",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
+
+                    // Refresh document data to get updated info and latest processing history
+                    this.fetchDocument();
+                } else {
+                    throw new Error(
+                        response.data.message || "Lỗi không xác định"
+                    );
+                }
+            } catch (error) {
+                console.error("Error updating status:", error);
+
+                // Show error message
+                Swal.fire({
+                    title: "Lỗi",
+                    text: `Đã xảy ra lỗi khi cập nhật trạng thái: ${error.message}`,
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            }
+        },
         saveBasicInfo() {
             const data = {
                 so_to_trinh: this.document.proposal_number,
@@ -4469,6 +4686,15 @@ export default {
                 .then((response) => {
                     if (response.data.success) {
                         // Map main document data
+                        // ดึงข้อมูล action ล่าสุดจาก processingHistory (ซึ่งมาจากตาราง Action_phieu_trinh_thanh_toan)
+                        let latestAction = "";
+                        if (
+                            response.data.processingHistory &&
+                            response.data.processingHistory.length > 0
+                        ) {
+                            latestAction =
+                                response.data.processingHistory[0].action;
+                        }
                         this.document = {
                             payment_code:
                                 response.data.document.payment_code || "",
@@ -4477,7 +4703,11 @@ export default {
                                 response.data.document.investment_project || "",
                             payment_type:
                                 response.data.document.payment_type || "",
-                            status: response.data.document.status || "pending",
+                            // ใช้ action ล่าสุดเป็น status ถ้ามี แต่ถ้าไม่มีให้ใช้ค่า trang_thai_thanh_toan เหมือนเดิม
+                            status:
+                                latestAction ||
+                                response.data.document.trang_thai_thanh_toan ||
+                                "processing",
                             payment_installment:
                                 response.data.document.payment_installment || 0,
                             proposal_number:
@@ -4635,42 +4865,19 @@ export default {
         },
         formatStatus(status) {
             if (status === "paid") return "Đã thanh toán";
-            if (status === "approved") return "Đã duyệt";
-            if (status === "pending") return "Đã trình";
-            if (status === "rejected") return "Từ chối";
+            if (status === "submitted") return "Đã nộp kế toán";
+            if (status === "processing") return "Đang xử lý";
+            if (status === "Cancell") return "Hủy";
             return status || "N/A";
-        },
-        formatActionText(action) {
-            if (action === "created") return "Tạo phiếu trình";
-            if (action === "approved") return "Đã duyệt phiếu";
-            if (action === "paid") return "Đã thanh toán";
-            if (action === "rejected") return "Từ chối duyệt";
-            if (action === "note_added") return "Thêm ghi chú";
-            return action || "Thao tác";
         },
         statusClass(status) {
             if (status === "paid") return "text-success";
-            if (status === "approved") return "text-primary";
-            if (status === "pending") return "text-warning";
-            if (status === "rejected") return "text-danger";
+            if (status === "submitted") return "text-primary";
+            if (status === "processing") return "text-warning";
+            if (status === "Cancell") return "text-danger";
             return "";
         },
-        getActionClass(action) {
-            if (action === "created") return "bg-primary";
-            if (action === "approved") return "bg-success";
-            if (action === "paid") return "bg-info";
-            if (action === "rejected") return "bg-danger";
-            if (action === "note_added") return "bg-secondary";
-            return "bg-secondary";
-        },
-        getActionIcon(action) {
-            if (action === "created") return "fas fa-file-invoice";
-            if (action === "approved") return "fas fa-check-circle";
-            if (action === "paid") return "fas fa-money-bill-wave";
-            if (action === "rejected") return "fas fa-times-circle";
-            if (action === "note_added") return "fas fa-sticky-note";
-            return "fas fa-circle";
-        },
+
         saveNote() {
             axios
                 .post(
@@ -6420,5 +6627,56 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+}
+.progress-tracker::before {
+    content: "";
+    position: absolute;
+    top: 20px;
+    width: 98%;
+    height: 4px;
+    background-color: #e9ecef;
+    border-radius: 2px;
+    z-index: 0;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.progress-tracker.processing::before {
+    background: linear-gradient(to right, #ffc107 50%, #e9ecef 50%);
+}
+
+.progress-tracker.submitted::before {
+    background: linear-gradient(
+        to right,
+        #ffc107 33%,
+        #1e88e5 33%,
+        #1e88e5 66%,
+        #e9ecef 66%
+    );
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1),
+        0 0 6px rgba(30, 136, 229, 0.3);
+}
+
+.progress-tracker.paid::before {
+    background: linear-gradient(
+        to right,
+        #ffc107 33%,
+        #1e88e5 33%,
+        #1e88e5 66%,
+        #198754 66%
+    );
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1),
+        0 0 8px rgba(25, 135, 84, 0.35);
+}
+
+.progress-tracker.cancelled::before {
+    background: linear-gradient(
+        to right,
+        #ffc107 33%,
+        #dc3545 33%,
+        #dc3545 100%
+    );
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1),
+        0 0 8px rgba(220, 53, 69, 0.35);
 }
 </style>

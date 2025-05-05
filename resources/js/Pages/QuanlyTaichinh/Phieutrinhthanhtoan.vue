@@ -457,7 +457,6 @@
                                     <th>Ngày tạo</th>
                                     <th>Tổng tiền thanh toán</th>
                                     <th>Người tạo</th>
-                                    <th class="text-center">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -506,27 +505,9 @@
                                         }}
                                     </td>
                                     <td>{{ item.nguoiTao }}</td>
-                                    <td>
-                                        <div class="flex justify-center gap-2">
-                                            <button
-                                                @click.stop="editItem(item)"
-                                                class="btn btn-sm btn-outline-primary"
-                                                title="Chỉnh sửa"
-                                            >
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button
-                                                @click.stop="deleteItem(item)"
-                                                class="btn btn-sm btn-outline-danger"
-                                                title="Xóa"
-                                            >
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </div>
-                                    </td>
                                 </tr>
                                 <tr v-if="paginatedItems.length === 0">
-                                    <td colspan="12" class="text-center py-4">
+                                    <td colspan="11" class="text-center py-4">
                                         <div class="empty-state">
                                             <i
                                                 class="fas fa-search empty-icon"
@@ -1116,18 +1097,8 @@ export default {
 
         viewDetails(item) {
             // Navigate to details page
-            this.$router.push(`/payment-requests/${item.maTrinhThanhToan}`);
-        },
-
-        createNewRecord() {
-            // Navigate to create page or show modal
-            this.$router.push("/payment-requests/create");
-        },
-
-        editItem(item) {
-            // Navigate to edit page
             this.$router.push(
-                `/payment-requests/${item.maTrinhThanhToan}/edit`
+                `/Details_Phieutrinhthanhtoan/${item.maTrinhThanhToan}`
             );
         },
 

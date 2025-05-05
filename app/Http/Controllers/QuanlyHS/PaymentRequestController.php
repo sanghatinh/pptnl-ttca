@@ -270,62 +270,61 @@ class PaymentRequestController extends Controller
 
     /**
      * อัพเดตสถานะของเอกสารขอเบิกเงิน
+     *
+     * @param  Request  $request
+     * @param  string  $id
+     * @return \Illuminate\Http\JsonResponse
      */
     public function updateStatus(Request $request, $id)
     {
-        $request->validate([
-            'status' => 'required|string|in:processing,submitted,paid,cancelled',
-            'comments' => 'nullable|string'
-        ]);
-
-        DB::beginTransaction();
         try {
-            $paymentRequest = PaymentRequest::where('ma_trinh_thanh_toan', $id)->first();
-            
+            // Validate the request
+            $validated = $request->validate([
+                'status' => 'required|string|in:processing,submitted,paid,cancelled',
+                'action_notes' => 'nullable|string|max:255',
+            ]);
+    
+            // Find the payment request
+            $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->first();
+    
             if (!$paymentRequest) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Payment request not found'
+                    'message' => 'Không tìm thấy phiếu trình thanh toán',
                 ], 404);
             }
-            
-            // อัพเดตสถานะของเอกสารขอเบิกเงิน - แก้ไขชื่อ field ให้ตรงกับโครงสร้าง SQL
-            $paymentRequest->trang_thai_thanh_toan = $request->status;
-            $paymentRequest->save();
-            
-            // เพิ่มประวัติการดำเนินการ
-            PaymentRequestAction::create([
+    
+            // Update the payment request status - ลบฟิลด์ updated_at ออก
+            DB::table('tb_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->update([
+                    'trang_thai_thanh_toan' => $validated['status'],
+                    // ลบบรรทัด 'updated_at' => now(), เนื่องจากคอลัมน์นี้ไม่มีในตาราง
+                ]);
+    
+            // Record the action in the action table
+            DB::table('Action_phieu_trinh_thanh_toan')->insert([
                 'ma_trinh_thanh_toan' => $id,
-                'action' => $request->status,
-                'action_by' => Auth::id(),
+                'action' => $validated['status'],
+                'action_by' => auth()->id(),
                 'action_date' => now(),
-                'comments' => $request->comments ?? 'Updated status to ' . $request->status
+                'comments' => $validated['action_notes'] ?? null,
+                'created_at' => now(),
+                'updated_at' => now()
             ]);
-            
-            // เพิ่มประวัติการดำเนินการ
-            PaymentRequestAction::create([
-                'ma_trinh_thanh_toan' => $id,
-                'action' => $request->status,
-                'action_by' => Auth::id(),
-                'action_date' => now(),
-                'comments' => $request->comments ?? 'Updated status to ' . $request->status
-            ]);
-            
-            DB::commit();
-            
+    
             return response()->json([
                 'success' => true,
-                'message' => 'Payment request status updated successfully',
-                'payment_request' => $paymentRequest
+                'message' => 'Cập nhật trạng thái phiếu trình thanh toán thành công',
+                'status' => $validated['status'],
             ]);
-            
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('Error updating payment request status: ' . $e->getMessage());
-            
             return response()->json([
                 'success' => false,
-                'message' => 'Error updating payment request status: ' . $e->getMessage()
+                'message' => 'Error updating payment request status: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -780,6 +779,74 @@ class PaymentRequestController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'Lỗi khi cập nhật phiếu trình thanh toán: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+/**
+ * Delete a payment request
+ * 
+ * @param string $id Payment request code
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function destroy($id)
+{
+    try {
+        DB::beginTransaction();
+        
+        // Find the payment request
+        $paymentRequest = PaymentRequest::where('ma_trinh_thanh_toan', $id)->first();
+        
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment request not found'
+            ], 404);
+        }
+        
+        // Check if payment request is in paid status - cannot delete if paid
+        if ($paymentRequest->trang_thai_thanh_toan === 'paid') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete a paid payment request'
+            ], 422);
+        }
+        
+        // 1. Delete related logs first
+        DB::table('Logs_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->delete();
+        
+        // 2. Delete action records from Action_phieu_trinh_thanh_toan table
+        DB::table('Action_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->delete();
+        
+        // 3. Skip updating tb_bien_ban_nghiemthu_dv as the column doesn't exist
+        Log::info("Skipping update of ma_trinh_thanh_toan in tb_bien_ban_nghiemthu_dv as the column doesn't exist");
+        
+        // 4. Skip deleting from tb_phieu_de_nghi_giai_ngan as the table doesn't exist
+        Log::info("Skipping deletion from tb_phieu_de_nghi_giai_ngan as the table doesn't exist");
+        
+        // 5. Finally delete the payment request itself
+        $paymentRequest->delete();
+        
+        DB::commit();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment request deleted successfully'
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        Log::error('Error deleting payment request: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting payment request',
+            'error' => $e->getMessage()
         ], 500);
     }
 }
