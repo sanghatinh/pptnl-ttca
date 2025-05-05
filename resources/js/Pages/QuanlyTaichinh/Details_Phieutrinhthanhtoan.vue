@@ -3733,6 +3733,15 @@ export default {
         };
     },
     computed: {
+        // เพิ่ม property นี้เพื่อให้สามารถอัปเดต UI ทันทีเมื่อมีการเปลี่ยนแปลงสถานะ
+        documentStatusClass() {
+            return {
+                processing: this.document.status === "processing",
+                submitted: this.document.status === "submitted",
+                paid: this.document.status === "paid",
+                cancelled: this.document.status === "cancelled",
+            };
+        },
         // Timeline related computed properties
         processingAction() {
             if (!this.processingHistory) return null;
@@ -4102,14 +4111,36 @@ export default {
                 if (response.data.success) {
                     this.processingHistory = response.data.history;
 
-                    // อัปเดตสถานะเอกสารจากข้อมูลประวัติล่าสุด
-                    if (this.processingHistory.length > 0) {
+                    // อัปเดตสถานะของเอกสารตามข้อมูลล่าสุด
+                    if (
+                        this.processingHistory &&
+                        this.processingHistory.length > 0
+                    ) {
                         // จัดเรียงข้อมูลตามวันที่จากใหม่ไปเก่า
                         const sortedHistory = [...this.processingHistory].sort(
                             (a, b) =>
                                 new Date(b.created_at) - new Date(a.created_at)
                         );
-                        this.document.status = sortedHistory[0].action;
+
+                        // นำสถานะล่าสุดมากำหนดเป็นสถานะของเอกสาร
+                        const latestStatus = sortedHistory[0].action;
+                        console.log(
+                            "Latest status from history:",
+                            latestStatus
+                        );
+
+                        // อัพเดทสถานะเฉพาะเมื่อมีค่าและเป็นค่าที่แตกต่างจากเดิม
+                        if (
+                            latestStatus &&
+                            this.document.status !== latestStatus
+                        ) {
+                            this.document.status = latestStatus;
+                            console.log(
+                                "Document status updated to:",
+                                this.document.status
+                            );
+                            this.$forceUpdate();
+                        }
                     }
 
                     // If timeline is being shown, load user data
@@ -4336,6 +4367,12 @@ export default {
                     // Update local document status
                     this.document.status = status;
 
+                    // ใช้ nextTick เพื่อให้แน่ใจว่า DOM จะถูกอัปเดตหลังจากการเปลี่ยนแปลงข้อมูล
+                    this.$nextTick(() => {
+                        // ดึงข้อมูลประวัติใหม่จาก API
+                        this.fetchProcessingHistory();
+                    });
+
                     // Show success message
                     Swal.fire({
                         title: "Thành công",
@@ -4348,12 +4385,8 @@ export default {
                         },
                     });
 
-                    // ดึงข้อมูลใหม่หลังจากอัปเดตสถานะ
-                    await this.fetchProcessingHistory();
-
-                    // อัปเดตการแสดงผล progress tracker
-                    // (เพิ่มบรรทัดนี้เพื่อให้แน่ใจว่า UI จะอัปเดต)
-                    this.$forceUpdate();
+                    // ดึงข้อมูลเอกสารทั้งหมดใหม่เพื่อให้แน่ใจว่าทุกส่วนอัปเดต
+                    this.fetchDocument();
                 }
             } catch (error) {
                 console.error("Error updating status:", error);
