@@ -180,6 +180,10 @@ Route::get('/phieu-thu-no-dich-vu/{id}/check-access', [App\Http\Controllers\Quan
 Route::post('/import-phieu-thu-no-dich-vu', [PhieuthunodichvuController::class, 'import']);
 Route::get('/import-thu-no-dich-vu-progress/{importId}', [PhieuthunodichvuController::class, 'importProgress']);
 
+//Phiếu nghị đề thanh toán dịch vụ
+Route::get('/tai-chinh/phieu-de-nghi-thanh-toan-dv', [PhieudenghithanhtoandvControllers::class, 'getAllPaymentRequests']);
+
+
 
 
 });

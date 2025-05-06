@@ -1022,4 +1022,132 @@ class PhieudenghithanhtoandvControllers extends Controller
             Log::error('Error updating financial information: ' . $e->getMessage());
         }
     }
+
+    public function getAllPaymentRequests(Request $request)
+    {
+        try {
+            // Build query with joins to get all required data
+            $query = DB::table('tb_de_nghi_thanhtoan_dv as dngn')
+                ->leftJoin('tb_phieu_trinh_thanh_toan as pttt', 'dngn.ma_trinh_thanh_toan', '=', 'pttt.ma_trinh_thanh_toan')
+                ->select(
+                    'dngn.id',
+                    'dngn.ma_giai_ngan',
+                    'dngn.vu_dau_tu',
+                    'dngn.loai_thanh_toan',
+                    'dngn.khach_hang_ca_nhan',
+                    'dngn.ma_khach_hang_ca_nhan',
+                    'dngn.khach_hang_doanh_nghiep',
+                    'dngn.ma_khach_hang_doanh_nghiep', 
+                    'dngn.tong_tien',
+                    'dngn.tong_tien_tam_giu',
+                    'dngn.tong_tien_khau_tru',
+                    'dngn.tong_tien_lai_suat',
+                    'dngn.tong_tien_thanh_toan_con_lai',
+                    'pttt.trang_thai_thanh_toan',
+                    'pttt.ngay_thanh_toan',
+                    'pttt.so_to_trinh',
+                    'pttt.so_dot_thanh_toan as dot_thanh_toan'
+                );
+                
+            // Apply filters based on request parameters
+            
+            // Filter by status
+            if ($request->has('status') && $request->status !== 'all') {
+                $query->where('pttt.trang_thai_thanh_toan', $request->status);
+            }
+            
+            // Individual column filters
+            $filterableColumns = [
+                'ma_giai_ngan', 'vu_dau_tu', 'loai_thanh_toan',
+                'khach_hang_ca_nhan', 'ma_khach_hang_ca_nhan', 
+                'khach_hang_doanh_nghiep', 'ma_khach_hang_doanh_nghiep',
+                'so_to_trinh'
+            ];
+            
+            foreach ($filterableColumns as $column) {
+                $paramName = 'filter_' . $column;
+                if ($request->has($paramName) && !empty($request->$paramName)) {
+                    $tablePrefix = in_array($column, ['so_to_trinh']) ? 'pttt.' : 'dngn.';
+                    $query->where($tablePrefix . $column, 'like', '%' . $request->$paramName . '%');
+                }
+            }
+            
+            // Date filter for ngay_thanh_toan
+            if ($request->has('filter_ngay_thanh_toan') && !empty($request->filter_ngay_thanh_toan)) {
+                $query->whereDate('pttt.ngay_thanh_toan', $request->filter_ngay_thanh_toan);
+            }
+            
+            // Global search
+            if ($request->has('search') && !empty($request->search)) {
+                $searchTerm = '%' . $request->search . '%';
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('dngn.ma_giai_ngan', 'like', $searchTerm)
+                        ->orWhere('dngn.vu_dau_tu', 'like', $searchTerm)
+                        ->orWhere('dngn.loai_thanh_toan', 'like', $searchTerm)
+                        ->orWhere('dngn.khach_hang_ca_nhan', 'like', $searchTerm)
+                        ->orWhere('dngn.ma_khach_hang_ca_nhan', 'like', $searchTerm)
+                        ->orWhere('dngn.khach_hang_doanh_nghiep', 'like', $searchTerm)
+                        ->orWhere('dngn.ma_khach_hang_doanh_nghiep', 'like', $searchTerm)
+                        ->orWhere('pttt.so_to_trinh', 'like', $searchTerm);
+                });
+            }
+    
+            // Sort options (default to newest first)
+            $sortField = $request->input('sort_field', 'dngn.id');
+            $sortDirection = $request->input('sort_direction', 'desc');
+            $query->orderBy($sortField, $sortDirection);
+    
+            // Get all records instead of paginating
+            $results = $query->get();
+            $totalCount = count($results);
+    
+            // Also get all unique values for dropdown filters
+            $uniqueVuDauTu = DB::table('tb_de_nghi_thanhtoan_dv')
+                ->select('vu_dau_tu')
+                ->distinct()
+                ->whereNotNull('vu_dau_tu')
+                ->pluck('vu_dau_tu');
+                
+            $uniqueLoaiThanhToan = DB::table('tb_de_nghi_thanhtoan_dv')
+                ->select('loai_thanh_toan')
+                ->distinct()
+                ->whereNotNull('loai_thanh_toan')
+                ->pluck('loai_thanh_toan');
+                
+            $uniqueTrangThaiThanhToan = DB::table('tb_phieu_trinh_thanh_toan')
+                ->select('trang_thai_thanh_toan')
+                ->distinct()
+                ->whereNotNull('trang_thai_thanh_toan')
+                ->pluck('trang_thai_thanh_toan');
+    
+            return response()->json([
+                'success' => true,
+                'data' => $results,
+                'pagination' => [
+                    'total' => $totalCount,
+                    'per_page' => $totalCount, // Set per_page to total count to indicate all records
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'from' => 1,
+                    'to' => $totalCount,
+                ],
+                'unique_filters' => [
+                    'vu_dau_tu' => $uniqueVuDauTu,
+                    'loai_thanh_toan' => $uniqueLoaiThanhToan,
+                    'trang_thai_thanh_toan' => $uniqueTrangThaiThanhToan
+                ]
+            ]);
+    
+        } catch (\Exception $e) {
+            Log::error('Error fetching payment requests: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving payment requests',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
 }

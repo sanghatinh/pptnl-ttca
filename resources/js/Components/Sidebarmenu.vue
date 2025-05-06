@@ -115,6 +115,23 @@
                                         >
                                     </router-link>
                                 </li>
+                                <li>
+                                    <router-link
+                                        to="/Phieudenghithanhtoandichvu"
+                                        :class="
+                                            $route.path ===
+                                            '/Phieudenghithanhtoandichvu'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                        @click="closeSidebar"
+                                    >
+                                        <span class="menu-text"
+                                            >Phiếu đề nghị thanh toán dịch
+                                            vụ</span
+                                        >
+                                    </router-link>
+                                </li>
 
                                 <li>
                                     <router-link
