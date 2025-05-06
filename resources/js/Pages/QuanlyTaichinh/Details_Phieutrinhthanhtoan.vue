@@ -95,28 +95,72 @@
                         <h5 class="timeline-title">
                             <span class="badge bg-success">Đã thanh toán</span>
                         </h5>
+                        <!-- แสดงวันที่ชำระเงินจริง (ngay_thanh_toan) หาก payment_date มีค่า -->
                         <p class="mb-1">
                             <i class="far fa-calendar me-2"></i>
-                            <span class="fw-medium">{{
-                                formatDate(paidAction.created_at)
-                            }}</span>
+                            <span class="fw-medium">
+                                {{
+                                    formatDate(
+                                        document.payment_date ||
+                                            paidAction.created_at
+                                    )
+                                }}
+                                <span
+                                    v-if="document.payment_date"
+                                    class="badge bg-light text-dark ms-2"
+                                >
+                                    <i
+                                        class="fas fa-money-bill-wave text-success me-1"
+                                    ></i>
+                                    Ngày thanh toán
+                                </span>
+                            </span>
                         </p>
+
+                        <!-- แสดงวันที่เปลี่ยนสถานะถ้ามีทั้งสอง และแตกต่างกัน -->
+                        <p
+                            class="mb-1"
+                            v-if="
+                                document.payment_date &&
+                                document.payment_date !==
+                                    formatDate(paidAction.created_at)
+                            "
+                        >
+                            <i class="fas fa-history me-2 text-muted"></i>
+                            <span class="text-muted"
+                                >Ngày chuyển trạng thái:
+                                {{ formatDate(paidAction.created_at) }}</span
+                            >
+                        </p>
+
+                        <!-- ข้อมูลผู้ดำเนินการ -->
                         <p class="mb-1">
                             <i class="far fa-user me-2"></i>
                             <span class="fw-medium">{{
                                 getUserName(paidAction.action_by)
                             }}</span>
                         </p>
+
+                        <!-- ระยะเวลาระหว่างการส่ง-จ่าย -->
                         <p
                             class="mb-1"
                             v-if="daysBetweenSubmittedAndPaid !== null"
                         >
                             <i class="far fa-clock me-2"></i>
-                            <span
-                                >{{ daysBetweenSubmittedAndPaid }} ngày sau khi
-                                nộp kế toán</span
-                            >
+                            <span>
+                                {{ daysBetweenSubmittedAndPaid }} ngày sau khi
+                                nộp kế toán
+                                <span
+                                    v-if="document.payment_date"
+                                    class="badge bg-light text-dark ms-2"
+                                >
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Tính đến ngày thanh toán thực tế
+                                </span>
+                            </span>
                         </p>
+
+                        <!-- หมายเหตุ -->
                         <div class="timeline-note" v-if="paidAction.note">
                             <i class="far fa-comment me-2"></i>
                             <span>{{ paidAction.note }}</span>
@@ -3605,6 +3649,7 @@ export default {
                 total_amount: 0, // Tổng tiền thanh toán
                 creator_name: "", // Người tạo
                 notes: "",
+                payment_date: null,
             },
             // Timeline related properties
             processingHistory: [], // Add this property to store timeline events
@@ -3806,10 +3851,17 @@ export default {
         },
 
         daysBetweenSubmittedAndPaid() {
-            if (!this.submittedAction || !this.paidAction) return null;
+            if (!this.submittedAction) return null;
+
+            // ถ้าไม่มี document.payment_date และไม่มี paidAction ให้คืนค่า null
+            if (!this.document.payment_date && !this.paidAction) return null;
 
             const submittedDate = new Date(this.submittedAction.created_at);
-            const paidDate = new Date(this.paidAction.created_at);
+
+            // ใช้ document.payment_date (วันที่จ่ายเงินจริง) หากมีค่า มิฉะนั้นใช้วันที่มีการเปลี่ยนสถานะเป็น paid
+            const paidDate = this.document.payment_date
+                ? new Date(this.document.payment_date)
+                : new Date(this.paidAction.created_at);
 
             const diffTime = Math.abs(paidDate - submittedDate);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -7340,5 +7392,14 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+.badge.bg-light {
+    font-size: 0.75rem;
+    font-weight: normal;
+}
+
+.text-muted {
+    font-size: 0.9rem;
 }
 </style>
