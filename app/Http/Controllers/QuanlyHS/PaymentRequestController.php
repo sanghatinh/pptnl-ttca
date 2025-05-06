@@ -906,6 +906,7 @@ public function createPaymentRequest(Request $request)
  * @param string $id Payment request code
  * @return \Illuminate\Http\JsonResponse
  */
+
 public function destroy($id)
 {
     try {
@@ -939,13 +940,12 @@ public function destroy($id)
             ->where('ma_trinh_thanh_toan', $id)
             ->delete();
         
-        // 3. Skip updating tb_bien_ban_nghiemthu_dv as the column doesn't exist
-        Log::info("Skipping update of ma_trinh_thanh_toan in tb_bien_ban_nghiemthu_dv as the column doesn't exist");
+        // 3. Delete related payment requests from tb_de_nghi_thanhtoan_dv
+        DB::table('tb_de_nghi_thanhtoan_dv')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->delete();
         
-        // 4. Skip deleting from tb_phieu_de_nghi_giai_ngan as the table doesn't exist
-        Log::info("Skipping deletion from tb_phieu_de_nghi_giai_ngan as the table doesn't exist");
-        
-        // 5. Finally delete the payment request itself
+        // 4. Finally delete the payment request itself
         $paymentRequest->delete();
         
         DB::commit();
