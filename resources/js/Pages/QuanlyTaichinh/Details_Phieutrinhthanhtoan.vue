@@ -4832,6 +4832,16 @@ export default {
             this.isPaymentUpdating = true;
 
             try {
+                // Add financial data to the request
+                const financialData = {
+                    tong_tien: this.totalPaymentAmount,
+                    tong_tien_tam_giu: this.totalHoldAmount,
+                    tong_tien_khau_tru: this.totalDeductionAmount,
+                    tong_tien_lai_suat: this.totalInterestAmount,
+                    tong_tien_thanh_toan_con_lai: this.totalRemainingAmount,
+                    payment_date: this.document.payment_date,
+                };
+
                 const response = await axios.put(
                     `/api/disbursements/bulk`,
                     {
@@ -4841,6 +4851,7 @@ export default {
                             this.selectedPaymentRequests.length === 1
                                 ? this.selectedPaymentRequests[0]
                                 : null,
+                        financial_data: financialData, // Add financial data
                     },
                     {
                         headers: {

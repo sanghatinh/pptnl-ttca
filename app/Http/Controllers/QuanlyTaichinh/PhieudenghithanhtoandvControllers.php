@@ -657,11 +657,13 @@ class PhieudenghithanhtoandvControllers extends Controller
                 'disbursement_codes.*' => 'string',
                 'data' => 'required|array',
                 'original_code' => 'nullable|string',
+                'financial_data' => 'nullable|array', // Add validation for financial data
             ]);
             
             $disbursementCodes = $request->input('disbursement_codes');
             $updateData = $request->input('data');
             $originalCode = $request->input('original_code');
+            $financialData = $request->input('financial_data', []); // Get financial data
             
             // Remove empty values from update data
             $updateData = array_filter($updateData, function($value) {
@@ -712,6 +714,18 @@ class PhieudenghithanhtoandvControllers extends Controller
                     unset($newPaymentRequestData['id']); // ลบ id ออกเพื่อให้ระบบสร้าง id ใหม่
                     $newPaymentRequestData['ma_giai_ngan'] = $newCode;
                     
+                    // Update financial information if provided
+                    if (!empty($financialData)) {
+                        $newPaymentRequestData['tong_tien'] = $financialData['tong_tien'] ?? $paymentRequest->tong_tien;
+                        $newPaymentRequestData['tong_tien_tam_giu'] = $financialData['tong_tien_tam_giu'] ?? $paymentRequest->tong_tien_tam_giu;
+                        $newPaymentRequestData['tong_tien_khau_tru'] = $financialData['tong_tien_khau_tru'] ?? $paymentRequest->tong_tien_khau_tru;
+                        $newPaymentRequestData['tong_tien_lai_suat'] = $financialData['tong_tien_lai_suat'] ?? $paymentRequest->tong_tien_lai_suat;
+                        $newPaymentRequestData['tong_tien_thanh_toan_con_lai'] = $financialData['tong_tien_thanh_toan_con_lai'] ?? $paymentRequest->tong_tien_thanh_toan_con_lai;
+                        if (isset($financialData['payment_date'])) {
+                            $newPaymentRequestData['ngay_thanh_toan'] = $financialData['payment_date'];
+                        }
+                    }
+                    
                     // Update other fields from the form
                     foreach ($updateData as $key => $value) {
                         if ($key != 'ma_giai_ngan') {
@@ -739,7 +753,22 @@ class PhieudenghithanhtoandvControllers extends Controller
                     $paymentRequest = Phieudenghithanhtoandv::where('ma_giai_ngan', $code)->first();
                     
                     if ($paymentRequest) {
+                        // Update basic fields
                         $paymentRequest->update($updateData);
+                        
+                        // Update financial information if provided
+                        if (!empty($financialData)) {
+                            $paymentRequest->tong_tien = $financialData['tong_tien'] ?? $paymentRequest->tong_tien;
+                            $paymentRequest->tong_tien_tam_giu = $financialData['tong_tien_tam_giu'] ?? $paymentRequest->tong_tien_tam_giu;
+                            $paymentRequest->tong_tien_khau_tru = $financialData['tong_tien_khau_tru'] ?? $paymentRequest->tong_tien_khau_tru;
+                            $paymentRequest->tong_tien_lai_suat = $financialData['tong_tien_lai_suat'] ?? $paymentRequest->tong_tien_lai_suat;
+                            $paymentRequest->tong_tien_thanh_toan_con_lai = $financialData['tong_tien_thanh_toan_con_lai'] ?? $paymentRequest->tong_tien_thanh_toan_con_lai;
+                            if (isset($financialData['payment_date'])) {
+                                $paymentRequest->ngay_thanh_toan = $financialData['payment_date'];
+                            }
+                            $paymentRequest->save();
+                        }
+                        
                         $updatedCount++;
                     }
                 }
@@ -826,6 +855,171 @@ class PhieudenghithanhtoandvControllers extends Controller
                 'message' => 'Error creating payment request',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Update financial information for all payment requests in a payment document
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateFinancialData(Request $request)
+    {
+        try {
+            // Validate input
+            $request->validate([
+                'payment_code' => 'required|string',
+                'financial_data' => 'required|array',
+                'payment_date' => 'nullable|date'
+            ]);
+            
+            $paymentCode = $request->input('payment_code');
+            $financialData = $request->input('financial_data');
+            
+            DB::beginTransaction();
+            
+            // ตรวจสอบว่ามีเอกสารหรือไม่
+            $parentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $paymentCode)
+                ->first();
+                
+            if (!$parentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request not found'
+                ], 404);
+            }
+            
+            // เรียกใช้ฟังก์ชันอัปเดตข้อมูลทางการเงิน
+            $this->updateFinancialInfo($paymentCode, $financialData);
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Financial information updated successfully'
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating financial information: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating financial information',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update financial information for all payment requests associated with a payment document
+     * 
+     * @param string $paymentRequestId Payment request ID
+     * @param array $financialData Financial data to update
+     * @return void
+     */
+    private function updateFinancialInfo($paymentRequestId, $financialData)
+    {
+        try {
+            // Get all payment requests (disbursement codes) for the given payment document
+            $disbursementRequests = Phieudenghithanhtoandv::where('ma_trinh_thanh_toan', $paymentRequestId)->get();
+            
+            if ($disbursementRequests->isEmpty()) {
+                Log::info('No disbursement requests found for payment ID: ' . $paymentRequestId);
+                return;
+            }
+            
+            // For each disbursement request, update the financial information
+            foreach ($disbursementRequests as $request) {
+                // Get associated receipt IDs
+                $receiptIds = DB::table('Logs_phieu_trinh_thanh_toan')
+                    ->where('ma_de_nghi_giai_ngan', $request->ma_giai_ngan)
+                    ->pluck('ma_nghiem_thu');
+                    
+                if ($receiptIds->isEmpty()) {
+                    Log::info('No receipts found for disbursement code: ' . $request->ma_giai_ngan);
+                    continue;
+                }
+                
+                // Calculate totals from the associated receipts
+                $totals = DB::table('tb_bien_ban_nghiemthu_dv')
+                    ->whereIn('ma_nghiem_thu', $receiptIds)
+                    ->select(
+                        DB::raw('SUM(tong_tien_dich_vu) as total_amount'),
+                        DB::raw('SUM(tong_tien_tam_giu) as total_hold_amount')
+                    )
+                    ->first();
+                    
+                // Set customer identifiers for debt deduction and interest calculation
+                $customerRef = null;
+                $customerField = null;
+                
+                if (!empty($request->ma_khach_hang_ca_nhan)) {
+                    $customerRef = $request->ma_khach_hang_ca_nhan;
+                    $customerField = 'Ma_Khach_Hang_Ca_Nhan';
+                } elseif (!empty($request->ma_khach_hang_doanh_nghiep)) {
+                    $customerRef = $request->ma_khach_hang_doanh_nghiep;
+                    $customerField = 'Ma_Khach_Hang_Doanh_Nghiep';
+                }
+                
+                // Get parent payment request for proposal number
+                $parentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+                    ->where('ma_trinh_thanh_toan', $paymentRequestId)
+                    ->first();
+                    
+                $proposalNumber = $parentRequest ? $parentRequest->so_to_trinh : null;
+                
+                // Calculate total debt deduction (Da_Tra_Goc) and interest (Tien_Lai)
+                $debtAndInterest = [
+                    'total_deduction' => 0,
+                    'total_interest' => 0
+                ];
+                
+                if ($customerRef && $proposalNumber) {
+                    $debtRecords = DB::table('Logs_Phieu_Tinh_Lai_dv')
+                        ->where($customerField, $customerRef)
+                        ->where('So_Tro_Trinh', $proposalNumber)
+                        ->select(
+                            DB::raw('SUM(Da_Tra_Goc) as total_deduction'),
+                            DB::raw('SUM(Tien_Lai) as total_interest')
+                        )   
+                        ->first();
+                        
+                    if ($debtRecords) {
+                        $debtAndInterest = [
+                            'total_deduction' => $debtRecords->total_deduction ?? 0,
+                            'total_interest' => $debtRecords->total_interest ?? 0
+                        ];
+                    }
+                }
+                
+                // Calculate remaining amount
+                $totalAmount = $totals->total_amount ?? 0;
+                $totalHoldAmount = $totals->total_hold_amount ?? 0;
+                $totalDeduction = $debtAndInterest['total_deduction'];
+                $totalInterest = $debtAndInterest['total_interest'];
+                $totalRemaining = $totalAmount - $totalHoldAmount - $totalDeduction + $totalInterest;
+                
+                // Update the financial information
+                $request->tong_tien = $totalAmount;
+                $request->tong_tien_tam_giu = $totalHoldAmount;
+                $request->tong_tien_khau_tru = $totalDeduction;
+                $request->tong_tien_lai_suat = $totalInterest;
+                $request->tong_tien_thanh_toan_con_lai = $totalRemaining;
+                
+                // Update payment date if status is paid
+                if (isset($financialData['payment_date'])) {
+                    $request->ngay_thanh_toan = $financialData['payment_date'];
+                }
+                
+                $request->save();
+                
+                Log::info('Updated financial information for disbursement: ' . $request->ma_giai_ngan);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error updating financial information: ' . $e->getMessage());
         }
     }
 }

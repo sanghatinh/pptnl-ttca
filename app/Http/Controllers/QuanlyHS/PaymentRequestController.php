@@ -367,6 +367,29 @@ public function createPaymentRequest(Request $request)
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
+            
+            // อัปเดตข้อมูลทางการเงินสำหรับเอกสารการจ่ายเงินทั้งหมด
+            // โดยส่งข้อมูลไปยัง API endpoint ของ PhieudenghithanhtoandvControllers
+            $financialData = [
+                'tong_tien' => $validated['tong_tien'] ?? null,
+                'tong_tien_tam_giu' => $validated['tong_tien_tam_giu'] ?? null,
+                'tong_tien_khau_tru' => $validated['tong_tien_khau_tru'] ?? null,
+                'tong_tien_lai_suat' => $validated['tong_tien_lai_suat'] ?? null,
+                'tong_tien_thanh_toan_con_lai' => $validated['tong_tien_thanh_toan_con_lai'] ?? null,
+            ];
+            
+            // ถ้าสถานะเป็น 'paid' ให้อัปเดต payment_date ด้วย
+            if ($validated['status'] === 'paid' && isset($validated['payment_date'])) {
+                $financialData['payment_date'] = $validated['payment_date'];
+            }
+            
+            // เรียกใช้ PhieudenghithanhtoandvControllers ผ่าน Dependency Injection หรือสร้าง instance ของ controller
+            $disbursementController = app()->make('App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers');
+            $updateFinancialRequest = new Request([
+                'payment_code' => $id,
+                'financial_data' => $financialData
+            ]);
+            $disbursementController->updateFinancialData($updateFinancialRequest);
     
             return response()->json([
                 'success' => true,
@@ -833,16 +856,27 @@ public function createPaymentRequest(Request $request)
                     ->where('ma_trinh_thanh_toan', $id)
                     ->update($updateData);
                 
-                // Add an action record to track the update
-                // DB::table('Action_phieu_trinh_thanh_toan')->insert([
-                //     'ma_trinh_thanh_toan' => $id,
-                //     'action' => 'processing',
-                //     'action_by' => Auth::id(),
-                //     'action_date' => now(),
-                //     'comments' => 'Cập nhật thông tin cơ bản phiếu trình thanh toán',
-                //     'created_at' => now(),
-                //     'updated_at' => now()
-                // ]);
+                // Prepare financial data for disbursement requests
+                $financialData = [
+                    'tong_tien' => $validated['tong_tien'] ?? null,
+                    'tong_tien_tam_giu' => $validated['tong_tien_tam_giu'] ?? null,
+                    'tong_tien_khau_tru' => $validated['tong_tien_khau_tru'] ?? null,
+                    'tong_tien_lai_suat' => $validated['tong_tien_lai_suat'] ?? null,
+                    'tong_tien_thanh_toan_con_lai' => $validated['tong_tien_thanh_toan_con_lai'] ?? null,
+                ];
+                
+                // Add payment date if available
+                if (isset($validated['ngay_thanh_toan'])) {
+                    $financialData['payment_date'] = $validated['ngay_thanh_toan'];
+                }
+                
+                // Update financial information for all disbursement requests
+                $disbursementController = app()->make('App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers');
+                $updateFinancialRequest = new Request([
+                    'payment_code' => $id,
+                    'financial_data' => $financialData
+                ]);
+                $disbursementController->updateFinancialData($updateFinancialRequest);
             }
     
             // Get the updated record
@@ -937,8 +971,8 @@ public function destroy($id)
 public function getProcessingHistory($paymentCode)
 {
     try {
-        $history = DB::table('action_phieu_trinh_thanh_toan')
-            ->where('payment_code', $paymentCode)
+        $history = DB::table('Action_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $paymentCode)
             ->orderBy('created_at', 'desc')
             ->get();
             

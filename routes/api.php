@@ -170,6 +170,8 @@ Route::put('/disbursements/bulk', [PhieudenghithanhtoandvControllers::class, 'bu
 Route::post('/disbursements/with-receipts', [PhieudenghithanhtoandvControllers::class, 'addWithReceipts']);
 Route::post('/disbursements/export', [PhieudenghithanhtoandvControllers::class, 'export']);
 Route::post('/disbursements/import', [PhieudenghithanhtoandvControllers::class, 'import']);
+// เพิ่มเส้นทาง API สำหรับอัปเดตข้อมูลทางการเงินของพิศูเญเงี้ยม
+Route::post('/disbursements/update-financial', [PhieudenghithanhtoandvControllers::class, 'updateFinancialData']);
 //Phiếu thu nợ dịch vụ
 Route::get('/phieu-thu-no-dich-vu', [App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController::class, 'index']);
 Route::get('/phieu-thu-no-dich-vu/{id}', [App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController::class, 'show']);

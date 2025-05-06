@@ -58,7 +58,16 @@ class Phieudenghithanhtoandv extends Model
         'khach_hang_doanh_nghiep',
         'ma_khach_hang_doanh_nghiep',
         'ma_trinh_thanh_toan',
-        'status'
+       
+        'tong_tien',
+        'tong_tien_tam_giu',
+        'tong_tien_khau_tru',
+        'tong_tien_lai_suat',
+        'tong_tien_thanh_toan_con_lai',
+        'ngay_thanh_toan'
+
+
+
     ];
 
     /**
