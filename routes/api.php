@@ -183,6 +183,9 @@ Route::get('/import-thu-no-dich-vu-progress/{importId}', [PhieuthunodichvuContro
 //Phiếu nghị đề thanh toán dịch vụ
 Route::get('/tai-chinh/phieu-de-nghi-thanh-toan-dv', [PhieudenghithanhtoandvControllers::class, 'getAllPaymentRequests']);
 Route::get('/payment-requests-dichvu/{id}', [PhieudenghithanhtoandvControllers::class, 'showDetailPayment']);
+Route::get('/payment-requests-dichvu/{id}/bienban-nghiemthu', [PhieudenghithanhtoandvControllers::class, 'getbienbannghiemthudv']);
+Route::get('/payment-requests-dichvu/{id}/chitiet-dichvu', 'App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers@getchitietbienbannghiemthudv');
+
 
 
 

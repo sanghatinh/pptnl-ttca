@@ -381,11 +381,177 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <!-- Ghi chú -->
+                                    <div
+                                        class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12"
+                                    >
+                                        <div class="form-group mb-3">
+                                            <label
+                                                for="ghiChu"
+                                                class="form-label"
+                                            >
+                                                Ghi chú
+                                            </label>
+                                            <div class="note-container">
+                                                <div
+                                                    class="note-content"
+                                                    id="ghiChu"
+                                                >
+                                                    <p
+                                                        v-if="document.ghi_chu"
+                                                        class="mb-0"
+                                                    >
+                                                        {{ document.ghi_chu }}
+                                                    </p>
+                                                    <p
+                                                        v-else
+                                                        class="text-muted fst-italic mb-0"
+                                                    >
+                                                        Không có ghi chú
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <!-- Nghiệm thu dịch vụ -->
+                    <!-- First, update the table in the template to loop through the bienbans data -->
+                    <div class="card-body">
+                        <div class="table-container">
+                            <div class="table-responsive mt-2">
+                                <table
+                                    class="table table-bordered table-hover align-middle"
+                                >
+                                    <thead class="table-light text-center">
+                                        <tr>
+                                            <th>STT</th>
+                                            <th>Mã nghiệm thu</th>
+                                            <th>Trạm</th>
+                                            <th>Vụ đầu tư</th>
+                                            <th>Khách hàng cá nhân ĐT mía</th>
+                                            <th>
+                                                Khách hàng doanh nghiệp ĐT mía
+                                            </th>
+                                            <th>Hợp đồng đầu tư</th>
+                                            <th>Hình thức DV</th>
+                                            <th>Hợp đồng cung ứng DV</th>
+                                            <th>Thành tiền</th>
+                                            <th>Số tiền tạm giữ</th>
+                                            <th>Tiền thanh toán</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-if="bienbans.length === 0">
+                                            <td
+                                                colspan="12"
+                                                class="text-center py-4"
+                                            >
+                                                <div class="empty-state">
+                                                    <i
+                                                        class="fas fa-file-invoice empty-icon"
+                                                    ></i>
+                                                    <p>
+                                                        Chưa có dữ liệu chi tiết
+                                                    </p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr
+                                            v-for="(item, index) in bienbans"
+                                            :key="item.ma_nghiem_thu"
+                                        >
+                                            <td class="text-center">
+                                                {{ index + 1 }}
+                                            </td>
+                                            <td>{{ item.ma_nghiem_thu }}</td>
+                                            <td>{{ item.tram }}</td>
+                                            <td>{{ item.vu_dau_tu }}</td>
+                                            <td>
+                                                {{
+                                                    item.khach_hang_ca_nhan_dt_mia
+                                                }}
+                                            </td>
+                                            <td>
+                                                {{
+                                                    item.khach_hang_doanh_nghiep_dt_mia
+                                                }}
+                                            </td>
+                                            <td>
+                                                {{ item.hop_dong_dau_tu_mia }}
+                                            </td>
+                                            <td>
+                                                {{
+                                                    item.hinh_thuc_thuc_hien_dv
+                                                }}
+                                            </td>
+                                            <td>
+                                                {{
+                                                    item.hop_dong_cung_ung_dich_vu
+                                                }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{
+                                                    formatCurrency(
+                                                        item.tong_tien
+                                                    )
+                                                }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{
+                                                    formatCurrency(
+                                                        item.tong_tien_tam_giu
+                                                    )
+                                                }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{
+                                                    formatCurrency(
+                                                        item.tong_tien_thanh_toan
+                                                    )
+                                                }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td
+                                                colspan="9"
+                                                class="text-end fw-bold"
+                                            >
+                                                Tổng cộng:
+                                            </td>
+                                            <td class="text-end fw-bold">
+                                                {{
+                                                    formatCurrency(
+                                                        totals.total_amount
+                                                    )
+                                                }}
+                                            </td>
+                                            <td class="text-end fw-bold">
+                                                {{
+                                                    formatCurrency(
+                                                        totals.total_hold_amount
+                                                    )
+                                                }}
+                                            </td>
+                                            <td class="text-end fw-bold">
+                                                {{
+                                                    formatCurrency(
+                                                        totals.total_payment_amount
+                                                    )
+                                                }}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
 
+                    <!-- Chi tiết nghiệm thu dịch vụ -->
                     <!-- Chi tiết nghiệm thu dịch vụ -->
                     <div class="card mt-3">
                         <div
@@ -409,6 +575,8 @@
                                         <thead class="table-light text-center">
                                             <tr>
                                                 <th>STT</th>
+                                                <th>Mã nghiệm thu</th>
+                                                <th>Trạm</th>
                                                 <th>Dịch vụ</th>
                                                 <th>Mã số thửa</th>
                                                 <th>Đơn vị tính</th>
@@ -421,9 +589,162 @@
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            <tr
+                                                v-if="
+                                                    chitietDichVu.length === 0
+                                                "
+                                            >
+                                                <td
+                                                    colspan="12"
+                                                    class="text-center py-4"
+                                                >
+                                                    <div class="empty-state">
+                                                        <i
+                                                            class="fas fa-file-invoice empty-icon"
+                                                        ></i>
+                                                        <p>
+                                                            Chưa có dữ liệu chi
+                                                            tiết
+                                                        </p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr
+                                                v-for="(
+                                                    item, index
+                                                ) in chitietDichVu"
+                                                :key="index"
+                                            >
+                                                <td class="text-center">
+                                                    {{ index + 1 }}
+                                                </td>
+                                                <td>
+                                                    {{ item.ma_nghiem_thu }}
+                                                </td>
+                                                <td>{{ item.tram }}</td>
+                                                <td>{{ item.dich_vu }}</td>
+                                                <td>{{ item.ma_so_thua }}</td>
+                                                <td>{{ item.don_vi_tinh }}</td>
+                                                <td class="text-center">
+                                                    {{ item.so_lan_thuc_hien }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{
+                                                        formatNumber(
+                                                            item.khoi_luong_thuc_hien
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.don_gia
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.thanh_tien
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.tien_tam_giu
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{
+                                                        formatCurrency(
+                                                            item.tien_thanh_toan
+                                                        )
+                                                    }}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
                                             <tr>
                                                 <td
-                                                    colspan="10"
+                                                    colspan="9"
+                                                    class="text-end fw-bold"
+                                                >
+                                                    Tổng cộng:
+                                                </td>
+                                                <td class="text-end fw-bold">
+                                                    {{
+                                                        formatCurrency(
+                                                            chitietTotals.total_amount
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-bold">
+                                                    {{
+                                                        formatCurrency(
+                                                            chitietTotals.total_hold_amount
+                                                        )
+                                                    }}
+                                                </td>
+                                                <td class="text-end fw-bold">
+                                                    {{
+                                                        formatCurrency(
+                                                            chitietTotals.total_payment_amount
+                                                        )
+                                                    }}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Phiếu thu hồi nợ -->
+                    <div class="card mt-3">
+                        <div
+                            class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center"
+                        >
+                            <h5 class="card-title mb-0">
+                                <span class="toggle-section cursor-pointer">
+                                    <i
+                                        class="fas fa-angle-down me-2 toggle-icon"
+                                    ></i>
+                                    Phiếu thu cấn trừ nợ
+                                </span>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <div class="table-responsive mt-2">
+                                    <table
+                                        class="table table-bordered table-hover align-middle"
+                                    >
+                                        <thead class="table-light text-center">
+                                            <tr>
+                                                <th>STT</th>
+                                                <th>Mã số phiếu</th>
+                                                <th>Invoice Number</th>
+                                                <th>Đã trả gốc</th>
+                                                <th>Ngày vay</th>
+                                                <th>Ngày trả</th>
+                                                <th>Lãi suất</th>
+                                                <th>Tiền lãi</th>
+                                                <th>Vụ đầu tư</th>
+                                                <th>Vụ thanh toán</th>
+                                                <th>Khách hàng cá nhân</th>
+                                                <th>KH doanh nghiệp</th>
+                                                <th>Số trờ trình</th>
+                                                <th>Category Debt</th>
+                                                <th>Description</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td
+                                                    colspan="15"
                                                     class="text-center py-4"
                                                 >
                                                     <div class="empty-state">
@@ -441,7 +762,7 @@
                                         <tfoot>
                                             <tr>
                                                 <td
-                                                    colspan="7"
+                                                    colspan="3"
                                                     class="text-end fw-bold"
                                                 >
                                                     Tổng cộng:
@@ -449,12 +770,12 @@
                                                 <td class="text-end fw-bold">
                                                     0
                                                 </td>
+                                                <td colspan="3"></td>
                                                 <td class="text-end fw-bold">
                                                     0
                                                 </td>
-                                                <td class="text-end fw-bold">
-                                                    0
-                                                </td>
+
+                                                <td colspan="7"></td>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -497,6 +818,19 @@ export default {
                 attachment_url: "", // Add this line
                 so_to_trinh: "", // Add this line
                 so_dot_thanh_toan: "", // Add this line
+                ghi_chu: "",
+            },
+            bienbans: [], // Array to hold nghiệm thu dịch vụ data
+            totals: {
+                total_amount: 0,
+                total_hold_amount: 0,
+                total_payment_amount: 0,
+            },
+            chitietDichVu: [], // Array to hold chi tiết nghiệm thu dịch vụ data
+            chitietTotals: {
+                total_amount: 0,
+                total_hold_amount: 0,
+                total_payment_amount: 0,
             },
 
             isLoading: false,
@@ -521,6 +855,8 @@ export default {
     mounted() {
         this.fetchUserData();
         this.fetchDocument();
+        this.fetchBienBanData();
+        this.fetchChiTietDichVu();
 
         // Setup toggle functionality for sections
         document.querySelectorAll(".toggle-section").forEach((el) => {
@@ -541,6 +877,81 @@ export default {
         });
     },
     methods: {
+        fetchChiTietDichVu() {
+            const id = this.$route.params.id;
+            if (!id) {
+                this.showError("Không tìm thấy mã phiếu đề nghị thanh toán");
+                return;
+            }
+
+            axios
+                .get(`/api/payment-requests-dichvu/${id}/chitiet-dichvu`, {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                })
+                .then((response) => {
+                    if (response.data.success) {
+                        this.chitietDichVu = response.data.data || [];
+                        this.chitietTotals = response.data.totals || {
+                            total_amount: 0,
+                            total_hold_amount: 0,
+                            total_payment_amount: 0,
+                        };
+                    } else {
+                        this.showError(
+                            response.data.message ||
+                                "Không thể tải dữ liệu chi tiết nghiệm thu"
+                        );
+                    }
+                })
+                .catch((error) => {
+                    console.error(
+                        "Error fetching chi tiết nghiệm thu data:",
+                        error
+                    );
+                    this.showError("Lỗi khi tải dữ liệu chi tiết nghiệm thu");
+                    if (error.response?.status === 401) {
+                        this.handleAuthError();
+                    }
+                });
+        },
+        fetchBienBanData() {
+            const id = this.$route.params.id;
+            if (!id) {
+                this.showError("Không tìm thấy mã phiếu đề nghị thanh toán");
+                return;
+            }
+
+            axios
+                .get(`/api/payment-requests-dichvu/${id}/bienban-nghiemthu`, {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                })
+                .then((response) => {
+                    if (response.data.success) {
+                        this.bienbans = response.data.data || [];
+                        this.totals = response.data.totals || {
+                            total_amount: 0,
+                            total_hold_amount: 0,
+                            total_payment_amount: 0,
+                        };
+                    } else {
+                        this.showError(
+                            response.data.message ||
+                                "Không thể tải dữ liệu nghiệm thu"
+                        );
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error fetching nghiệm thu data:", error);
+                    this.showError("Lỗi khi tải dữ liệu nghiệm thu");
+                    if (error.response?.status === 401) {
+                        this.handleAuthError();
+                    }
+                });
+        },
         fetchUserData() {
             const user = localStorage.getItem("web_user");
             if (user) {
@@ -601,6 +1012,7 @@ export default {
                                 response.data.document.so_to_trinh || "",
                             so_dot_thanh_toan:
                                 response.data.document.so_dot_thanh_toan || "",
+                            ghi_chu: response.data.document.ghi_chu || "",
                         };
 
                         // Update form fields with document data
@@ -1004,5 +1416,31 @@ export default {
 
 .table tfoot td {
     border-top: 2px solid #e9ecef;
+}
+
+/* Note styling */
+.note-container {
+    background-color: #f9f9f9;
+    border: 1px solid #e6e6e6;
+    border-radius: 4px;
+    padding: 10px 15px;
+    min-height: 60px;
+    transition: all 0.2s ease;
+}
+
+.note-container:hover {
+    border-color: #d1d1d1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.note-content {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.note-content .text-muted {
+    font-size: 0.85rem;
 }
 </style>

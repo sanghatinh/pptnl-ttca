@@ -1218,6 +1218,162 @@ class PhieudenghithanhtoandvControllers extends Controller
 
 
 
+    /**
+     * Get nghiệm thu dịch vụ data related to a payment request
+     * 
+     * @param string $id Disbursement code (ma_giai_ngan)
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getbienbannghiemthudv($id)
+    {
+        try {
+            // Check if the payment request exists
+            $paymentRequest = DB::table('tb_de_nghi_thanhtoan_dv')
+                ->where('ma_giai_ngan', $id)
+                ->first();
+                
+            if (!$paymentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request not found'
+                ], 404);
+            }
+            
+            // Get associated receipt IDs through Logs_phieu_trinh_thanh_toan
+            $receiptIds = DB::table('Logs_phieu_trinh_thanh_toan')
+                ->where('ma_de_nghi_giai_ngan', $id)
+                ->pluck('ma_nghiem_thu');
+                
+            if ($receiptIds->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => []
+                ]);
+            }
+            
+            // Get detailed information from tb_bien_ban_nghiemthu_dv table
+            $bienbans = DB::table('tb_bien_ban_nghiemthu_dv')
+                ->whereIn('ma_nghiem_thu', $receiptIds)
+                ->select(
+                    'ma_nghiem_thu',
+                    'tram',
+                    'vu_dau_tu',
+                    'khach_hang_ca_nhan_dt_mia',
+                    'khach_hang_doanh_nghiep_dt_mia',
+                    'hop_dong_dau_tu_mia',
+                    'hinh_thuc_thuc_hien_dv',
+                    'hop_dong_cung_ung_dich_vu',
+                    'tong_tien',
+                    'tong_tien_tam_giu',
+                    'tong_tien_thanh_toan'
+                )
+                ->get();
+                
+            // Calculate the total amounts
+            $totals = [
+                'total_amount' => $bienbans->sum('tong_tien'),
+                'total_hold_amount' => $bienbans->sum('tong_tien_tam_giu'),
+                'total_payment_amount' => $bienbans->sum('tong_tien_thanh_toan')
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'data' => $bienbans,
+                'totals' => $totals
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching nghiệm thu dịch vụ data: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving nghiệm thu dịch vụ data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+/**
+ * Get chi tiết nghiệm thu dịch vụ data related to a payment request
+ * 
+ * @param string $id Disbursement code (ma_giai_ngan)
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getchitietbienbannghiemthudv($id)
+{
+    try {
+        // Check if the payment request exists
+        $paymentRequest = DB::table('tb_de_nghi_thanhtoan_dv')
+            ->where('ma_giai_ngan', $id)
+            ->first();
+            
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment request not found'
+            ], 404);
+        }
+        
+        // Get associated receipt IDs through Logs_phieu_trinh_thanh_toan
+        $receiptIds = DB::table('Logs_phieu_trinh_thanh_toan')
+            ->where('ma_de_nghi_giai_ngan', $id)
+            ->pluck('ma_nghiem_thu');
+            
+        if ($receiptIds->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'totals' => [
+                    'total_amount' => 0,
+                    'total_hold_amount' => 0,
+                    'total_payment_amount' => 0
+                ]
+            ]);
+        }
+        
+        // Get detailed information from tb_chitiet_dichvu_nt table
+        $chitietDichVu = DB::table('tb_chitiet_dichvu_nt')
+            ->whereIn('ma_nghiem_thu', $receiptIds)
+            ->select(
+                'ma_nghiem_thu',
+                'tram',
+                'dich_vu',
+                'ma_so_thua',
+                'don_vi_tinh',
+                'so_lan_thuc_hien',
+                'khoi_luong_thuc_hien',
+                'don_gia',
+                'thanh_tien',
+                'tien_con_lai as tien_tam_giu', // Using tien_con_lai for Số tiền tạm giữ
+                'tien_thanh_toan'
+            )
+            ->get();
+            
+        // Calculate the total amounts
+        $totals = [
+            'total_amount' => $chitietDichVu->sum('thanh_tien'),
+            'total_hold_amount' => $chitietDichVu->sum('tien_tam_giu'),
+            'total_payment_amount' => $chitietDichVu->sum('tien_thanh_toan')
+        ];
+        
+        return response()->json([
+            'success' => true,
+            'data' => $chitietDichVu,
+            'totals' => $totals
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error fetching chi tiết nghiệm thu dịch vụ data: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error retrieving chi tiết nghiệm thu dịch vụ data',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+  
+
 
 
 
