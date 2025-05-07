@@ -182,6 +182,7 @@ Route::get('/import-thu-no-dich-vu-progress/{importId}', [PhieuthunodichvuContro
 
 //Phiếu nghị đề thanh toán dịch vụ
 Route::get('/tai-chinh/phieu-de-nghi-thanh-toan-dv', [PhieudenghithanhtoandvControllers::class, 'getAllPaymentRequests']);
+Route::get('/payment-requests-dichvu/{id}', [PhieudenghithanhtoandvControllers::class, 'showDetailPayment']);
 
 
 

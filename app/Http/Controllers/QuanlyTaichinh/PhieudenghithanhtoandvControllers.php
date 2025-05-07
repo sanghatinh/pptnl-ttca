@@ -281,6 +281,74 @@ class PhieudenghithanhtoandvControllers extends Controller
     }
 
     /**
+     * Display the detailed information of a payment request
+     *
+     * @param string $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    
+    public function showDetailPayment($id)
+    {
+        try {
+            // Get the payment request details by ma_giai_ngan
+            $paymentRequest = DB::table('tb_de_nghi_thanhtoan_dv')
+                ->where('ma_giai_ngan', $id)
+                ->first();
+            
+            if (!$paymentRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment request not found'
+                ], 404);
+            }
+    
+            // Get the parent payment request information from tb_phieu_trinh_thanh_toan
+            $parentPaymentRequest = null;
+            if (!empty($paymentRequest->ma_trinh_thanh_toan)) {
+                $parentPaymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+                    ->where('ma_trinh_thanh_toan', $paymentRequest->ma_trinh_thanh_toan)
+                    ->first();
+            }
+    
+            // Prepare response data with null checks for all properties
+            $responseData = [
+                'ma_giai_ngan' => $paymentRequest->ma_giai_ngan ?? null,
+                'vu_dau_tu' => $paymentRequest->vu_dau_tu ?? null,
+                'loai_thanh_toan' => $paymentRequest->loai_thanh_toan ?? null,
+                'trang_thai_thanh_toan' => $paymentRequest->trang_thai_thanh_toan ?? ($parentPaymentRequest ? $parentPaymentRequest->trang_thai_thanh_toan : null),
+                'khach_hang_ca_nhan' => $paymentRequest->khach_hang_ca_nhan ?? null,
+                'ma_khach_hang_ca_nhan' => $paymentRequest->ma_khach_hang_ca_nhan ?? null,
+                'khach_hang_doanh_nghiep' => $paymentRequest->khach_hang_doanh_nghiep ?? null,
+                'ma_khach_hang_doanh_nghiep' => $paymentRequest->ma_khach_hang_doanh_nghiep ?? null,
+                'tong_tien' => $paymentRequest->tong_tien ?? 0,
+                'tong_tien_tam_giu' => $paymentRequest->tong_tien_tam_giu ?? 0,
+                'tong_tien_khau_tru' => $paymentRequest->tong_tien_khau_tru ?? 0,
+                'tong_tien_lai_suat' => $paymentRequest->tong_tien_lai_suat ?? 0,
+                'tong_tien_thanh_toan_con_lai' => $paymentRequest->tong_tien_thanh_toan_con_lai ?? 0,
+                'ngay_thanh_toan' => $paymentRequest->ngay_thanh_toan ?? null,
+                // Get these values from the parent payment request
+                'attachment_url' => $parentPaymentRequest ? $parentPaymentRequest->link_url : null,
+                'so_to_trinh' => $parentPaymentRequest ? $parentPaymentRequest->so_to_trinh : null,
+                'so_dot_thanh_toan' => $parentPaymentRequest ? $parentPaymentRequest->so_dot_thanh_toan : null,
+            ];
+    
+            return response()->json([
+                'success' => true,
+                'document' => $responseData
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching payment request details: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving payment request details',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Update the specified payment request
      *
      * @param Request $request
@@ -1147,6 +1215,9 @@ class PhieudenghithanhtoandvControllers extends Controller
             ], 500);
         }
     }
+
+
+
 
 
 

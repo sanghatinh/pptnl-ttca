@@ -368,6 +368,31 @@ public function createPaymentRequest(Request $request)
                 'updated_at' => now()
             ]);
             
+            // NEW CODE: Update the status in tb_de_nghi_thanhtoan_dv table
+            // Get all disbursement codes associated with this payment request
+            $disbursementCodes = DB::table('Logs_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->whereNotNull('ma_de_nghi_giai_ngan')
+                ->distinct()
+                ->pluck('ma_de_nghi_giai_ngan')
+                ->toArray();
+                
+            // Update status for all related disbursement requests
+            if (!empty($disbursementCodes)) {
+                $disbursementUpdateData = [
+                    'trang_thai_thanh_toan' => $validated['status']
+                ];
+                
+                // If status is paid, update payment date as well
+                if ($validated['status'] === 'paid' && isset($validated['payment_date'])) {
+                    $disbursementUpdateData['ngay_thanh_toan'] = $validated['payment_date'];
+                }
+                
+                DB::table('tb_de_nghi_thanhtoan_dv')
+                    ->whereIn('ma_giai_ngan', $disbursementCodes)
+                    ->update($disbursementUpdateData);
+            }
+            
             // อัปเดตข้อมูลทางการเงินสำหรับเอกสารการจ่ายเงินทั้งหมด
             // โดยส่งข้อมูลไปยัง API endpoint ของ PhieudenghithanhtoandvControllers
             $financialData = [
@@ -855,6 +880,35 @@ public function createPaymentRequest(Request $request)
                 DB::table('tb_phieu_trinh_thanh_toan')
                     ->where('ma_trinh_thanh_toan', $id)
                     ->update($updateData);
+                
+                // NEW CODE: Update the status and other fields in tb_de_nghi_thanhtoan_dv
+                // Get all disbursement codes associated with this payment request
+                $disbursementCodes = DB::table('Logs_phieu_trinh_thanh_toan')
+                    ->where('ma_trinh_thanh_toan', $id)
+                    ->whereNotNull('ma_de_nghi_giai_ngan')
+                    ->distinct()
+                    ->pluck('ma_de_nghi_giai_ngan')
+                    ->toArray();
+                    
+                // Create update data for disbursement records
+                $disbursementUpdateData = [];
+                
+                // Add payment date if available
+                if (isset($validated['ngay_thanh_toan'])) {
+                    $disbursementUpdateData['ngay_thanh_toan'] = $validated['ngay_thanh_toan'];
+                }
+                
+                // Transfer current status from parent request
+                if (!empty($paymentRequest->trang_thai_thanh_toan)) {
+                    $disbursementUpdateData['trang_thai_thanh_toan'] = $paymentRequest->trang_thai_thanh_toan;
+                }
+                
+                // Update disbursement records if we have data
+                if (!empty($disbursementUpdateData) && !empty($disbursementCodes)) {
+                    DB::table('tb_de_nghi_thanhtoan_dv')
+                        ->whereIn('ma_giai_ngan', $disbursementCodes)
+                        ->update($disbursementUpdateData);
+                }
                 
                 // Prepare financial data for disbursement requests
                 $financialData = [

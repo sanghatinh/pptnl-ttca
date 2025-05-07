@@ -1429,8 +1429,8 @@ export default {
                 this.isLoading = true;
                 // Navigate to detail page
                 this.$router.push({
-                    name: "details-phieu-de-nghi-thanh-toan",
-                    params: { id: item.id },
+                    name: "Details_Phieudenghithanhtoandichvu",
+                    params: { id: item.ma_giai_ngan },
                 });
             } catch (error) {
                 console.error("Error navigating to details:", error);

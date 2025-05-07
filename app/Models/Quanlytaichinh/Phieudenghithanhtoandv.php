@@ -64,7 +64,9 @@ class Phieudenghithanhtoandv extends Model
         'tong_tien_khau_tru',
         'tong_tien_lai_suat',
         'tong_tien_thanh_toan_con_lai',
-        'ngay_thanh_toan'
+        'ngay_thanh_toan',
+        'trang_thai_thanh_toan',
+        'comment'
 
 
 

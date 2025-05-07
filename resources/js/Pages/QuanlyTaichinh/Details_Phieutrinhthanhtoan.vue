@@ -7202,8 +7202,6 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         #1e88e5 66%,
         #e9ecef 66%
     );
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1),
-        0 0 6px rgba(30, 136, 229, 0.3);
 }
 
 .progress-tracker.paid::before {
@@ -7214,8 +7212,6 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         #1e88e5 66%,
         #198754 66%
     );
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1),
-        0 0 8px rgba(25, 135, 84, 0.35);
 }
 
 .progress-tracker.cancelled::before {
@@ -7225,8 +7221,6 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         #dc3545 33%,
         #dc3545 100%
     );
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1),
-        0 0 8px rgba(220, 53, 69, 0.35);
 }
 /* Timeline Styles */
 .timeline-container {
