@@ -1,10 +1,10 @@
 <template lang="">
-    <breadcrumb-vue />
-
-    <div class="text-center py-5" v-if="showTimeline">
-        <div class="card">
+    <breadcrumb-vue v-if="!showTimeline" />
+    <!-- Timeline View (this will replace the main content when active) -->
+    <div class="text-center py-3" v-if="showTimeline">
+        <div class="card timeline-card">
             <div
-                class="card-header d-flex justify-content-between align-items-center bg-light"
+                class="card-header timeline-header d-flex justify-content-between align-items-center bg-light"
             >
                 <h5 class="card-title mb-0">
                     <i class="fas fa-history me-2 text-primary"></i>
@@ -18,210 +18,259 @@
                     <span class="ms-1">Đóng</span>
                 </button>
             </div>
-            <div class="card-body p-4">
-                <div class="timeline-container">
-                    <!-- Processing Stage -->
-                    <div class="timeline-item appear" v-if="processingAction">
-                        <div class="timeline-badge bg-primary">
-                            <i class="fas fa-spinner"></i>
-                        </div>
-                        <div class="timeline-content">
-                            <h5 class="timeline-title">
-                                <span class="badge bg-primary">Đang xử lý</span>
-                            </h5>
-                            <p class="mb-1">
-                                <i class="far fa-calendar me-2"></i>
-                                <span class="fw-medium">{{
-                                    formatDate(processingAction.created_at)
-                                }}</span>
-                            </p>
-                            <p class="mb-1">
-                                <i class="far fa-user me-2"></i>
-                                <span class="fw-medium">{{
-                                    getUserName(processingAction.action_by)
-                                }}</span>
-                            </p>
+            <div class="card-body p-0">
+                <PerfectScrollbar
+                    class="timeline-scrollarea"
+                    :options="{
+                        wheelSpeed: 1,
+                        wheelPropagation: false,
+                        minScrollbarLength: 20,
+                        suppressScrollX: true,
+                    }"
+                >
+                    <div class="timeline-body p-4">
+                        <div class="timeline-container">
+                            <!-- Processing Stage -->
                             <div
-                                class="timeline-note"
-                                v-if="processingAction.comments"
+                                class="timeline-item appear"
+                                v-if="processingAction"
                             >
-                                <i class="far fa-comment me-2"></i>
-                                <span>{{ processingAction.comments }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Submitted Stage -->
-                    <div class="timeline-item appear" v-if="submittedAction">
-                        <div class="timeline-badge bg-info">
-                            <i class="fas fa-paper-plane"></i>
-                        </div>
-                        <div class="timeline-content">
-                            <h5 class="timeline-title">
-                                <span class="badge bg-info"
-                                    >Đã nộp kế toán</span
-                                >
-                            </h5>
-                            <p class="mb-1">
-                                <i class="far fa-calendar me-2"></i>
-                                <span class="fw-medium">{{
-                                    formatDate(submittedAction.created_at)
-                                }}</span>
-                            </p>
-                            <p class="mb-1">
-                                <i class="far fa-user me-2"></i>
-                                <span class="fw-medium">{{
-                                    getUserName(submittedAction.action_by)
-                                }}</span>
-                            </p>
-                            <p
-                                class="mb-1"
-                                v-if="
-                                    daysBetweenProcessingAndSubmitted !== null
-                                "
-                            >
-                                <i class="far fa-clock me-2"></i>
-                                <span
-                                    >{{
-                                        daysBetweenProcessingAndSubmitted
-                                    }}
-                                    ngày từ khi xử lý</span
-                                >
-                            </p>
-                            <div
-                                class="timeline-note"
-                                v-if="submittedAction.comments"
-                            >
-                                <i class="far fa-comment me-2"></i>
-                                <span>{{ submittedAction.comments }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Paid Stage -->
-                    <div class="timeline-item appear" v-if="paidAction">
-                        <div class="timeline-badge bg-success">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="timeline-content">
-                            <h5 class="timeline-title">
-                                <span class="badge bg-success"
-                                    >Đã thanh toán</span
-                                >
-                            </h5>
-                            <p class="mb-1">
-                                <i class="far fa-calendar me-2"></i>
-                                <span class="fw-medium">
-                                    {{
-                                        formatDate(
-                                            document.ngay_thanh_toan ||
-                                                paidAction.created_at
-                                        )
-                                    }}
-                                    <span
-                                        v-if="document.ngay_thanh_toan"
-                                        class="badge bg-light text-dark ms-2"
+                                <div class="timeline-badge bg-primary">
+                                    <i class="fas fa-spinner"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h5 class="timeline-title">
+                                        <span class="badge bg-primary"
+                                            >Đang xử lý</span
+                                        >
+                                    </h5>
+                                    <p class="mb-1">
+                                        <i class="far fa-calendar me-2"></i>
+                                        <span class="fw-medium">{{
+                                            formatDate(
+                                                processingAction.created_at
+                                            )
+                                        }}</span>
+                                    </p>
+                                    <p class="mb-1">
+                                        <i class="far fa-user me-2"></i>
+                                        <span class="fw-medium">{{
+                                            getUserName(
+                                                processingAction.action_by
+                                            )
+                                        }}</span>
+                                    </p>
+                                    <div
+                                        class="timeline-note"
+                                        v-if="processingAction.comments"
                                     >
-                                    </span>
-                                </span>
-                            </p>
-                            <p
-                                class="mb-1"
-                                v-if="
-                                    document.ngay_thanh_toan &&
-                                    document.ngay_thanh_toan !==
-                                        formatDate(paidAction.created_at)
-                                "
+                                        <i class="far fa-comment me-2"></i>
+                                        <span>{{
+                                            processingAction.comments
+                                        }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Submitted Stage -->
+                            <div
+                                class="timeline-item appear"
+                                v-if="submittedAction"
                             >
-                                <i class="fas fa-history me-2 text-muted"></i>
-                                <span class="text-muted"
-                                    >Ngày chuyển trạng thái:
-                                    {{
-                                        formatDate(paidAction.created_at)
-                                    }}</span
-                                >
-                            </p>
-                            <p class="mb-1">
-                                <i class="far fa-user me-2"></i>
-                                <span class="fw-medium">{{
-                                    getUserName(paidAction.action_by)
-                                }}</span>
-                            </p>
-                            <p
-                                class="mb-1"
-                                v-if="daysBetweenSubmittedAndPaid !== null"
-                            >
-                                <i class="far fa-clock me-2"></i>
-                                <span>
-                                    {{ daysBetweenSubmittedAndPaid }} ngày sau
-                                    khi nộp kế toán
-                                    <span
-                                        v-if="document.ngay_thanh_toan"
-                                        class="badge bg-light text-dark ms-2"
+                                <div class="timeline-badge bg-info">
+                                    <i class="fas fa-paper-plane"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h5 class="timeline-title">
+                                        <span class="badge bg-info"
+                                            >Đã nộp kế toán</span
+                                        >
+                                    </h5>
+                                    <p class="mb-1">
+                                        <i class="far fa-calendar me-2"></i>
+                                        <span class="fw-medium">{{
+                                            formatDate(
+                                                submittedAction.created_at
+                                            )
+                                        }}</span>
+                                    </p>
+                                    <p class="mb-1">
+                                        <i class="far fa-user me-2"></i>
+                                        <span class="fw-medium">{{
+                                            getUserName(
+                                                submittedAction.action_by
+                                            )
+                                        }}</span>
+                                    </p>
+                                    <p
+                                        class="mb-1"
+                                        v-if="
+                                            daysBetweenProcessingAndSubmitted !==
+                                            null
+                                        "
                                     >
-                                    </span>
-                                </span>
-                            </p>
+                                        <i class="far fa-clock me-2"></i>
+                                        <span
+                                            >{{
+                                                daysBetweenProcessingAndSubmitted
+                                            }}
+                                            ngày sau khi xử lý</span
+                                        >
+                                    </p>
+                                    <div
+                                        class="timeline-note"
+                                        v-if="submittedAction.comments"
+                                    >
+                                        <i class="far fa-comment me-2"></i>
+                                        <span>{{
+                                            submittedAction.comments
+                                        }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Paid Stage -->
+                            <div class="timeline-item appear" v-if="paidAction">
+                                <div class="timeline-badge bg-success">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h5 class="timeline-title">
+                                        <span class="badge bg-success"
+                                            >Đã thanh toán</span
+                                        >
+                                    </h5>
+                                    <p class="mb-1">
+                                        <i class="far fa-calendar me-2"></i>
+                                        <span class="fw-medium">
+                                            {{
+                                                formatDate(
+                                                    document.ngay_thanh_toan ||
+                                                        paidAction.created_at
+                                                )
+                                            }}
+                                            <span
+                                                v-if="document.payment_date"
+                                                class="badge bg-light text-dark ms-2"
+                                            ></span>
+                                        </span>
+                                    </p>
+                                    <p
+                                        class="mb-1"
+                                        v-if="
+                                            document.ngay_thanh_toan &&
+                                            document.ngay_thanh_toan !==
+                                                formatDate(
+                                                    paidAction.created_at
+                                                )
+                                        "
+                                    >
+                                        <i
+                                            class="fas fa-history me-2 text-muted"
+                                        ></i>
+                                        <span class="text-muted"
+                                            >Ngày chuyển trạng thái:
+                                            {{
+                                                formatDate(
+                                                    paidAction.created_at
+                                                )
+                                            }}</span
+                                        >
+                                    </p>
+                                    <p class="mb-1">
+                                        <i class="far fa-user me-2"></i>
+                                        <span class="fw-medium">{{
+                                            getUserName(paidAction.action_by)
+                                        }}</span>
+                                    </p>
+                                    <p
+                                        class="mb-1"
+                                        v-if="
+                                            daysBetweenSubmittedAndPaid !== null
+                                        "
+                                    >
+                                        <i class="far fa-clock me-2"></i>
+                                        <span>
+                                            {{ daysBetweenSubmittedAndPaid }}
+                                            ngày sau khi nộp kế toán
+                                            <span
+                                                v-if="document.ngay_thanh_toan"
+                                                class="badge bg-light text-dark ms-2"
+                                            ></span>
+                                        </span>
+                                    </p>
+                                    <div
+                                        class="timeline-note"
+                                        v-if="paidAction.comments"
+                                    >
+                                        <i class="far fa-comment me-2"></i>
+                                        <span>{{ paidAction.comments }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cancelled Stage (if applicable) -->
                             <div
-                                class="timeline-note"
-                                v-if="paidAction.comments"
+                                class="timeline-item appear"
+                                v-if="cancelledAction"
                             >
-                                <i class="far fa-comment me-2"></i>
-                                <span>{{ paidAction.comments }}</span>
+                                <div class="timeline-badge bg-danger">
+                                    <i class="fas fa-times-circle"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h5 class="timeline-title">
+                                        <span class="badge bg-danger"
+                                            >Đã hủy</span
+                                        >
+                                    </h5>
+                                    <p class="mb-1">
+                                        <i class="far fa-calendar me-2"></i>
+                                        <span class="fw-medium">{{
+                                            formatDate(
+                                                cancelledAction.created_at
+                                            )
+                                        }}</span>
+                                    </p>
+                                    <p class="mb-1">
+                                        <i class="far fa-user me-2"></i>
+                                        <span class="fw-medium">{{
+                                            getUserName(
+                                                cancelledAction.action_by
+                                            )
+                                        }}</span>
+                                    </p>
+                                    <div
+                                        class="timeline-note"
+                                        v-if="cancelledAction.note"
+                                    >
+                                        <i class="far fa-comment me-2"></i>
+                                        <span>{{ cancelledAction.note }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Empty state if no timeline data -->
+                            <div
+                                class="empty-timeline text-center py-0"
+                                v-if="!processingAction"
+                            >
+                                <i
+                                    class="fas fa-calendar-times fa-4x text-muted mb-3 opacity-50"
+                                ></i>
+                                <p class="lead text-muted">
+                                    Không tìm thấy dữ liệu lịch sử
+                                </p>
+                                <button
+                                    class="btn btn-outline-secondary mt-3"
+                                    @click="toggleTimelineView"
+                                >
+                                    <i class="fas fa-arrow-left me-2"></i> Quay
+                                    lại
+                                </button>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Cancelled/Rejected Stage -->
-                    <div class="timeline-item appear" v-if="cancelledAction">
-                        <div class="timeline-badge bg-danger">
-                            <i class="fas fa-times-circle"></i>
-                        </div>
-                        <div class="timeline-content">
-                            <h5 class="timeline-title">
-                                <span class="badge bg-danger">Từ chối</span>
-                            </h5>
-                            <p class="mb-1">
-                                <i class="far fa-calendar me-2"></i>
-                                <span class="fw-medium">{{
-                                    formatDate(cancelledAction.created_at)
-                                }}</span>
-                            </p>
-                            <p class="mb-1">
-                                <i class="far fa-user me-2"></i>
-                                <span class="fw-medium">{{
-                                    getUserName(cancelledAction.action_by)
-                                }}</span>
-                            </p>
-                            <div
-                                class="timeline-note"
-                                v-if="cancelledAction.comments"
-                            >
-                                <i class="far fa-comment me-2"></i>
-                                <span>{{ cancelledAction.comments }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Empty state if no timeline data -->
-                    <div
-                        class="empty-timeline text-center py-5"
-                        v-if="!processingAction"
-                    >
-                        <i
-                            class="fas fa-calendar-times fa-4x text-muted mb-3 opacity-50"
-                        ></i>
-                        <p class="lead text-muted">
-                            Không tìm thấy dữ liệu lịch sử
-                        </p>
-                        <button
-                            class="btn btn-outline-secondary mt-3"
-                            @click="toggleTimelineView"
-                        >
-                            <i class="fas fa-arrow-left me-2"></i> Quay lại
-                        </button>
-                    </div>
-                </div>
+                </PerfectScrollbar>
             </div>
         </div>
     </div>
@@ -241,7 +290,31 @@
                     <!-- Add container with padding -->
                     <div class="container-fluid px-4">
                         <div class="button-container">
-                            <div class="row align-items-center mb-2"></div>
+                            <div class="row align-items-center mb-2">
+                                <div class="action-button-group">
+                                    <button
+                                        type="button"
+                                        class="button-30"
+                                        @click="UpdateDocument"
+                                        v-if="isEditing"
+                                    >
+                                        <i class="bx bxs-save"></i>
+                                        <span>Lưu</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="button-30-yellow"
+                                        @click="toggleEditing"
+                                    >
+                                        <i
+                                            class="fa-solid fa-pen-to-square"
+                                        ></i>
+                                        <span>{{
+                                            isEditing ? "Hủy" : "Điều chỉnh"
+                                        }}</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <!-- progress-tracker-container -->
                         <div class="progress-container mt-4">
@@ -1862,6 +1935,12 @@ export default {
 </script>
 <style scoped>
 /* Fixed progress container */
+/* Action buttons */
+.action-button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
 .sticky-wrapper {
     position: sticky;
     top: 0px;
@@ -2633,5 +2712,337 @@ export default {
     100% {
         opacity: 1;
     }
+}
+
+/* Timeline Card Enhancements */
+.timeline-card {
+    display: flex;
+    flex-direction: column;
+    height: 90vh;
+    max-height: 800px;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 1000px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    border: none;
+}
+
+.timeline-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(to right, #f8f9fa, #ffffff);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+}
+
+.timeline-scrollarea {
+    height: calc(90vh - 60px);
+    max-height: 740px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Enhanced Timeline Container Styles */
+.timeline-body {
+    padding: 1.5rem !important;
+}
+
+.timeline-container {
+    position: relative;
+    padding: 1rem 0.5rem;
+}
+
+.timeline-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 24px;
+    width: 4px;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.05) 0%,
+        #007bff 20%,
+        #17a2b8 50%,
+        #28a745 80%,
+        rgba(0, 0, 0, 0.05) 100%
+    );
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Timeline Adjustments */
+@media (max-width: 767px) {
+    .timeline-card {
+        height: 80vh;
+        max-height: none;
+        margin: 0.5rem;
+        border-radius: 8px;
+    }
+
+    .timeline-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .timeline-scrollarea {
+        height: calc(80vh - 60px);
+    }
+
+    .timeline-container::before {
+        left: 20px;
+    }
+
+    .timeline-badge {
+        width: 40px;
+        height: 40px;
+        left: 0;
+    }
+
+    .timeline-content {
+        padding: 1rem;
+        margin-left: 15px;
+    }
+
+    .timeline-item {
+        padding-left: 35px;
+    }
+}
+
+/* Tablet Optimization */
+@media (min-width: 768px) and (max-width: 991px) {
+    .timeline-card {
+        width: 90%;
+        max-width: 700px;
+    }
+}
+
+/* Desktop Enhancement */
+@media (min-width: 992px) {
+    .timeline-container::before {
+        left: 50%;
+        margin-left: -2px;
+    }
+
+    .timeline-item {
+        width: 50%;
+        animation: none;
+        padding-left: 0;
+        margin-bottom: 3rem;
+    }
+
+    .timeline-item:nth-child(odd) {
+        margin-right: 50%;
+        padding-right: 45px;
+        text-align: right;
+    }
+
+    .timeline-item:nth-child(even) {
+        margin-left: 50%;
+        padding-left: 45px;
+    }
+
+    .timeline-badge {
+        left: 50%;
+        margin-left: -23px;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-content {
+        border-left: none;
+        border-right: 5px solid transparent;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-content::before {
+        left: auto;
+        right: -13px;
+        transform: rotate(180deg);
+        border-right: none;
+        border-left: 8px solid #fff;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-note {
+        border-left: none;
+        border-right: 4px solid #dee2e6;
+        text-align: right;
+    }
+
+    .timeline-item:nth-child(odd) p {
+        text-align: right;
+    }
+
+    .timeline-item:nth-child(odd) p i,
+    .timeline-item:nth-child(odd) .timeline-note i {
+        margin-right: 0;
+        margin-left: 0.5rem;
+        float: right;
+    }
+}
+
+/* Improved Animation */
+.timeline-badge {
+    box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.5),
+        0 5px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.timeline-item:hover .timeline-badge {
+    transform: scale(1.1) rotate(10deg);
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.5),
+        0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.timeline-content {
+    margin-top: 10px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.timeline-content:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Status-specific styling */
+.timeline-item:nth-child(1) .timeline-content {
+    border-left: 5px solid #007bff;
+}
+
+.timeline-item:nth-child(2) .timeline-content {
+    border-left: 5px solid #17a2b8;
+}
+
+.timeline-item:nth-child(3) .timeline-content {
+    border-left: 5px solid #28a745;
+}
+
+.timeline-item:nth-child(4) .timeline-content {
+    border-left: 5px solid #dc3545;
+}
+
+/* Enhanced animation for timeline items */
+@keyframes slide-in-left {
+    from {
+        transform: translateX(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slide-in-right {
+    from {
+        transform: translateX(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@media (min-width: 992px) {
+    .timeline-item:nth-child(odd).appear {
+        animation: slide-in-left 0.6s ease forwards;
+    }
+
+    .timeline-item:nth-child(even).appear {
+        animation: slide-in-right 0.6s ease forwards;
+    }
+
+    .timeline-item:nth-child(1) {
+        animation-delay: 0.1s !important;
+    }
+
+    .timeline-item:nth-child(2) {
+        animation-delay: 0.3s !important;
+    }
+
+    .timeline-item:nth-child(3) {
+        animation-delay: 0.5s !important;
+    }
+
+    .timeline-item:nth-child(4) {
+        animation-delay: 0.7s !important;
+    }
+}
+
+/* Mobile Scroll Indicators */
+@media (max-width: 991px) {
+    .timeline-scrollarea::after {
+        content: "";
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 30px;
+        background: linear-gradient(
+            to top,
+            rgba(255, 255, 255, 1) 0%,
+            rgba(255, 255, 255, 0) 100%
+        );
+        pointer-events: none;
+    }
+}
+
+/* Badge Enhancements */
+.timeline-badge i {
+    font-size: 1.25rem;
+    transform: scale(1);
+    transition: transform 0.3s ease;
+}
+
+.timeline-item:hover .timeline-badge i {
+    transform: scale(1.2);
+}
+
+/* Timeline Note Styling */
+.timeline-note {
+    position: relative;
+    background: rgba(248, 249, 250, 0.7);
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #dee2e6;
+    font-style: italic;
+    color: #495057;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s ease;
+}
+
+.timeline-note:hover {
+    background: rgba(248, 249, 250, 0.9);
+    border-left: 4px solid #007bff;
+}
+
+/* Empty Timeline Animation */
+@keyframes pulse-glow {
+    0% {
+        opacity: 0.7;
+        text-shadow: 0 0 5px rgba(108, 117, 125, 0.3);
+    }
+    50% {
+        opacity: 1;
+        text-shadow: 0 0 20px rgba(108, 117, 125, 0.5);
+    }
+    100% {
+        opacity: 0.7;
+        text-shadow: 0 0 5px rgba(108, 117, 125, 0.3);
+    }
+}
+
+.empty-timeline {
+    animation: pulse-glow 2s infinite;
+}
+
+.empty-timeline i {
+    filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1));
 }
 </style>
