@@ -54,8 +54,8 @@
     background-color: #01902d;
     border-radius: 4px;
     border-width: 0;
-    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #01902d 0 -3px 0 inset;
+    box-shadow: rgba(45, 35, 66, 0.3) 0 2px 4px,
+        rgba(45, 35, 66, 0.2) 0 7px 13px -3px, #27ae60 0 -3px 0 inset;
     box-sizing: border-box;
     color: #fff;
     cursor: pointer;
@@ -81,18 +81,18 @@
 }
 
 .button-30-save:focus {
-    box-shadow: #01902d 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #01902d 0 -3px 0 inset;
+    box-shadow: #27ae60 0 0 0 1.5px inset, rgba(45, 35, 66, 0.3) 0 2px 4px,
+        rgba(45, 35, 66, 0.2) 0 7px 13px -3px, #27ae60 0 -3px 0 inset;
 }
 
 .button-30-save:hover {
-    box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #01902d 0 -3px 0 inset;
+    box-shadow: rgba(45, 35, 66, 0.3) 0 4px 8px,
+        rgba(45, 35, 66, 0.2) 0 7px 13px -3px, #27ae60 0 -3px 0 inset;
     transform: translateY(-2px);
 }
 
 .button-30-save:active {
-    box-shadow: #d6d6e7 0 3px 7px inset;
+    box-shadow: rgba(1, 144, 45, 0.5) 0 3px 7px inset;
     transform: translateY(2px);
 }
 
@@ -294,4 +294,56 @@
     box-shadow: #e6b800 0 3px 7px inset;
     transform: translateY(2px);
     background-color: #ffc107; /* Even darker when active */
+}
+
+/* CSS blue button */
+.button-30-blue {
+    align-items: center;
+    appearance: none;
+    background-color: #1e88e5; /* Blue color */
+    border-radius: 4px;
+    border-width: 0;
+    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
+        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #1565c0 0 -3px 0 inset;
+    box-sizing: border-box;
+    color: #ffffff; /* White text for contrast */
+    cursor: pointer;
+    display: inline-flex;
+    font-family: "Be Vietnam Pro", serif;
+    height: 35px;
+    justify-content: center;
+    line-height: 1;
+    list-style: none;
+    overflow: hidden;
+    padding-left: 16px;
+    padding-right: 16px;
+    position: relative;
+    text-align: left;
+    text-decoration: none;
+    transition: box-shadow 0.15s, transform 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    white-space: nowrap;
+    will-change: box-shadow, transform;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.button-30-blue:focus {
+    box-shadow: #1565c0 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px,
+        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #1565c0 0 -3px 0 inset;
+}
+
+.button-30-blue:hover {
+    box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px,
+        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #1565c0 0 -3px 0 inset;
+    transform: translateY(-2px);
+    background-color: #1976d2; /* Slightly darker on hover */
+}
+
+.button-30-blue:active {
+    box-shadow: #1565c0 0 3px 7px inset;
+    transform: translateY(2px);
+    background-color: #1565c0; /* Less dark blue when active */
 }

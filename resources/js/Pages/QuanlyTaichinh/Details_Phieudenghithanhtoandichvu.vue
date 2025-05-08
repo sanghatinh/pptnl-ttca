@@ -432,6 +432,7 @@
                                                 type="text"
                                                 class="form-control"
                                                 id="maGiaiNgan"
+                                                v-model="document.ma_giai_ngan"
                                                 disabled
                                             />
                                         </div>
@@ -733,10 +734,13 @@
                                                 Ngày thanh toán
                                             </label>
                                             <input
-                                                type="text"
+                                                type="date"
                                                 class="form-control"
                                                 id="ngayThanhToan"
-                                                disabled
+                                                v-model="
+                                                    editableDocument.ngay_thanh_toan
+                                                "
+                                                :disabled="!isEditing"
                                             />
                                         </div>
                                     </div>
@@ -788,15 +792,25 @@
                                                 Ghi chú
                                             </label>
                                             <div class="note-container">
+                                                <textarea
+                                                    v-if="isEditing"
+                                                    class="form-control"
+                                                    id="ghiChu"
+                                                    rows="3"
+                                                    v-model="
+                                                        editableDocument.comment
+                                                    "
+                                                ></textarea>
                                                 <div
+                                                    v-else
                                                     class="note-content"
                                                     id="ghiChu"
                                                 >
                                                     <p
-                                                        v-if="document.ghi_chu"
+                                                        v-if="document.comment"
                                                         class="mb-0"
                                                     >
-                                                        {{ document.ghi_chu }}
+                                                        {{ document.comment }}
                                                     </p>
                                                     <p
                                                         v-else
@@ -882,7 +896,12 @@
                                                     {{ index + 1 }}
                                                 </td>
                                                 <td>
-                                                    {{ item.ma_nghiem_thu }}
+                                                    <router-link
+                                                        :to="`/Details_NghiemthuDV/${item.ma_nghiem_thu}`"
+                                                        class="receipt-link"
+                                                    >
+                                                        {{ item.ma_nghiem_thu }}
+                                                    </router-link>
                                                 </td>
                                                 <td>{{ item.tram }}</td>
                                                 <td>{{ item.vu_dau_tu }}</td>
@@ -1039,7 +1058,12 @@
                                                     {{ index + 1 }}
                                                 </td>
                                                 <td>
-                                                    {{ item.ma_nghiem_thu }}
+                                                    <router-link
+                                                        :to="`/Details_NghiemthuDV/${item.ma_nghiem_thu}`"
+                                                        class="receipt-link"
+                                                    >
+                                                        {{ item.ma_nghiem_thu }}
+                                                    </router-link>
                                                 </td>
                                                 <td>{{ item.tram }}</td>
                                                 <td>{{ item.dich_vu }}</td>
@@ -1309,7 +1333,7 @@ export default {
                 attachment_url: "", // Add this line
                 so_to_trinh: "", // Add this line
                 so_dot_thanh_toan: "", // Add this line
-                ghi_chu: "",
+                comment: "",
             },
             bienbans: [], // Array to hold nghiệm thu dịch vụ data
             totals: {
@@ -1333,6 +1357,12 @@ export default {
             showTimeline: false,
             users: {}, // Store user data by ID
             paymentRequestCode: null, // Store the parent payment request code
+            isEditing: false,
+            editableDocument: {
+                ma_giai_ngan: "",
+                ngay_thanh_toan: "",
+                comment: "",
+            },
             isLoading: false,
             showDetails: true,
         };
@@ -1542,6 +1572,8 @@ export default {
             }
         },
         fetchDocument() {
+            // Reset edit state
+            this.isEditing = false;
             const id = this.$route.params.id;
             if (!id) {
                 this.showError("Không tìm thấy mã phiếu đề nghị thanh toán");
@@ -1549,6 +1581,7 @@ export default {
             }
 
             this.isLoading = true;
+
             axios
                 .get(`/api/payment-requests-dichvu/${id}`, {
                     headers: {
@@ -1595,7 +1628,20 @@ export default {
                                 response.data.document.so_to_trinh || "",
                             so_dot_thanh_toan:
                                 response.data.document.so_dot_thanh_toan || "",
-                            ghi_chu: response.data.document.ghi_chu || "",
+                            comment: response.data.document.comment || "",
+                        };
+                        // แปลงวันที่ให้อยู่ในรูปแบบที่ถูกต้องสำหรับ input type="date"
+                        const formattedDate = this.formatDateForInput(
+                            this.document.ngay_thanh_toan
+                        );
+
+                        // เตรียมข้อมูลสำหรับการแก้ไขทันที
+                        this.editableDocument = {
+                            ma_giai_ngan: this.document.ma_giai_ngan || "",
+                            ngay_thanh_toan: this.formatDateForInput(
+                                this.document.ngay_thanh_toan
+                            ),
+                            comment: this.document.comment || "",
                         };
 
                         // Update form fields with document data
@@ -1730,10 +1776,10 @@ export default {
                         ) {
                             this.document.trang_thai_thanh_toan =
                                 latestAction.action;
-                            console.log(
-                                "Document status updated to:",
-                                this.document.trang_thai_thanh_toan
-                            );
+                            // console.log(
+                            //     "Document status updated to:",
+                            //     this.document.trang_thai_thanh_toan
+                            // );
                             this.$forceUpdate();
                         }
                     }
@@ -1780,9 +1826,19 @@ export default {
                 this.document.so_to_trinh;
             document.getElementById("soDotThanhToan").value =
                 this.document.so_dot_thanh_toan;
-            document.getElementById("ngayThanhToan").value = this.formatDate(
-                this.document.ngay_thanh_toan
-            );
+            // Use the formatDateForInput method for date fields instead of formatDate
+
+            if (this.document.ngay_thanh_toan) {
+                const formattedDate = this.formatDateForInput(
+                    this.document.ngay_thanh_toan
+                );
+                document.getElementById("ngayThanhToan").value = formattedDate;
+                // อัพเดท editableDocument ด้วย
+                this.editableDocument.ngay_thanh_toan = formattedDate;
+            } else {
+                document.getElementById("ngayThanhToan").value = "";
+                this.editableDocument.ngay_thanh_toan = "";
+            }
 
             document.getElementById("tongTien").value = this.formatCurrency(
                 this.document.tong_tien
@@ -1876,6 +1932,150 @@ export default {
             }
         },
 
+        // Add these new methods for editing functionality
+        toggleEditing() {
+            if (this.isEditing) {
+                // Cancel editing - reset values
+                this.cancelEdit();
+            } else {
+                // Enter edit mode - copy values
+                this.startEdit();
+            }
+            this.isEditing = !this.isEditing;
+        },
+
+        startEdit() {
+            // Copy values from document to editable document
+            this.editableDocument = {
+                ma_giai_ngan: this.document.ma_giai_ngan || "",
+                ngay_thanh_toan: this.document.ngay_thanh_toan
+                    ? this.formatDateForInput(this.document.ngay_thanh_toan)
+                    : "",
+                comment: this.document.comment || "", // แก้ไขจาก comment เป็น comment
+            };
+        },
+
+        cancelEdit() {
+            // Reset editable document
+            this.editableDocument = {
+                ma_giai_ngan: "",
+                ngay_thanh_toan: "",
+                comment: "",
+            };
+        },
+        formatDateForInput(dateString) {
+            if (!dateString) return "";
+
+            try {
+                // กรณีที่วันที่อยู่ในรูปแบบ yyyy-MM-dd แล้ว
+                if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    return dateString;
+                }
+
+                // กรณีวันที่อยู่ในรูปแบบ dd/MM/yyyy
+                if (dateString.includes("/")) {
+                    const parts = dateString.split("/");
+                    if (parts.length === 3) {
+                        const day = parts[0].padStart(2, "0");
+                        const month = parts[1].padStart(2, "0");
+                        const year = parts[2];
+                        return `${year}-${month}-${day}`;
+                    }
+                }
+
+                // กรณีวันที่อยู่ในรูปแบบ Date object หรือ ISO string
+                const date = new Date(dateString);
+                if (!isNaN(date.getTime())) {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, "0");
+                    const day = String(date.getDate()).padStart(2, "0");
+                    return `${year}-${month}-${day}`;
+                }
+
+                return "";
+            } catch (e) {
+                console.error(
+                    "Error formatting date:",
+                    e,
+                    "for value:",
+                    dateString
+                );
+                return "";
+            }
+        },
+        // Add update method
+        // แก้ไขใน method UpdateDocument
+        UpdateDocument() {
+            const id = this.$route.params.id;
+            if (!id) {
+                this.showError("Không tìm thấy mã phiếu đề nghị thanh toán");
+                return;
+            }
+
+            // Prepare data for update
+            const updateData = {
+                comment: this.editableDocument.comment, // แก้ไขจาก comment เป็น comment
+            };
+
+            // เพิ่มวันที่เฉพาะเมื่อมีการกรอกข้อมูล
+            if (this.editableDocument.ngay_thanh_toan) {
+                updateData.ngay_thanh_toan =
+                    this.editableDocument.ngay_thanh_toan;
+            }
+
+            // Show loading indicator
+            this.isLoading = true;
+
+            // Call API to update document
+            axios
+                .put(`/api/payment-requests-dichvu/${id}/update`, updateData, {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                })
+                .then((response) => {
+                    if (response.data.success) {
+                        // Update local document
+                        this.document.ma_giai_ngan = updateData.ma_giai_ngan;
+                        if (updateData.ngay_thanh_toan) {
+                            this.document.ngay_thanh_toan =
+                                updateData.ngay_thanh_toan;
+                        }
+                        this.document.comment = updateData.comment; // แก้ไขจาก comment เป็น comment
+
+                        // Exit edit mode
+                        this.isEditing = false;
+
+                        // Update form fields
+                        this.updateFormFields();
+
+                        // Show success message
+                        this.showSuccess("Cập nhật thành công");
+
+                        // Refresh document data
+                        this.fetchDocument();
+                    } else {
+                        this.showError(
+                            response.data.message ||
+                                "Không thể cập nhật dữ liệu"
+                        );
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error updating document:", error);
+                    this.showError(
+                        "Lỗi khi cập nhật thông tin: " +
+                            (error.response?.data?.message || error.message)
+                    );
+
+                    if (error.response?.status === 401) {
+                        this.handleAuthError();
+                    }
+                })
+                .finally(() => {
+                    this.isLoading = false;
+                });
+        },
         // Get user name by ID
         getUserName(userId) {
             if (!userId) return "N/A";
@@ -1934,7 +2134,18 @@ export default {
 };
 </script>
 <style scoped>
-/* Fixed progress container */
+/* Action button clik link go to nghiem thu dv */
+.receipt-link {
+    color: #0d6efd;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.receipt-link:hover {
+    color: #0a58ca;
+    text-decoration: underline;
+}
 /* Action buttons */
 .action-button-group {
     display: flex;

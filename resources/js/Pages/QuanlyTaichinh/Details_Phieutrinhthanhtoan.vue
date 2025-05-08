@@ -302,7 +302,7 @@
                                 <!-- ปุ่มนำส่งฝ่ายบัญชี (แสดงเฉพาะเมื่อสถานะเป็น 'processing') -->
                                 <button
                                     v-if="document.status === 'processing'"
-                                    class="button-30-text-green"
+                                    class="button-30-blue"
                                     @click="
                                         confirmUpdateStatus(
                                             'submitted',
@@ -319,7 +319,7 @@
                                 <button
                                     v-if="document.status === 'submitted'"
                                     type="button"
-                                    class="button-30"
+                                    class="button-30-yellow"
                                     @click="
                                         confirmUpdateStatus(
                                             'processing',
@@ -336,7 +336,7 @@
                                 <button
                                     v-if="document.status === 'submitted'"
                                     type="button"
-                                    class="button-30-text-green"
+                                    class="button-30-save"
                                     @click="confirmPaymentStatus"
                                 >
                                     <i class="bx bx-check-square"></i>

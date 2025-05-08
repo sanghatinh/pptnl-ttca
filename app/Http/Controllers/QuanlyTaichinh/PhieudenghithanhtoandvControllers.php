@@ -330,6 +330,7 @@ class PhieudenghithanhtoandvControllers extends Controller
                 'attachment_url' => $parentPaymentRequest ? $parentPaymentRequest->link_url : null,
                 'so_to_trinh' => $parentPaymentRequest ? $parentPaymentRequest->so_to_trinh : null,
                 'so_dot_thanh_toan' => $parentPaymentRequest ? $parentPaymentRequest->so_dot_thanh_toan : null,
+                'comment' => $paymentRequest->comment ?? null, 
             ];
     
             return response()->json([
@@ -1478,6 +1479,67 @@ public function getphieuthunodv($id)
     }
 }
 
+/**
+* Update specific fields of the payment request
+*
+* @param Request $request
+* @param string $id
+* @return \Illuminate\Http\JsonResponse
+*/
+public function updateDocument(Request $request, $id)
+{
+   try {
+       // Validate request - remove ma_giai_ngan requirement
+       $validated = $request->validate([
+           'ngay_thanh_toan' => 'nullable|date',
+           'comment' => 'nullable|string',
+       ]);
+       
+       // Begin transaction
+       DB::beginTransaction();
+       
+       // Find the payment request
+       $paymentRequest = Phieudenghithanhtoandv::where('ma_giai_ngan', $id)->first();
+       
+       if (!$paymentRequest) {
+           return response()->json([
+               'success' => false,
+               'message' => 'Payment request not found'
+           ], 404);
+       }
+       
+       // Prepare update data - include only provided fields
+       $updateData = [];
+       
+       // Only include comment if it's provided
+       if (isset($validated['comment'])) {
+           $updateData['comment'] = $validated['comment'];
+       }
+       
+       // Only update ngay_thanh_toan if it's provided
+       if (isset($validated['ngay_thanh_toan'])) {
+           $updateData['ngay_thanh_toan'] = $validated['ngay_thanh_toan'];
+       }
+       
+       // Simple update
+       $paymentRequest->update($updateData);
+       
+       DB::commit();
+       
+       return response()->json([
+           'success' => true,
+           'message' => 'Payment request updated successfully'
+       ]);
+       
+   } catch (\Exception $e) {
+       DB::rollBack();
+       
+       return response()->json([
+           'success' => false,
+           'message' => 'Error updating payment request: ' . $e->getMessage()
+       ], 500);
+   }
+}
 
 
 
