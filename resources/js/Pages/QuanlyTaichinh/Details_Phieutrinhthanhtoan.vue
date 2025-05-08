@@ -123,10 +123,6 @@
                                         v-if="document.payment_date"
                                         class="badge bg-light text-dark ms-2"
                                     >
-                                        <i
-                                            class="fas fa-money-bill-wave text-success me-1"
-                                        ></i>
-                                        Ngày thanh toán
                                     </span>
                                 </span>
                             </p>
@@ -164,8 +160,6 @@
                                         v-if="document.payment_date"
                                         class="badge bg-light text-dark ms-2"
                                     >
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Tính đến ngày thanh toán thực tế
                                     </span>
                                 </span>
                             </p>

@@ -43,10 +43,10 @@
                             </p>
                             <div
                                 class="timeline-note"
-                                v-if="processingAction.note"
+                                v-if="processingAction.comments"
                             >
                                 <i class="far fa-comment me-2"></i>
-                                <span>{{ processingAction.note }}</span>
+                                <span>{{ processingAction.comments }}</span>
                             </div>
                         </div>
                     </div>
@@ -90,10 +90,10 @@
                             </p>
                             <div
                                 class="timeline-note"
-                                v-if="submittedAction.note"
+                                v-if="submittedAction.comments"
                             >
                                 <i class="far fa-comment me-2"></i>
-                                <span>{{ submittedAction.note }}</span>
+                                <span>{{ submittedAction.comments }}</span>
                             </div>
                         </div>
                     </div>
@@ -111,9 +111,35 @@
                             </h5>
                             <p class="mb-1">
                                 <i class="far fa-calendar me-2"></i>
-                                <span class="fw-medium">{{
-                                    formatDate(paidAction.created_at)
-                                }}</span>
+                                <span class="fw-medium">
+                                    {{
+                                        formatDate(
+                                            document.ngay_thanh_toan ||
+                                                paidAction.created_at
+                                        )
+                                    }}
+                                    <span
+                                        v-if="document.ngay_thanh_toan"
+                                        class="badge bg-light text-dark ms-2"
+                                    >
+                                    </span>
+                                </span>
+                            </p>
+                            <p
+                                class="mb-1"
+                                v-if="
+                                    document.ngay_thanh_toan &&
+                                    document.ngay_thanh_toan !==
+                                        formatDate(paidAction.created_at)
+                                "
+                            >
+                                <i class="fas fa-history me-2 text-muted"></i>
+                                <span class="text-muted"
+                                    >Ngày chuyển trạng thái:
+                                    {{
+                                        formatDate(paidAction.created_at)
+                                    }}</span
+                                >
                             </p>
                             <p class="mb-1">
                                 <i class="far fa-user me-2"></i>
@@ -126,14 +152,22 @@
                                 v-if="daysBetweenSubmittedAndPaid !== null"
                             >
                                 <i class="far fa-clock me-2"></i>
-                                <span
-                                    >{{ daysBetweenSubmittedAndPaid }} ngày từ
-                                    khi nộp kế toán</span
-                                >
+                                <span>
+                                    {{ daysBetweenSubmittedAndPaid }} ngày sau
+                                    khi nộp kế toán
+                                    <span
+                                        v-if="document.ngay_thanh_toan"
+                                        class="badge bg-light text-dark ms-2"
+                                    >
+                                    </span>
+                                </span>
                             </p>
-                            <div class="timeline-note" v-if="paidAction.note">
+                            <div
+                                class="timeline-note"
+                                v-if="paidAction.comments"
+                            >
                                 <i class="far fa-comment me-2"></i>
-                                <span>{{ paidAction.note }}</span>
+                                <span>{{ paidAction.comments }}</span>
                             </div>
                         </div>
                     </div>
@@ -161,10 +195,10 @@
                             </p>
                             <div
                                 class="timeline-note"
-                                v-if="cancelledAction.note"
+                                v-if="cancelledAction.comments"
                             >
                                 <i class="far fa-comment me-2"></i>
-                                <span>{{ cancelledAction.note }}</span>
+                                <span>{{ cancelledAction.comments }}</span>
                             </div>
                         </div>
                     </div>
@@ -1269,13 +1303,21 @@ export default {
         },
 
         daysBetweenSubmittedAndPaid() {
-            if (!this.submittedAction || !this.paidAction) return null;
+            if (!this.submittedAction) return null;
+
+            // If we don't have either payment_date or paidAction, return null
+            if (!this.document.ngay_thanh_toan && !this.paidAction) return null;
+
             const submittedDate = new Date(this.submittedAction.created_at);
-            const paidDate = new Date(this.paidAction.created_at);
+
+            // Use the actual payment date if available, otherwise use the status change date
+            const paidDate = this.document.ngay_thanh_toan
+                ? new Date(this.document.ngay_thanh_toan)
+                : new Date(this.paidAction.created_at);
+
             const diffTime = Math.abs(paidDate - submittedDate);
             return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Convert ms to days
         },
-
         documentStatusClass() {
             return {
                 processing:
