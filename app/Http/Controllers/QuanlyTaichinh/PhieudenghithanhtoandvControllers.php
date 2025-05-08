@@ -1375,6 +1375,111 @@ public function getchitietbienbannghiemthudv($id)
   
 
 
+/**
+ * Get phieu thu no dich vu data related to a payment request
+ * 
+ * @param string $id Disbursement code (ma_giai_ngan)
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getphieuthunodv($id)
+{
+    try {
+        // Check if the payment request exists
+        $paymentRequest = DB::table('tb_de_nghi_thanhtoan_dv')
+            ->where('ma_giai_ngan', $id)
+            ->first();
+            
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment request not found'
+            ], 404);
+        }
+        
+        // Get the parent payment request information from tb_phieu_trinh_thanh_toan to get so_to_trinh
+        $parentPaymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $paymentRequest->ma_trinh_thanh_toan)
+            ->first();
+            
+        if (!$parentPaymentRequest || empty($parentPaymentRequest->so_to_trinh)) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'totals' => [
+                    'total_deduction' => 0,
+                    'total_interest' => 0
+                ]
+            ]);
+        }
+        
+        // Determine which customer ID field to use
+        $customerRef = null;
+        $customerField = null;
+        
+        if (!empty($paymentRequest->ma_khach_hang_ca_nhan)) {
+            $customerRef = $paymentRequest->ma_khach_hang_ca_nhan;
+            $customerField = 'Ma_Khach_Hang_Ca_Nhan';
+        } elseif (!empty($paymentRequest->ma_khach_hang_doanh_nghiep)) {
+            $customerRef = $paymentRequest->ma_khach_hang_doanh_nghiep;
+            $customerField = 'Ma_Khach_Hang_Doanh_Nghiep';
+        } else {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'totals' => [
+                    'total_deduction' => 0,
+                    'total_interest' => 0
+                ]
+            ]);
+        }
+        
+        // Get debt deduction records from Logs_Phieu_Tinh_Lai_dv based on so_to_trinh and customer ID
+        $phieuThuno = DB::table('Logs_Phieu_Tinh_Lai_dv')
+            ->where('So_Tro_Trinh', $parentPaymentRequest->so_to_trinh)
+            ->where($customerField, $customerRef)
+            ->select(
+                'Ma_So_Phieu_PDN_Thu_No as ma_so_phieu',
+                'Invoice_Number_Phan_Bo_Dau_Tu as invoice_number',
+                'Da_Tra_Goc as da_tra_goc',
+                'Ngay_Vay as ngay_vay',
+                'Ngay_Tra as ngay_tra',
+                'Lai_Suat_Phan_Bo_Dau_Tu as lai_suat',
+                'Tien_Lai as tien_lai',
+                'Vu_Dau_Tu_Phan_Bo_Dau_Tu as vu_dau_tu',
+                'Vu_Thanh_Toan_Phan_Bo_Dau_Tu as vu_thanh_toan',
+                'Khach_Hang_Ca_Nhan_PDN_Thu_No as khach_hang_ca_nhan',
+                'Khach_Hang_Doanh_Nghiep_PDN_Thu_No as khach_hang_doanh_nghiep',
+                'So_Tro_Trinh as so_tro_trinh',
+                'Category_Debt as category_debt',
+                'Description as description'
+            )
+            ->get();
+            
+        // Calculate totals
+        $totals = [
+            'total_deduction' => $phieuThuno->sum('da_tra_goc'),
+            'total_interest' => $phieuThuno->sum('tien_lai')
+        ];
+        
+        return response()->json([
+            'success' => true,
+            'data' => $phieuThuno,
+            'totals' => $totals
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error fetching Phieu Thu No Dich Vu data: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error retrieving Phieu Thu No Dich Vu data',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
 
 
 }
