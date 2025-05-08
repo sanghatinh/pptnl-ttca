@@ -1043,4 +1043,43 @@ public function getProcessingHistory($paymentCode)
     }
 }
 
+//Time line giải ngân trang DNTTDV
+public function getDisbursementProcessingHistory($id)
+{
+    try {
+        // First, get the ma_trinh_thanh_toan from the disbursement request
+        $disbursementRequest = DB::table('tb_de_nghi_thanhtoan_dv')
+            ->where('ma_giai_ngan', $id)
+            ->first();
+        
+        if (!$disbursementRequest || !$disbursementRequest->ma_trinh_thanh_toan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Disbursement request not found or has no associated payment request'
+            ], 404);
+        }
+        
+        // Now fetch the history using the ma_trinh_thanh_toan
+        $history = DB::table('Action_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $disbursementRequest->ma_trinh_thanh_toan)
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        return response()->json([
+            'success' => true,
+            'history' => $history,
+            'payment_code' => $disbursementRequest->ma_trinh_thanh_toan
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error fetching disbursement processing history: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching processing history',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
 }

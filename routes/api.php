@@ -186,6 +186,8 @@ Route::get('/payment-requests-dichvu/{id}', [PhieudenghithanhtoandvControllers::
 Route::get('/payment-requests-dichvu/{id}/bienban-nghiemthu', [PhieudenghithanhtoandvControllers::class, 'getbienbannghiemthudv']);
 Route::get('/payment-requests-dichvu/{id}/chitiet-dichvu', 'App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers@getchitietbienbannghiemthudv');
 Route::get('/payment-requests-dichvu/{id}/phieu-thu-no', [PhieudenghithanhtoandvControllers::class, 'getphieuthunodv']);
+Route::get('/payment-requests-dichvu/{id}/processing-history', [PaymentRequestController::class, 'getDisbursementProcessingHistory']);
+
 
 
 

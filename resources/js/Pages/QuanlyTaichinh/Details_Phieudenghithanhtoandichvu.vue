@@ -1,8 +1,199 @@
 <template lang="">
     <breadcrumb-vue />
 
+    <div class="text-center py-5" v-if="showTimeline">
+        <div class="card">
+            <div
+                class="card-header d-flex justify-content-between align-items-center bg-light"
+            >
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2 text-primary"></i>
+                    Lịch sử thanh toán
+                </h5>
+                <button
+                    class="btn btn-sm btn-outline-secondary"
+                    @click="toggleTimelineView"
+                >
+                    <i class="fas fa-times"></i>
+                    <span class="ms-1">Đóng</span>
+                </button>
+            </div>
+            <div class="card-body p-4">
+                <div class="timeline-container">
+                    <!-- Processing Stage -->
+                    <div class="timeline-item appear" v-if="processingAction">
+                        <div class="timeline-badge bg-primary">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h5 class="timeline-title">
+                                <span class="badge bg-primary">Đang xử lý</span>
+                            </h5>
+                            <p class="mb-1">
+                                <i class="far fa-calendar me-2"></i>
+                                <span class="fw-medium">{{
+                                    formatDate(processingAction.created_at)
+                                }}</span>
+                            </p>
+                            <p class="mb-1">
+                                <i class="far fa-user me-2"></i>
+                                <span class="fw-medium">{{
+                                    getUserName(processingAction.action_by)
+                                }}</span>
+                            </p>
+                            <div
+                                class="timeline-note"
+                                v-if="processingAction.note"
+                            >
+                                <i class="far fa-comment me-2"></i>
+                                <span>{{ processingAction.note }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submitted Stage -->
+                    <div class="timeline-item appear" v-if="submittedAction">
+                        <div class="timeline-badge bg-info">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h5 class="timeline-title">
+                                <span class="badge bg-info"
+                                    >Đã nộp kế toán</span
+                                >
+                            </h5>
+                            <p class="mb-1">
+                                <i class="far fa-calendar me-2"></i>
+                                <span class="fw-medium">{{
+                                    formatDate(submittedAction.created_at)
+                                }}</span>
+                            </p>
+                            <p class="mb-1">
+                                <i class="far fa-user me-2"></i>
+                                <span class="fw-medium">{{
+                                    getUserName(submittedAction.action_by)
+                                }}</span>
+                            </p>
+                            <p
+                                class="mb-1"
+                                v-if="
+                                    daysBetweenProcessingAndSubmitted !== null
+                                "
+                            >
+                                <i class="far fa-clock me-2"></i>
+                                <span
+                                    >{{
+                                        daysBetweenProcessingAndSubmitted
+                                    }}
+                                    ngày từ khi xử lý</span
+                                >
+                            </p>
+                            <div
+                                class="timeline-note"
+                                v-if="submittedAction.note"
+                            >
+                                <i class="far fa-comment me-2"></i>
+                                <span>{{ submittedAction.note }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paid Stage -->
+                    <div class="timeline-item appear" v-if="paidAction">
+                        <div class="timeline-badge bg-success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h5 class="timeline-title">
+                                <span class="badge bg-success"
+                                    >Đã thanh toán</span
+                                >
+                            </h5>
+                            <p class="mb-1">
+                                <i class="far fa-calendar me-2"></i>
+                                <span class="fw-medium">{{
+                                    formatDate(paidAction.created_at)
+                                }}</span>
+                            </p>
+                            <p class="mb-1">
+                                <i class="far fa-user me-2"></i>
+                                <span class="fw-medium">{{
+                                    getUserName(paidAction.action_by)
+                                }}</span>
+                            </p>
+                            <p
+                                class="mb-1"
+                                v-if="daysBetweenSubmittedAndPaid !== null"
+                            >
+                                <i class="far fa-clock me-2"></i>
+                                <span
+                                    >{{ daysBetweenSubmittedAndPaid }} ngày từ
+                                    khi nộp kế toán</span
+                                >
+                            </p>
+                            <div class="timeline-note" v-if="paidAction.note">
+                                <i class="far fa-comment me-2"></i>
+                                <span>{{ paidAction.note }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cancelled/Rejected Stage -->
+                    <div class="timeline-item appear" v-if="cancelledAction">
+                        <div class="timeline-badge bg-danger">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h5 class="timeline-title">
+                                <span class="badge bg-danger">Từ chối</span>
+                            </h5>
+                            <p class="mb-1">
+                                <i class="far fa-calendar me-2"></i>
+                                <span class="fw-medium">{{
+                                    formatDate(cancelledAction.created_at)
+                                }}</span>
+                            </p>
+                            <p class="mb-1">
+                                <i class="far fa-user me-2"></i>
+                                <span class="fw-medium">{{
+                                    getUserName(cancelledAction.action_by)
+                                }}</span>
+                            </p>
+                            <div
+                                class="timeline-note"
+                                v-if="cancelledAction.note"
+                            >
+                                <i class="far fa-comment me-2"></i>
+                                <span>{{ cancelledAction.note }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty state if no timeline data -->
+                    <div
+                        class="empty-timeline text-center py-5"
+                        v-if="!processingAction"
+                    >
+                        <i
+                            class="fas fa-calendar-times fa-4x text-muted mb-3 opacity-50"
+                        ></i>
+                        <p class="lead text-muted">
+                            Không tìm thấy dữ liệu lịch sử
+                        </p>
+                        <button
+                            class="btn btn-outline-secondary mt-3"
+                            @click="toggleTimelineView"
+                        >
+                            <i class="fas fa-arrow-left me-2"></i> Quay lại
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Original content -->
-    <div class="card shadow">
+    <div class="card shadow" v-if="!showTimeline">
         <div class="card-body p-0">
             <PerfectScrollbar
                 :options="{
@@ -12,6 +203,103 @@
                 }"
                 class="scroll-area"
             >
+                <div class="sticky-wrapper">
+                    <!-- Add container with padding -->
+                    <div class="container-fluid px-4">
+                        <div class="button-container">
+                            <div class="row align-items-center mb-2"></div>
+                        </div>
+                        <!-- progress-tracker-container -->
+                        <div class="progress-container mt-4">
+                            <div class="col-12">
+                                <div
+                                    class="progress-tracker"
+                                    :class="
+                                        document.trang_thai_thanh_toan ||
+                                        'processing'
+                                    "
+                                    @click="toggleTimelineView"
+                                >
+                                    <!-- Processing Step -->
+                                    <div
+                                        class="track-step"
+                                        :class="{
+                                            active:
+                                                document.trang_thai_thanh_toan ===
+                                                    'processing' ||
+                                                document.trang_thai_thanh_toan ===
+                                                    'submitted' ||
+                                                document.trang_thai_thanh_toan ===
+                                                    'paid',
+                                        }"
+                                    >
+                                        <div class="step-icon status-pending">
+                                            <i class="fas fa-spinner"></i>
+                                        </div>
+                                        <span class="step-label"
+                                            >Đang xử lý</span
+                                        >
+                                    </div>
+
+                                    <!-- Submitted Step -->
+                                    <div
+                                        class="track-step"
+                                        :class="{
+                                            active:
+                                                document.trang_thai_thanh_toan ===
+                                                    'submitted' ||
+                                                document.trang_thai_thanh_toan ===
+                                                    'paid',
+                                        }"
+                                    >
+                                        <div class="step-icon status-approved">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </div>
+                                        <span class="step-label"
+                                            >Đã nộp kế toán</span
+                                        >
+                                    </div>
+
+                                    <!-- Paid Step -->
+                                    <div
+                                        class="track-step"
+                                        :class="{
+                                            active:
+                                                document.trang_thai_thanh_toan ===
+                                                'paid',
+                                        }"
+                                    >
+                                        <div class="step-icon status-paid">
+                                            <i class="fas fa-check-circle"></i>
+                                        </div>
+                                        <span class="step-label"
+                                            >Đã thanh toán</span
+                                        >
+                                    </div>
+
+                                    <!-- Cancelled Step (if applicable) -->
+                                    <div
+                                        v-if="
+                                            document.trang_thai_thanh_toan ===
+                                            'rejected'
+                                        "
+                                        class="track-step"
+                                        :class="{
+                                            active:
+                                                document.trang_thai_thanh_toan ===
+                                                'rejected',
+                                        }"
+                                    >
+                                        <div class="step-icon status-cancelled">
+                                            <i class="fas fa-times-circle"></i>
+                                        </div>
+                                        <span class="step-label">Từ chối</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <!-- Main content with added top margin -->
                 <div class="main-content-wrapper">
                     <div class="d-flex flex-column flex-md-row gap-1">
@@ -417,6 +705,7 @@
                             </div>
                         </div>
                     </div>
+
                     <!-- Nghiệm thu dịch vụ -->
                     <!-- First, update the table in the template to loop through the bienbans data -->
                     <div class="card mt-3">
@@ -932,12 +1221,71 @@ export default {
                 total_deduction: 0,
                 total_interest: 0,
             },
-
+            // Timeline related properties
+            processingHistory: [], // Store timeline events
+            showTimeline: false,
+            users: {}, // Store user data by ID
+            paymentRequestCode: null, // Store the parent payment request code
             isLoading: false,
             showDetails: true,
         };
     },
     computed: {
+        // Timeline related computed properties
+        processingAction() {
+            if (!this.processingHistory) return null;
+            return this.processingHistory.find(
+                (item) => item.action === "processing"
+            );
+        },
+
+        submittedAction() {
+            if (!this.processingHistory) return null;
+            return this.processingHistory.find(
+                (item) => item.action === "submitted"
+            );
+        },
+
+        paidAction() {
+            if (!this.processingHistory) return null;
+            return this.processingHistory.find(
+                (item) => item.action === "paid"
+            );
+        },
+
+        cancelledAction() {
+            if (!this.processingHistory) return null;
+            return this.processingHistory.find(
+                (item) => item.action === "rejected"
+            );
+        },
+
+        daysBetweenProcessingAndSubmitted() {
+            if (!this.processingAction || !this.submittedAction) return null;
+            const processingDate = new Date(this.processingAction.created_at);
+            const submittedDate = new Date(this.submittedAction.created_at);
+            const diffTime = Math.abs(submittedDate - processingDate);
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Convert ms to days
+        },
+
+        daysBetweenSubmittedAndPaid() {
+            if (!this.submittedAction || !this.paidAction) return null;
+            const submittedDate = new Date(this.submittedAction.created_at);
+            const paidDate = new Date(this.paidAction.created_at);
+            const diffTime = Math.abs(paidDate - submittedDate);
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Convert ms to days
+        },
+
+        documentStatusClass() {
+            return {
+                processing:
+                    this.document.trang_thai_thanh_toan === "processing",
+                submitted: this.document.trang_thai_thanh_toan === "submitted",
+                paid: this.document.trang_thai_thanh_toan === "paid",
+                rejected: this.document.trang_thai_thanh_toan === "rejected",
+            };
+        },
+
         statusClass() {
             const status = this.document.trang_thai_thanh_toan;
             if (!status) return "";
@@ -958,31 +1306,8 @@ export default {
         this.fetchBienBanData();
         this.fetchChiTietDichVu();
         this.fetchPhieuThuNo();
-
         // Setup toggle functionality for sections
-        document.querySelectorAll(".toggle-section").forEach((el) => {
-            const icon = el.querySelector(".toggle-icon");
-            const cardBody = el.closest(".card").querySelector(".card-body");
-
-            // Ensure icon is right-pointing (collapsed state)
-            if (icon.classList.contains("fa-angle-down")) {
-                icon.classList.replace("fa-angle-down", "fa-angle-right");
-            }
-
-            // Hide the card body initially
-            cardBody.style.display = "none";
-
-            // Add click event listener for toggling
-            el.addEventListener("click", () => {
-                if (icon.classList.contains("fa-angle-right")) {
-                    icon.classList.replace("fa-angle-right", "fa-angle-down");
-                    cardBody.style.display = "block";
-                } else {
-                    icon.classList.replace("fa-angle-down", "fa-angle-right");
-                    cardBody.style.display = "none";
-                }
-            });
-        });
+        this.setupToggleSections();
     },
     methods: {
         fetchPhieuThuNo() {
@@ -1160,51 +1485,7 @@ export default {
 
                         // Update form fields with document data
                         this.$nextTick(() => {
-                            document.getElementById("maGiaiNgan").value =
-                                this.document.ma_giai_ngan;
-                            document.getElementById("vuDauTu").value =
-                                this.document.vu_dau_tu;
-                            document.getElementById("loaiThanhToan").value =
-                                this.document.loai_thanh_toan;
-                            document.getElementById("trangThai").value =
-                                this.formatStatus(
-                                    this.document.trang_thai_thanh_toan
-                                );
-                            document.getElementById("khachHangCaNhan").value =
-                                this.document.khach_hang_ca_nhan;
-                            document.getElementById("maKhachHangCaNhan").value =
-                                this.document.ma_khach_hang_ca_nhan;
-                            document.getElementById(
-                                "khachHangDoanhNghiep"
-                            ).value = this.document.khach_hang_doanh_nghiep;
-                            document.getElementById(
-                                "maKhachHangDoanhNghiep"
-                            ).value = this.document.ma_khach_hang_doanh_nghiep;
-                            document.getElementById("soToTrinh").value =
-                                this.document.so_to_trinh;
-                            document.getElementById("soDotThanhToan").value =
-                                this.document.so_dot_thanh_toan;
-                            document.getElementById("ngayThanhToan").value =
-                                this.formatDate(this.document.ngay_thanh_toan);
-
-                            document.getElementById("tongTien").value =
-                                this.formatCurrency(this.document.tong_tien);
-                            document.getElementById("tongTienTamGiu").value =
-                                this.formatCurrency(
-                                    this.document.tong_tien_tam_giu
-                                );
-                            document.getElementById("tongTienKhauTru").value =
-                                this.formatCurrency(
-                                    this.document.tong_tien_khau_tru
-                                );
-                            document.getElementById("tongTienLaiSuat").value =
-                                this.formatCurrency(
-                                    this.document.tong_tien_lai_suat
-                                );
-                            document.getElementById("tongTienConLai").value =
-                                this.formatCurrency(
-                                    this.document.tong_tien_thanh_toan_con_lai
-                                );
+                            this.updateFormFields();
                         });
                     } else {
                         this.showError(
@@ -1261,7 +1542,230 @@ export default {
         toggleDetails() {
             this.showDetails = !this.showDetails;
         },
-        // Add this method
+
+        // Toggle timeline view
+        toggleTimelineView() {
+            this.showTimeline = !this.showTimeline;
+
+            // If closing timeline, ensure document data is available
+            if (!this.showTimeline) {
+                // Force re-render document data
+                this.$nextTick(() => {
+                    this.updateFormFields();
+                });
+            }
+            // If showing timeline and no history data yet, fetch it
+            else if (
+                !this.processingHistory ||
+                this.processingHistory.length === 0
+            ) {
+                this.fetchProcessingHistory();
+            }
+            // If showing timeline and users need to be loaded, do it
+            else if (
+                this.processingHistory &&
+                this.processingHistory.length > 0 &&
+                Object.keys(this.users).length === 0
+            ) {
+                this.loadUsers();
+            }
+        },
+
+        // Fetch processing history
+        async fetchProcessingHistory() {
+            const id = this.$route.params.id;
+            if (!id) {
+                this.showError("Không tìm thấy mã phiếu đề nghị thanh toán");
+                return;
+            }
+
+            try {
+                const response = await axios.get(
+                    `/api/payment-requests-dichvu/${id}/processing-history`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    this.processingHistory = response.data.history || [];
+
+                    // Store the parent payment request code if needed
+                    if (response.data.payment_code) {
+                        this.paymentRequestCode = response.data.payment_code;
+                    }
+
+                    // Update document status if needed based on latest action
+                    if (this.processingHistory.length > 0) {
+                        // Sort by created_at descending to get the latest action
+                        const sortedHistory = [...this.processingHistory].sort(
+                            (a, b) =>
+                                new Date(b.created_at) - new Date(a.created_at)
+                        );
+
+                        const latestAction = sortedHistory[0];
+
+                        // Update the document status if it's different from current status
+                        if (
+                            latestAction &&
+                            latestAction.action !==
+                                this.document.trang_thai_thanh_toan
+                        ) {
+                            this.document.trang_thai_thanh_toan =
+                                latestAction.action;
+                            console.log(
+                                "Document status updated to:",
+                                this.document.trang_thai_thanh_toan
+                            );
+                            this.$forceUpdate();
+                        }
+                    }
+
+                    // If timeline is being shown, load user data for display
+                    if (
+                        this.showTimeline &&
+                        this.processingHistory.length > 0
+                    ) {
+                        this.loadUsers();
+                    }
+                } else {
+                    console.error("Failed to fetch processing history");
+                }
+            } catch (error) {
+                console.error("Error fetching processing history:", error);
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            }
+        },
+        // Add this new method to update form fields
+        updateFormFields() {
+            if (!this.document) return;
+
+            // Update all form fields with document data
+            document.getElementById("maGiaiNgan").value =
+                this.document.ma_giai_ngan;
+            document.getElementById("vuDauTu").value = this.document.vu_dau_tu;
+            document.getElementById("loaiThanhToan").value =
+                this.document.loai_thanh_toan;
+            document.getElementById("trangThai").value = this.formatStatus(
+                this.document.trang_thai_thanh_toan
+            );
+            document.getElementById("khachHangCaNhan").value =
+                this.document.khach_hang_ca_nhan;
+            document.getElementById("maKhachHangCaNhan").value =
+                this.document.ma_khach_hang_ca_nhan;
+            document.getElementById("khachHangDoanhNghiep").value =
+                this.document.khach_hang_doanh_nghiep;
+            document.getElementById("maKhachHangDoanhNghiep").value =
+                this.document.ma_khach_hang_doanh_nghiep;
+            document.getElementById("soToTrinh").value =
+                this.document.so_to_trinh;
+            document.getElementById("soDotThanhToan").value =
+                this.document.so_dot_thanh_toan;
+            document.getElementById("ngayThanhToan").value = this.formatDate(
+                this.document.ngay_thanh_toan
+            );
+
+            document.getElementById("tongTien").value = this.formatCurrency(
+                this.document.tong_tien
+            );
+            document.getElementById("tongTienTamGiu").value =
+                this.formatCurrency(this.document.tong_tien_tam_giu);
+            document.getElementById("tongTienKhauTru").value =
+                this.formatCurrency(this.document.tong_tien_khau_tru);
+            document.getElementById("tongTienLaiSuat").value =
+                this.formatCurrency(this.document.tong_tien_lai_suat);
+            document.getElementById("tongTienConLai").value =
+                this.formatCurrency(this.document.tong_tien_thanh_toan_con_lai);
+
+            // Re-setup toggle functionality for sections
+            this.$nextTick(() => {
+                this.setupToggleSections();
+            });
+        },
+        // Setup toggle sections functionality
+        setupToggleSections() {
+            document.querySelectorAll(".toggle-section").forEach((el) => {
+                const icon = el.querySelector(".toggle-icon");
+                const cardBody = el
+                    .closest(".card")
+                    .querySelector(".card-body");
+
+                // Ensure icon is right-pointing (collapsed state)
+                if (icon.classList.contains("fa-angle-down")) {
+                    icon.classList.replace("fa-angle-down", "fa-angle-right");
+                }
+
+                // Hide the card body initially
+                cardBody.style.display = "none";
+
+                // Remove any existing event listener
+                const newEl = el.cloneNode(true);
+                el.parentNode.replaceChild(newEl, el);
+
+                // Add click event listener for toggling
+                newEl.addEventListener("click", () => {
+                    const icon = newEl.querySelector(".toggle-icon");
+                    const cardBody = newEl
+                        .closest(".card")
+                        .querySelector(".card-body");
+
+                    if (icon.classList.contains("fa-angle-right")) {
+                        icon.classList.replace(
+                            "fa-angle-right",
+                            "fa-angle-down"
+                        );
+                        cardBody.style.display = "block";
+                    } else {
+                        icon.classList.replace(
+                            "fa-angle-down",
+                            "fa-angle-right"
+                        );
+                        cardBody.style.display = "none";
+                    }
+                });
+            });
+        },
+        // Load user data for timeline
+        async loadUsers() {
+            const userIds = this.processingHistory
+                .map((item) => item.action_by)
+                .filter((id) => id && !this.users[id]);
+
+            if (userIds.length === 0) return;
+
+            try {
+                const response = await axios.post(
+                    "/api/users/get-by-ids",
+                    {
+                        user_ids: [...new Set(userIds)], // Remove duplicates
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    const newUsers = response.data.users;
+                    newUsers.forEach((user) => {
+                        this.users[user.id] = user;
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading users:", error);
+            }
+        },
+
+        // Get user name by ID
+        getUserName(userId) {
+            if (!userId) return "N/A";
+            return this.users[userId]?.full_name || "N/A";
+        },
 
         handleAuthError() {
             // Handle authentication error
@@ -1315,7 +1819,7 @@ export default {
 };
 </script>
 <style scoped>
-/* Sticky container */
+/* Fixed progress container */
 .sticky-wrapper {
     position: sticky;
     top: 0px;
@@ -1326,6 +1830,226 @@ export default {
     padding: 1rem 0;
     border-bottom: 1px solid #e0e3e8;
     transition: box-shadow 0.3s ease;
+}
+
+/* Container for buttons and progress */
+.container-fluid {
+    max-width: inherit;
+    margin: 0 auto;
+    background: white;
+}
+
+/* Progress container styles */
+.progress-container {
+    margin-bottom: 0.5rem;
+}
+
+/* Progress tracker styles */
+.progress-tracker {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    margin: 0.5rem 0;
+}
+
+.progress-tracker::before {
+    content: "";
+    position: absolute;
+    top: 20px;
+    width: 98%;
+    height: 3px;
+    background-color: #e9ecef;
+    z-index: 0;
+    border-radius: 2px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.progress-tracker.processing::before {
+    background: linear-gradient(to right, #ffc107 50%, #e9ecef 50%);
+}
+
+.progress-tracker.submitted::before {
+    background: linear-gradient(
+        to right,
+        #ffc107 33%,
+        #1e88e5 33%,
+        #1e88e5 66%,
+        #e9ecef 66%
+    );
+}
+
+.progress-tracker.paid::before {
+    background: linear-gradient(
+        to right,
+        #ffc107 33%,
+        #1e88e5 33%,
+        #1e88e5 66%,
+        #198754 66%
+    );
+}
+
+.progress-tracker.rejected::before {
+    background: linear-gradient(
+        to right,
+        #ffc107 33%,
+        #dc3545 33%,
+        #dc3545 100%
+    );
+}
+
+.track-step {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1;
+}
+
+.step-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: white;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    border: 2px solid #dee2e6;
+    transition: all 0.3s;
+}
+
+.track-step.active .step-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+    border: none;
+}
+
+.status-pending {
+    color: #ffc107;
+}
+
+.status-approved {
+    color: #1e88e5;
+}
+
+.status-paid {
+    color: #198754;
+}
+
+.status-cancelled {
+    color: #dc3545;
+}
+
+.track-step.active .status-pending {
+    background-color: #ffc107;
+    color: white;
+}
+
+.track-step.active .status-approved {
+    background-color: #1e88e5;
+    color: white;
+}
+
+.track-step.active .status-paid {
+    background-color: #198754;
+    color: white;
+}
+
+.track-step.active .status-cancelled {
+    background-color: #dc3545;
+    color: white;
+}
+
+.step-label {
+    text-align: center;
+    font-size: 0.9rem;
+    max-width: 100px;
+}
+
+/* Main content wrapper */
+.main-content-wrapper {
+    margin-top: 10px;
+    padding: 1rem;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scroll-area::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge */
+.scroll-area {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    height: calc(90vh - 60px);
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Customize scrollbar styling */
+.ps__rail-y {
+    width: 9px;
+    background-color: transparent !important;
+}
+
+.ps__thumb-y {
+    width: 6px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+}
+
+/* Hover styling for scrollbar */
+.ps__rail-y:hover > .ps__thumb-y,
+.ps__rail-y:focus > .ps__thumb-y,
+.ps__rail-y.ps--clicking .ps__thumb-y {
+    width: 6px;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+    .sticky-wrapper {
+        left: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .sticky-wrapper {
+        top: 0px;
+        left: 0;
+        padding: 0.5rem 0;
+        z-index: 100;
+    }
+
+    .main-content-wrapper {
+        margin-top: 10px;
+    }
+
+    .step-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+
+    .track-step.active .step-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+
+    .step-label {
+        font-size: 0.8rem;
+    }
+
+    .d-flex.flex-md-row {
+        flex-direction: column !important;
+    }
+
+    .col-md-6 {
+        width: 100% !important;
+    }
 }
 
 /* Toggle section styles */
@@ -1586,5 +2310,286 @@ export default {
 
 .note-content .text-muted {
     font-size: 0.85rem;
+}
+
+/* Add these styles to your existing <style> section */
+
+/* Timeline Styles */
+.timeline-container {
+    position: relative;
+    padding: 2rem 1rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.timeline-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 24px;
+    width: 4px;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.05) 0%,
+        #007bff 20%,
+        #17a2b8 50%,
+        #28a745 80%,
+        rgba(0, 0, 0, 0.05) 100%
+    );
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2.5rem;
+    padding-left: 45px;
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.4s ease;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-badge {
+    position: absolute;
+    left: -18px;
+    top: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    z-index: 2;
+    border: 3px solid white;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.timeline-item:hover .timeline-badge {
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.timeline-badge i {
+    font-size: 1.25rem;
+}
+
+.timeline-content {
+    background-color: #fff;
+    border-radius: 0.75rem;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    position: relative;
+    transition: all 0.3s ease;
+    border-left: 5px solid transparent;
+}
+
+.timeline-item:hover .timeline-content {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Status-specific styling */
+.timeline-item:nth-child(1) .timeline-content {
+    border-color: #007bff;
+}
+
+.timeline-item:nth-child(2) .timeline-content {
+    border-color: #17a2b8;
+}
+
+.timeline-item:nth-child(3) .timeline-content {
+    border-color: #28a745;
+}
+
+.timeline-item:nth-child(4) .timeline-content {
+    border-color: #dc3545;
+}
+
+.timeline-content::before {
+    content: "";
+    position: absolute;
+    left: -13px;
+    top: 15px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-right: 8px solid #fff;
+    border-bottom: 8px solid transparent;
+    z-index: 1;
+}
+
+.timeline-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.timeline-title .badge {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 30px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-note {
+    background: rgba(248, 249, 250, 0.7);
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 0.5rem;
+    border-left: 4px solid #dee2e6;
+    font-style: italic;
+    color: #495057;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.fw-medium {
+    font-weight: 500;
+}
+
+@media (min-width: 992px) {
+    .timeline-container::before {
+        left: 50%;
+        margin-left: -2px;
+    }
+
+    .timeline-item {
+        padding-left: 0;
+        width: 50%;
+        animation: none;
+    }
+
+    .timeline-item:nth-child(odd) {
+        margin-right: 50%;
+        padding-right: 45px;
+        padding-left: 0;
+        text-align: right;
+    }
+
+    .timeline-item:nth-child(even) {
+        margin-left: 50%;
+        padding-left: 45px;
+    }
+
+    .timeline-badge {
+        left: 50%;
+        margin-left: -23px;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-content {
+        border-left: none;
+        border-right: 5px solid transparent;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-content::before {
+        left: auto;
+        right: -13px;
+        border-right: none;
+        border-left: 8px solid #fff;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-title {
+        justify-content: flex-end;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-note {
+        border-left: none;
+        border-right: 4px solid #dee2e6;
+    }
+
+    .timeline-item:nth-child(odd) p i,
+    .timeline-item:nth-child(odd) .timeline-note i {
+        margin-right: 0;
+        margin-left: 0.5rem;
+        order: 2;
+    }
+}
+
+/* Enhanced animation for timeline */
+@keyframes slide-in-left {
+    from {
+        transform: translateX(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slide-in-right {
+    from {
+        transform: translateX(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@media (min-width: 992px) {
+    .timeline-item:nth-child(odd) {
+        animation: slide-in-left 0.6s ease forwards;
+    }
+
+    .timeline-item:nth-child(even) {
+        animation: slide-in-right 0.6s ease forwards;
+    }
+
+    .timeline-item:nth-child(1) {
+        animation-delay: 0.1s;
+    }
+
+    .timeline-item:nth-child(2) {
+        animation-delay: 0.3s;
+    }
+
+    .timeline-item:nth-child(3) {
+        animation-delay: 0.5s;
+    }
+
+    .timeline-item:nth-child(4) {
+        animation-delay: 0.7s;
+    }
+}
+
+/* Timeline animations */
+.appear {
+    opacity: 0;
+    animation: fade-in 0.5s ease forwards;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.empty-timeline {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 1;
+    }
 }
 </style>

@@ -3,205 +3,228 @@
 
     <!-- Timeline View (this will replace the main content when active) -->
     <div class="text-center py-5" v-if="showTimeline">
-        <div
-            class="card-header d-flex justify-content-between align-items-center bg-light"
-        >
-            <h5 class="card-title mb-0">
-                <i class="fas fa-history me-2 text-primary"></i>
-                Lịch sử thanh toán
-            </h5>
-            <button
-                class="btn btn-sm btn-outline-secondary"
-                @click="toggleTimelineView"
+        <div class="card">
+            <div
+                class="card-header d-flex justify-content-between align-items-center bg-light"
             >
-                <i class="fas fa-times"></i>
-                <span class="ms-1">Đóng</span>
-            </button>
-        </div>
-        <div class="card-body">
-            <div class="timeline-container">
-                <!-- Processing Stage -->
-                <div class="timeline-item" v-if="processingAction">
-                    <div class="timeline-badge bg-primary">
-                        <i class="fas fa-spinner fa-pulse"></i>
-                    </div>
-                    <div class="timeline-content">
-                        <h5 class="timeline-title">
-                            <span class="badge bg-primary">Đang xử lý</span>
-                        </h5>
-                        <p class="mb-1">
-                            <i class="far fa-calendar me-2"></i>
-                            <span class="fw-medium">{{
-                                formatDate(processingAction.created_at)
-                            }}</span>
-                        </p>
-                        <p class="mb-1">
-                            <i class="far fa-user me-2"></i>
-                            <span class="fw-medium">{{
-                                getUserName(processingAction.action_by)
-                            }}</span>
-                        </p>
-                        <div class="timeline-note" v-if="processingAction.note">
-                            <i class="far fa-comment me-2"></i>
-                            <span>{{ processingAction.note }}</span>
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2 text-primary"></i>
+                    Lịch sử thanh toán
+                </h5>
+                <button
+                    class="btn btn-sm btn-outline-secondary"
+                    @click="toggleTimelineView"
+                >
+                    <i class="fas fa-times"></i>
+                    <span class="ms-1">Đóng</span>
+                </button>
+            </div>
+            <div class="card-body p-4">
+                <div class="timeline-container">
+                    <!-- Processing Stage -->
+                    <div class="timeline-item appear" v-if="processingAction">
+                        <div class="timeline-badge bg-primary">
+                            <i class="fas fa-spinner"></i>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Submitted Stage -->
-                <div class="timeline-item" v-if="submittedAction">
-                    <div class="timeline-badge bg-info">
-                        <i class="fas fa-paper-plane"></i>
-                    </div>
-                    <div class="timeline-content">
-                        <h5 class="timeline-title">
-                            <span class="badge bg-info">Đã nộp kế toán</span>
-                        </h5>
-                        <p class="mb-1">
-                            <i class="far fa-calendar me-2"></i>
-                            <span class="fw-medium">{{
-                                formatDate(submittedAction.created_at)
-                            }}</span>
-                        </p>
-                        <p class="mb-1">
-                            <i class="far fa-user me-2"></i>
-                            <span class="fw-medium">{{
-                                getUserName(submittedAction.action_by)
-                            }}</span>
-                        </p>
-                        <p
-                            class="mb-1"
-                            v-if="daysBetweenProcessingAndSubmitted !== null"
-                        >
-                            <i class="far fa-clock me-2"></i>
-                            <span
-                                >{{ daysBetweenProcessingAndSubmitted }} ngày
-                                sau khi xử lý</span
+                        <div class="timeline-content">
+                            <h5 class="timeline-title">
+                                <span class="badge bg-primary">Đang xử lý</span>
+                            </h5>
+                            <p class="mb-1">
+                                <i class="far fa-calendar me-2"></i>
+                                <span class="fw-medium">{{
+                                    formatDate(processingAction.created_at)
+                                }}</span>
+                            </p>
+                            <p class="mb-1">
+                                <i class="far fa-user me-2"></i>
+                                <span class="fw-medium">{{
+                                    getUserName(processingAction.action_by)
+                                }}</span>
+                            </p>
+                            <div
+                                class="timeline-note"
+                                v-if="processingAction.note"
                             >
-                        </p>
-                        <div class="timeline-note" v-if="submittedAction.note">
-                            <i class="far fa-comment me-2"></i>
-                            <span>{{ submittedAction.note }}</span>
+                                <i class="far fa-comment me-2"></i>
+                                <span>{{ processingAction.note }}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Paid Stage -->
-                <div class="timeline-item" v-if="paidAction">
-                    <div class="timeline-badge bg-success">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="timeline-content">
-                        <h5 class="timeline-title">
-                            <span class="badge bg-success">Đã thanh toán</span>
-                        </h5>
-                        <!-- แสดงวันที่ชำระเงินจริง (ngay_thanh_toan) หาก payment_date มีค่า -->
-                        <p class="mb-1">
-                            <i class="far fa-calendar me-2"></i>
-                            <span class="fw-medium">
-                                {{
-                                    formatDate(
-                                        document.payment_date ||
-                                            paidAction.created_at
-                                    )
-                                }}
-                                <span
-                                    v-if="document.payment_date"
-                                    class="badge bg-light text-dark ms-2"
+                    <!-- Submitted Stage -->
+                    <div class="timeline-item appear" v-if="submittedAction">
+                        <div class="timeline-badge bg-info">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h5 class="timeline-title">
+                                <span class="badge bg-info"
+                                    >Đã nộp kế toán</span
                                 >
-                                    <i
-                                        class="fas fa-money-bill-wave text-success me-1"
-                                    ></i>
-                                    Ngày thanh toán
-                                </span>
-                            </span>
-                        </p>
-
-                        <!-- แสดงวันที่เปลี่ยนสถานะถ้ามีทั้งสอง และแตกต่างกัน -->
-                        <p
-                            class="mb-1"
-                            v-if="
-                                document.payment_date &&
-                                document.payment_date !==
-                                    formatDate(paidAction.created_at)
-                            "
-                        >
-                            <i class="fas fa-history me-2 text-muted"></i>
-                            <span class="text-muted"
-                                >Ngày chuyển trạng thái:
-                                {{ formatDate(paidAction.created_at) }}</span
+                            </h5>
+                            <p class="mb-1">
+                                <i class="far fa-calendar me-2"></i>
+                                <span class="fw-medium">{{
+                                    formatDate(submittedAction.created_at)
+                                }}</span>
+                            </p>
+                            <p class="mb-1">
+                                <i class="far fa-user me-2"></i>
+                                <span class="fw-medium">{{
+                                    getUserName(submittedAction.action_by)
+                                }}</span>
+                            </p>
+                            <p
+                                class="mb-1"
+                                v-if="
+                                    daysBetweenProcessingAndSubmitted !== null
+                                "
                             >
-                        </p>
-
-                        <!-- ข้อมูลผู้ดำเนินการ -->
-                        <p class="mb-1">
-                            <i class="far fa-user me-2"></i>
-                            <span class="fw-medium">{{
-                                getUserName(paidAction.action_by)
-                            }}</span>
-                        </p>
-
-                        <!-- ระยะเวลาระหว่างการส่ง-จ่าย -->
-                        <p
-                            class="mb-1"
-                            v-if="daysBetweenSubmittedAndPaid !== null"
-                        >
-                            <i class="far fa-clock me-2"></i>
-                            <span>
-                                {{ daysBetweenSubmittedAndPaid }} ngày sau khi
-                                nộp kế toán
+                                <i class="far fa-clock me-2"></i>
                                 <span
-                                    v-if="document.payment_date"
-                                    class="badge bg-light text-dark ms-2"
+                                    >{{
+                                        daysBetweenProcessingAndSubmitted
+                                    }}
+                                    ngày sau khi xử lý</span
                                 >
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Tính đến ngày thanh toán thực tế
+                            </p>
+                            <div
+                                class="timeline-note"
+                                v-if="submittedAction.note"
+                            >
+                                <i class="far fa-comment me-2"></i>
+                                <span>{{ submittedAction.note }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paid Stage -->
+                    <div class="timeline-item appear" v-if="paidAction">
+                        <div class="timeline-badge bg-success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h5 class="timeline-title">
+                                <span class="badge bg-success"
+                                    >Đã thanh toán</span
+                                >
+                            </h5>
+                            <p class="mb-1">
+                                <i class="far fa-calendar me-2"></i>
+                                <span class="fw-medium">
+                                    {{
+                                        formatDate(
+                                            document.payment_date ||
+                                                paidAction.created_at
+                                        )
+                                    }}
+                                    <span
+                                        v-if="document.payment_date"
+                                        class="badge bg-light text-dark ms-2"
+                                    >
+                                        <i
+                                            class="fas fa-money-bill-wave text-success me-1"
+                                        ></i>
+                                        Ngày thanh toán
+                                    </span>
                                 </span>
-                            </span>
-                        </p>
-
-                        <!-- หมายเหตุ -->
-                        <div class="timeline-note" v-if="paidAction.note">
-                            <i class="far fa-comment me-2"></i>
-                            <span>{{ paidAction.note }}</span>
+                            </p>
+                            <p
+                                class="mb-1"
+                                v-if="
+                                    document.payment_date &&
+                                    document.payment_date !==
+                                        formatDate(paidAction.created_at)
+                                "
+                            >
+                                <i class="fas fa-history me-2 text-muted"></i>
+                                <span class="text-muted"
+                                    >Ngày chuyển trạng thái:
+                                    {{
+                                        formatDate(paidAction.created_at)
+                                    }}</span
+                                >
+                            </p>
+                            <p class="mb-1">
+                                <i class="far fa-user me-2"></i>
+                                <span class="fw-medium">{{
+                                    getUserName(paidAction.action_by)
+                                }}</span>
+                            </p>
+                            <p
+                                class="mb-1"
+                                v-if="daysBetweenSubmittedAndPaid !== null"
+                            >
+                                <i class="far fa-clock me-2"></i>
+                                <span>
+                                    {{ daysBetweenSubmittedAndPaid }} ngày sau
+                                    khi nộp kế toán
+                                    <span
+                                        v-if="document.payment_date"
+                                        class="badge bg-light text-dark ms-2"
+                                    >
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Tính đến ngày thanh toán thực tế
+                                    </span>
+                                </span>
+                            </p>
+                            <div class="timeline-note" v-if="paidAction.note">
+                                <i class="far fa-comment me-2"></i>
+                                <span>{{ paidAction.note }}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Cancelled Stage (if applicable) -->
-                <div class="timeline-item" v-if="cancelledAction">
-                    <div class="timeline-badge bg-danger">
-                        <i class="fas fa-times-circle"></i>
-                    </div>
-                    <div class="timeline-content">
-                        <h5 class="timeline-title">
-                            <span class="badge bg-danger">Đã hủy</span>
-                        </h5>
-                        <p class="mb-1">
-                            <i class="far fa-calendar me-2"></i>
-                            <span class="fw-medium">{{
-                                formatDate(cancelledAction.created_at)
-                            }}</span>
-                        </p>
-                        <p class="mb-1">
-                            <i class="far fa-user me-2"></i>
-                            <span class="fw-medium">{{
-                                getUserName(cancelledAction.action_by)
-                            }}</span>
-                        </p>
-                        <div class="timeline-note" v-if="cancelledAction.note">
-                            <i class="far fa-comment me-2"></i>
-                            <span>{{ cancelledAction.note }}</span>
+                    <!-- Cancelled Stage (if applicable) -->
+                    <div class="timeline-item appear" v-if="cancelledAction">
+                        <div class="timeline-badge bg-danger">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h5 class="timeline-title">
+                                <span class="badge bg-danger">Đã hủy</span>
+                            </h5>
+                            <p class="mb-1">
+                                <i class="far fa-calendar me-2"></i>
+                                <span class="fw-medium">{{
+                                    formatDate(cancelledAction.created_at)
+                                }}</span>
+                            </p>
+                            <p class="mb-1">
+                                <i class="far fa-user me-2"></i>
+                                <span class="fw-medium">{{
+                                    getUserName(cancelledAction.action_by)
+                                }}</span>
+                            </p>
+                            <div
+                                class="timeline-note"
+                                v-if="cancelledAction.note"
+                            >
+                                <i class="far fa-comment me-2"></i>
+                                <span>{{ cancelledAction.note }}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Empty state if no timeline data -->
-                <div class="text-center py-5" v-if="!processingAction">
-                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                    <p class="lead text-muted">
-                        Không tìm thấy dữ liệu lịch sử
-                    </p>
+                    <!-- Empty state if no timeline data -->
+                    <div
+                        class="empty-timeline text-center py-5"
+                        v-if="!processingAction"
+                    >
+                        <i
+                            class="fas fa-calendar-times fa-4x text-muted mb-3 opacity-50"
+                        ></i>
+                        <p class="lead text-muted">
+                            Không tìm thấy dữ liệu lịch sử
+                        </p>
+                        <button
+                            class="btn btn-outline-secondary mt-3"
+                            @click="toggleTimelineView"
+                        >
+                            <i class="fas fa-arrow-left me-2"></i> Quay lại
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -7225,8 +7248,8 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 /* Timeline Styles */
 .timeline-container {
     position: relative;
-    padding: 1.5rem 1.5rem 1rem;
-    max-width: 800px;
+    padding: 2rem 1rem;
+    max-width: 900px;
     margin: 0 auto;
 }
 
@@ -7235,135 +7258,182 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     position: absolute;
     top: 0;
     bottom: 0;
-    left: 24px; /* Adjusted for badge placement */
-    width: 3px;
+    left: 24px;
+    width: 4px;
     background: linear-gradient(
         to bottom,
-        #f0f0f0 0%,
-        #007bff 15%,
-        /* Primary/processing */ #17a2b8 50%,
-        /* Info/submitted */ #28a745 85%,
-        /* Success/paid */ #f0f0f0 100%
+        rgba(0, 0, 0, 0.05) 0%,
+        #007bff 20%,
+        #17a2b8 50%,
+        #28a745 80%,
+        rgba(0, 0, 0, 0.05) 100%
     );
-    border-radius: 3px;
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .timeline-item {
     position: relative;
     margin-bottom: 2.5rem;
-    padding-left: 40px;
+    padding-left: 45px;
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.4s ease;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
 }
 
 .timeline-badge {
     position: absolute;
-    left: -16px;
+    left: -18px;
     top: 0;
-    width: 36px;
-    height: 36px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    z-index: 1;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    z-index: 2;
+    border: 3px solid white;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.timeline-item:hover .timeline-badge {
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .timeline-badge i {
-    font-size: 1rem;
+    font-size: 1.25rem;
 }
 
 .timeline-content {
     background-color: #fff;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
-    padding: 1rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
     position: relative;
     transition: all 0.3s ease;
-    border-left: 4px solid transparent;
+    border-left: 5px solid transparent;
 }
 
+.timeline-item:hover .timeline-content {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Status-specific styling */
 .timeline-item:nth-child(1) .timeline-content {
-    border-left-color: #007bff; /* Primary/processing */
+    border-color: #007bff;
 }
 
 .timeline-item:nth-child(2) .timeline-content {
-    border-left-color: #17a2b8; /* Info/submitted */
+    border-color: #17a2b8;
 }
 
 .timeline-item:nth-child(3) .timeline-content {
-    border-left-color: #28a745; /* Success/paid */
+    border-color: #28a745;
 }
 
 .timeline-item:nth-child(4) .timeline-content {
-    border-left-color: #dc3545; /* Danger/cancelled */
+    border-color: #dc3545;
+}
+
+.timeline-content::before {
+    content: "";
+    position: absolute;
+    left: -13px;
+    top: 15px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-right: 8px solid #fff;
+    border-bottom: 8px solid transparent;
+    z-index: 1;
 }
 
 .timeline-title {
     display: flex;
     align-items: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
 }
 
 .timeline-title .badge {
-    font-size: 0.8rem;
-    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 30px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
 
 .timeline-note {
-    background: #f8f9fa;
-    padding: 0.5rem;
-    margin-top: 0.75rem;
-    border-radius: 0.25rem;
-    border-left: 3px solid #dee2e6;
+    background: rgba(248, 249, 250, 0.7);
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 0.5rem;
+    border-left: 4px solid #dee2e6;
     font-style: italic;
-    color: #6c757d;
+    color: #495057;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
 }
 
-/* Responsive adjustments */
-@media (min-width: 768px) {
+.fw-medium {
+    font-weight: 500;
+}
+
+@media (min-width: 992px) {
     .timeline-container::before {
         left: 50%;
-        margin-left: -1.5px;
+        margin-left: -2px;
     }
 
     .timeline-item {
         padding-left: 0;
         width: 50%;
+        animation: none;
     }
 
     .timeline-item:nth-child(odd) {
-        padding-right: 40px;
-        margin-left: 0;
+        margin-right: 50%;
+        padding-right: 45px;
+        padding-left: 0;
         text-align: right;
     }
 
     .timeline-item:nth-child(even) {
         margin-left: 50%;
-        padding-left: 40px;
+        padding-left: 45px;
     }
 
     .timeline-badge {
         left: 50%;
-        margin-left: -18px;
+        margin-left: -23px;
     }
 
     .timeline-item:nth-child(odd) .timeline-content {
         border-left: none;
-        border-right: 4px solid transparent;
+        border-right: 5px solid transparent;
     }
 
-    /* Responsive content styling */
+    .timeline-item:nth-child(odd) .timeline-content::before {
+        left: auto;
+        right: -13px;
+        border-right: none;
+        border-left: 8px solid #fff;
+    }
+
     .timeline-item:nth-child(odd) .timeline-title {
         justify-content: flex-end;
     }
 
     .timeline-item:nth-child(odd) .timeline-note {
         border-left: none;
-        border-right: 3px solid #dee2e6;
+        border-right: 4px solid #dee2e6;
     }
 
-    /* Icon alignment for odd items */
     .timeline-item:nth-child(odd) p i,
     .timeline-item:nth-child(odd) .timeline-note i {
         margin-right: 0;
@@ -7372,39 +7442,84 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     }
 }
 
-/* Animation for timeline items */
-.timeline-item {
+/* Enhanced animation for timeline */
+@keyframes slide-in-left {
+    from {
+        transform: translateX(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slide-in-right {
+    from {
+        transform: translateX(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@media (min-width: 992px) {
+    .timeline-item:nth-child(odd) {
+        animation: slide-in-left 0.6s ease forwards;
+    }
+
+    .timeline-item:nth-child(even) {
+        animation: slide-in-right 0.6s ease forwards;
+    }
+
+    .timeline-item:nth-child(1) {
+        animation-delay: 0.1s;
+    }
+
+    .timeline-item:nth-child(2) {
+        animation-delay: 0.3s;
+    }
+
+    .timeline-item:nth-child(3) {
+        animation-delay: 0.5s;
+    }
+
+    .timeline-item:nth-child(4) {
+        animation-delay: 0.7s;
+    }
+}
+/* Timeline animations */
+.appear {
     opacity: 0;
-    transform: translateY(20px);
     animation: fade-in 0.5s ease forwards;
 }
 
-.timeline-item:nth-child(1) {
-    animation-delay: 0.1s;
-}
-.timeline-item:nth-child(2) {
-    animation-delay: 0.3s;
-}
-.timeline-item:nth-child(3) {
-    animation-delay: 0.5s;
-}
-.timeline-item:nth-child(4) {
-    animation-delay: 0.7s;
-}
-
 @keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
-.badge.bg-light {
-    font-size: 0.75rem;
-    font-weight: normal;
+.empty-timeline {
+    animation: pulse 2s infinite;
 }
 
-.text-muted {
-    font-size: 0.9rem;
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 1;
+    }
 }
 </style>
