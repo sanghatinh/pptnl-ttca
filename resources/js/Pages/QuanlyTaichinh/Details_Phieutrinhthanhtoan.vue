@@ -637,20 +637,26 @@
                                             >
                                                 Trạng thái thanh toán
                                             </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="trangThai"
-                                                :value="
-                                                    formatStatus(
-                                                        document.status
-                                                    )
-                                                "
+                                            <div
+                                                class="status-display"
                                                 :class="
                                                     statusClass(document.status)
                                                 "
-                                                disabled
-                                            />
+                                            >
+                                                <i
+                                                    class="fas"
+                                                    :class="
+                                                        getStatusIcon(
+                                                            document.status
+                                                        )
+                                                    "
+                                                ></i>
+                                                <span>{{
+                                                    formatStatus(
+                                                        document.status
+                                                    )
+                                                }}</span>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -5492,6 +5498,23 @@ export default {
             return "";
         },
 
+        getStatusIcon(status) {
+            if (status === "paid") return "fa-check-circle";
+            if (status === "submitted") return "fa-paper-plane";
+            if (status === "processing") return "fa-spinner fa-spin";
+            if (status === "cancelled") return "fa-times-circle";
+            return "fa-question-circle";
+        },
+
+        statusClass(status) {
+            if (status === "paid") return "text-success status-paid";
+            if (status === "submitted") return "text-primary status-submitted";
+            if (status === "processing")
+                return "text-warning status-processing";
+            if (status === "cancelled") return "text-danger status-cancelled";
+            return "";
+        },
+
         saveNote() {
             axios
                 .post(
@@ -7894,5 +7917,65 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 
 .empty-timeline i {
     filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1));
+}
+
+/* Trạng thái thanh toán
+ให้ขื้น icon แล้วชื่อ status */
+.status-display {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.status-display i {
+    margin-right: 8px;
+    font-size: 1.1rem;
+}
+
+.status-display span {
+    color: white !important;
+}
+
+.status-paid {
+    background-color: #28a745;
+    color: white !important;
+}
+
+.status-paid i,
+.status-paid span {
+    color: white !important;
+}
+
+.status-submitted {
+    background-color: #1e88e5;
+    color: white !important;
+}
+
+.status-submitted i,
+.status-submitted span {
+    color: white !important;
+}
+
+.status-processing {
+    background-color: #ffc107;
+    color: #212529 !important;
+}
+
+.status-processing i,
+.status-processing span {
+    color: #212529 !important;
+}
+
+.status-cancelled {
+    background-color: #dc3545;
+    color: white !important;
+}
+
+.status-cancelled i,
+.status-cancelled span {
+    color: white !important;
 }
 </style>

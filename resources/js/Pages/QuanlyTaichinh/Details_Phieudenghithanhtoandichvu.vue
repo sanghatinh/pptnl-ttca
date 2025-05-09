@@ -489,12 +489,20 @@
                                             >
                                                 Trạng thái thanh toán
                                             </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="trangThai"
-                                                disabled
-                                            />
+                                            <div
+                                                class="status-display"
+                                                :class="documentStatusClass"
+                                            >
+                                                <i
+                                                    class="fas"
+                                                    :class="statusIcon"
+                                                ></i>
+                                                <span>{{
+                                                    formatStatus(
+                                                        document.trang_thai_thanh_toan
+                                                    )
+                                                }}</span>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1444,6 +1452,18 @@ export default {
 
             return classes[status] || "badge bg-secondary";
         },
+        statusIcon() {
+            const icons = {
+                processing: "fa-spinner fa-spin",
+                submitted: "fa-paper-plane",
+                paid: "fa-check-circle",
+                rejected: "fa-times-circle",
+            };
+            return (
+                icons[this.document.trang_thai_thanh_toan] ||
+                "fa-question-circle"
+            );
+        },
     },
     mounted() {
         this.fetchUserData();
@@ -1805,52 +1825,100 @@ export default {
         updateFormFields() {
             if (!this.document) return;
 
-            // Update all form fields with document data
-            document.getElementById("maGiaiNgan").value =
-                this.document.ma_giai_ngan;
-            document.getElementById("vuDauTu").value = this.document.vu_dau_tu;
-            document.getElementById("loaiThanhToan").value =
-                this.document.loai_thanh_toan;
-            document.getElementById("trangThai").value = this.formatStatus(
-                this.document.trang_thai_thanh_toan
-            );
-            document.getElementById("khachHangCaNhan").value =
-                this.document.khach_hang_ca_nhan;
-            document.getElementById("maKhachHangCaNhan").value =
-                this.document.ma_khach_hang_ca_nhan;
-            document.getElementById("khachHangDoanhNghiep").value =
-                this.document.khach_hang_doanh_nghiep;
-            document.getElementById("maKhachHangDoanhNghiep").value =
-                this.document.ma_khach_hang_doanh_nghiep;
-            document.getElementById("soToTrinh").value =
-                this.document.so_to_trinh;
-            document.getElementById("soDotThanhToan").value =
-                this.document.so_dot_thanh_toan;
-            // Use the formatDateForInput method for date fields instead of formatDate
+            // Use optional chaining with getElementById and add null checks before setting values
+            const maGiaiNgan = document.getElementById("maGiaiNgan");
+            if (maGiaiNgan) maGiaiNgan.value = this.document.ma_giai_ngan || "";
 
-            if (this.document.ngay_thanh_toan) {
-                const formattedDate = this.formatDateForInput(
-                    this.document.ngay_thanh_toan
+            const vuDauTu = document.getElementById("vuDauTu");
+            if (vuDauTu) vuDauTu.value = this.document.vu_dau_tu || "";
+
+            const loaiThanhToan = document.getElementById("loaiThanhToan");
+            if (loaiThanhToan)
+                loaiThanhToan.value = this.document.loai_thanh_toan || "";
+
+            // Since trangThai might be using a different approach for display, check if it's an input
+            const trangThai = document.getElementById("trangThai");
+            if (trangThai && trangThai.tagName === "INPUT") {
+                trangThai.value = this.formatStatus(
+                    this.document.trang_thai_thanh_toan
                 );
-                document.getElementById("ngayThanhToan").value = formattedDate;
-                // อัพเดท editableDocument ด้วย
-                this.editableDocument.ngay_thanh_toan = formattedDate;
-            } else {
-                document.getElementById("ngayThanhToan").value = "";
-                this.editableDocument.ngay_thanh_toan = "";
             }
 
-            document.getElementById("tongTien").value = this.formatCurrency(
-                this.document.tong_tien
+            const khachHangCaNhan = document.getElementById("khachHangCaNhan");
+            if (khachHangCaNhan)
+                khachHangCaNhan.value = this.document.khach_hang_ca_nhan || "";
+
+            const maKhachHangCaNhan =
+                document.getElementById("maKhachHangCaNhan");
+            if (maKhachHangCaNhan)
+                maKhachHangCaNhan.value =
+                    this.document.ma_khach_hang_ca_nhan || "";
+
+            const khachHangDoanhNghiep = document.getElementById(
+                "khachHangDoanhNghiep"
             );
-            document.getElementById("tongTienTamGiu").value =
-                this.formatCurrency(this.document.tong_tien_tam_giu);
-            document.getElementById("tongTienKhauTru").value =
-                this.formatCurrency(this.document.tong_tien_khau_tru);
-            document.getElementById("tongTienLaiSuat").value =
-                this.formatCurrency(this.document.tong_tien_lai_suat);
-            document.getElementById("tongTienConLai").value =
-                this.formatCurrency(this.document.tong_tien_thanh_toan_con_lai);
+            if (khachHangDoanhNghiep)
+                khachHangDoanhNghiep.value =
+                    this.document.khach_hang_doanh_nghiep || "";
+
+            const maKhachHangDoanhNghiep = document.getElementById(
+                "maKhachHangDoanhNghiep"
+            );
+            if (maKhachHangDoanhNghiep)
+                maKhachHangDoanhNghiep.value =
+                    this.document.ma_khach_hang_doanh_nghiep || "";
+
+            const soToTrinh = document.getElementById("soToTrinh");
+            if (soToTrinh) soToTrinh.value = this.document.so_to_trinh || "";
+
+            const soDotThanhToan = document.getElementById("soDotThanhToan");
+            if (soDotThanhToan)
+                soDotThanhToan.value = this.document.so_dot_thanh_toan || "";
+
+            // Handle date field
+            const ngayThanhToan = document.getElementById("ngayThanhToan");
+            if (ngayThanhToan) {
+                if (this.document.ngay_thanh_toan) {
+                    const formattedDate = this.formatDateForInput(
+                        this.document.ngay_thanh_toan
+                    );
+                    ngayThanhToan.value = formattedDate;
+                    // Update editableDocument
+                    this.editableDocument.ngay_thanh_toan = formattedDate;
+                } else {
+                    ngayThanhToan.value = "";
+                    this.editableDocument.ngay_thanh_toan = "";
+                }
+            }
+
+            // Financial fields
+            const tongTien = document.getElementById("tongTien");
+            if (tongTien)
+                tongTien.value = this.formatCurrency(this.document.tong_tien);
+
+            const tongTienTamGiu = document.getElementById("tongTienTamGiu");
+            if (tongTienTamGiu)
+                tongTienTamGiu.value = this.formatCurrency(
+                    this.document.tong_tien_tam_giu
+                );
+
+            const tongTienKhauTru = document.getElementById("tongTienKhauTru");
+            if (tongTienKhauTru)
+                tongTienKhauTru.value = this.formatCurrency(
+                    this.document.tong_tien_khau_tru
+                );
+
+            const tongTienLaiSuat = document.getElementById("tongTienLaiSuat");
+            if (tongTienLaiSuat)
+                tongTienLaiSuat.value = this.formatCurrency(
+                    this.document.tong_tien_lai_suat
+                );
+
+            const tongTienConLai = document.getElementById("tongTienConLai");
+            if (tongTienConLai)
+                tongTienConLai.value = this.formatCurrency(
+                    this.document.tong_tien_thanh_toan_con_lai
+                );
 
             // Re-setup toggle functionality for sections
             this.$nextTick(() => {
@@ -3255,5 +3323,39 @@ export default {
 
 .empty-timeline i {
     filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1));
+}
+
+/* Trạng thái thanh toán
+ให้ขื้น icon แล้วชื่อ status */
+.status-display {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.status-display i {
+    margin-right: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.status-display.processing {
+    background-color: #ffc107;
+}
+
+.status-display.submitted {
+    background-color: #1e88e5;
+}
+
+.status-display.paid {
+    background-color: #28a745;
+}
+
+.status-display.rejected {
+    background-color: #dc3545;
 }
 </style>

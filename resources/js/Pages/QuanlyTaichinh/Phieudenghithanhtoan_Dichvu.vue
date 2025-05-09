@@ -16,12 +16,13 @@
                         <option value="all">
                             Tất cả trạng thái ({{ statusCounts.total }})
                         </option>
-                        <option value="submitted">
-                            Đã nộp kế toán ({{ statusCounts.submitted }})
-                        </option>
                         <option value="processing">
                             Đang xử lý ({{ statusCounts.processing }})
                         </option>
+                        <option value="submitted">
+                            Đã nộp kế toán ({{ statusCounts.submitted }})
+                        </option>
+
                         <option value="paid">
                             Đã thanh toán ({{ statusCounts.paid }})
                         </option>
@@ -82,7 +83,7 @@
             <div class="flex gap-2 mb-3">
                 <div class="flex-1 relative">
                     <span
-                        class="absolute inset-y-0 left-0 flex items-center pl-3"
+                        class="absolute inset-y-3 left-0 flex items-center pl-3"
                     >
                         <i class="fas fa-search text-gray-400"></i>
                     </span>
@@ -945,70 +946,76 @@
                 class="card border p-4 mb-4 rounded shadow hover:shadow-green-500 transition-shadow duration-300"
                 @click="viewDetails(item)"
             >
-                <div class="flex-1 justify-items-start">
-                    <div class="mb-2">
-                        <strong>Mã giải ngân:</strong>
-                        {{ item.ma_giai_ngan }}
+                <div class="flex">
+                    <!-- First section: Show only status with icon -->
+                    <div
+                        class="flex-shrink-0 flex items-center justify-center mr-4 me-4"
+                    >
+                        <div
+                            class="status-display flex flex-column items-center"
+                        >
+                            <i
+                                :class="statusIcons(item.trang_thai_thanh_toan)"
+                                class="text-3xl mb-1"
+                            ></i>
+                            <span
+                                :class="statusClass(item.trang_thai_thanh_toan)"
+                            >
+                                {{ formatStatus(item.trang_thai_thanh_toan) }}
+                            </span>
+                        </div>
                     </div>
-                    <div class="mb-2">
-                        <strong>Vụ đầu tư:</strong>
-                        {{ item.vu_dau_tu }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Loại thanh toán:</strong>
-                        {{ item.loai_thanh_toan }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Trạng thái thanh toán:</strong>
-                        {{ formatStatus(item.trang_thai_thanh_toan) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Ngày thanh toán:</strong>
-                        {{ formatDate(item.ngay_thanh_toan) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Khách hàng cá nhân:</strong>
-                        {{ item.khach_hang_ca_nhan }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Mã KH cá nhân:</strong>
-                        {{ item.ma_khach_hang_ca_nhan }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Khách hàng doanh nghiệp:</strong>
-                        {{ item.khach_hang_doanh_nghiep }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Mã KH doanh nghiệp:</strong>
-                        {{ item.ma_khach_hang_doanh_nghiep }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Tổng tiền:</strong>
-                        {{ formatCurrency(item.tong_tien) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Tổng tiền tạm giữ:</strong>
-                        {{ formatCurrency(item.tong_tien_tam_giu) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Tổng tiền khấu trừ:</strong>
-                        {{ formatCurrency(item.tong_tien_khau_tru) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Tổng tiền lãi suất:</strong>
-                        {{ formatCurrency(item.tong_tien_lai_suat) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Tổng tiền thanh toán còn lại:</strong>
-                        {{ formatCurrency(item.tong_tien_thanh_toan_con_lai) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Số tờ trình:</strong>
-                        {{ item.so_to_trinh }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Đợt thanh toán:</strong>
-                        {{ item.dot_thanh_toan }}
+
+                    <!-- Second section: Other details -->
+                    <div class="flex-1 justify-items-start">
+                        <div class="mb-2">
+                            <strong>Mã giải ngân:</strong>
+                            {{ item.ma_giai_ngan }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Vụ đầu tư:</strong>
+                            {{ item.vu_dau_tu }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Loại thanh toán:</strong>
+                            {{ item.loai_thanh_toan }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Ngày thanh toán:</strong>
+                            {{ formatDate(item.ngay_thanh_toan) }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Khách hàng:</strong>
+                            {{
+                                item.khach_hang_ca_nhan ||
+                                item.khach_hang_doanh_nghiep ||
+                                "N/A"
+                            }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Tổng tiền:</strong>
+                            {{ formatCurrency(item.tong_tien) }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Tổng tiền tạm giữ:</strong>
+                            {{ formatCurrency(item.tong_tien_tam_giu) }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Tổng tiền khấu trừ:</strong>
+                            {{ formatCurrency(item.tong_tien_tam_giu) }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Tổng tiền lãi suất:</strong>
+                            {{ formatCurrency(item.tong_tien_lai_suat) }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Tổng tiền thanh toán còn lại:</strong>
+                            {{
+                                formatCurrency(
+                                    item.tong_tien_thanh_toan_con_lai
+                                )
+                            }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1105,8 +1112,8 @@ export default {
             perPage: 15,
             statusOptions: [
                 { code: "all", name: "Tất cả trạng thái" },
-                { code: "submitted", name: "Đã nộp kế toán" },
                 { code: "processing", name: "Đang xử lý" },
+                { code: "submitted", name: "Đã nộp kế toán" },
                 { code: "paid", name: "Đã thanh toán" },
                 { code: "rejected", name: "Từ chối" },
             ],
@@ -1282,8 +1289,9 @@ export default {
             if (!status) return "";
 
             const statusMap = {
-                submitted: "Đã nộp kế toán",
                 processing: "Đang xử lý",
+                submitted: "Đã nộp kế toán",
+
                 paid: "Đã thanh toán",
                 rejected: "Từ chối",
             };
@@ -2113,4 +2121,89 @@ td:nth-child(4) {
 }
 /* Keep all your existing styles below this line */
 /* ... */
+
+/* Status display styling for mobile */
+.status-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 85px;
+    min-height: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    margin-right: 15px;
+}
+
+/* Center the icon and text vertically */
+.flex-shrink-0.flex.items-center.justify-center.mr-4.me-4 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+}
+
+/* Status colors for mobile display */
+.status-display i.text-warning {
+    color: #ffc107;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.status-display i.text-primary {
+    color: #0d6efd;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.status-display i.text-success {
+    color: #198754;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.status-display i.text-danger {
+    color: #dc3545;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Mobile card optimization */
+@media (max-width: 768px) {
+    .card {
+        padding: 1rem;
+    }
+
+    .flex {
+        align-items: stretch;
+    }
+
+    .status-display {
+        padding: 8px;
+        min-width: 70px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+    }
+
+    .text-3xl {
+        font-size: 1.5rem;
+        line-height: 1.2;
+    }
+
+    /* Make the status text centered and properly sized */
+    .status-display span {
+        text-align: center;
+        font-size: 0.85rem;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    .flex-1.justify-items-start {
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+    }
+}
 </style>

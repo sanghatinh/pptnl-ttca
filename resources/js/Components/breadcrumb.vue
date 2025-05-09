@@ -31,10 +31,14 @@ export default {
                 taonewhoso: "Tạo mới hồ sơ",
                 Details_NghiemthuDV: "Nghiệm thu dịch vụ",
                 Details_Phieugiaonhanhomgiong: "Phiếu giao nhận hom giống",
+                Details_Phieudenghithanhtoandichvu:
+                    "Phiếu đề nghị thanh toán dịch vụ",
             },
             customPathMap: {
                 Details_NghiemthuDV: "/Bienbannghiemthudichvu",
                 Details_Phieugiaonhanhomgiong: "/Phieugiaonhanhomgiong",
+                Details_Phieudenghithanhtoandichvu:
+                    "/Phieudenghithanhtoandichvu",
             },
         };
     },

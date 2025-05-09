@@ -79,9 +79,9 @@
                     class="btn btn-success d-flex align-items-center gap-2"
                     @click="showCreatePaymentRequestModal"
                     :disabled="selectedItems.length === 0"
+                    title="Tạo phiếu trình thanh toán"
                 >
                     <i class="fas fa-file-invoice"></i>
-                    <span>Tạo phiếu trình thanh toán</span>
                 </button>
                 <div
                     class="col d-flex justify-content-end gap-3 align-items-center"
@@ -148,6 +148,35 @@
                         >
                             <i class="fas fa-chevron-down text-gray-400"></i>
                         </div>
+                    </div>
+                </div>
+                <!-- Status Filter -->
+                <div class="mb-2.5">
+                    <label class="text-sm font-medium text-gray-700 mb-1 block"
+                        >Tình trạng giao nhận hồ sơ</label
+                    >
+                    <div class="status-filter delivery-status-filter">
+                        <select
+                            v-model="deliveryStatusFilter"
+                            class="form-select status-select"
+                        >
+                            <option
+                                v-for="option in deliveryStatusOptions"
+                                :key="option.code"
+                                :value="option.code"
+                                class="status-option"
+                            >
+                                <span
+                                    v-if="option.code !== 'all'"
+                                    class="status-icon"
+                                >
+                                    <i :class="statusIcons(option.code)"></i>
+                                </span>
+                                {{ option.name }} ({{
+                                    deliveryStatusCounts[option.code] || 0
+                                }})
+                            </option>
+                        </select>
                     </div>
                 </div>
 
@@ -373,6 +402,87 @@
                                                 </button>
                                                 <button
                                                     @click="activeFilter = null"
+                                                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                >
+                                                    Áp dụng
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-2">
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span>Trạng thái thanh toán</span>
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'trang_thai_thanh_toan'
+                                                    )
+                                                "
+                                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.trang_thai_thanh_toan,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                        <div
+                                            v-if="
+                                                activeFilter ===
+                                                'trang_thai_thanh_toan'
+                                            "
+                                            class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10 w-64"
+                                        >
+                                            <div
+                                                class="max-h-40 overflow-y-auto mb-2"
+                                            >
+                                                <div
+                                                    v-for="option in uniqueValues.trang_thai_thanh_toan"
+                                                    :key="option"
+                                                    class="flex items-center mb-2"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        :id="`trang_thai_thanh_toan-${option}`"
+                                                        :value="option"
+                                                        v-model="
+                                                            selectedFilterValues.trang_thai_thanh_toan
+                                                        "
+                                                        class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                    />
+                                                    <label
+                                                        :for="`trang_thai_thanh_toan-${option}`"
+                                                        class="select-none"
+                                                        >{{
+                                                            formatPaymentStatus(
+                                                                option
+                                                            )
+                                                        }}</label
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <button
+                                                    @click="
+                                                        resetFilter(
+                                                            'trang_thai_thanh_toan'
+                                                        )
+                                                    "
+                                                    class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    @click="
+                                                        applyFilter(
+                                                            'trang_thai_thanh_toan'
+                                                        )
+                                                    "
                                                     class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
                                                 >
                                                     Áp dụng
@@ -1080,6 +1190,37 @@
                                         </template>
                                     </td>
                                     <td class="border px-4 py-2">
+                                        <span
+                                            v-if="item.trang_thai_thanh_toan"
+                                            :class="
+                                                paymentStatusClass(
+                                                    item.trang_thai_thanh_toan
+                                                )
+                                            "
+                                            class="px-2 py-1 rounded-full text-xs font-medium flex items-center w-fit"
+                                        >
+                                            <i
+                                                :class="
+                                                    paymentStatusIcon(
+                                                        item.trang_thai_thanh_toan
+                                                    )
+                                                "
+                                                class="mr-1"
+                                            ></i>
+                                            {{
+                                                formatPaymentStatus(
+                                                    item.trang_thai_thanh_toan
+                                                )
+                                            }}
+                                        </span>
+                                        <span
+                                            v-else
+                                            class="text-gray-400 italic text-xs"
+                                        >
+                                            Chưa thanh toán
+                                        </span>
+                                    </td>
+                                    <td class="border px-4 py-2">
                                         {{ item.vu_dau_tu }}
                                     </td>
                                     <td class="border px-4 py-2">
@@ -1192,38 +1333,93 @@
                 class="card border p-4 mb-4 rounded shadow hover:shadow-green-500 transition-shadow duration-300"
                 @click="viewDetails(item)"
             >
-                <div class="flex-1 justify-items-start">
-                    <div class="mb-2">
-                        <strong>Mã nghiệm thu:</strong>
-                        {{ item.ma_nghiem_thu }}
+                <div class="flex">
+                    <!-- First section: Show only status with icon -->
+                    <div
+                        class="flex-shrink-0 flex items-center justify-center mr-4 me-4"
+                    >
+                        <div
+                            class="status-display flex flex-column items-center"
+                        >
+                            <i
+                                v-if="item.trang_thai_thanh_toan"
+                                :class="[
+                                    paymentStatusIcon(
+                                        item.trang_thai_thanh_toan
+                                    ),
+                                    'text-3xl mb-1',
+                                    {
+                                        'text-warning':
+                                            item.trang_thai_thanh_toan ===
+                                            'processing',
+                                        'text-primary':
+                                            item.trang_thai_thanh_toan ===
+                                            'submitted',
+                                        'text-success':
+                                            item.trang_thai_thanh_toan ===
+                                            'paid',
+                                        'text-danger':
+                                            item.trang_thai_thanh_toan ===
+                                            'cancelled',
+                                    },
+                                ]"
+                            ></i>
+                            <i
+                                v-else
+                                class="fas fa-money-bill-slash text-3xl mb-1 text-gray-400"
+                            ></i>
+                            <span
+                                v-if="item.trang_thai_thanh_toan"
+                                class="status-badge text-xs"
+                                :class="
+                                    paymentStatusClass(
+                                        item.trang_thai_thanh_toan
+                                    )
+                                "
+                            >
+                                {{
+                                    formatPaymentStatus(
+                                        item.trang_thai_thanh_toan
+                                    )
+                                }}
+                            </span>
+                            <span
+                                v-else
+                                class="status-badge text-xs text-gray-400"
+                                >Chưa thanh toán</span
+                            >
+                        </div>
                     </div>
-                    <div class="mb-2">
-                        <strong>Trạm:</strong>
-                        {{ item.tram }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Vụ đầu tư:</strong>
-                        {{ item.vu_dau_tu }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Tiêu đề:</strong>
-                        {{ item.tieu_de }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Hợp đồng đầu tư mía:</strong>
-                        {{ item.hop_dong_dau_tu_mia }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Hình thức thực hiện DV:</strong>
-                        {{ item.hinh_thuc_thuc_hien_dv }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Hợp đồng cung ứng dịch vụ:</strong>
-                        {{ item.hop_dong_cung_ung_dich_vu }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Tổng tiền:</strong>
-                        {{ formatCurrency(item.tong_tien_dich_vu) }}
+                    <div class="flex-1 justify-items-start">
+                        <div class="mb-2">
+                            <strong>Mã nghiệm thu:</strong>
+                            {{ item.ma_nghiem_thu }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Trạm:</strong>
+                            {{ item.tram }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Vụ đầu tư:</strong>
+                            {{ item.vu_dau_tu }}
+                        </div>
+
+                        <div class="mb-2">
+                            <strong>Hợp đồng đầu tư mía:</strong>
+                            {{ item.hop_dong_dau_tu_mia }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Hình thức thực hiện DV:</strong>
+                            {{ item.hinh_thuc_thuc_hien_dv }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Hợp đồng cung ứng dịch vụ:</strong>
+                            {{ item.hop_dong_cung_ung_dich_vu }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Tổng tiền:</strong>
+                            {{ formatCurrency(item.tong_tien_dich_vu) }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1438,7 +1634,7 @@
                 </div>
                 <div class="modal-body">
                     <form @submit.prevent="submitPaymentRequest">
-                        <div class="mb-3">
+                        <!-- <div class="mb-3">
                             <label for="requestTitle" class="form-label"
                                 >Tiêu đề</label
                             >
@@ -1449,7 +1645,7 @@
                                 v-model="paymentRequest.title"
                                 readonly
                             />
-                        </div>
+                        </div> -->
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="requestDate" class="form-label"
@@ -1626,10 +1822,18 @@ export default {
             userStation: null,
             userEmployeeCode: null,
             statusOptions: [
-                { code: "all", name: "Tất cả" },
-                { code: "approved", name: "อนุมัติแล้ว" },
-                { code: "pending", name: "รอการอนุมัติ" },
-                { code: "rejected", name: "ปฏิเสธ" },
+                { code: "all", name: "Tất cả trạng thái" },
+                { code: "processing", name: "Đang xử lý" },
+                { code: "submitted", name: "Đã nộp kế toán" },
+                { code: "paid", name: "Đã thanh toán" },
+            ],
+            deliveryStatusFilter: "all",
+            deliveryStatusOptions: [
+                { code: "all", name: "Tất cả tình trạng giao nhận" },
+                { code: "creating", name: "Nháp" },
+                { code: "sending", name: "Đang nộp" },
+                { code: "received", name: "Đã nhận" },
+                { code: "cancelled", name: "Hủy" },
             ],
             paginationClasses: {
                 ul: "flex list-none pagination",
@@ -1653,18 +1857,21 @@ export default {
                 nguoi_nhan: "",
                 ngay_nhan: "",
                 trang_thai_nhan_hs: "",
+                trang_thai_thanh_toan: "",
             },
             selectedFilterValues: {
                 tram: [],
                 vu_dau_tu: [],
                 hinh_thuc_thuc_hien_dv: [],
                 trang_thai_nhan_hs: [],
+                trang_thai_thanh_toan: [],
             },
             uniqueValues: {
                 tram: [],
                 vu_dau_tu: [],
                 hinh_thuc_thuc_hien_dv: [],
                 trang_thai_nhan_hs: [],
+                trang_thai_thanh_toan: [],
             },
             exportModal: null, // Add this to store modal reference
             selectedFile: null,
@@ -1692,22 +1899,58 @@ export default {
     },
     computed: {
         statusCounts() {
+            // Initialize counts of each status type
             const counts = {
-                all: this.bienBanList.length,
-                approved: 0,
-                pending: 0,
+                all: 0, // This will be calculated as the sum of all payment statuses
+                processing: 0,
+                submitted: 0,
+                paid: 0,
+                cancelled: 0,
                 rejected: 0,
+                null: 0, // For "Chưa thanh toán"
             };
 
+            // Count each status type in the bienBanList
             this.bienBanList.forEach((item) => {
-                if (item.tinh_trang_duyet === 1) {
-                    counts.approved++;
-                } else if (item.tinh_trang_duyet === 0) {
-                    counts.pending++;
-                } else if (item.tinh_trang_duyet === 2) {
-                    counts.rejected++;
+                if (!item.trang_thai_thanh_toan) {
+                    counts.null++;
+                } else if (counts[item.trang_thai_thanh_toan] !== undefined) {
+                    counts[item.trang_thai_thanh_toan]++;
                 }
             });
+
+            // Calculate 'all' as the sum of all status counts
+            counts.all =
+                counts.processing +
+                counts.submitted +
+                counts.paid +
+                counts.cancelled +
+                counts.rejected +
+                counts.null;
+
+            return counts;
+        },
+        deliveryStatusCounts() {
+            // Initialize counts of each status type
+            const counts = {
+                all: 0,
+                creating: 0,
+                sending: 0,
+                received: 0,
+                cancelled: 0,
+            };
+
+            // Count each status type in the bienBanList
+            this.bienBanList.forEach((item) => {
+                if (!item.trang_thai_nhan_hs) {
+                    counts.all++;
+                } else if (counts[item.trang_thai_nhan_hs] !== undefined) {
+                    counts[item.trang_thai_nhan_hs]++;
+                }
+            });
+
+            // Calculate 'all' as the sum of all status counts
+            counts.all = this.bienBanList.length;
 
             return counts;
         },
@@ -1731,12 +1974,13 @@ export default {
                 // Filter by status
                 let matchesStatus = true;
                 if (this.statusFilter !== "all") {
-                    if (this.statusFilter === "approved") {
-                        matchesStatus = item.tinh_trang_duyet === 1;
-                    } else if (this.statusFilter === "pending") {
-                        matchesStatus = item.tinh_trang_duyet === 0;
-                    } else if (this.statusFilter === "rejected") {
-                        matchesStatus = item.tinh_trang_duyet === 2;
+                    if (this.statusFilter === null) {
+                        // For "Chưa thanh toán" - null value
+                        matchesStatus = !item.trang_thai_thanh_toan;
+                    } else {
+                        // For other payment statuses
+                        matchesStatus =
+                            item.trang_thai_thanh_toan === this.statusFilter;
                     }
                 }
 
@@ -1746,107 +1990,121 @@ export default {
                     matchesInvestment =
                         item.vu_dau_tu === this.investmentFilter;
                 }
+                // Add the deliveryStatusFilter logic
+                let matchesDeliveryStatus = true;
+                if (this.deliveryStatusFilter !== "all") {
+                    matchesDeliveryStatus =
+                        item.trang_thai_nhan_hs === this.deliveryStatusFilter;
+                }
 
                 // Column specific filters
                 const matchColumnFilters =
                     // Search text filters
-                    (!this.columnFilters.ma_nghiem_thu ||
+                    ((!this.columnFilters.ma_nghiem_thu ||
                         (item.ma_nghiem_thu &&
                             item.ma_nghiem_thu
                                 .toLowerCase()
                                 .includes(
                                     this.columnFilters.ma_nghiem_thu.toLowerCase()
                                 ))) &&
-                    (!this.columnFilters.tieu_de ||
-                        (item.tieu_de &&
-                            item.tieu_de
-                                .toLowerCase()
-                                .includes(
-                                    this.columnFilters.tieu_de.toLowerCase()
+                        (!this.columnFilters.tieu_de ||
+                            (item.tieu_de &&
+                                item.tieu_de
+                                    .toLowerCase()
+                                    .includes(
+                                        this.columnFilters.tieu_de.toLowerCase()
+                                    ))) &&
+                        (!this.columnFilters.khach_hang_ca_nhan_dt_mia ||
+                            (item.khach_hang_ca_nhan_dt_mia &&
+                                item.khach_hang_ca_nhan_dt_mia
+                                    .toLowerCase()
+                                    .includes(
+                                        this.columnFilters.khach_hang_ca_nhan_dt_mia.toLowerCase()
+                                    ))) &&
+                        (!this.columnFilters.khach_hang_doanh_nghiep_dt_mia ||
+                            (item.khach_hang_doanh_nghiep_dt_mia &&
+                                item.khach_hang_doanh_nghiep_dt_mia
+                                    .toLowerCase()
+                                    .includes(
+                                        this.columnFilters.khach_hang_doanh_nghiep_dt_mia.toLowerCase()
+                                    ))) &&
+                        (!this.columnFilters.hop_dong_dau_tu_mia ||
+                            (item.hop_dong_dau_tu_mia &&
+                                item.hop_dong_dau_tu_mia
+                                    .toLowerCase()
+                                    .includes(
+                                        this.columnFilters.hop_dong_dau_tu_mia.toLowerCase()
+                                    ))) &&
+                        (!this.columnFilters.hop_dong_cung_ung_dich_vu ||
+                            (item.hop_dong_cung_ung_dich_vu &&
+                                item.hop_dong_cung_ung_dich_vu
+                                    .toLowerCase()
+                                    .includes(
+                                        this.columnFilters.hop_dong_cung_ung_dich_vu.toLowerCase()
+                                    ))) &&
+                        (!this.columnFilters.nguoi_giao ||
+                            (item.nguoi_giao &&
+                                item.nguoi_giao
+                                    .toLowerCase()
+                                    .includes(
+                                        this.columnFilters.nguoi_giao.toLowerCase()
+                                    ))) &&
+                        (!this.columnFilters.nguoi_nhan ||
+                            (item.nguoi_nhan &&
+                                item.nguoi_nhan
+                                    .toLowerCase()
+                                    .includes(
+                                        this.columnFilters.nguoi_nhan.toLowerCase()
+                                    ))) &&
+                        (!this.columnFilters.ngay_nhan ||
+                            (item.ngay_nhan &&
+                                this.formatDateForComparison(item.ngay_nhan) ===
+                                    this.formatDateForComparison(
+                                        this.columnFilters.ngay_nhan
+                                    ))) &&
+                        (!this.columnFilters.can_bo_nong_vu ||
+                            (item.can_bo_nong_vu &&
+                                item.can_bo_nong_vu
+                                    .toLowerCase()
+                                    .includes(
+                                        this.columnFilters.can_bo_nong_vu.toLowerCase()
+                                    ))) &&
+                        // Dropdown filters - check if empty or if value is in selected options
+                        (this.selectedFilterValues.tram.length === 0 ||
+                            (item.tram &&
+                                this.selectedFilterValues.tram.includes(
+                                    item.tram
                                 ))) &&
-                    (!this.columnFilters.khach_hang_ca_nhan_dt_mia ||
-                        (item.khach_hang_ca_nhan_dt_mia &&
-                            item.khach_hang_ca_nhan_dt_mia
-                                .toLowerCase()
-                                .includes(
-                                    this.columnFilters.khach_hang_ca_nhan_dt_mia.toLowerCase()
+                        (this.selectedFilterValues.vu_dau_tu.length === 0 ||
+                            (item.vu_dau_tu &&
+                                this.selectedFilterValues.vu_dau_tu.includes(
+                                    item.vu_dau_tu
                                 ))) &&
-                    (!this.columnFilters.khach_hang_doanh_nghiep_dt_mia ||
-                        (item.khach_hang_doanh_nghiep_dt_mia &&
-                            item.khach_hang_doanh_nghiep_dt_mia
-                                .toLowerCase()
-                                .includes(
-                                    this.columnFilters.khach_hang_doanh_nghiep_dt_mia.toLowerCase()
+                        (this.selectedFilterValues.hinh_thuc_thuc_hien_dv
+                            .length === 0 ||
+                            (item.hinh_thuc_thuc_hien_dv &&
+                                this.selectedFilterValues.hinh_thuc_thuc_hien_dv.includes(
+                                    item.hinh_thuc_thuc_hien_dv
                                 ))) &&
-                    (!this.columnFilters.hop_dong_dau_tu_mia ||
-                        (item.hop_dong_dau_tu_mia &&
-                            item.hop_dong_dau_tu_mia
-                                .toLowerCase()
-                                .includes(
-                                    this.columnFilters.hop_dong_dau_tu_mia.toLowerCase()
+                        (this.selectedFilterValues.trang_thai_nhan_hs.length ===
+                            0 ||
+                            (item.trang_thai_nhan_hs &&
+                                this.selectedFilterValues.trang_thai_nhan_hs.includes(
+                                    item.trang_thai_nhan_hs
                                 ))) &&
-                    (!this.columnFilters.hop_dong_cung_ung_dich_vu ||
-                        (item.hop_dong_cung_ung_dich_vu &&
-                            item.hop_dong_cung_ung_dich_vu
-                                .toLowerCase()
-                                .includes(
-                                    this.columnFilters.hop_dong_cung_ung_dich_vu.toLowerCase()
-                                ))) &&
-                    (!this.columnFilters.nguoi_giao ||
-                        (item.nguoi_giao &&
-                            item.nguoi_giao
-                                .toLowerCase()
-                                .includes(
-                                    this.columnFilters.nguoi_giao.toLowerCase()
-                                ))) &&
-                    (!this.columnFilters.nguoi_nhan ||
-                        (item.nguoi_nhan &&
-                            item.nguoi_nhan
-                                .toLowerCase()
-                                .includes(
-                                    this.columnFilters.nguoi_nhan.toLowerCase()
-                                ))) &&
-                    (!this.columnFilters.ngay_nhan ||
-                        (item.ngay_nhan &&
-                            this.formatDateForComparison(item.ngay_nhan) ===
-                                this.formatDateForComparison(
-                                    this.columnFilters.ngay_nhan
-                                ))) &&
-                    (!this.columnFilters.can_bo_nong_vu ||
-                        (item.can_bo_nong_vu &&
-                            item.can_bo_nong_vu
-                                .toLowerCase()
-                                .includes(
-                                    this.columnFilters.can_bo_nong_vu.toLowerCase()
-                                ))) &&
-                    // Dropdown filters - check if empty or if value is in selected options
-                    (this.selectedFilterValues.tram.length === 0 ||
-                        (item.tram &&
-                            this.selectedFilterValues.tram.includes(
-                                item.tram
-                            ))) &&
-                    (this.selectedFilterValues.vu_dau_tu.length === 0 ||
-                        (item.vu_dau_tu &&
-                            this.selectedFilterValues.vu_dau_tu.includes(
-                                item.vu_dau_tu
-                            ))) &&
-                    (this.selectedFilterValues.hinh_thuc_thuc_hien_dv.length ===
-                        0 ||
-                        (item.hinh_thuc_thuc_hien_dv &&
-                            this.selectedFilterValues.hinh_thuc_thuc_hien_dv.includes(
-                                item.hinh_thuc_thuc_hien_dv
-                            ))) &&
-                    (this.selectedFilterValues.trang_thai_nhan_hs.length ===
-                        0 ||
-                        (item.trang_thai_nhan_hs &&
-                            this.selectedFilterValues.trang_thai_nhan_hs.includes(
-                                item.trang_thai_nhan_hs
-                            )));
+                        // Add this new check for trang_thai_thanh_toan
+                        this.selectedFilterValues.trang_thai_thanh_toan
+                            .length === 0) ||
+                    (item.trang_thai_thanh_toan &&
+                        this.selectedFilterValues.trang_thai_thanh_toan.includes(
+                            item.trang_thai_thanh_toan
+                        ));
 
                 return (
                     matchesSearch &&
                     matchesStatus &&
                     matchesInvestment &&
+                    matchesDeliveryStatus &&
                     matchColumnFilters
                 );
             });
@@ -1970,6 +2228,47 @@ export default {
             const day = d.getDate().toString().padStart(2, "0");
             return `${year}-${month}-${day}`;
         },
+        formatPaymentStatus(status) {
+            if (!status) return "Chưa thanh toán";
+
+            const statusMap = {
+                processing: "Đang xử lý",
+                submitted: "Đã nộp kế toán",
+                paid: "Đã thanh toán",
+                cancelled: "Đã hủy",
+                rejected: "Từ chối",
+            };
+
+            return statusMap[status] || status;
+        },
+
+        paymentStatusClass(status) {
+            if (!status) return "";
+
+            const classMap = {
+                processing: "bg-blue-100 text-blue-800",
+                submitted: "bg-orange-100 text-orange-800",
+                paid: "bg-green-100 text-green-800",
+                cancelled: "bg-red-100 text-red-800",
+                rejected: "bg-gray-100 text-gray-800",
+            };
+
+            return classMap[status] || "";
+        },
+
+        paymentStatusIcon(status) {
+            if (!status) return "";
+
+            const iconMap = {
+                processing: "fas fa-cog",
+                submitted: "fas fa-paper-plane",
+                paid: "fas fa-check-circle",
+                cancelled: "fas fa-times-circle",
+                rejected: "fas fa-exclamation-circle",
+            };
+
+            return iconMap[status] || "fas fa-question-circle";
+        },
         pageChanged(page) {
             this.currentPage = page;
         },
@@ -2024,6 +2323,7 @@ export default {
                     this.updateUniqueValues("vu_dau_tu");
                     this.updateUniqueValues("hinh_thuc_thuc_hien_dv");
                     this.updateUniqueValues("trang_thai_nhan_hs");
+                    this.updateUniqueValues("trang_thai_thanh_toan"); // Add this line
                 } else {
                     throw new Error(response.data.message);
                 }
@@ -2175,6 +2475,7 @@ export default {
             this.search = "";
             this.statusFilter = "all";
             this.investmentFilter = "all";
+            this.deliveryStatusFilter = "all";
 
             this.currentPage = 1;
         },
@@ -2228,23 +2529,204 @@ export default {
         },
 
         exportToExcelCurrentPage() {
+            this.isLoading = true;
+
             // Get the current page data from paginatedItems
-            if (
-                this.paginatedItems.data &&
-                this.paginatedItems.data.length > 0
-            ) {
-                this.generateExcel(
-                    this.paginatedItems.data,
-                    "bien_ban_current_page"
-                );
+            setTimeout(() => {
+                if (
+                    this.paginatedItems.data &&
+                    this.paginatedItems.data.length > 0
+                ) {
+                    try {
+                        // Import xlsx and FileSaver dynamically
+                        import("xlsx").then((XLSX) => {
+                            import("file-saver").then((module) => {
+                                const FileSaver = module.default;
+
+                                // Format data for export
+                                const exportData = this.paginatedItems.data.map(
+                                    (item) => {
+                                        // Format all numeric values as integers (without decimal places)
+                                        const tong_tien_dich_vu =
+                                            item.tong_tien_dich_vu
+                                                ? parseInt(
+                                                      item.tong_tien_dich_vu
+                                                  )
+                                                : 0;
+
+                                        const tong_tien_tam_giu =
+                                            item.tong_tien_tam_giu
+                                                ? parseInt(
+                                                      item.tong_tien_tam_giu
+                                                  )
+                                                : 0;
+
+                                        const tong_tien_thanh_toan =
+                                            item.tong_tien_thanh_toan
+                                                ? parseInt(
+                                                      item.tong_tien_thanh_toan
+                                                  )
+                                                : 0;
+
+                                        return {
+                                            "Mã nghiệm thu":
+                                                item.ma_nghiem_thu || "",
+                                            Trạm: item.tram || "",
+                                            "Cán bộ nông vụ":
+                                                item.can_bo_nong_vu || "",
+                                            "Trạng thái thanh toán":
+                                                item.trang_thai_thanh_toan
+                                                    ? this.formatPaymentStatus(
+                                                          item.trang_thai_thanh_toan
+                                                      )
+                                                    : "Chưa thanh toán",
+                                            "Vụ đầu tư": item.vu_dau_tu || "",
+                                            "Tiêu đề": item.tieu_de || "",
+                                            "Khách hàng cá nhân":
+                                                item.khach_hang_ca_nhan_dt_mia ||
+                                                "",
+                                            "Khách hàng doanh nghiệp":
+                                                item.khach_hang_doanh_nghiep_dt_mia ||
+                                                "",
+                                            "Hợp đồng đầu tư mía":
+                                                item.hop_dong_dau_tu_mia || "",
+                                            "Hình thức thực hiện DV":
+                                                item.hinh_thuc_thuc_hien_dv ||
+                                                "",
+                                            "Hợp đồng cung ứng DV":
+                                                item.hop_dong_cung_ung_dich_vu ||
+                                                "",
+                                            "Tổng tiền dịch vụ":
+                                                tong_tien_dich_vu,
+                                            "Tổng tiền tạm giữ":
+                                                tong_tien_tam_giu,
+                                            "Tổng tiền thanh toán":
+                                                tong_tien_thanh_toan,
+                                            "Người giao": item.nguoi_giao || "",
+                                            "Người nhận": item.nguoi_nhan || "",
+                                            "Ngày nhận": item.ngay_nhan
+                                                ? this.formatDate(
+                                                      item.ngay_nhan
+                                                  )
+                                                : "",
+                                            "Trạng thái":
+                                                item.trang_thai_nhan_hs
+                                                    ? this.formatStatus(
+                                                          item.trang_thai_nhan_hs
+                                                      )
+                                                    : "",
+                                        };
+                                    }
+                                );
+
+                                // Create a worksheet
+                                const worksheet =
+                                    XLSX.utils.json_to_sheet(exportData);
+
+                                // Set column widths
+                                const columnWidths = [
+                                    { wpx: 120 }, // Mã nghiệm thu
+                                    { wpx: 100 }, // Trạm
+                                    { wpx: 120 }, // Cán bộ nông vụ
+                                    { wpx: 120 }, // Trạng thái thanh toán
+                                    { wpx: 120 }, // Vụ đầu tư
+                                    { wpx: 150 }, // Tiêu đề
+                                    { wpx: 150 }, // Khách hàng cá nhân ĐT mía
+                                    { wpx: 150 }, // Khách hàng doanh nghiệp ĐT mía
+                                    { wpx: 150 }, // Hợp đồng đầu tư mía
+                                    { wpx: 150 }, // Hình thức thực hiện DV
+                                    { wpx: 150 }, // Hợp đồng cung ứng dịch vụ
+                                    { wpx: 120 }, // Tổng tiền
+                                    { wpx: 120 }, // Tổng tiền tạm giữ
+                                    { wpx: 120 }, // Tổng tiền thanh toán
+                                    { wpx: 120 }, // Người giao hồ sơ
+                                    { wpx: 120 }, // Người nhận hồ sơ
+                                    { wpx: 100 }, // Ngày nhận hồ sơ
+                                    { wpx: 120 }, // สถานะ
+                                ];
+                                worksheet["!cols"] = columnWidths;
+
+                                // Create a workbook
+                                const workbook = XLSX.utils.book_new();
+                                XLSX.utils.book_append_sheet(
+                                    workbook,
+                                    worksheet,
+                                    "Biên bản nghiệm thu"
+                                );
+
+                                // Create an Excel file
+                                const excelBuffer = XLSX.write(workbook, {
+                                    bookType: "xlsx",
+                                    type: "array",
+                                });
+
+                                // Save the file
+                                const blob = new Blob([excelBuffer], {
+                                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                });
+                                FileSaver.saveAs(
+                                    blob,
+                                    `bien_ban_current_page_${
+                                        new Date().toISOString().split("T")[0]
+                                    }.xlsx`
+                                );
+
+                                // Show success notification using SweetAlert2 toast
+                                Swal.fire({
+                                    title: "Xuất thành công!",
+                                    text: `Đã xuất ${exportData.length} bản ghi ra tệp Excel`,
+                                    icon: "success",
+                                    toast: true,
+                                    position: "top-end",
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true,
+                                    didOpen: (toast) => {
+                                        toast.addEventListener(
+                                            "mouseenter",
+                                            Swal.stopTimer
+                                        );
+                                        toast.addEventListener(
+                                            "mouseleave",
+                                            Swal.resumeTimer
+                                        );
+                                    },
+                                });
+                            });
+                        });
+                    } catch (error) {
+                        console.error("Export error:", error);
+
+                        // Show error toast
+                        Swal.fire({
+                            title: "Xuất không thành công!",
+                            text: "Đã xảy ra lỗi khi xuất dữ liệu. Vui lòng thử lại.",
+                            icon: "error",
+                            toast: true,
+                            position: "top-end",
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                        });
+                    }
+                } else {
+                    // Show warning toast for no data
+                    Swal.fire({
+                        title: "Không có dữ liệu!",
+                        text: "Không tìm thấy dữ liệu cần xuất.",
+                        icon: "warning",
+                        toast: true,
+                        position: "top-end",
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                    });
+                }
+                this.isLoading = false;
 
                 // Close modal after export
                 this.closeExportModal();
-            } else {
-                alert("Không tìm thấy dữ liệu cần xuất.");
-                // Close modal after alert
-                this.closeExportModal();
-            }
+            }, 100);
         },
 
         exportToExcelAllPages() {
@@ -2252,9 +2734,190 @@ export default {
             // Use all filtered items instead of just the current page
             setTimeout(() => {
                 if (this.filteredItems && this.filteredItems.length > 0) {
-                    this.generateExcel(this.filteredItems, "bien_ban_all_data");
+                    try {
+                        // Import xlsx and FileSaver dynamically
+                        import("xlsx").then((XLSX) => {
+                            import("file-saver").then((module) => {
+                                const FileSaver = module.default;
+
+                                // Format data for export
+                                const exportData = this.filteredItems.map(
+                                    (item) => {
+                                        // Format all numeric values as integers (without decimal places)
+                                        const tong_tien_dich_vu =
+                                            item.tong_tien_dich_vu
+                                                ? parseInt(
+                                                      item.tong_tien_dich_vu
+                                                  )
+                                                : 0;
+
+                                        const tong_tien_tam_giu =
+                                            item.tong_tien_tam_giu
+                                                ? parseInt(
+                                                      item.tong_tien_tam_giu
+                                                  )
+                                                : 0;
+
+                                        const tong_tien_thanh_toan =
+                                            item.tong_tien_thanh_toan
+                                                ? parseInt(
+                                                      item.tong_tien_thanh_toan
+                                                  )
+                                                : 0;
+
+                                        return {
+                                            "Mã nghiệm thu":
+                                                item.ma_nghiem_thu || "",
+                                            Trạm: item.tram || "",
+                                            "Cán bộ nông vụ":
+                                                item.can_bo_nong_vu || "",
+                                            "Trạng thái thanh toán":
+                                                item.trang_thai_thanh_toan
+                                                    ? this.formatPaymentStatus(
+                                                          item.trang_thai_thanh_toan
+                                                      )
+                                                    : "Chưa thanh toán",
+                                            "Vụ đầu tư": item.vu_dau_tu || "",
+                                            "Tiêu đề": item.tieu_de || "",
+                                            "Khách hàng cá nhân":
+                                                item.khach_hang_ca_nhan_dt_mia ||
+                                                "",
+                                            "Khách hàng doanh nghiệp":
+                                                item.khach_hang_doanh_nghiep_dt_mia ||
+                                                "",
+                                            "Hợp đồng đầu tư mía":
+                                                item.hop_dong_dau_tu_mia || "",
+                                            "Hình thức thực hiện DV":
+                                                item.hinh_thuc_thuc_hien_dv ||
+                                                "",
+                                            "Hợp đồng cung ứng DV":
+                                                item.hop_dong_cung_ung_dich_vu ||
+                                                "",
+                                            "Tổng tiền dịch vụ":
+                                                tong_tien_dich_vu,
+                                            "Tổng tiền tạm giữ":
+                                                tong_tien_tam_giu,
+                                            "Tổng tiền thanh toán":
+                                                tong_tien_thanh_toan,
+                                            "Người giao": item.nguoi_giao || "",
+                                            "Người nhận": item.nguoi_nhan || "",
+                                            "Ngày nhận": item.ngay_nhan
+                                                ? this.formatDate(
+                                                      item.ngay_nhan
+                                                  )
+                                                : "",
+                                            "Trạng thái":
+                                                item.trang_thai_nhan_hs
+                                                    ? this.formatStatus(
+                                                          item.trang_thai_nhan_hs
+                                                      )
+                                                    : "",
+                                        };
+                                    }
+                                );
+
+                                // Create a worksheet
+                                const worksheet =
+                                    XLSX.utils.json_to_sheet(exportData);
+
+                                // Set column widths
+                                const columnWidths = [
+                                    { wpx: 120 }, // Mã nghiệm thu
+                                    { wpx: 100 }, // Trạm
+                                    { wpx: 120 }, // Cán bộ nông vụ
+                                    { wpx: 120 }, // Trạng thái thanh toán (new column)
+                                    { wpx: 120 }, // Vụ đầu tư
+                                    { wpx: 150 }, // Tiêu đề
+                                    { wpx: 150 }, // Khách hàng cá nhân ĐT mía
+                                    { wpx: 150 }, // Khách hàng doanh nghiệp ĐT mía
+                                    { wpx: 150 }, // Hợp đồng đầu tư mía
+                                    { wpx: 150 }, // Hình thức thực hiện DV
+                                    { wpx: 150 }, // Hợp đồng cung ứng dịch vụ
+                                    { wpx: 120 }, // Tổng tiền
+                                    { wpx: 120 }, // Tổng tiền tạm giữ
+                                    { wpx: 120 }, // Tổng tiền thanh toán
+                                    { wpx: 120 }, // Người giao hồ sơ
+                                    { wpx: 120 }, // Người nhận hồ sơ
+                                    { wpx: 100 }, // Ngày nhận hồ sơ
+                                    { wpx: 120 }, // สถานะ
+                                ];
+                                worksheet["!cols"] = columnWidths;
+
+                                // Create a workbook
+                                const workbook = XLSX.utils.book_new();
+                                XLSX.utils.book_append_sheet(
+                                    workbook,
+                                    worksheet,
+                                    "Biên bản nghiệm thu"
+                                );
+
+                                // Create an Excel file
+                                const excelBuffer = XLSX.write(workbook, {
+                                    bookType: "xlsx",
+                                    type: "array",
+                                });
+
+                                // Save the file
+                                const blob = new Blob([excelBuffer], {
+                                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                });
+                                FileSaver.saveAs(
+                                    blob,
+                                    `bien_ban_all_data_${
+                                        new Date().toISOString().split("T")[0]
+                                    }.xlsx`
+                                );
+
+                                // Show success notification using SweetAlert2 toast
+                                Swal.fire({
+                                    title: "Xuất thành công!",
+                                    text: `Đã xuất ${exportData.length} bản ghi ra tệp Excel`,
+                                    icon: "success",
+                                    toast: true,
+                                    position: "top-end",
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true,
+                                    didOpen: (toast) => {
+                                        toast.addEventListener(
+                                            "mouseenter",
+                                            Swal.stopTimer
+                                        );
+                                        toast.addEventListener(
+                                            "mouseleave",
+                                            Swal.resumeTimer
+                                        );
+                                    },
+                                });
+                            });
+                        });
+                    } catch (error) {
+                        console.error("Export error:", error);
+
+                        // Show error toast
+                        Swal.fire({
+                            title: "Xuất không thành công!",
+                            text: "Đã xảy ra lỗi khi xuất dữ liệu. Vui lòng thử lại.",
+                            icon: "error",
+                            toast: true,
+                            position: "top-end",
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                        });
+                    }
                 } else {
-                    alert("Không tìm thấy dữ liệu cần xuất.");
+                    // Show warning toast for no data
+                    Swal.fire({
+                        title: "Không có dữ liệu!",
+                        text: "Không tìm thấy dữ liệu cần xuất.",
+                        icon: "warning",
+                        toast: true,
+                        position: "top-end",
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                    });
                 }
                 this.isLoading = false;
 
@@ -2281,6 +2944,11 @@ export default {
                             "Mã nghiệm thu": item.ma_nghiem_thu || "",
                             Trạm: item.tram || "",
                             "Cán bộ nông vụ": item.can_bo_nong_vu || "", // Add new column
+                            "Trạng thái thanh toán": item.trang_thai_thanh_toan
+                                ? this.formatPaymentStatus(
+                                      item.trang_thai_thanh_toan
+                                  )
+                                : "Chưa thanh toán", // Add payment status
                             "Vụ đầu tư": item.vu_dau_tu || "",
                             "Tiêu đề": item.tieu_de || "",
                             "Khách hàng cá nhân":
@@ -2321,6 +2989,7 @@ export default {
                             { wpx: 120 }, // Mã nghiệm thu
                             { wpx: 100 }, // Trạm
                             { wpx: 120 }, // Cán bộ nông vụ
+                            { wpx: 120 }, // Trạng thái thanh toán (new column)
                             { wpx: 120 }, // Vụ đầu tư
                             { wpx: 150 }, // Tiêu đề
                             { wpx: 150 }, // Khách hàng cá nhân ĐT mía
@@ -3029,6 +3698,9 @@ export default {
         search() {
             this.currentPage = 1; // Resetกลับไปหน้าแรก
         },
+        deliveryStatusFilter() {
+            this.currentPage = 1;
+        },
         statusFilter() {
             this.currentPage = 1; // Resetกลับไปหน้าแรก
         },
@@ -3148,24 +3820,76 @@ export default {
     background-color: #e6f4ea;
 }
 
+input[type="checkbox"].form-checkbox,
 .form-checkbox {
-    cursor: pointer;
-    width: 1rem;
-    height: 1rem;
-    border-radius: 0.25rem;
-    border: 1px solid #d1d5db;
-    transition: all 0.2s ease;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    max-width: 20px !important;
+    min-height: 20px !important;
+    max-height: 20px !important;
+    margin: 0 !important;
+    display: inline-block !important;
+    position: relative !important;
+    vertical-align: middle !important;
+    cursor: pointer !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    border: 2px solid #d1d5db !important;
+    border-radius: 4px !important;
+    background-color: white !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
+    flex: 0 0 20px !important;
 }
 
+/* Checked state */
+input[type="checkbox"].form-checkbox:checked,
 .form-checkbox:checked {
-    background-color: #10b981;
-    border-color: #10b981;
+    background-color: #10b981 !important;
+    border-color: #10b981 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='white'%3e%3cpath fill-rule='evenodd' d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z' clip-rule='evenodd'/%3e%3c/svg%3e") !important;
+    background-size: 75% 75% !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
 }
 
+/* Address the column width */
+.table-auto td:first-child {
+    width: 40px !important;
+    max-width: 40px !important;
+    min-width: 40px !important;
+    padding: 4px !important;
+    text-align: center !important;
+}
+
+.table-auto th:first-child {
+    width: 40px !important;
+    max-width: 40px !important;
+    min-width: 40px !important;
+    padding: 4px !important;
+    text-align: center !important;
+}
+
+/* Add disabled checkbox styling */
+input[type="checkbox"].form-checkbox:disabled,
 .form-checkbox:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background-color: #e5e7eb;
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    background-color: #e5e7eb !important;
+    border-color: #9ca3af !important;
+}
+
+/* Add a distinct style for rows that can't be selected */
+.table-auto tbody tr.disabled-row {
+    background-color: #f9f9f9;
+    opacity: 0.7;
+}
+
+/* Add style for disabled checkbox cells */
+.table-auto td.disabled-checkbox {
+    background-color: #f5f5f5;
 }
 
 .status-filter {
@@ -3581,5 +4305,123 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     font-size: 1rem;
     width: 20px;
     text-align: center;
+}
+
+/* Add these styles to your existing <style> section */
+/* Mobile card view styling */
+.status-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    min-width: 80px;
+}
+
+.status-display i {
+    font-size: 1.75rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Status badge styling */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Status colors with soft backgrounds */
+.text-warning {
+    color: #ffc107;
+}
+
+.text-primary {
+    color: #0d6efd;
+}
+
+.text-success {
+    color: #198754;
+}
+
+.text-danger {
+    color: #dc3545;
+}
+
+.text-gray-400 {
+    color: #9ca3af;
+}
+
+/* Status badge background colors */
+.bg-blue-100 {
+    background-color: rgba(13, 110, 253, 0.15);
+    color: #0d6efd;
+}
+
+.bg-orange-100 {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #fd7e14;
+}
+
+.bg-green-100 {
+    background-color: rgba(25, 135, 84, 0.15);
+    color: #198754;
+}
+
+.bg-red-100 {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+}
+
+/* Flex helpers for mobile layout */
+.flex {
+    display: flex;
+}
+
+.flex-column {
+    flex-direction: column;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.flex-shrink-0 {
+    flex-shrink: 0;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.mr-4 {
+    margin-right: 1rem;
+}
+
+/* Mobile card optimization */
+@media (max-width: 768px) {
+    .card {
+        padding: 0.75rem;
+    }
+
+    .status-display {
+        padding: 0.5rem;
+        min-width: 70px;
+    }
+
+    .status-display i {
+        font-size: 1.5rem;
+    }
+    .flex-1.justify-items-start {
+        font-size: 12px;
+    }
 }
 </style>
