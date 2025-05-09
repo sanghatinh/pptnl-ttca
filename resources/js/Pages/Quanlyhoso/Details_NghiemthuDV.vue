@@ -31,15 +31,14 @@
                                     <div
                                         class="track-step"
                                         :class="{
-                                            active:
-                                                document.processing_status ===
-                                                    'received' ||
-                                                document.processing_status ===
-                                                    'processing' ||
-                                                document.processing_status ===
-                                                    'submitted' ||
-                                                document.processing_status ===
-                                                    'paid',
+                                            active: [
+                                                'received',
+                                                'processing',
+                                                'submitted',
+                                                'paid',
+                                            ].includes(
+                                                document.processing_status
+                                            ),
                                         }"
                                     >
                                         <div class="step-icon status-received">
@@ -51,24 +50,26 @@
                                                 "
                                             ></i>
                                         </div>
-                                        <span class="step-label">{{
-                                            getReceivedStepLabel(
-                                                document.trang_thai_nhan_hs
-                                            )
-                                        }}</span>
+                                        <span class="step-label">
+                                            {{
+                                                getReceivedStepLabel(
+                                                    document.trang_thai_nhan_hs
+                                                )
+                                            }}
+                                        </span>
                                     </div>
 
                                     <!-- Processing Step -->
                                     <div
                                         class="track-step"
                                         :class="{
-                                            active:
-                                                document.processing_status ===
-                                                    'processing' ||
-                                                document.processing_status ===
-                                                    'submitted' ||
-                                                document.processing_status ===
-                                                    'paid',
+                                            active: [
+                                                'processing',
+                                                'submitted',
+                                                'paid',
+                                            ].includes(
+                                                document.processing_status
+                                            ),
                                         }"
                                     >
                                         <div
@@ -85,11 +86,12 @@
                                     <div
                                         class="track-step"
                                         :class="{
-                                            active:
-                                                document.processing_status ===
-                                                    'submitted' ||
-                                                document.processing_status ===
-                                                    'paid',
+                                            active: [
+                                                'submitted',
+                                                'paid',
+                                            ].includes(
+                                                document.processing_status
+                                            ),
                                         }"
                                     >
                                         <div class="step-icon status-submitted">
@@ -428,7 +430,7 @@
                                                 class="form-control"
                                                 id="maGiaiNgan"
                                                 :value="
-                                                    document.ma_giai_ngan ||
+                                                    document.ma_de_nghi_giai_ngan ||
                                                     'N/A'
                                                 "
                                                 disabled
@@ -514,6 +516,35 @@
                                                 :class="
                                                     statusClass(
                                                         document.trang_thai_nhan_hs
+                                                    )
+                                                "
+                                                disabled
+                                            />
+                                        </div>
+                                    </div>
+                                    <!-- Thêm Trạng thái thanh toán -->
+                                    <div class="col-12">
+                                        <div class="form-group mb-3">
+                                            <label
+                                                for="trangThaiThanhToan"
+                                                class="form-label"
+                                            >
+                                                Trạng thái thanh toán
+                                            </label>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="trangThaiThanhToan"
+                                                :value="
+                                                    formatPaymentStatus(
+                                                        document.trang_thai_thanh_toan ||
+                                                            document.processing_status
+                                                    )
+                                                "
+                                                :class="
+                                                    paymentStatusClass(
+                                                        document.trang_thai_thanh_toan ||
+                                                            document.processing_status
                                                     )
                                                 "
                                                 disabled
@@ -708,26 +739,6 @@ export default {
         };
     },
     computed: {
-        showSubmitAccountButton() {
-            return this.document.processing_status === "processing";
-        },
-        showProcessButton() {
-            return this.document.processing_status === "received";
-        },
-        showReturnButton() {
-            return ["processing", "submitted"].includes(
-                this.document.processing_status
-            );
-        },
-        showPaymentButton() {
-            return this.document.processing_status === "submitted";
-        },
-        showBackButton() {
-            return true; // Always show the back button
-        },
-        showEditNoteButtons() {
-            return this.isEditingNote;
-        },
         canEditNote() {
             return true; // Can be modified based on user permissions or document status
         },
@@ -839,8 +850,8 @@ export default {
         },
         formatStatus(status) {
             if (status === "cancelled") return "Hủy";
-            if (status === "received") return "Đã nộp";
-            if (status === "sending") return "Đã nộp";
+            if (status === "received") return "Đã nhận";
+            if (status === "sending") return "Đang nộp";
             if (status === "creating") return "Đang tạo";
             return status || "N/A";
         },
@@ -904,6 +915,32 @@ export default {
                     return "Hủy";
                 default:
                     return "Chưa nhận"; // Default label
+            }
+        },
+        formatPaymentStatus(status) {
+            switch (status) {
+                case "paid":
+                    return "Đã thanh toán";
+                case "submitted":
+                    return "Đã nộp kế toán";
+                case "processing":
+                    return "Đang xử lý";
+                case "received":
+                default:
+                    return "Chưa thanh toán";
+            }
+        },
+        paymentStatusClass(status) {
+            switch (status) {
+                case "paid":
+                    return "text-success";
+                case "submitted":
+                    return "text-info";
+                case "processing":
+                    return "text-primary";
+                case "received":
+                default:
+                    return "text-secondary";
             }
         },
         confirmAction(title, text, icon) {
@@ -1030,36 +1067,53 @@ export default {
     z-index: 0;
     transition: background-color 0.3s;
 }
-.progress-tracker.received::before {
-    background: linear-gradient(to right, #198754 0%, #e9ecef 0%);
+.progress-tracker::before {
+    content: "";
+    position: absolute;
+    top: 20px;
+    width: 98%;
+    height: 3px;
+    background-color: #e9ecef;
+    z-index: 0;
+    border-radius: 0;
+    transition: background-color 0.3s ease;
 }
+
+.progress-tracker.received::before {
+    background: linear-gradient(to right, #198754 25%, #e9ecef 25%);
+}
+
 .progress-tracker.processing::before {
     background: linear-gradient(
         to right,
-        #198754 33%,
-        #1e88e5 33%,
-        #1e88e5 66%,
-        #e9ecef 66%
+        #198754 25%,
+        #1e88e5 25%,
+        #1e88e5 50%,
+        #e9ecef 50%
     );
 }
+
 .progress-tracker.submitted::before {
     background: linear-gradient(
         to right,
-        #198754 33%,
-        #1e88e5 33%,
-        #1e88e5 66%,
-        #17a2b8 66%,
-        #17a2b8 100%
+        #198754 25%,
+        #1e88e5 25%,
+        #1e88e5 50%,
+        #17a2b8 50%,
+        #17a2b8 75%,
+        #e9ecef 75%
     );
 }
+
 .progress-tracker.paid::before {
     background: linear-gradient(
         to right,
-        #198754 33%,
-        #1e88e5 33%,
-        #1e88e5 66%,
-        #17a2b8 66%,
-        #17a2b8 100%
+        #198754 25%,
+        #1e88e5 25%,
+        #1e88e5 50%,
+        #17a2b8 50%,
+        #17a2b8 75%,
+        #ffc107 75%
     );
 }
 .track-step {

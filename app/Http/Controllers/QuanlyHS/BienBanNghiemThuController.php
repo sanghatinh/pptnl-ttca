@@ -13,88 +13,101 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 class BienBanNghiemThuController extends Controller
 {
    
-    public function index(Request $request)
-    {
-        try {
-            $user = auth()->user();
+ public function index(Request $request)
+{
+    try {
+        $user = auth()->user();
+        
+        // Start with base query on bien ban table
+        $query = \DB::table('tb_bien_ban_nghiemthu_dv as bb')
+            // Join with document_mapping to get document_code
+            ->leftJoin('document_mapping as dm', 'bb.ma_nghiem_thu', '=', 'dm.ma_nghiem_thu_bb')
+            // Join with document_delivery to get creator_id, receiver_id, received_date, status
+            ->leftJoin('document_delivery as dd', 'dm.document_code', '=', 'dd.document_code')
+            // Join with users table for creator name (nguoi_giao)
+            ->leftJoin('users as creator', 'dd.creator_id', '=', 'creator.id')
+            // Join with users table for receiver name (nguoi_nhan)
+            ->leftJoin('users as receiver', 'dd.receiver_id', '=', 'receiver.id');
             
-            // Start with base query on bien ban table
-            $query = \DB::table('tb_bien_ban_nghiemthu_dv as bb')
-                // Join with document_mapping to get document_code
-                ->leftJoin('document_mapping as dm', 'bb.ma_nghiem_thu', '=', 'dm.ma_nghiem_thu_bb')
-                // Join with document_delivery to get creator_id, receiver_id, received_date, status
-                ->leftJoin('document_delivery as dd', 'dm.document_code', '=', 'dd.document_code')
-                // Join with users table for creator name (nguoi_giao)
-                ->leftJoin('users as creator', 'dd.creator_id', '=', 'creator.id')
-                // Join with users table for receiver name (nguoi_nhan)
-                ->leftJoin('users as receiver', 'dd.receiver_id', '=', 'receiver.id');
-                
-            // แก้ไข Join สำหรับข้อมูลสถานะการชำระเงิน โดยใช้ subquery แบบใหม่
-            $query->leftJoin(\DB::raw("(
-                      SELECT l1.ma_nghiem_thu, l1.ma_trinh_thanh_toan
-                      FROM Logs_phieu_trinh_thanh_toan l1
-                      JOIN (
-                          SELECT ma_nghiem_thu, MAX(id) as max_id
-                          FROM Logs_phieu_trinh_thanh_toan
-                          GROUP BY ma_nghiem_thu
-                      ) l2 ON l1.ma_nghiem_thu = l2.ma_nghiem_thu AND l1.id = l2.max_id
-                 ) as logs"), 
-                 'bb.ma_nghiem_thu', '=', 'logs.ma_nghiem_thu')
-                  ->leftJoin('tb_phieu_trinh_thanh_toan as pttt', 'logs.ma_trinh_thanh_toan', '=', 'pttt.ma_trinh_thanh_toan');
-    
-            // Apply role-based filtering
-            switch ($user->position) {
-                case 'department_head':
-                case 'office_workers':
-                    // See all records - no filtering needed
-                    break;
-                    
-                case 'Station_Chief':
-                    // Filter by user's station
-                    $query->where('bb.tram', $user->station);
-                    break;
-                    
-                case 'Farm_worker':
-                    // Filter by employee code
-                    $query->where('bb.ma_nhan_vien', $user->ma_nhan_vien);
-                    break;
-                    
-                default:
-                    // Default case - return no records
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Unauthorized position'
-                    ], 403);
-            }
-    
-            // Select all fields from bien_ban table and additional fields from related tables
-            $query->select(
-                'bb.*',
-                'creator.full_name as nguoi_giao',
-                'receiver.full_name as nguoi_nhan',
-                'dd.received_date as ngay_nhan',
-                'dd.status as trang_thai_nhan_hs',
-                'pttt.ma_trinh_thanh_toan as ma_trinh_thanh_toan',
-                'pttt.trang_thai_thanh_toan'
-            );
-    
-            // Get the filtered records
-            $records = $query->get();
-    
-            return response()->json([
-                'success' => true,
-                'data' => $records
-            ]);
-    
-        } catch (\Exception $e) {
-            \Log::error('Error in BienBanNghiemThu index: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error retrieving records: ' . $e->getMessage()
-            ], 500);
-        }
-    }
+        // Join for payment status information using the latest log entry
+        $query->leftJoin(\DB::raw("(
+                  SELECT l1.ma_nghiem_thu, l1.ma_trinh_thanh_toan, l1.ma_de_nghi_giai_ngan
+                  FROM Logs_phieu_trinh_thanh_toan l1
+                  JOIN (
+                      SELECT ma_nghiem_thu, MAX(id) as max_id
+                      FROM Logs_phieu_trinh_thanh_toan
+                      GROUP BY ma_nghiem_thu
+                  ) l2 ON l1.ma_nghiem_thu = l2.ma_nghiem_thu AND l1.id = l2.max_id
+             ) as logs"), 
+             'bb.ma_nghiem_thu', '=', 'logs.ma_nghiem_thu')
+              ->leftJoin('tb_phieu_trinh_thanh_toan as pttt', 'logs.ma_trinh_thanh_toan', '=', 'pttt.ma_trinh_thanh_toan');
 
+        // Apply role-based filtering
+        switch ($user->position) {
+            case 'department_head':
+            case 'office_workers':
+                // See all records - no filtering needed
+                break;
+                
+            case 'Station_Chief':
+                // Filter by user's station
+                $query->where('bb.tram', $user->station);
+                break;
+                
+            case 'Farm_worker':
+                // Filter by employee code
+                $query->where('bb.ma_nhan_vien', $user->ma_nhan_vien);
+                break;
+                
+            default:
+                // Default case - return no records
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized position'
+                ], 403);
+        }
+
+        // Select all fields from bien_ban table and additional fields from related tables
+        $query->select(
+            'bb.*',
+            'creator.full_name as nguoi_giao',
+            'receiver.full_name as nguoi_nhan',
+            'dd.received_date as ngay_nhan',
+            'dd.status as trang_thai_nhan_hs',
+            'logs.ma_trinh_thanh_toan',
+            'logs.ma_de_nghi_giai_ngan',
+            'pttt.trang_thai_thanh_toan'
+        );
+
+        // Get the filtered records
+        $records = $query->get();
+        
+        // Add processing_status to each record based on payment data
+        foreach ($records as $record) {
+            if ($record->trang_thai_thanh_toan === 'paid') {
+                $record->processing_status = 'paid';
+            } elseif ($record->ma_trinh_thanh_toan) {
+                $record->processing_status = 'submitted';
+            } elseif ($record->ma_de_nghi_giai_ngan) {
+                $record->processing_status = 'processing';
+            } else {
+                $record->processing_status = 'received';
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $records
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Error in BienBanNghiemThu index: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error retrieving records: ' . $e->getMessage()
+        ], 500);
+    }
+}
     // Import data from Excel/CSV
     public function importData(Request $request)
     {
@@ -451,50 +464,76 @@ class BienBanNghiemThuController extends Controller
         return $columnMap;
     }
 
-    public function show($id)
-    {
-        try {
-            // Get the main document info from bien ban table
-            $document = \DB::table('tb_bien_ban_nghiemthu_dv as bb')
-                ->leftJoin('document_mapping as dm', 'bb.ma_nghiem_thu', '=', 'dm.ma_nghiem_thu_bb')
-                ->leftJoin('document_delivery as dd', 'dm.document_code', '=', 'dd.document_code')
-                ->leftJoin('users as creator', 'dd.creator_id', '=', 'creator.id')
-                ->leftJoin('users as receiver', 'dd.receiver_id', '=', 'receiver.id')
-                ->select(
-                    'bb.*',
-                    'creator.full_name as nguoi_giao',
-                    'receiver.full_name as nguoi_nhan',
-                    'dd.received_date as ngay_nhan',
-                    'dd.status as trang_thai_nhan_hs'
-                )
-                ->where('bb.ma_nghiem_thu', $id)
-                ->first();
+public function show($id)
+{
+    try {
+        // Get the main document info from bien ban table
+        $document = \DB::table('tb_bien_ban_nghiemthu_dv as bb')
+            ->leftJoin('document_mapping as dm', 'bb.ma_nghiem_thu', '=', 'dm.ma_nghiem_thu_bb')
+            ->leftJoin('document_delivery as dd', 'dm.document_code', '=', 'dd.document_code')
+            ->leftJoin('users as creator', 'dd.creator_id', '=', 'creator.id')
+            ->leftJoin('users as receiver', 'dd.receiver_id', '=', 'receiver.id')
+            // Join with latest log entry for this document
+            ->leftJoin(\DB::raw("(
+                SELECT l1.ma_nghiem_thu, l1.ma_trinh_thanh_toan, l1.ma_de_nghi_giai_ngan
+                FROM Logs_phieu_trinh_thanh_toan l1
+                JOIN (
+                    SELECT ma_nghiem_thu, MAX(id) as max_id
+                    FROM Logs_phieu_trinh_thanh_toan
+                    GROUP BY ma_nghiem_thu
+                ) l2 ON l1.ma_nghiem_thu = l2.ma_nghiem_thu AND l1.id = l2.max_id
+            ) as logs"), 'bb.ma_nghiem_thu', '=', 'logs.ma_nghiem_thu')
+            // Join with payment request table to get payment status
+            ->leftJoin('tb_phieu_trinh_thanh_toan as pttt', 'logs.ma_trinh_thanh_toan', '=', 'pttt.ma_trinh_thanh_toan')
+            ->select(
+                'bb.*',
+                'creator.full_name as nguoi_giao',
+                'receiver.full_name as nguoi_nhan',
+                'dd.received_date as ngay_nhan',
+                'dd.status as trang_thai_nhan_hs',
+                'logs.ma_trinh_thanh_toan',
+                'logs.ma_de_nghi_giai_ngan',
+                'pttt.trang_thai_thanh_toan'
+            )
+            ->where('bb.ma_nghiem_thu', $id)
+            ->first();
 
-            if (!$document) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Không tìm thấy thông tin biên bản nghiệm thu'
-                ], 404);
-            }
-
-            // Fetch service details from tb_chitiet_dichvu_nt
-            $serviceDetails = \DB::table('tb_chitiet_dichvu_nt')
-                ->where('nghiem_thu_dich_vu', $document->tieu_de)
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'document' => $document,
-                'serviceDetails' => $serviceDetails
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error in BienBanNghiemThu show: ' . $e->getMessage());
+        if (!$document) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lỗi khi lấy thông tin biên bản: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Không tìm thấy thông tin biên bản nghiệm thu'
+            ], 404);
         }
+
+        // Determine processing status based on payment status
+        if ($document->trang_thai_thanh_toan === 'paid') {
+            $document->processing_status = 'paid';
+        } elseif ($document->ma_trinh_thanh_toan) {
+            $document->processing_status = 'submitted';
+        } elseif ($document->ma_de_nghi_giai_ngan) {
+            $document->processing_status = 'processing';
+        } else {
+            $document->processing_status = 'received';
+        }
+
+        // Fetch service details from tb_chitiet_dichvu_nt
+        $serviceDetails = \DB::table('tb_chitiet_dichvu_nt')
+            ->where('nghiem_thu_dich_vu', $document->tieu_de)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'document' => $document,
+            'serviceDetails' => $serviceDetails
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error in BienBanNghiemThu show: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi lấy thông tin biên bản: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     public function checkAccess($id)
     {
