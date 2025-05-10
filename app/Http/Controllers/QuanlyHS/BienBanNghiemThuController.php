@@ -7,6 +7,11 @@ use App\Models\BienBanNghiemThu;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller; // Add this import
 
+use App\Models\QuanlyHS\PaymentRequestAction; // เพิ่ม model สำหรับตาราง Action
+use App\Models\QuanlyHS\PaymentRequest;
+use App\Models\QuanlyHS\PaymentRequestLog;
+use App\Models\User;
+
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 
@@ -599,4 +604,263 @@ public function show($id)
             ], 500);
         }
     }
+
+
+public function processingHistoryNghiemthuDV($id)
+{
+    try {
+        // Array to store our history entries
+        $historyItems = [];
+        
+        // Get the document info
+        $document = \DB::table('tb_bien_ban_nghiemthu_dv')
+            ->where('ma_nghiem_thu', $id)
+            ->first();
+            
+        if (!$document) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy thông tin biên bản nghiệm thu'
+            ], 404);
+        }
+
+        // Get document mapping to get document_code
+        $documentMapping = \DB::table('document_mapping')
+            ->where('ma_nghiem_thu_bb', $id)
+            ->first();
+            
+        if ($documentMapping) {
+            $documentCode = $documentMapping->document_code;
+            
+            // Get creating info
+            $creatingInfo = \DB::table('document_delivery as dd')
+                ->join('users as u', 'dd.creator_id', '=', 'u.id')
+                ->where('dd.document_code', $documentCode)
+                ->select('dd.created_at as date', 'u.full_name as user')
+                ->first();
+                
+            if ($creatingInfo) {
+                // Store creating date for calculations
+                $creatingDate = new \DateTime($creatingInfo->date);
+                
+                $historyItems['creating'] = [
+                    'action' => 'creating',
+                    'date' => $creatingInfo->date,
+                    'user' => $creatingInfo->user,
+                    'days_since_previous' => 0, // First step always has 0 days
+                    'note' => 'Hồ sơ đang được tạo mới trong hệ thống.'
+                ];
+            }
+            
+            // Get received info
+            $receivedInfo = \DB::table('document_delivery as dd')
+                ->join('users as u', 'dd.receiver_id', '=', 'u.id')
+                ->where('dd.document_code', $documentCode)
+                ->select('dd.received_date as date', 'u.full_name as user')
+                ->first();
+                
+            if ($receivedInfo && $creatingInfo) {
+                // Fix: Ensure proper date handling for different formats
+                $receivedDateStr = $receivedInfo->date;
+                $receivedDate = null;
+                
+                // Handle different possible date formats
+                try {
+                    // First try with datetime format
+                    $receivedDate = new \DateTime($receivedDateStr);
+                } catch (\Exception $e) {
+                    // If that fails, try with date-only format
+                    try {
+                        $receivedDate = \DateTime::createFromFormat('Y-m-d', $receivedDateStr);
+                    } catch (\Exception $e2) {
+                        // Default to current date if all parsing fails
+                        $receivedDate = new \DateTime();
+                    }
+                }
+                
+                // Calculate days between receiving and creating
+                $daysSincePrevious = 0;
+                if ($receivedDate instanceof \DateTime && $creatingDate instanceof \DateTime) {
+                    $interval = $receivedDate->diff($creatingDate);
+                    $daysSincePrevious = $interval->days;
+                    // If dates are the same except for time, ensure we show at least 1 day if they're on different calendar days
+                    if ($daysSincePrevious == 0 && $receivedDate->format('Y-m-d') != $creatingDate->format('Y-m-d')) {
+                        $daysSincePrevious = 1;
+                    }
+                }
+                
+                $historyItems['received'] = [
+                    'action' => 'received',
+                    'date' => $receivedInfo->date,
+                    'user' => $receivedInfo->user,
+                    'days_since_previous' => $daysSincePrevious,
+                    'note' => 'Hồ sơ đã được nhận và xác nhận trong hệ thống.'
+                ];
+            }
+        }
+        
+        // Get logs for this document
+        $logInfo = \DB::table('Logs_phieu_trinh_thanh_toan')
+            ->where('ma_nghiem_thu', $id)
+            ->orderBy('id', 'desc')
+            ->first();
+            
+        if ($logInfo && $logInfo->ma_trinh_thanh_toan) {
+            // Get processing info
+            $processingInfo = \DB::table('Action_phieu_trinh_thanh_toan as apt')
+                ->join('users', 'apt.action_by', '=', 'users.id')
+                ->where('ma_trinh_thanh_toan', $logInfo->ma_trinh_thanh_toan)
+                ->where('action', 'processing')
+                ->orderBy('apt.id', 'desc')
+                ->select('apt.action_date as date', 'users.full_name as user')
+                ->first();
+                
+            if ($processingInfo && isset($historyItems['received'])) {
+                // Calculate days since received
+                $processingDate = new \DateTime($processingInfo->date);
+                
+                // Handle different possible date formats for received date
+                $receivedDateStr = $historyItems['received']['date'];
+                $receivedDate = null;
+                
+                try {
+                    $receivedDate = new \DateTime($receivedDateStr);
+                } catch (\Exception $e) {
+                    try {
+                        $receivedDate = \DateTime::createFromFormat('Y-m-d', $receivedDateStr);
+                    } catch (\Exception $e2) {
+                        $receivedDate = new \DateTime();
+                    }
+                }
+                
+                $daysSincePrevious = $processingDate->diff($receivedDate)->days;
+                
+                $historyItems['processing'] = [
+                    'action' => 'processing',
+                    'date' => $processingInfo->date,
+                    'user' => $processingInfo->user,
+                    'days_since_previous' => $daysSincePrevious, // Days since received
+                    'note' => 'Hồ sơ đang được xử lý, vui lòng chờ.'
+                ];
+            }
+            
+            // Get submitted info
+            $submittedInfo = \DB::table('Action_phieu_trinh_thanh_toan as apt')
+                ->join('users', 'apt.action_by', '=', 'users.id')
+                ->where('ma_trinh_thanh_toan', $logInfo->ma_trinh_thanh_toan)
+                ->where('action', 'submitted')
+                ->orderBy('apt.id', 'desc')
+                ->select('apt.action_date as date', 'users.full_name as user')
+                ->first();
+                
+            if ($submittedInfo && isset($historyItems['processing'])) {
+                // Calculate days since processing
+                $submittedDate = new \DateTime($submittedInfo->date);
+                $processingDate = new \DateTime($historyItems['processing']['date']);
+                
+                // Calculate hours difference rather than days for same-day events
+                $interval = $submittedDate->diff($processingDate);
+                $totalHours = ($interval->days * 24) + $interval->h;
+                
+                // If same day but different timestamps, show 0 days but include in note
+                $daysSincePrevious = $interval->days;
+                $sameDay = $submittedDate->format('Y-m-d') === $processingDate->format('Y-m-d');
+                $timeNote = "";
+                
+                if ($sameDay && $totalHours > 0) {
+                    $timeNote = " (sau " . $totalHours . " giờ)";
+                }
+                
+                $historyItems['submitted'] = [
+                    'action' => 'submitted',
+                    'date' => $submittedInfo->date,
+                    'user' => $submittedInfo->user,
+                    'days_since_previous' => $daysSincePrevious, // Days since processing
+                    'note' => 'Hồ sơ đã được chuyển đến phòng kế toán.' . $timeNote
+                ];
+            }
+            
+            // Get paid info
+            if ($logInfo->ma_de_nghi_giai_ngan) {
+                $paidDateInfo = \DB::table('tb_de_nghi_thanhtoan_dv')
+                    ->where('ma_giai_ngan', $logInfo->ma_de_nghi_giai_ngan)
+                    ->select('ngay_thanh_toan as date')
+                    ->first();
+                    
+                $paidUserInfo = \DB::table('Action_phieu_trinh_thanh_toan as apt')
+                    ->join('users', 'apt.action_by', '=', 'users.id')
+                    ->where('ma_trinh_thanh_toan', $logInfo->ma_trinh_thanh_toan)
+                    ->where('action', 'paid')
+                    ->orderBy('apt.id', 'desc')
+                    ->select('users.full_name as user')
+                    ->first();
+                
+                if ($paidDateInfo && $paidUserInfo && isset($historyItems['submitted'])) {
+                    // Handle different date formats for paid date
+                    $paidDateStr = $paidDateInfo->date;
+                    $paidDate = null;
+                    
+                    try {
+                        $paidDate = new \DateTime($paidDateStr);
+                    } catch (\Exception $e) {
+                        try {
+                            $paidDate = \DateTime::createFromFormat('Y-m-d', $paidDateStr);
+                        } catch (\Exception $e2) {
+                            $paidDate = new \DateTime();
+                        }
+                    }
+                    
+                    // Handle different date formats for submitted date
+                    $submittedDateStr = $historyItems['submitted']['date'];
+                    $submittedDate = null;
+                    
+                    try {
+                        $submittedDate = new \DateTime($submittedDateStr);
+                    } catch (\Exception $e) {
+                        try {
+                            $submittedDate = \DateTime::createFromFormat('Y-m-d', $submittedDateStr);
+                        } catch (\Exception $e2) {
+                            $submittedDate = new \DateTime();
+                        }
+                    }
+                    
+                    $daysSincePrevious = $paidDate->diff($submittedDate)->days;
+                    
+                    $historyItems['paid'] = [
+                        'action' => 'paid',
+                        'date' => $paidDateInfo->date,
+                        'user' => $paidUserInfo->user,
+                        'days_since_previous' => $daysSincePrevious, // Days since submitted
+                        'note' => 'Thanh toán đã hoàn tất thông qua chuyển khoản ngân hàng.',
+                        'amount' => $document->tong_tien_thanh_toan ?? 0
+                    ];
+                }
+            }
+        }
+        
+        // Define the correct order of steps
+        $stepOrder = ['creating', 'received', 'processing', 'submitted', 'paid'];
+        
+        // Create the final history array in the correct order
+        $history = [];
+        foreach ($stepOrder as $step) {
+            if (isset($historyItems[$step])) {
+                $history[] = $historyItems[$step];
+            }
+        }
+        
+        return response()->json([
+            'success' => true,
+            'history' => $history
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error in processingHistoryNghiemthuDV: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi lấy lịch sử xử lý: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
 }

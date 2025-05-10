@@ -1,6 +1,135 @@
 <template lang="">
     <breadcrumb-vue />
-    <div class="card shadow">
+    <div class="timeline-view" v-if="showTimeline">
+        <!-- Timeline Header -->
+        <div class="timeline-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="timeline-title">
+                    <i class="fas fa-history me-2 text-primary"></i>
+                    Lịch sử xử lý
+                </h5>
+                <button class="btn-close-timeline" @click="onClose">
+                    <i class="fas fa-times"></i>
+                    <span class="ms-1">Đóng</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Timeline Content -->
+        <div class="timeline-content-wrapper">
+            <div class="timeline-scrollarea">
+                <div class="timeline-container">
+                    <!-- Show loading indicator while fetching history -->
+                    <div
+                        v-if="isLoadingHistory"
+                        class="d-flex justify-content-center py-5"
+                    >
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+
+                    <!-- Empty State (shown when no timeline data) -->
+                    <div
+                        v-else-if="!processingHistory.length"
+                        class="empty-timeline text-center py-5"
+                    >
+                        <i
+                            class="fas fa-calendar-times fa-4x text-muted mb-3 opacity-50"
+                        ></i>
+                        <p class="lead text-muted">
+                            Không tìm thấy dữ liệu lịch sử
+                        </p>
+                    </div>
+
+                    <!-- Timeline Items - Dynamically render based on history data -->
+                    <div v-else>
+                        <div
+                            v-for="(item, index) in processingHistory"
+                            :key="index"
+                            class="timeline-item appear"
+                        >
+                            <!-- Badge with different colors based on action type -->
+                            <div
+                                :class="[
+                                    'timeline-badge',
+                                    getActionClass(item.action),
+                                ]"
+                            >
+                                <i :class="getActionIcon(item.action)"></i>
+                            </div>
+
+                            <!-- Content section for each history entry -->
+                            <div
+                                :class="[
+                                    'timeline-content',
+                                    `${item.action}-content`,
+                                ]"
+                            >
+                                <h5 class="timeline-title">
+                                    <span
+                                        :class="[
+                                            'badge',
+                                            getActionClass(item.action),
+                                        ]"
+                                    >
+                                        {{ formatActionText(item.action) }}
+                                    </span>
+                                </h5>
+
+                                <!-- Date information -->
+                                <p class="mb-1">
+                                    <i class="far fa-calendar me-2"></i>
+                                    <span class="fw-medium">{{
+                                        formatDate(item.date)
+                                    }}</span>
+                                </p>
+
+                                <!-- User information -->
+                                <p class="mb-1">
+                                    <i class="far fa-user me-2"></i>
+                                    <span class="fw-medium">{{
+                                        item.user
+                                    }}</span>
+                                </p>
+
+                                <!-- Days since previous step - only shown if days > 0 -->
+                                <p
+                                    class="mb-1"
+                                    v-if="item.days_since_previous > 0"
+                                >
+                                    <i class="far fa-clock me-2"></i>
+                                    <span
+                                        >{{ item.days_since_previous }} ngày sau
+                                        khi xử lý</span
+                                    >
+                                </p>
+
+                                <!-- Payment amount - only shown for paid status -->
+                                <!-- <p
+                                    class="mb-1"
+                                    v-if="item.action === 'paid' && item.amount"
+                                >
+                                    <i class="fas fa-money-bill-wave me-2"></i>
+                                    <span class="fw-medium">{{
+                                        formatCurrency(item.amount)
+                                    }}</span>
+                                </p> -->
+
+                                <!-- Note/Comment section -->
+                                <div class="timeline-note">
+                                    <i class="far fa-comment me-2"></i>
+                                    <span>{{ item.note }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow" v-if="!showTimeline">
         <div class="card-body p-0">
             <PerfectScrollbar
                 :options="{
@@ -27,6 +156,7 @@
                                         document.trang_thai_thanh_toan ||
                                         'received'
                                     "
+                                    @click="toggleTimelineView"
                                 >
                                     <!-- Received Step -->
                                     <div
@@ -800,10 +930,12 @@ export default {
             },
             serviceDetails: [],
             processingHistory: [],
+            isLoadingHistory: false,
             user: null,
             isEditingNote: false,
             noteText: "",
             isLoading: false,
+            showTimeline: false,
         };
     },
     computed: {
@@ -898,7 +1030,59 @@ export default {
                     this.isLoading = false;
                 });
         },
-        // Add or update the openAttachment method
+        // Toggle timeline view
+        toggleTimelineView() {
+            this.showTimeline = !this.showTimeline;
+
+            // If showing timeline and no history is loaded, fetch it
+            if (this.showTimeline && this.processingHistory.length === 0) {
+                this.fetchProcessingHistory();
+            }
+        },
+        fetchProcessingHistory() {
+            const id = this.$route.params.id;
+            if (!id) return;
+
+            this.isLoadingHistory = true;
+
+            axios
+                .get(`/api/bienban-nghiemthu/${id}/history`, {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                })
+                .then((response) => {
+                    if (response.data.success) {
+                        this.processingHistory = response.data.history;
+                    } else {
+                        this.showError(
+                            response.data.message ||
+                                "Không thể tải lịch sử xử lý"
+                        );
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error fetching processing history:", error);
+                    this.showError("Lỗi khi tải lịch sử xử lý");
+                    if (error.response?.status === 401) {
+                        this.handleAuthError();
+                    }
+                })
+                .finally(() => {
+                    this.isLoadingHistory = false;
+                });
+        },
+        formatDayText(days) {
+            if (!days) return "";
+            return `${days} ngày sau khi ${this.getPreviousStepText(days)}`;
+        },
+        getPreviousStepText(days) {
+            if (!days) return "";
+            return "xử lý";
+        },
+        onClose() {
+            this.showTimeline = false;
+        },
         openAttachment() {
             if (!this.document.attachment_url) {
                 this.showError("Không tìm thấy hồ sơ đính kèm");
@@ -919,7 +1103,6 @@ export default {
                 window.open(`/${attachmentUrl}`, "_blank");
             }
         },
-
         formatCurrency(value) {
             if (!value) return "0 VNĐ";
             return new Intl.NumberFormat("vi-VN", {
@@ -948,6 +1131,7 @@ export default {
             return status || "N/A";
         },
         formatActionText(action) {
+            if (action === "creating") return "Đang tạo";
             if (action === "received") return "Đã nhận hồ sơ";
             if (action === "processing") return "Đang xử lý";
             if (action === "submitted") return "Đã nộp kế toán";
@@ -964,7 +1148,8 @@ export default {
             return "";
         },
         getActionClass(action) {
-            if (action === "received") return "bg-success";
+            if (action === "creating") return "bg-purple";
+            if (action === "received") return "bg-teal";
             if (action === "processing") return "bg-primary";
             if (action === "submitted") return "bg-info";
             if (action === "paid") return "bg-success";
@@ -973,7 +1158,8 @@ export default {
             return "bg-secondary";
         },
         getActionIcon(action) {
-            if (action === "received") return "fas fa-check-circle";
+            if (action === "creating") return "fas fa-pencil-alt";
+            if (action === "received") return "fas fas fa-hand-holding-medical";
             if (action === "processing") return "fas fa-cog";
             if (action === "submitted") return "fas fa-file-invoice";
             if (action === "paid") return "fas fa-money-bill-wave";
@@ -988,7 +1174,7 @@ export default {
                 case "sending":
                     return "fas fa-shipping-fast";
                 case "received":
-                    return "fas fa-check-circle";
+                    return "fas fa-hand-holding-medical";
                 case "cancelled":
                     return "fas fa-times-circle";
                 default:
@@ -1380,5 +1566,562 @@ export default {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     border-radius: 5px;
     overflow: hidden;
+}
+
+/* Timeline View Container */
+.timeline-view {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-height: 100vh;
+    width: 100%;
+    background-color: #f8f9fa;
+    overflow: hidden;
+}
+
+/* Timeline Header */
+.timeline-header {
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(to right, #f8f9fa, #ffffff);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    z-index: 10;
+}
+
+.timeline-title {
+    margin-bottom: 0;
+    font-weight: 600;
+    color: #343a40;
+}
+
+.btn-close-timeline {
+    background: none;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.btn-close-timeline:hover {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+}
+
+/* Timeline Content Area */
+.timeline-content-wrapper {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.timeline-scrollarea {
+    height: calc(100vh - 70px);
+    overflow-y: auto;
+    padding: 1.5rem;
+}
+
+/* Timeline Container with Line */
+.timeline-container {
+    position: relative;
+    margin-left: 20px;
+    padding-left: 25px;
+}
+
+.timeline-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 24px;
+    width: 4px;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.05) 0%,
+        #007bff 20%,
+        #17a2b8 50%,
+        #28a745 80%,
+        rgba(0, 0, 0, 0.05) 100%
+    );
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Timeline Items */
+.timeline-item {
+    position: relative;
+    margin-bottom: 2.5rem;
+    padding-left: 25px;
+    opacity: 0; /* Start with opacity 0 for animation */
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Timeline Badge (Circle with Icon) */
+.timeline-badge {
+    position: absolute;
+    left: -18px;
+    top: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    z-index: 2;
+    border: 3px solid white;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.timeline-item:hover .timeline-badge {
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.timeline-badge i {
+    font-size: 1.25rem;
+}
+
+/* Timeline Content Box */
+.timeline-content {
+    background-color: #fff;
+    border-radius: 0.75rem;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    position: relative;
+    transition: all 0.3s ease;
+    border-left: 5px solid transparent;
+}
+
+.timeline-item:hover .timeline-content {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Status-specific styling for left border */
+.timeline-item:nth-child(1) .timeline-content {
+    border-left: 5px solid #007bff; /* Primary - Processing */
+}
+
+.timeline-item:nth-child(2) .timeline-content {
+    border-left: 5px solid #17a2b8; /* Info - Submitted */
+}
+
+.timeline-item:nth-child(3) .timeline-content {
+    border-left: 5px solid #28a745; /* Success - Paid */
+}
+
+.timeline-item:nth-child(4) .timeline-content {
+    border-left: 5px solid #17a2b8; /* Danger - Cancelled */
+}
+
+/* Arrow for timeline content */
+.timeline-content::before {
+    content: "";
+    position: absolute;
+    left: -13px;
+    top: 15px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-right: 8px solid #fff;
+    border-bottom: 8px solid transparent;
+    z-index: 1;
+}
+
+/* Timeline Content Elements */
+.timeline-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.timeline-title .badge {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 30px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-note {
+    background: rgba(248, 249, 250, 0.7);
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 0.5rem;
+    border-left: 4px solid #dee2e6;
+    font-style: italic;
+    color: #495057;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s ease;
+}
+
+.timeline-note:hover {
+    background: rgba(248, 249, 250, 0.9);
+    border-left: 4px solid #007bff;
+}
+
+.fw-medium {
+    font-weight: 500;
+}
+
+/* Empty Timeline State */
+.empty-timeline {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+    animation: pulse-glow 2s infinite;
+}
+
+.empty-timeline i {
+    filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1));
+}
+
+/* Animations */
+@keyframes pulse-glow {
+    0% {
+        opacity: 0.7;
+        text-shadow: 0 0 5px rgba(108, 117, 125, 0.3);
+    }
+    50% {
+        opacity: 1;
+        text-shadow: 0 0 20px rgba(108, 117, 125, 0.5);
+    }
+    100% {
+        opacity: 0.7;
+        text-shadow: 0 0 5px rgba(108, 117, 125, 0.3);
+    }
+}
+
+.appear {
+    animation: fade-in 0.5s ease forwards;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Enhanced Animation with Delay for Items */
+.timeline-item:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.timeline-item:nth-child(2) {
+    animation-delay: 0.3s;
+}
+
+.timeline-item:nth-child(3) {
+    animation-delay: 0.5s;
+}
+
+.timeline-item:nth-child(4) {
+    animation-delay: 0.7s;
+}
+
+/* Background Colors */
+.bg-primary {
+    background-color: #007bff !important;
+}
+
+.bg-success {
+    background-color: #28a745 !important;
+}
+
+.bg-info {
+    background-color: #17a2b8 !important;
+}
+
+.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.bg-warning {
+    background-color: #ffc107 !important;
+}
+
+.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Responsive Design */
+@media (max-width: 767px) {
+    .timeline-card {
+        height: 80vh;
+        max-height: none;
+        margin: 0.5rem;
+        border-radius: 8px;
+    }
+
+    .timeline-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .timeline-scrollarea {
+        height: calc(80vh - 60px);
+    }
+
+    .timeline-container::before {
+        left: 20px;
+    }
+
+    .timeline-badge {
+        width: 40px;
+        height: 40px;
+        left: 0;
+    }
+
+    .timeline-content {
+        padding: 1rem;
+        margin-left: 15px;
+    }
+
+    .timeline-item {
+        padding-left: 35px;
+    }
+}
+
+/* Desktop Enhanced Design */
+@media (min-width: 992px) {
+    .timeline-container::before {
+        left: 50%;
+        margin-left: -2px;
+    }
+
+    .timeline-item {
+        width: 50%;
+        animation: none;
+        padding-left: 0;
+        margin-bottom: 3rem;
+    }
+
+    .timeline-item:nth-child(odd) {
+        margin-right: 50%;
+        padding-right: 45px;
+        text-align: right;
+    }
+
+    .timeline-item:nth-child(even) {
+        margin-left: 50%;
+        padding-left: 45px;
+    }
+
+    .timeline-badge {
+        left: 50%;
+        margin-left: -23px;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-content {
+        border-left: none;
+        border-right: 5px solid transparent;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-content::before {
+        left: auto;
+        right: -13px;
+        border-right: none;
+        border-left: 8px solid #fff;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-title {
+        justify-content: flex-end;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-note {
+        border-left: none;
+        border-right: 4px solid #dee2e6;
+        text-align: right;
+    }
+
+    .timeline-item:nth-child(odd) p {
+        text-align: right;
+    }
+
+    .timeline-item:nth-child(odd) p i,
+    .timeline-item:nth-child(odd) .timeline-note i {
+        margin-right: 0;
+        margin-left: 0.5rem;
+        float: right;
+    }
+
+    /* Enhanced animation for timeline */
+    .timeline-item:nth-child(odd).appear {
+        animation: slide-in-left 0.6s ease forwards;
+    }
+
+    .timeline-item:nth-child(even).appear {
+        animation: slide-in-right 0.6s ease forwards;
+    }
+
+    @keyframes slide-in-left {
+        from {
+            transform: translateX(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slide-in-right {
+        from {
+            transform: translateX(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+}
+
+/* Status Badge Styling */
+.badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Utilities */
+.mb-1 {
+    margin-bottom: 0.25rem !important;
+}
+
+.mb-3 {
+    margin-bottom: 1rem !important;
+}
+
+.me-2 {
+    margin-right: 0.5rem !important;
+}
+
+.ms-1 {
+    margin-left: 0.25rem !important;
+}
+
+.py-5 {
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
+}
+
+.d-flex {
+    display: flex !important;
+}
+
+.justify-content-between {
+    justify-content: space-between !important;
+}
+
+.align-items-center {
+    align-items: center !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+.opacity-50 {
+    opacity: 0.5 !important;
+}
+
+.lead {
+    font-size: 1.25rem;
+    font-weight: 300;
+}
+
+/* Additional Timeline Styling for Creating and Received States */
+.creating-content {
+    border-left: 5px solid #9c27b0 !important; /* Purple color for creating state */
+}
+
+.creating-content:hover {
+    box-shadow: 0 8px 25px rgba(156, 39, 176, 0.2) !important;
+}
+
+.received-content {
+    border-left: 5px solid #009688 !important; /* Teal color for received state */
+}
+
+.received-content:hover {
+    box-shadow: 0 8px 25px rgba(0, 150, 136, 0.2) !important;
+}
+
+/* Status-specific badge enhancements */
+.bg-purple {
+    background-color: #9c27b0 !important;
+}
+
+.bg-teal {
+    background-color: #009688 !important;
+}
+
+/* Desktop specific enhancements */
+@media (min-width: 992px) {
+    .timeline-item:nth-child(odd) .creating-content {
+        border-left: none;
+        border-right: 5px solid #9c27b0;
+    }
+
+    .timeline-item:nth-child(odd) .received-content {
+        border-left: none;
+        border-right: 5px solid #009688;
+    }
+
+    /* Add animation effects for creating and received states */
+    .timeline-item:nth-child(1).appear .creating-content {
+        animation: pulse-purple 1s ease;
+    }
+
+    .timeline-item:nth-child(2).appear .received-content {
+        animation: pulse-teal 1s ease;
+    }
+}
+
+/* Animation keyframes for timeline items */
+@keyframes pulse-purple {
+    0% {
+        box-shadow: 0 0 0 0 rgba(156, 39, 176, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(156, 39, 176, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(156, 39, 176, 0);
+    }
+}
+
+@keyframes pulse-teal {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 150, 136, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(0, 150, 136, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 150, 136, 0);
+    }
 }
 </style>

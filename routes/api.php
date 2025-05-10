@@ -114,6 +114,8 @@ Route::get('/bien-ban-nghiem-thu', [BienBanNghiemThuController::class, 'index'])
 Route::get('/bienban-nghiemthu/{id}', [BienBanNghiemThuController::class, 'show']);
 // เพิ่ม route สำหรับตรวจสอบสิทธิ์การเข้าถึงเอกสาร bien-ban-nghiemthu
 Route::get('/bien-ban-nghiemthu/{id}/check-access', [BienBanNghiemThuController::class, 'checkAccess']);
+//Timeline bieenban-nghiemthu
+Route::get('/bienban-nghiemthu/{id}/history', [BienBanNghiemThuController::class, 'processingHistoryNghiemthuDV']);
 
 // Import data routes for BienBanNghiemThu
 Route::post('/import-bienban-nghiemthu', [BienBanNghiemThuController::class, 'importData']);
