@@ -24,7 +24,8 @@
                                 <div
                                     class="progress-tracker"
                                     :class="
-                                        document.processing_status || 'received'
+                                        document.trang_thai_thanh_toan ||
+                                        'received'
                                     "
                                 >
                                     <!-- Received Step -->
@@ -68,7 +69,7 @@
                                                 'submitted',
                                                 'paid',
                                             ].includes(
-                                                document.processing_status
+                                                document.trang_thai_thanh_toan
                                             ),
                                         }"
                                     >
@@ -90,7 +91,7 @@
                                                 'submitted',
                                                 'paid',
                                             ].includes(
-                                                document.processing_status
+                                                document.trang_thai_thanh_toan
                                             ),
                                         }"
                                     >
@@ -107,7 +108,7 @@
                                         class="track-step"
                                         :class="{
                                             active:
-                                                document.processing_status ===
+                                                document.trang_thai_thanh_toan ===
                                                 'paid',
                                         }"
                                     >
@@ -504,22 +505,36 @@
                                             >
                                                 Tình trạng giao nhận hồ sơ
                                             </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="tinhTrang"
-                                                :value="
-                                                    formatStatus(
-                                                        document.trang_thai_nhan_hs
-                                                    )
-                                                "
-                                                :class="
-                                                    statusClass(
-                                                        document.trang_thai_nhan_hs
-                                                    )
-                                                "
-                                                disabled
-                                            />
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i
+                                                        :class="[
+                                                            getReceivedStepIcon(
+                                                                document.trang_thai_nhan_hs
+                                                            ),
+                                                            statusClass(
+                                                                document.trang_thai_nhan_hs
+                                                            ),
+                                                        ]"
+                                                    ></i>
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    id="tinhTrang"
+                                                    :value="
+                                                        formatStatus(
+                                                            document.trang_thai_nhan_hs
+                                                        )
+                                                    "
+                                                    :class="
+                                                        statusClass(
+                                                            document.trang_thai_nhan_hs
+                                                        )
+                                                    "
+                                                    disabled
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                     <!-- Thêm Trạng thái thanh toán -->
@@ -531,24 +546,76 @@
                                             >
                                                 Trạng thái thanh toán
                                             </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="trangThaiThanhToan"
-                                                :value="
-                                                    formatPaymentStatus(
-                                                        document.trang_thai_thanh_toan ||
-                                                            document.processing_status
-                                                    )
-                                                "
-                                                :class="
-                                                    paymentStatusClass(
-                                                        document.trang_thai_thanh_toan ||
-                                                            document.processing_status
-                                                    )
-                                                "
-                                                disabled
-                                            />
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i
+                                                        :class="[
+                                                            paymentStatusIcon(
+                                                                document.trang_thai_thanh_toan ||
+                                                                    document.processing_status
+                                                            ),
+                                                            paymentStatusClass(
+                                                                document.trang_thai_thanh_toan ||
+                                                                    document.processing_status
+                                                            ),
+                                                        ]"
+                                                    ></i>
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    id="trangThaiThanhToan"
+                                                    :value="
+                                                        formatPaymentStatus(
+                                                            document.trang_thai_thanh_toan ||
+                                                                document.processing_status
+                                                        )
+                                                    "
+                                                    :class="
+                                                        paymentStatusClass(
+                                                            document.trang_thai_thanh_toan ||
+                                                                document.processing_status
+                                                        )
+                                                    "
+                                                    disabled
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Hồ sơ đính kèm -->
+                                    <div
+                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                    >
+                                        <div class="form-group mb-3">
+                                            <label
+                                                for="hoSoDinhKem"
+                                                class="form-label"
+                                            >
+                                                Hồ sơ đính kèm
+                                            </label>
+                                            <div
+                                                class="d-flex align-items-center"
+                                            >
+                                                <a
+                                                    href="#"
+                                                    @click.prevent="
+                                                        openAttachment
+                                                    "
+                                                    class="text-decoration-none"
+                                                >
+                                                    <div
+                                                        class="d-flex align-items-center"
+                                                    >
+                                                        <i
+                                                            class="far fa-file-pdf text-danger fs-4 me-2"
+                                                        ></i>
+                                                        <span
+                                                            >Xem hồ sơ đính
+                                                            kèm</span
+                                                        >
+                                                    </div>
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -729,6 +796,7 @@ export default {
                 trang_thai_nhan_hs: "",
                 ghi_chu: "",
                 processing_status: "received", // received, processing, submitted, paid
+                attachment_url: null, // Add this line for the attachment URL
             },
             serviceDetails: [],
             processingHistory: [],
@@ -793,6 +861,9 @@ export default {
                             processing_status:
                                 response.data.document.processing_status ||
                                 "received",
+                            // Store attachment URL for use in openAttachment method
+                            attachment_url:
+                                response.data.document.attachment_url || null,
                         };
                         this.noteText = this.document.ghi_chu || "";
 
@@ -826,6 +897,27 @@ export default {
                 .finally(() => {
                     this.isLoading = false;
                 });
+        },
+        // Add or update the openAttachment method
+        openAttachment() {
+            if (!this.document.attachment_url) {
+                this.showError("Không tìm thấy hồ sơ đính kèm");
+                return;
+            }
+
+            // Handle URL opening based on format
+            const attachmentUrl = this.document.attachment_url;
+
+            // Check if URL starts with http/https
+            if (
+                attachmentUrl.startsWith("http://") ||
+                attachmentUrl.startsWith("https://")
+            ) {
+                window.open(attachmentUrl, "_blank");
+            } else {
+                // Assume it's a relative path
+                window.open(`/${attachmentUrl}`, "_blank");
+            }
         },
 
         formatCurrency(value) {
@@ -942,6 +1034,19 @@ export default {
                 default:
                     return "text-secondary";
             }
+        },
+        paymentStatusIcon(status) {
+            if (!status) return "";
+
+            const iconMap = {
+                processing: "fas fa-cog",
+                submitted: "fas fa-paper-plane",
+                paid: "fas fa-check-circle",
+                cancelled: "fas fa-times-circle",
+                rejected: "fas fa-exclamation-circle",
+            };
+
+            return iconMap[status] || "fas fa-question-circle";
         },
         confirmAction(title, text, icon) {
             return Swal.fire({
@@ -1176,84 +1281,6 @@ export default {
     max-width: 100px;
 }
 
-/* Timeline styles */
-.timeline-wrapper {
-    padding: 0;
-    margin: 0;
-}
-.timeline {
-    list-style: none;
-    padding: 20px 0;
-    position: relative;
-    margin: 0;
-}
-.timeline:before {
-    top: 0;
-    bottom: 0;
-    position: absolute;
-    content: " ";
-    width: 3px;
-    background-color: #e9ecef;
-    left: 50px;
-}
-.timeline-item {
-    margin-bottom: 20px;
-    position: relative;
-}
-.timeline-badge {
-    width: 36px;
-    height: 36px;
-    left: 32px;
-    margin-left: -18px;
-    z-index: 1;
-    color: #fff;
-    border-radius: 50%;
-    position: absolute;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-}
-.timeline-panel {
-    width: calc(100% - 90px);
-    float: right;
-    border: 1px solid #e9ecef;
-    border-radius: 0.25rem;
-    padding: 15px;
-    position: relative;
-    background-color: #fff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-.timeline-panel:before {
-    position: absolute;
-    top: 12px;
-    left: -10px;
-    display: inline-block;
-    border-top: 10px solid transparent;
-    border-right: 10px solid #e9ecef;
-    border-bottom: 10px solid transparent;
-    content: " ";
-}
-.timeline-panel:after {
-    position: absolute;
-    top: 13px;
-    left: -9px;
-    display: inline-block;
-    border-top: 9px solid transparent;
-    border-right: 9px solid #fff;
-    border-bottom: 9px solid transparent;
-    content: " ";
-}
-.timeline-title {
-    margin-top: 0;
-    color: inherit;
-    font-size: 1rem;
-    margin-bottom: 5px;
-}
-.timeline-body > p,
-.timeline-body > ul {
-    margin-bottom: 0;
-}
 .bg-success {
     background-color: #198754 !important;
 }
@@ -1268,102 +1295,6 @@ export default {
 }
 .bg-secondary {
     background-color: #6c757d !important;
-}
-
-/* Buttons */
-.button-30 {
-    align-items: center;
-    appearance: none;
-    background-color: #fcfcfd;
-    border-radius: 4px;
-    border-width: 0;
-    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
-    box-sizing: border-box;
-    color: #36395a;
-    cursor: pointer;
-    display: inline-flex;
-    height: 40px;
-    justify-content: center;
-    line-height: 1;
-    list-style: none;
-    overflow: hidden;
-    padding-left: 16px;
-    padding-right: 16px;
-    position: relative;
-    text-align: left;
-    text-decoration: none;
-    transition: box-shadow 0.15s, transform 0.15s;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-    white-space: nowrap;
-    will-change: box-shadow, transform;
-    font-size: 14px;
-}
-
-.button-30:focus {
-    box-shadow: #d6d6e7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
-}
-
-.button-30:hover {
-    box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
-    transform: translateY(-2px);
-}
-
-.button-30:active {
-    box-shadow: #d6d6e7 0 3px 7px inset;
-    transform: translateY(2px);
-}
-
-.button-30-text-green {
-    align-items: center;
-    appearance: none;
-    background-color: #e6fff2;
-    border-radius: 4px;
-    border-width: 0;
-    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #92d9a7 0 -3px 0 inset;
-    box-sizing: border-box;
-    color: #03541c;
-    cursor: pointer;
-    display: inline-flex;
-    font-family: "JetBrains Mono", monospace;
-    height: 40px;
-    justify-content: center;
-    line-height: 1;
-    list-style: none;
-    overflow: hidden;
-    padding-left: 16px;
-    padding-right: 16px;
-    position: relative;
-    text-align: left;
-    text-decoration: none;
-    transition: box-shadow 0.15s, transform 0.15s;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-    white-space: nowrap;
-    will-change: box-shadow, transform;
-    font-size: 14px;
-}
-
-.button-30-text-green:focus {
-    box-shadow: #92d9a7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #92d9a7 0 -3px 0 inset;
-}
-
-.button-30-text-green:hover {
-    box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #92d9a7 0 -3px 0 inset;
-    transform: translateY(-2px);
-}
-
-.button-30-text-green:active {
-    box-shadow: #92d9a7 0 3px 7px inset;
-    transform: translateY(2px);
 }
 
 /* Responsive styles */

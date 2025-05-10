@@ -493,7 +493,8 @@ public function show($id)
                 'dd.status as trang_thai_nhan_hs',
                 'logs.ma_trinh_thanh_toan',
                 'logs.ma_de_nghi_giai_ngan',
-                'pttt.trang_thai_thanh_toan'
+                'pttt.trang_thai_thanh_toan',
+                'pttt.link_url as attachment_url' // Add this line to get the attachment URL
             )
             ->where('bb.ma_nghiem_thu', $id)
             ->first();
