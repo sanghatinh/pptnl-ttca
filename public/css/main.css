@@ -8011,6 +8011,86 @@ code {
     word-break: break-word;
 }
 
-.sidebar-submenu{
+.sidebar-submenu {
     margin-left: -30px;
+}
+
+/* สไตล์สำหรับตัวปรับขนาดคอลัมน์ */
+.column-resizer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 5px;
+    background-color: transparent;
+    cursor: col-resize;
+    z-index: 1;
+}
+
+.column-resizer:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* เมื่อกำลังปรับขนาด */
+table.resizing {
+    cursor: col-resize;
+    user-select: none;
+}
+
+/* ปรับแต่งตารางให้รองรับการปรับขนาดคอลัมน์ */
+table.resizable {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table.resizable th,
+table.resizable td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ปรับ CSS สำหรับ resizable columns ให้ทำงานกับ Vue 3 */
+/* สำหรับ Vue 3 จำเป็นต้องใช้ :deep ในการเข้าถึง DOM ภายใน component */
+:deep(.column-resizer) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 100;
+    background-color: transparent;
+    transition: background-color 0.2s;
+}
+
+:deep(.column-resizer:hover) {
+    background-color: rgba(0, 123, 255, 0.2);
+}
+
+:deep(.column-resizer.resizing) {
+    background-color: rgba(0, 123, 255, 0.4);
+}
+
+:deep(table.resizing) {
+    cursor: col-resize;
+    user-select: none;
+}
+
+:deep(.resizable) {
+    table-layout: fixed;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+:deep(.resizable th) {
+    position: relative;
+    overflow: visible;
+}
+
+:deep(.resizable th, .resizable td) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

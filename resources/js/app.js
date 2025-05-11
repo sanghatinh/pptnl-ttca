@@ -8,6 +8,8 @@ import breadcrumbVue from "./Components/breadcrumb.Vue";
 import RegisterPage from "./Pages/Register.vue";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { ResizableColumns } from "./Directives/ResizableColumns";
+
 //sweetalert2
 import VueSweetalert2 from "vue-sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
@@ -25,6 +27,7 @@ app.use(VueSweetalert2);
 
 app.use(VueNumberFormat);
 app.use(PerfectScrollbarPlugin);
+app.directive("resizable-columns", ResizableColumns);
 app.component("header-bar", headerbar);
 app.component("side-barmenu", sidebarmenu);
 app.component("breadcrumb-vue", breadcrumbVue);

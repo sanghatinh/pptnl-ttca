@@ -759,20 +759,45 @@
                             <div class="table-container">
                                 <div class="table-responsive mt-2">
                                     <table
-                                        class="table table-bordered table-hover align-middle"
+                                        class="table table-bordered table-hover align-middle resizable"
+                                        v-resizable-columns="{
+                                            minWidth: 80,
+                                            saveState: true,
+                                            id: 'nghiemthu-table',
+                                            adjustTableWidth: false,
+                                        }"
+                                        style="table-layout: fixed"
                                     >
                                         <thead class="table-light text-center">
                                             <tr>
-                                                <th>STT</th>
-                                                <th>Dịch vụ</th>
-                                                <th>Mã số thửa</th>
-                                                <th>Đơn vị tính</th>
-                                                <th>Số lần thực hiện</th>
-                                                <th>Khối lượng thực hiện</th>
-                                                <th>Đơn giá</th>
-                                                <th>Thành tiền</th>
-                                                <th>Số tiền tạm giữ</th>
-                                                <th>Tiền thanh toán</th>
+                                                <th style="width: 50px">STT</th>
+                                                <th style="width: 150px">
+                                                    Dịch vụ
+                                                </th>
+                                                <th style="width: 100px">
+                                                    Mã số thửa
+                                                </th>
+                                                <th style="width: 80px">
+                                                    Đơn vị tính
+                                                </th>
+                                                <th style="width: 100px">
+                                                    Số lần thực hiện
+                                                </th>
+                                                <th style="width: 120px">
+                                                    Khối lượng thực hiện
+                                                </th>
+                                                <th style="width: 100px">
+                                                    Đơn giá
+                                                </th>
+                                                <th style="width: 120px">
+                                                    Thành tiền
+                                                </th>
+                                                <th style="width: 120px">
+                                                    Số tiền tạm giữ
+                                                </th>
+                                                <th style="width: 120px">
+                                                    Tiền thanh toán
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -895,8 +920,12 @@
 import Swal from "sweetalert2";
 import axios from "axios";
 import { useStore } from "../../Store/Auth";
+import { ResizableColumns } from "../../Directives/ResizableColumns";
 
 export default {
+    directives: {
+        "resizable-columns": ResizableColumns,
+    },
     setup() {
         const store = useStore();
         return {
@@ -2123,5 +2152,48 @@ export default {
     100% {
         box-shadow: 0 0 0 0 rgba(0, 150, 136, 0);
     }
+}
+/* ปรับ CSS สำหรับ resizable columns ให้ทำงานกับ Vue 3 */
+/* สำหรับ Vue 3 จำเป็นต้องใช้ :deep ในการเข้าถึง DOM ภายใน component */
+:deep(.column-resizer) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 100;
+    background-color: transparent;
+    transition: background-color 0.2s;
+}
+
+:deep(.column-resizer:hover) {
+    background-color: rgba(0, 123, 255, 0.2);
+}
+
+:deep(.column-resizer.resizing) {
+    background-color: rgba(0, 123, 255, 0.4);
+}
+
+:deep(table.resizing) {
+    cursor: col-resize;
+    user-select: none;
+}
+
+:deep(.resizable) {
+    table-layout: fixed;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+:deep(.resizable th) {
+    position: relative;
+    overflow: visible;
+}
+
+:deep(.resizable th, .resizable td) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 </style>

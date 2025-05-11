@@ -855,26 +855,51 @@
                                 <div class="table-responsive mt-2">
                                     <table
                                         class="table table-bordered table-hover align-middle"
+                                        v-resizable-columns="{
+                                            minWidth: 80,
+                                            saveState: true,
+                                            id: 'dntt-bienbannghiemthu-table',
+                                            adjustTableWidth: false,
+                                        }"
+                                        style="table-layout: fixed"
                                     >
                                         <thead class="table-light text-center">
                                             <tr>
-                                                <th>STT</th>
-                                                <th>Mã nghiệm thu</th>
-                                                <th>Trạm</th>
-                                                <th>Vụ đầu tư</th>
-                                                <th>
+                                                <th style="width: 50px">STT</th>
+                                                <th style="width: 140px">
+                                                    Mã nghiệm thu
+                                                </th>
+                                                <th style="width: 120px">
+                                                    Trạm
+                                                </th>
+                                                <th style="width: 130px">
+                                                    Vụ đầu tư
+                                                </th>
+                                                <th style="width: 170px">
                                                     Khách hàng cá nhân ĐT mía
                                                 </th>
-                                                <th>
+                                                <th style="width: 170px">
                                                     Khách hàng doanh nghiệp ĐT
                                                     mía
                                                 </th>
-                                                <th>Hợp đồng đầu tư</th>
-                                                <th>Hình thức DV</th>
-                                                <th>Hợp đồng cung ứng DV</th>
-                                                <th>Thành tiền</th>
-                                                <th>Số tiền tạm giữ</th>
-                                                <th>Tiền thanh toán</th>
+                                                <th style="width: 120px">
+                                                    Hợp đồng đầu tư
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Hình thức DV
+                                                </th>
+                                                <th style="width: 150px">
+                                                    Hợp đồng cung ứng DV
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Thành tiền
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Số tiền tạm giữ
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Tiền thanh toán
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1018,21 +1043,50 @@
                                 <div class="table-responsive mt-2">
                                     <table
                                         class="table table-bordered table-hover align-middle"
+                                        v-resizable-columns="{
+                                            minWidth: 80,
+                                            saveState: true,
+                                            id: 'dntt-bienbannghiemthu-table',
+                                            adjustTableWidth: false,
+                                        }"
+                                        style="table-layout: fixed"
                                     >
                                         <thead class="table-light text-center">
                                             <tr>
-                                                <th>STT</th>
-                                                <th>Mã nghiệm thu</th>
-                                                <th>Trạm</th>
-                                                <th>Dịch vụ</th>
-                                                <th>Mã số thửa</th>
-                                                <th>Đơn vị tính</th>
-                                                <th>Số lần thực hiện</th>
-                                                <th>Khối lượng thực hiện</th>
-                                                <th>Đơn giá</th>
-                                                <th>Thành tiền</th>
-                                                <th>Số tiền tạm giữ</th>
-                                                <th>Tiền thanh toán</th>
+                                                <th style="width: 50px">STT</th>
+                                                <th style="width: 140px">
+                                                    Mã nghiệm thu
+                                                </th>
+                                                <th style="width: 130px">
+                                                    Trạm
+                                                </th>
+                                                <th style="width: 160px">
+                                                    Dịch vụ
+                                                </th>
+                                                <th style="width: 120px">
+                                                    Mã số thửa
+                                                </th>
+                                                <th style="width: 80px">
+                                                    Đơn vị tính
+                                                </th>
+                                                <th style="width: 80px">
+                                                    Số lần thực hiện
+                                                </th>
+                                                <th style="width: 80px">
+                                                    Khối lượng thực hiện
+                                                </th>
+                                                <th style="width: 130px">
+                                                    Đơn giá
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Thành tiền
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Số tiền tạm giữ
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Tiền thanh toán
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1173,24 +1227,59 @@
                                 <div class="table-responsive mt-2">
                                     <table
                                         class="table table-bordered table-hover align-middle"
+                                        v-resizable-columns="{
+                                            minWidth: 80,
+                                            saveState: true,
+                                            id: 'dntt-bienbannghiemthu-table',
+                                            adjustTableWidth: false,
+                                        }"
+                                        style="table-layout: fixed"
                                     >
                                         <thead class="table-light text-center">
                                             <tr>
-                                                <th>STT</th>
-                                                <th>Mã số phiếu</th>
-                                                <th>Invoice Number</th>
-                                                <th>Đã trả gốc</th>
-                                                <th>Ngày vay</th>
-                                                <th>Ngày trả</th>
-                                                <th>Lãi suất</th>
-                                                <th>Tiền lãi</th>
-                                                <th>Vụ đầu tư</th>
-                                                <th>Vụ thanh toán</th>
-                                                <th>Khách hàng cá nhân</th>
-                                                <th>KH doanh nghiệp</th>
-                                                <th>Số trờ trình</th>
-                                                <th>Category Debt</th>
-                                                <th>Description</th>
+                                                <th style="width: 50px">STT</th>
+                                                <th style="width: 140px">
+                                                    Mã số phiếu
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Invoice Number
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Đã trả gốc
+                                                </th>
+                                                <th style="width: 130px">
+                                                    Ngày vay
+                                                </th>
+                                                <th style="width: 130px">
+                                                    Ngày trả
+                                                </th>
+                                                <th style="width: 120px">
+                                                    Lãi suất
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Tiền lãi
+                                                </th>
+                                                <th style="width: 130px">
+                                                    Vụ đầu tư
+                                                </th>
+                                                <th style="width: 130px">
+                                                    Vụ thanh toán
+                                                </th>
+                                                <th style="width: 170px">
+                                                    Khách hàng cá nhân
+                                                </th>
+                                                <th style="width: 170px">
+                                                    KH doanh nghiệp
+                                                </th>
+                                                <th style="width: 130px">
+                                                    Số trờ trình
+                                                </th>
+                                                <th style="width: 130px">
+                                                    Category Debt
+                                                </th>
+                                                <th style="width: 280px">
+                                                    Description
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1315,11 +1404,15 @@
 import { useStore } from "../../Store/Auth";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { ResizableColumns } from "../../Directives/ResizableColumns";
 
 export default {
     setup() {
         const store = useStore();
         return { store };
+    },
+    directives: {
+        "resizable-columns": ResizableColumns,
     },
     data() {
         return {
@@ -2636,24 +2729,11 @@ export default {
     white-space: nowrap;
     vertical-align: middle;
     border-top: 1px solid #f0f0f0;
-    transition: all 0.2s;
 }
 
 /* Tooltip for truncated content */
-.table td[title] {
-    cursor: help;
-}
 
 /* Add hover style to see more of truncated content */
-.table td:hover {
-    overflow: visible;
-    white-space: normal;
-    max-width: none;
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
-    background-color: #fff;
-}
 
 /* Zebra striping for easier row scanning */
 .table tbody tr:nth-of-type(odd) {

@@ -923,6 +923,13 @@
                                 <div class="table-responsive mt-2">
                                     <table
                                         class="table table-bordered table-hover align-middle"
+                                        v-resizable-columns="{
+                                            minWidth: 80,
+                                            saveState: true,
+                                            id: 'phieutrinhthanhtoan-details-table',
+                                            adjustTableWidth: false,
+                                        }"
+                                        style="table-layout: fixed"
                                     >
                                         <thead class="table-light text-center">
                                             <tr>
@@ -996,7 +1003,7 @@
                                                     </div>
                                                 </th>
 
-                                                <th>
+                                                <th style="width: 120px">
                                                     Trạm
                                                     <button
                                                         @click="
@@ -1138,7 +1145,7 @@
                                                     </div>
                                                 </th>
 
-                                                <th>
+                                                <th style="width: 130px">
                                                     Vụ đầu tư
                                                     <button
                                                         @click="
@@ -1222,7 +1229,7 @@
                                                     </div>
                                                 </th>
 
-                                                <th>
+                                                <th style="width: 170px">
                                                     KH Cá nhân
                                                     <button
                                                         @click="
@@ -1282,7 +1289,7 @@
                                                     </div>
                                                 </th>
 
-                                                <th>
+                                                <th style="width: 170px">
                                                     KH Doanh nghiệp
                                                     <button
                                                         @click="
@@ -1342,7 +1349,7 @@
                                                     </div>
                                                 </th>
 
-                                                <th>
+                                                <th style="width: 160px">
                                                     Hợp đồng đầu tư
                                                     <button
                                                         @click="
@@ -1402,7 +1409,7 @@
                                                     </div>
                                                 </th>
 
-                                                <th>
+                                                <th style="width: 140px">
                                                     Hình thức DV
                                                     <button
                                                         @click="
@@ -1486,7 +1493,7 @@
                                                     </div>
                                                 </th>
 
-                                                <th>
+                                                <th style="width: 160px">
                                                     Hợp đồng cung ứng DV
                                                     <button
                                                         @click="
@@ -1546,7 +1553,7 @@
                                                     </div>
                                                 </th>
 
-                                                <th>
+                                                <th style="width: 140px">
                                                     Mã giải ngân
                                                     <button
                                                         @click="
@@ -1666,7 +1673,9 @@
                                                     </div>
                                                 </th>
 
-                                                <th>Số tiền</th>
+                                                <th style="width: 130px">
+                                                    Số tiền
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1905,6 +1914,12 @@
                                 <div class="table-responsive mt-2">
                                     <table
                                         class="table table-bordered table-hover align-middle"
+                                        v-resizable-columns="{
+                                            minWidth: 80,
+                                            saveState: true,
+                                            id: 'phieutrinhthanhtoan-details-PaymentRequests',
+                                            adjustTableWidth: false,
+                                        }"
                                     >
                                         <thead class="table-light text-center">
                                             <tr>
@@ -1920,7 +1935,7 @@
                                                         class="form-check-input"
                                                     />
                                                 </th>
-                                                <th>
+                                                <th style="width: 140px">
                                                     Mã giải ngân
                                                     <button
                                                         @click="
@@ -1980,7 +1995,7 @@
                                                     </div>
                                                 </th>
 
-                                                <th>
+                                                <th style="width: 120px">
                                                     Vụ đầu tư
                                                     <button
                                                         @click="
@@ -2063,7 +2078,7 @@
                                                         </div>
                                                     </div>
                                                 </th>
-                                                <th>
+                                                <th style="width: 150px">
                                                     Loại thanh toán
                                                     <button
                                                         @click="
@@ -2146,7 +2161,7 @@
                                                         </div>
                                                     </div>
                                                 </th>
-                                                <th>
+                                                <th style="width: 170px">
                                                     Khách hàng cá nhân
                                                     <button
                                                         @click="
@@ -2205,7 +2220,7 @@
                                                         </div>
                                                     </div>
                                                 </th>
-                                                <th>
+                                                <th style="width: 120px">
                                                     Mã KH cá nhân
                                                     <button
                                                         @click="
@@ -2264,7 +2279,7 @@
                                                         </div>
                                                     </div>
                                                 </th>
-                                                <th>
+                                                <th style="width: 180px">
                                                     Khách hàng doanh nghiệp
                                                     <button
                                                         @click="
@@ -2323,7 +2338,7 @@
                                                         </div>
                                                     </div>
                                                 </th>
-                                                <th>
+                                                <th style="width: 120px">
                                                     Mã KH doanh nghiệp
                                                     <button
                                                         @click="
@@ -2382,14 +2397,22 @@
                                                         </div>
                                                     </div>
                                                 </th>
-                                                <th>Tổng tiền</th>
-                                                <th>Tổng tiền tạm giữ</th>
-                                                <th>Tổng tiền khấu trừ</th>
-                                                <th>Tổng tiền lãi suất</th>
-                                                <th>
+                                                <th style="width: 140px">
+                                                    Tổng tiền
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Tổng tiền tạm giữ
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Tổng tiền khấu trừ
+                                                </th>
+                                                <th style="width: 140px">
+                                                    Tổng tiền lãi suất
+                                                </th>
+                                                <th style="width: 140px">
                                                     Tổng tiền thanh toán còn lại
                                                 </th>
-                                                <th>
+                                                <th style="width: 120px">
                                                     Ngày thanh toán
                                                     <button
                                                         @click="
@@ -2447,7 +2470,7 @@
                                                         </div>
                                                     </div>
                                                 </th>
-                                                <th>
+                                                <th style="width: 120px">
                                                     Số tờ trình
                                                     <button
                                                         @click="
@@ -2506,7 +2529,7 @@
                                                         </div>
                                                     </div>
                                                 </th>
-                                                <th>
+                                                <th style="width: 80px">
                                                     Đợt thanh toán
                                                     <button
                                                         @click="
@@ -3694,10 +3717,14 @@ import Swal from "sweetalert2";
 import axios from "axios";
 import { useStore } from "../../Store/Auth";
 import { Bootstrap5Pagination } from "laravel-vue-pagination";
+import { ResizableColumns } from "../../Directives/ResizableColumns";
 
 export default {
     components: {
         Bootstrap5Pagination,
+    },
+    directives: {
+        "resizable-columns": ResizableColumns,
     },
     setup() {
         const store = useStore();
@@ -7046,24 +7073,11 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     white-space: nowrap;
     vertical-align: middle;
     border-top: 1px solid #f0f0f0;
-    transition: all 0.2s;
 }
 
 /* Tooltip for truncated content */
-.table td[title] {
-    cursor: help;
-}
 
 /* Add hover style to see more of truncated content */
-.table td:hover {
-    overflow: visible;
-    white-space: normal;
-    max-width: none;
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
-    background-color: #fff;
-}
 
 /* Zebra striping for easier row scanning */
 .table tbody tr:nth-of-type(odd) {
