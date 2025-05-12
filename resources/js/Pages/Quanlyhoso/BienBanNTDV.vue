@@ -1267,7 +1267,7 @@
                                         v-for="item in paginatedItems.data"
                                         :key="item.id"
                                         class="desktop-row"
-                                        @click="viewDetails(item)"
+                                        @dblclick="viewDetails(item)"
                                     >
                                         <td
                                             class="border px-4 py-2"
@@ -1746,7 +1746,7 @@
                 </div>
                 <div class="modal-body">
                     <form @submit.prevent="submitPaymentRequest">
-                        <!-- <div class="mb-3">
+                        <div class="mb-3">
                             <label for="requestTitle" class="form-label"
                                 >Tiêu đề</label
                             >
@@ -1757,7 +1757,7 @@
                                 v-model="paymentRequest.title"
                                 readonly
                             />
-                        </div> -->
+                        </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="requestDate" class="form-label"
@@ -1897,6 +1897,7 @@
             </div>
         </div>
     </div>
+
 </template>
 
 <script>
@@ -3974,10 +3975,32 @@ export default {
 }
 .desktop-row {
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
+     cursor: pointer;
 }
 .desktop-row:hover {
     background-color: #f0f9f0;
     box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.desktop-row::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.desktop-row:hover::after {
+    opacity: 1;
+    visibility: visible;
 }
 .table-auto th,
 .table-auto td {

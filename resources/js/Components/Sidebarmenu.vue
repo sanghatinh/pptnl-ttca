@@ -80,7 +80,7 @@
                                         @click="closeSidebar"
                                     >
                                         <span class="menu-text"
-                                            >Phiêu giao nhận hom giống</span
+                                            >Phiếu giao nhận hom giống</span
                                         >
                                     </router-link>
                                 </li>
@@ -110,7 +110,7 @@
                                         @click="closeSidebar"
                                     >
                                         <span class="menu-text"
-                                            >Phiêu trình thanh toán dịch
+                                            >Phiếu trình thanh toán dịch
                                             vụ</span
                                         >
                                     </router-link>
@@ -145,6 +145,35 @@
                                     >
                                         <span class="menu-text"
                                             >Phiếu thu nợ dịch vụ</span
+                                        >
+                                    </router-link>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+
+                <!-- Quản lý công nợ-->
+                <ul>
+                    <li class="sidebar-dropdown active">
+                        <a href="#">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span class="menu-text">Quản lý công nợ</span>
+                        </a>
+                        <div class="sidebar-submenu">
+                            <ul>
+                                <li>
+                                    <router-link
+                                        to="/"
+                                        :class="
+                                            $route.path === '/'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                        @click="closeSidebar"
+                                    >
+                                        <span class="menu-text"
+                                            >Công nợ dich vụ</span
                                         >
                                     </router-link>
                                 </li>

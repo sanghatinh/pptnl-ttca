@@ -151,24 +151,37 @@ public function createPaymentRequest(Request $request)
      * ดึงรายการเอกสารขอเบิกเงินทั้งหมด
      */
     public function index()
-    {
-        try {
-            $paymentRequests = PaymentRequest::orderBy('id', 'desc')->get();
-            
-            return response()->json([
-                'success' => true,
-                'data' => $paymentRequests
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error fetching payment requests: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Error fetching payment requests: ' . $e->getMessage()
-            ], 500);
-        }
+{
+    try {
+        // Query payment requests with their latest action data
+        $paymentRequests = DB::table('tb_phieu_trinh_thanh_toan as pr')
+            ->leftJoin(DB::raw('(
+                SELECT ma_trinh_thanh_toan, action_by, MAX(created_at) as latest_action_date 
+                FROM Action_phieu_trinh_thanh_toan 
+                GROUP BY ma_trinh_thanh_toan, action_by
+            ) as act'), 'act.ma_trinh_thanh_toan', '=', 'pr.ma_trinh_thanh_toan')
+            ->leftJoin('users', 'act.action_by', '=', 'users.id')
+            ->select(
+                'pr.*', 
+                'act.action_by',
+                'users.full_name as action_by_name'
+            )
+            ->orderBy('pr.id', 'desc')
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $paymentRequests
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error fetching payment requests: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching payment requests: ' . $e->getMessage()
+        ], 500);
     }
-
+}
     /**
      * ดึงรายละเอียดของเอกสารขอเบิกเงิน
      */
