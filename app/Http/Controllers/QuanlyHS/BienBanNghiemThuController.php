@@ -609,6 +609,7 @@ public function show($id)
 public function processingHistoryNghiemthuDV($id)
 {
     try {
+        \Log::info("Processing history requested for ID: " . $id);
         // Array to store our history entries
         $historyItems = [];
         
@@ -624,7 +625,11 @@ public function processingHistoryNghiemthuDV($id)
             ], 404);
         }
 
-        // Get document mapping to get document_code
+        // Không tự động thêม creating history ที่นี่อีกต่อไป
+        // แต่จะเพิ่มเฉพาะเมื่อพบข้อมูลจริงๆ จาก document_mapping หรือแหล่งอื่น
+        $creatingDate = $document->created_at ?? $document->updated_at ?? now();
+        
+        // พยายามหาข้อมูลเพิ่มเติมจาก document_mapping (ถ้ามี)
         $documentMapping = \DB::table('document_mapping')
             ->where('ma_nghiem_thu_bb', $id)
             ->first();
@@ -640,7 +645,7 @@ public function processingHistoryNghiemthuDV($id)
                 ->first();
                 
             if ($creatingInfo) {
-                // Store creating date for calculations
+                // เพิ่มประวัติเฉพาะเมื่อมีข้อมูล creator จริงๆ
                 $creatingDate = new \DateTime($creatingInfo->date);
                 
                 $historyItems['creating'] = [
@@ -659,7 +664,7 @@ public function processingHistoryNghiemthuDV($id)
                 ->select('dd.received_date as date', 'u.full_name as user')
                 ->first();
                 
-            if ($receivedInfo && $creatingInfo) {
+            if ($receivedInfo) {
                 // Fix: Ensure proper date handling for different formats
                 $receivedDateStr = $receivedInfo->date;
                 $receivedDate = null;
@@ -669,7 +674,6 @@ public function processingHistoryNghiemthuDV($id)
                     // First try with datetime format
                     $receivedDate = new \DateTime($receivedDateStr);
                 } catch (\Exception $e) {
-                    // If that fails, try with date-only format
                     try {
                         $receivedDate = \DateTime::createFromFormat('Y-m-d', $receivedDateStr);
                     } catch (\Exception $e2) {
@@ -680,7 +684,7 @@ public function processingHistoryNghiemthuDV($id)
                 
                 // Calculate days between receiving and creating
                 $daysSincePrevious = 0;
-                if ($receivedDate instanceof \DateTime && $creatingDate instanceof \DateTime) {
+                if ($receivedDate instanceof \DateTime && isset($creatingDate) && $creatingDate instanceof \DateTime) {
                     $interval = $receivedDate->diff($creatingDate);
                     $daysSincePrevious = $interval->days;
                     // If dates are the same except for time, ensure we show at least 1 day if they're on different calendar days
@@ -697,9 +701,29 @@ public function processingHistoryNghiemthuDV($id)
                     'note' => 'Hồ sơ đã được nhận và xác nhận trong hệ thống.'
                 ];
             }
+        } else {
+            // หากไม่พบ document_mapping แต่มีข้อมูลการรับเอกสารในตารางอื่น
+            if (!empty($document->ngay_nhan) && !empty($document->nguoi_nhan)) {
+                try {
+                    $receivedDate = new \DateTime($document->ngay_nhan);
+                    $creatingDateObj = new \DateTime($creatingDate);
+                    $daysSincePrevious = $receivedDate->diff($creatingDateObj)->days;
+                    
+                    $historyItems['received'] = [
+                        'action' => 'received',
+                        'date' => $document->ngay_nhan,
+                        'user' => $document->nguoi_nhan,
+                        'days_since_previous' => $daysSincePrevious,
+                        'note' => 'Hồ sơ đã được nhận trong hệ thống.'
+                    ];
+                } catch (\Exception $e) {
+                    // ถ้าไม่สามารถแปลงวันที่ได้ ไม่ต้องเพิ่มประวัติ
+                    \Log::warning("Could not parse received date: " . $e->getMessage());
+                }
+            }
         }
         
-        // Get logs for this document
+        // Get logs for this document from Logs_phieu_trinh_thanh_toan
         $logInfo = \DB::table('Logs_phieu_trinh_thanh_toan')
             ->where('ma_nghiem_thu', $id)
             ->orderBy('id', 'desc')
@@ -715,33 +739,54 @@ public function processingHistoryNghiemthuDV($id)
                 ->select('apt.action_date as date', 'users.full_name as user')
                 ->first();
                 
-            if ($processingInfo && isset($historyItems['received'])) {
-                // Calculate days since received
+            if ($processingInfo) {
                 $processingDate = new \DateTime($processingInfo->date);
+                $previousDate = null;
+                $previousStep = null;
                 
-                // Handle different possible date formats for received date
-                $receivedDateStr = $historyItems['received']['date'];
-                $receivedDate = null;
-                
-                try {
-                    $receivedDate = new \DateTime($receivedDateStr);
-                } catch (\Exception $e) {
+                // หาวันที่ของขั้นตอนก่อนหน้า
+                if (isset($historyItems['received'])) {
                     try {
-                        $receivedDate = \DateTime::createFromFormat('Y-m-d', $receivedDateStr);
-                    } catch (\Exception $e2) {
-                        $receivedDate = new \DateTime();
+                        $previousDate = new \DateTime($historyItems['received']['date']);
+                        $previousStep = 'received';
+                    } catch (\Exception $e) {
+                        // ถ้าไม่สามารถแปลงวันที่ได้ ตรวจสอบขั้นตอน creating
+                        if (isset($historyItems['creating'])) {
+                            try {
+                                $previousDate = new \DateTime($historyItems['creating']['date']);
+                                $previousStep = 'creating';
+                            } catch (\Exception $e2) {
+                                $previousDate = null;
+                            }
+                        }
+                    }
+                } elseif (isset($historyItems['creating'])) {
+                    try {
+                        $previousDate = new \DateTime($historyItems['creating']['date']);
+                        $previousStep = 'creating';
+                    } catch (\Exception $e) {
+                        $previousDate = null;
                     }
                 }
                 
-                $daysSincePrevious = $processingDate->diff($receivedDate)->days;
+                // เพิ่มประวัติ processing เมื่อมีข้อมูล
+                $daysSincePrevious = 0;
+                if ($previousDate) {
+                    $daysSincePrevious = $processingDate->diff($previousDate)->days;
+                }
                 
                 $historyItems['processing'] = [
                     'action' => 'processing',
                     'date' => $processingInfo->date,
                     'user' => $processingInfo->user,
-                    'days_since_previous' => $daysSincePrevious, // Days since received
+                    'days_since_previous' => $daysSincePrevious,
                     'note' => 'Hồ sơ đang được xử lý, vui lòng chờ.'
                 ];
+                
+                // เพิ่มข้อมูลขั้นตอนก่อนหน้า เพื่อใช้อ้างอิงในอนาคต
+                if ($previousStep) {
+                    $historyItems['processing']['previous_step'] = $previousStep;
+                }
             }
             
             // Get submitted info
@@ -753,31 +798,64 @@ public function processingHistoryNghiemthuDV($id)
                 ->select('apt.action_date as date', 'users.full_name as user')
                 ->first();
                 
-            if ($submittedInfo && isset($historyItems['processing'])) {
-                // Calculate days since processing
+            if ($submittedInfo) {
                 $submittedDate = new \DateTime($submittedInfo->date);
-                $processingDate = new \DateTime($historyItems['processing']['date']);
-                
-                // Calculate hours difference rather than days for same-day events
-                $interval = $submittedDate->diff($processingDate);
-                $totalHours = ($interval->days * 24) + $interval->h;
-                
-                // If same day but different timestamps, show 0 days but include in note
-                $daysSincePrevious = $interval->days;
-                $sameDay = $submittedDate->format('Y-m-d') === $processingDate->format('Y-m-d');
+                $previousDate = null;
+                $previousStep = null;
+                $daysSincePrevious = 0;
                 $timeNote = "";
                 
-                if ($sameDay && $totalHours > 0) {
-                    $timeNote = " (sau " . $totalHours . " giờ)";
+                // หาขั้นตอนก่อนหน้าที่มีอยู่จริง
+                if (isset($historyItems['processing'])) {
+                    $previousStep = 'processing';
+                    try {
+                        $previousDate = new \DateTime($historyItems['processing']['date']);
+                        
+                        // คำนวณเวลาระหว่าง processing และ submitted
+                        $interval = $submittedDate->diff($previousDate);
+                        $totalHours = ($interval->days * 24) + $interval->h;
+                        $daysSincePrevious = $interval->days;
+                        
+                        // เพิ่มบันทึกเวลาเมื่ออยู่ในวันเดียวกัน
+                        $sameDay = $submittedDate->format('Y-m-d') === $previousDate->format('Y-m-d');
+                        if ($sameDay && $totalHours > 0) {
+                            $timeNote = " (sau " . $totalHours . " giờ)";
+                        }
+                    } catch (\Exception $e) {
+                        // ถ้าแปลงวันที่ไม่สำเร็จ ใช้ค่าเริ่มต้น
+                        $daysSincePrevious = 0;
+                    }
+                } elseif (isset($historyItems['received'])) {
+                    $previousStep = 'received';
+                    try {
+                        $previousDate = new \DateTime($historyItems['received']['date']);
+                        $daysSincePrevious = $submittedDate->diff($previousDate)->days;
+                    } catch (\Exception $e) {
+                        $daysSincePrevious = 0;
+                    }
+                } elseif (isset($historyItems['creating'])) {
+                    $previousStep = 'creating';
+                    try {
+                        $previousDate = new \DateTime($historyItems['creating']['date']);
+                        $daysSincePrevious = $submittedDate->diff($previousDate)->days;
+                    } catch (\Exception $e) {
+                        $daysSincePrevious = 0;
+                    }
                 }
                 
+                // เพิ่มประวัติ submitted
                 $historyItems['submitted'] = [
                     'action' => 'submitted',
                     'date' => $submittedInfo->date,
                     'user' => $submittedInfo->user,
-                    'days_since_previous' => $daysSincePrevious, // Days since processing
+                    'days_since_previous' => $daysSincePrevious,
                     'note' => 'Hồ sơ đã được chuyển đến phòng kế toán.' . $timeNote
                 ];
+                
+                // เพิ่มข้อมูลขั้นตอนก่อนหน้า
+                if ($previousStep) {
+                    $historyItems['submitted']['previous_step'] = $previousStep;
+                }
             }
             
             // Get paid info
@@ -795,45 +873,50 @@ public function processingHistoryNghiemthuDV($id)
                     ->select('users.full_name as user')
                     ->first();
                 
-                if ($paidDateInfo && $paidUserInfo && isset($historyItems['submitted'])) {
-                    // Handle different date formats for paid date
-                    $paidDateStr = $paidDateInfo->date;
-                    $paidDate = null;
+                if ($paidDateInfo && $paidUserInfo) {
+                    // หาขั้นตอนก่อนหน้า - อาจเป็น submitted, processing หรือ received
+                    $previousStep = null;
+                    $previousDate = null;
                     
-                    try {
-                        $paidDate = new \DateTime($paidDateStr);
-                    } catch (\Exception $e) {
-                        try {
-                            $paidDate = \DateTime::createFromFormat('Y-m-d', $paidDateStr);
-                        } catch (\Exception $e2) {
-                            $paidDate = new \DateTime();
+                    foreach (['submitted', 'processing', 'received', 'creating'] as $step) {
+                        if (isset($historyItems[$step])) {
+                            $previousStep = $step;
+                            try {
+                                $previousDate = new \DateTime($historyItems[$step]['date']);
+                                break;
+                            } catch (\Exception $e) {
+                                // ถ้าแปลงวันที่ไม่สำเร็จ ลองขั้นตอนถัดไป
+                                continue;
+                            }
                         }
                     }
                     
-                    // Handle different date formats for submitted date
-                    $submittedDateStr = $historyItems['submitted']['date'];
-                    $submittedDate = null;
-                    
-                    try {
-                        $submittedDate = new \DateTime($submittedDateStr);
-                    } catch (\Exception $e) {
+                    // คำนวณวันที่แตกต่าง
+                    $daysSincePrevious = 0;
+                    if ($previousDate) {
                         try {
-                            $submittedDate = \DateTime::createFromFormat('Y-m-d', $submittedDateStr);
-                        } catch (\Exception $e2) {
-                            $submittedDate = new \DateTime();
+                            $paidDate = new \DateTime($paidDateInfo->date);
+                            $daysSincePrevious = $paidDate->diff($previousDate)->days;
+                        } catch (\Exception $e) {
+                            // ในกรณีที่มีปัญหากับการคำนวณวันที่ ใช้ค่าเริ่มต้น
+                            $daysSincePrevious = 0;
                         }
                     }
                     
-                    $daysSincePrevious = $paidDate->diff($submittedDate)->days;
-                    
+                    // เพิ่มประวัติ paid
                     $historyItems['paid'] = [
                         'action' => 'paid',
                         'date' => $paidDateInfo->date,
                         'user' => $paidUserInfo->user,
-                        'days_since_previous' => $daysSincePrevious, // Days since submitted
+                        'days_since_previous' => $daysSincePrevious,
                         'note' => 'Thanh toán đã hoàn tất thông qua chuyển khoản ngân hàng.',
                         'amount' => $document->tong_tien_thanh_toan ?? 0
                     ];
+                    
+                    // เพิ่มข้อมูลขั้นตอนก่อนหน้า
+                    if ($previousStep) {
+                        $historyItems['paid']['previous_step'] = $previousStep;
+                    }
                 }
             }
         }
@@ -849,9 +932,13 @@ public function processingHistoryNghiemthuDV($id)
             }
         }
         
+        // บันทึก log ข้อมูลที่จะส่งกลับเพื่อช่วยในการตรวจสอบ
+        \Log::info("History items to be returned: " . count($history));
+        
+        // ถ้าไม่มีประวัติเลย ส่งกลับ array ว่างแทนที่จะสร้างข้อมูลเทียม
         return response()->json([
             'success' => true,
-            'history' => $history
+            'history' => $history // อาจเป็น array ว่างได้
         ]);
     } catch (\Exception $e) {
         \Log::error('Error in processingHistoryNghiemthuDV: ' . $e->getMessage());

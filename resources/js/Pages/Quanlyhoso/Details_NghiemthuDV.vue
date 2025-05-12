@@ -1317,7 +1317,7 @@ export default {
     top: 0px;
     left: 230px;
     right: 0;
-    z-index: 999;
+    z-index: 99;
     background: white;
     padding: 1rem 0;
     border-bottom: 1px solid #e0e3e8;
@@ -1518,7 +1518,7 @@ export default {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 100;
+        z-index: 99;
     }
 
     .main-content-wrapper {
