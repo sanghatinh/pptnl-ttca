@@ -1897,7 +1897,6 @@
             </div>
         </div>
     </div>
-
 </template>
 
 <script>
@@ -3975,7 +3974,7 @@ export default {
 }
 .desktop-row {
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
-     cursor: pointer;
+    cursor: pointer;
 }
 .desktop-row:hover {
     background-color: #f0f9f0;

@@ -196,8 +196,8 @@ Route::put('/payment-requests-dichvu/{id}/update', [PhieudenghithanhtoandvContro
 //Công nợ dịch vụ khấu trừ
  // QuanlyCongno routes
     Route::get('/congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'index']);
-
-
+Route::get('/import-congno-dichvu-khautru-progress/{importId}', [DeductibleServiceDebtController::class, 'checkImportProgress']);
+Route::post('/import-congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'startImport']);
 
 });
 

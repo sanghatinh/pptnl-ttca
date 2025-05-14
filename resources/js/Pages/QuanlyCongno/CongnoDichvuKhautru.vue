@@ -93,7 +93,7 @@
         </div>
 
         <!-- Add this right after the top toolbar with search and actions -->
-        <div class="row mb-3" v-if="!isLoading && totals">
+        <div class="row mb-0" v-if="!isLoading && totals">
             <div class="col-12">
                 <div class="totals-container">
                     <div class="total-card total-debt">
@@ -152,10 +152,11 @@
             class="mobile-controls p-3 bg-white rounded-lg shadow-sm mb-3"
             v-if="isMobile"
         >
-            <div class="flex gap-2 mb-3">
-                <div class="flex-1 relative">
+            <div class="flex flex-col gap-3">
+                <!-- Search bar with icon -->
+                <div class="search-container relative">
                     <span
-                        class="absolute inset-y-0 left-0 flex items-center pl-3"
+                        class="search-icon absolute left-3 top-1/2 transform -translate-y-1/2"
                     >
                         <i class="fas fa-search text-gray-400"></i>
                     </span>
@@ -163,29 +164,83 @@
                         v-model="search"
                         type="text"
                         placeholder="Tìm kiếm công nợ..."
-                        class="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        class="w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                     />
                 </div>
-            </div>
-            <div class="flex gap-2">
-                <select
-                    v-model="statusFilter"
-                    class="form-select status-select flex-1"
-                >
-                    <option
-                        v-for="option in statusOptions"
-                        :key="option.code"
-                        :value="option.code"
+
+                <!-- Filters in a row with 50/50 split -->
+                <div class="filters-row flex gap-3">
+                    <!-- Loại đầu tư - 50% width -->
+                    <div class="flex-1">
+                        <label
+                            class="form-label text-sm font-medium text-gray-700 mb-1"
+                            >Loại đầu tư</label
+                        >
+                        <select
+                            v-model="statusFilter"
+                            class="form-select status-select w-full py-2.5 rounded-lg border border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200"
+                        >
+                            <option
+                                v-for="option in statusOptions"
+                                :key="option.code"
+                                :value="option.code"
+                            >
+                                {{ option.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Vụ đầu tư - 50% width -->
+                    <div class="flex-1">
+                        <label
+                            class="form-label text-sm font-medium text-gray-700 mb-1"
+                            >Vụ đầu tư</label
+                        >
+                        <select
+                            v-model="selectedFilterValues.vu_dau_tu"
+                            class="form-select w-full py-2.5 rounded-lg border border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200"
+                        >
+                            <option value="">Tất cả</option>
+                            <option
+                                v-for="option in uniqueValues.vu_dau_tu"
+                                :key="option"
+                                :value="option"
+                            >
+                                {{ option }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Actions row -->
+                <!-- Actions row -->
+                <div class="actions-row mt-2 flex justify-between">
+                    <!-- Total records count -->
+                    <div
+                        class="records-count px-3 py-2 bg-gray-100 rounded-md text-sm text-gray-700"
                     >
-                        {{ option.name }}
-                    </option>
-                </select>
-                <button
-                    class="btn-icon bg-light rounded-circle p-2"
-                    @click="showActionsMenu"
-                >
-                    <i class="fas fa-ellipsis-v"></i>
-                </button>
+                        <i class="fas fa-list me-1"></i>
+                        {{ paginatedItems.total || 0 }} kết quả
+                    </div>
+
+                    <!-- Actions button with reset filter button -->
+                    <div class="flex gap-2">
+                        <span
+                            class="reset-all-filters-btn"
+                            title="Reset all filters"
+                            @click="resetAllFilters"
+                        >
+                            <i class="fas fa-redo-alt"></i>
+                        </span>
+                        <button
+                            class="btn-actions px-3 py-2 bg-green-50 text-green-700 rounded-md flex items-center gap-2 hover:bg-green-100 transition-colors"
+                            @click="showActionsMenu"
+                        >
+                            <i class="fas fa-ellipsis-v"></i>
+                            <span>Tùy chọn</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1652,7 +1707,17 @@
                                         <td>{{ item.tram }}</td>
                                         <td>{{ item.invoicenumber }}</td>
                                         <td>{{ item.vu_dau_tu }}</td>
-                                        <td>{{ item.category_debt }}</td>
+                                        <td>
+                                            <span
+                                                :class="
+                                                    getCategoryBadgeClass(
+                                                        item.category_debt
+                                                    )
+                                                "
+                                            >
+                                                {{ item.category_debt }}
+                                            </span>
+                                        </td>
                                         <td>{{ item.description }}</td>
                                         <td>
                                             {{
@@ -1660,11 +1725,18 @@
                                             }}
                                         </td>
                                         <td>{{ item.loai_tien }}</td>
-                                        <td>{{ item.ty_gia_quy_doi }}</td>
                                         <td>
                                             {{
                                                 formatCurrency(
-                                                    item.so_tien_theo_gia_tri_dau_tu
+                                                    item.ty_gia_quy_doi
+                                                )
+                                            }}
+                                        </td>
+                                        <td>
+                                            {{
+                                                formatCurrency(
+                                                    item.so_tien_theo_gia_tri_dau_tu,
+                                                    false
                                                 )
                                             }}
                                         </td>
@@ -1711,7 +1783,7 @@
                             </table>
                         </div>
                     </div>
-                    <div class="flex justify-center mt-4 pagination-wrapper">
+                    <div class="flex justify-center mt-0 pagination-wrapper">
                         <div class="pagination-card">
                             <Bootstrap5Pagination
                                 :data="paginatedItems"
@@ -1730,61 +1802,119 @@
             <div
                 v-for="item in paginatedItems.data"
                 :key="item.id"
-                class="card border p-4 mb-4 rounded shadow hover:shadow-green-500 transition-shadow duration-300"
+                class="card border-0 p-0 mb-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300"
                 @click="viewDetails(item)"
             >
-                <div class="flex-1 justify-items-start">
-                    <div class="mb-2">
-                        <strong>Trạm:</strong>
-                        {{ item.tram }}
+                <!-- Card header -->
+                <div
+                    class="card-header p-3 bg-green-50 flex justify-between items-center rounded-t-lg border-b border-gray-100"
+                >
+                    <div class="flex items-center">
+                        <div class="badge-container mr-2">
+                            <span
+                                class="badge bg-green-500 text-green-800 text-xs px-2 py-1 rounded"
+                            >
+                                {{ item.category_debt || "N/A" }}
+                            </span>
+                        </div>
+                        <h5 class="text-green-900 font-medium mb-0 text-sm">
+                            {{ item.tram || "Không xác định" }}
+                        </h5>
                     </div>
-                    <div class="mb-2">
-                        <strong>Invoice Number:</strong>
-                        {{ item.invoicenumber }}
+                    <span class="text-xs text-gray-500">{{
+                        formatDate(item.ngay_phat_sinh)
+                    }}</span>
+                </div>
+
+                <!-- Card body -->
+                <div class="card-body p-3">
+                    <!-- Invoice and description -->
+                    <div class="mb-3">
+                        <p class="font-medium mb-1">
+                            {{ item.invoicenumber || "Không có mã" }}
+                        </p>
+                        <p class="text-sm text-gray-600 line-clamp-2 mb-0">
+                            {{ item.description || "Không có mô tả" }}
+                        </p>
                     </div>
-                    <div class="mb-2">
-                        <strong>Category Debt:</strong>
-                        {{ item.category_debt }}
+
+                    <!-- Customer info -->
+                    <div class="customer-info bg-gray-50 p-2 rounded-md mb-3">
+                        <p class="text-sm mb-1">
+                            <i class="fas fa-user-tie text-gray-500 mr-2"></i>
+                            {{
+                                item.khach_hang_ca_nhan ||
+                                item.khach_hang_doanh_nghiep ||
+                                "Không có thông tin"
+                            }}
+                        </p>
+                        <p class="text-xs text-gray-500 mb-0">
+                            <i class="fas fa-tag mr-1"></i>
+                            Vụ: {{ item.vu_dau_tu || "N/A" }}
+                            <span class="mx-1">•</span>
+                            {{ item.loai_tien || "" }}
+                        </p>
                     </div>
-                    <div class="mb-2">
-                        <strong>Khách hàng:</strong>
-                        {{
-                            item.khach_hang_ca_nhan ||
-                            item.khach_hang_doanh_nghiep
-                        }}
+
+                    <!-- Financial details grid -->
+                    <div class="grid grid-cols-2 gap-2 mb-1">
+                        <div class="bg-blue-50 p-2 rounded">
+                            <p class="text-xs text-blue-700 mb-0">Nợ gốc</p>
+                            <p class="text-sm font-medium mb-0">
+                                {{
+                                    formatCurrency(
+                                        item.so_tien_no_goc_da_quy,
+                                        false
+                                    )
+                                }}
+                            </p>
+                        </div>
+                        <div class="bg-green-50 p-2 rounded">
+                            <p class="text-xs text-green-700 mb-0">
+                                Đã trả gốc
+                            </p>
+                            <p class="text-sm font-medium mb-0">
+                                {{ formatCurrency(item.da_tra_goc) }}
+                            </p>
+                        </div>
+                        <div class="bg-red-50 p-2 rounded">
+                            <p class="text-xs text-red-700 mb-0">Còn lại</p>
+                            <p class="text-sm font-medium mb-0">
+                                {{ formatCurrency(item.so_tien_con_lai) }}
+                            </p>
+                        </div>
+                        <div class="bg-amber-50 p-2 rounded">
+                            <p class="text-xs text-amber-700 mb-0">Tiền lãi</p>
+                            <p class="text-sm font-medium mb-0">
+                                {{ formatCurrency(item.tien_lai) }}
+                            </p>
+                        </div>
                     </div>
-                    <div class="mb-2">
-                        <strong>Ngày phát sinh:</strong>
-                        {{ formatDate(item.ngay_phat_sinh) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Số tiền nợ gốc:</strong>
-                        {{ formatCurrency(item.so_tien_no_goc_da_quy) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Đã trả gốc:</strong>
-                        {{ formatCurrency(item.da_tra_goc) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Còn lại:</strong>
-                        {{ formatCurrency(item.so_tien_con_lai) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Tiền lãi:</strong>
-                        {{ formatCurrency(item.tien_lai) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Loại tiền:</strong>
-                        {{ item.loai_tien }}
+
+                    <!-- Interest rate info -->
+                    <div
+                        class="interest-info flex justify-between text-xs text-gray-500 mt-2"
+                    >
+                        <span>
+                            <i class="fas fa-percentage mr-1"></i>
+                            {{ item.lai_suat }}% ({{
+                                item.loai_lai_suat || "N/A"
+                            }})
+                        </span>
+                        <span class="card-btn">
+                            <i class="fas fa-chevron-right"></i>
+                        </span>
                     </div>
                 </div>
             </div>
-            <div class="flex justify-center mt-4">
+
+            <!-- Pagination for mobile -->
+            <div class="flex justify-center mt-0">
                 <div class="pagination-card">
                     <Bootstrap5Pagination
                         :data="paginatedItems"
                         @pagination-change-page="pageChanged"
-                        :limit="5"
+                        :limit="3"
                         :classes="paginationClasses"
                     />
                 </div>
@@ -2031,13 +2161,7 @@ export default {
                 start: null,
                 end: null,
             },
-            statusOptions: [
-                { code: "all", name: "Tất cả" },
-                { code: "active", name: "Đang nợ" },
-                { code: "paid", name: "Đã thanh toán" },
-                { code: "overdue", name: "Quá hạn" },
-                { code: "cancelled", name: "Đã hủy" },
-            ],
+            statusOptions: [{ code: "all", name: "Tất cả" }],
             paginationClasses: {
                 ul: "flex list-none pagination",
                 li: "page-item mx-1",
@@ -2357,6 +2481,23 @@ export default {
             // Apply client-side sorting
             this.applyFiltersAndPagination(this.currentPage);
         },
+        getCategoryBadgeClass(category) {
+            if (!category) return "badge bg-secondary text-white";
+
+            // Map different categories to different colors
+            const categoryColors = {
+                "Ứng dầu": "bg-blue-100 text-blue-800",
+                MMTB: "bg-red-100 text-red-800",
+                "Sữa chữa": "bg-purple-100 text-purple-800",
+                "Ứng tiền trồng": "bg-amber-100 text-amber-800",
+                "Ứng tiền chăm sóc": "bg-green-100 text-green-700",
+            };
+
+            // Return the corresponding class or a default one
+            return categoryColors[category]
+                ? `badge ${categoryColors[category]}`
+                : "badge bg-gray-100 text-gray-800";
+        },
         formatDate(date) {
             if (!date) return "";
             const d = new Date(date);
@@ -2373,10 +2514,10 @@ export default {
             const day = d.getDate().toString().padStart(2, "0");
             return `${year}-${month}-${day}`;
         },
-        formatCurrency(value) {
+        formatCurrency(value, includeCurrency = true) {
             if (!value) return "0";
             return new Intl.NumberFormat("vi-VN", {
-                style: "currency",
+                style: includeCurrency ? "currency" : "decimal",
                 currency: "KIP",
                 maximumFractionDigits: 0,
             }).format(value);
@@ -2445,6 +2586,8 @@ export default {
 
                         // Calculate totals from all data
                         this.calculateTotals();
+                        // After setting uniqueValues, update statusOptions
+                        this.updateStatusOptions();
 
                         // Apply client-side pagination for the first page
                         this.applyFiltersAndPagination(1);
@@ -2727,6 +2870,28 @@ export default {
             this.calculateTotals();
         },
 
+        // Add to the methods section
+        updateStatusOptions() {
+            // Start with the "all" option
+            const baseOptions = [{ code: "all", name: "Tất cả" }];
+
+            // Add options from unique category_debt values
+            if (
+                this.uniqueValues.category_debt &&
+                this.uniqueValues.category_debt.length > 0
+            ) {
+                const categoryOptions = this.uniqueValues.category_debt.map(
+                    (category) => ({
+                        code: category,
+                        name: category,
+                    })
+                );
+
+                // Update the statusOptions array with all options
+                this.statusOptions = [...baseOptions, ...categoryOptions];
+            }
+        },
+
         // Helper method to prepare filter parameters
         getFilterParams() {
             const params = {};
@@ -2968,7 +3133,8 @@ export default {
                 // Apply status filter
                 const matchesStatus =
                     this.statusFilter === "all" ||
-                    item.status === this.statusFilter;
+                    (item.category_debt &&
+                        item.category_debt === this.statusFilter);
 
                 // Apply column filters (text inputs)
                 const matchesColumnFilters = Object.entries(
@@ -3086,14 +3252,33 @@ export default {
             }
         },
         exportToExcelAllPages() {
-            if (this.filteredItems && this.filteredItems.length > 0) {
+            // First check if we have all the data loaded
+            if (!this.allCongnoList || this.allCongnoList.length === 0) {
+                Swal.fire({
+                    title: "Lỗi",
+                    text: "Không có dữ liệu để xuất hoặc dữ liệu chưa được tải xong",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                });
+                return;
+            }
+
+            // Apply all current filters to get the filtered dataset
+            const filteredData = this.applyFilters();
+
+            if (filteredData && filteredData.length > 0) {
                 this.generateExcel(
-                    this.filteredItems,
+                    filteredData,
                     "congno_dichvu_khautru_all_data"
                 );
                 this.closeExportModal();
             } else {
-                alert("Không có dữ liệu để xuất");
+                Swal.fire({
+                    title: "Thông báo",
+                    text: "Không có dữ liệu để xuất với bộ lọc hiện tại",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                });
             }
         },
         generateExcel(data, filename) {
@@ -3221,15 +3406,52 @@ export default {
             }
         },
         closeExportModal() {
-            const modalElement = document.getElementById("exportModal");
-            if (modalElement) {
-                // First move focus to a safe element outside the modal
-                document.body.focus();
-                // Then hide the modal
-                const bsModal = bootstrap.Modal.getInstance(modalElement);
-                if (bsModal) {
-                    bsModal.hide();
+            try {
+                const modalElement = document.getElementById("exportModal");
+                if (modalElement) {
+                    // Try to close using Bootstrap's API if available
+                    import("bootstrap/dist/js/bootstrap.bundle.min.js")
+                        .then((bootstrap) => {
+                            if (bootstrap && bootstrap.Modal) {
+                                const modal =
+                                    bootstrap.Modal.getInstance(modalElement);
+                                if (modal) {
+                                    modal.hide();
+                                } else {
+                                    // Fallback: If no instance found, create one and hide it
+                                    new bootstrap.Modal(modalElement).hide();
+                                }
+                            } else {
+                                // Fallback for when bootstrap module doesn't load as expected
+                                this.closeModalDirect(modalElement);
+                            }
+                        })
+                        .catch(() => {
+                            // Fallback if import fails
+                            this.closeModalDirect(modalElement);
+                        });
                 }
+            } catch (error) {
+                console.error("Error closing modal:", error);
+                // Try direct method as last resort
+                const modalElement = document.getElementById("exportModal");
+                if (modalElement) {
+                    this.closeModalDirect(modalElement);
+                }
+            }
+        },
+
+        // Add this helper method for direct modal closing
+        closeModalDirect(modalElement) {
+            // Remove the modal classes that make it visible
+            modalElement.classList.remove("show");
+            modalElement.style.display = "none";
+            document.body.classList.remove("modal-open");
+
+            // Remove backdrop if it exists
+            const backdrop = document.querySelector(".modal-backdrop");
+            if (backdrop) {
+                backdrop.remove();
             }
         },
         importData() {
@@ -3787,6 +4009,12 @@ export default {
         },
     },
     watch: {
+        "uniqueValues.category_debt": {
+            handler() {
+                this.updateStatusOptions();
+            },
+            deep: true,
+        },
         search(newVal, oldVal) {
             if (newVal !== oldVal) {
                 this.currentPage = 1;
@@ -4579,5 +4807,217 @@ export default {
         width: 100%;
         min-width: 100%;
     }
+}
+
+/* Enhanced mobile styles */
+.mobile-controls {
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    background: linear-gradient(to bottom, #ffffff, #f9fafb);
+}
+
+.search-container {
+    margin-bottom: 8px;
+}
+
+.search-icon {
+    color: #9ca3af;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.actions-row {
+    margin-top: 8px;
+}
+
+.btn-actions {
+    transition: all 0.2s;
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.btn-actions:active {
+    transform: translateY(1px);
+}
+
+.records-count {
+    font-size: 0.875rem;
+    color: #4b5563;
+}
+
+/* Card styling enhancements */
+.card-container .card {
+    overflow: hidden;
+    border: 1px solid #f0f0f0;
+    transition: all 0.3s ease;
+}
+
+.card-container .card:active {
+    transform: scale(0.98);
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-btn {
+    color: #10b981;
+    font-size: 0.75rem;
+}
+
+.customer-info {
+    background-color: rgba(243, 244, 246, 0.7);
+}
+
+/* Badge styling */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+/* Limit pagination on mobile */
+@media (max-width: 768px) {
+    .pagination-card
+        .page-item:nth-child(n + 5):not(:last-child):not(:nth-last-child(2)) {
+        display: none;
+    }
+    .page-item:nth-child(n + 5):not(:last-child):not(:nth-last-child(2)) {
+        display: none;
+    }
+    /* Fix reset filter button position for mobile */
+    .mobile-controls .reset-all-filters-btn {
+        position: relative;
+        right: auto;
+        top: auto;
+        z-index: 5;
+        font-size: 1rem;
+        cursor: pointer;
+        color: #fff;
+        background: #198754;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+    }
+}
+/* Category debt badges */
+.badge {
+    display: inline-block;
+    padding: 0.3em 0.65em;
+    font-size: 0.75em;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.375rem;
+}
+
+/* Blue */
+.bg-blue-100 {
+    background-color: #dbeafe;
+}
+.text-blue-800 {
+    color: #1e40af;
+}
+
+/* Red */
+.bg-red-100 {
+    background-color: #fee2e2;
+}
+.text-red-800 {
+    color: #b91c1c;
+}
+
+/* Purple */
+.bg-purple-100 {
+    background-color: #ede9fe;
+}
+.text-purple-800 {
+    color: #5b21b6;
+}
+
+/* Amber */
+.bg-amber-100 {
+    background-color: #fef3c7;
+}
+.text-amber-800 {
+    color: #92400e;
+}
+
+/* Green */
+.bg-green-100 {
+    background-color: #d1fae5;
+}
+.text-green-700 {
+    color: #047857;
+}
+
+/* Indigo */
+.bg-indigo-100 {
+    background-color: #e0e7ff;
+}
+.text-indigo-800 {
+    color: #3730a3;
+}
+
+/* Rose */
+.bg-rose-100 {
+    background-color: #ffe4e6;
+}
+.text-rose-800 {
+    color: #9f1239;
+}
+
+/* Teal */
+.bg-teal-100 {
+    background-color: #ccfbf1;
+}
+.text-teal-800 {
+    color: #115e59;
+}
+
+/* Cyan */
+.bg-cyan-100 {
+    background-color: #cffafe;
+}
+.text-cyan-800 {
+    color: #155e75;
+}
+
+/* Gray (default) */
+.bg-gray-100 {
+    background-color: #f3f4f6;
+}
+.text-gray-800 {
+    color: #1f2937;
+}
+
+/* Secondary */
+.bg-secondary {
+    background-color: #6c757d;
+}
+.text-white {
+    color: #ffffff;
 }
 </style>
