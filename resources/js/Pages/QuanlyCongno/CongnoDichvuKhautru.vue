@@ -3822,6 +3822,334 @@ export default {
             }
         },
         /**
+         * Open the import modal
+         */
+        openImportModal() {
+            this.selectedFile = null;
+            this.importErrors = [];
+            this.uploadProgress = 0;
+            this.isImporting = false;
+            this.processingRecords = false;
+            this.processingProgress = 0;
+
+            // Initialize Bootstrap modal if not already initialized
+            if (!this.importModal) {
+                this.importModal = new bootstrap.Modal(
+                    document.getElementById("importModal")
+                );
+            }
+
+            this.importModal.show();
+        },
+
+        /**
+         * Close the import modal
+         */
+        async closeImportModal() {
+            try {
+                if (this.importModal) {
+                    this.importModal.hide();
+                }
+
+                // Reset all import-related states
+                this.selectedFile = null;
+                this.uploadProgress = 0;
+                this.isImporting = false;
+                this.processingRecords = false;
+                this.processingProgress = 0;
+                this.processedRecords = 0;
+                this.totalRecords = 0;
+                this.importErrors = [];
+            } catch (error) {
+                console.error("Error closing import modal:", error);
+            }
+        },
+
+        /**
+         * Handle file selection for import
+         */
+        handleFileSelected(event) {
+            this.selectedFile = event.target.files[0] || null;
+            this.importErrors = [];
+
+            if (this.selectedFile) {
+                // Validate file type
+                const validTypes = [
+                    "application/vnd.ms-excel",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "text/csv",
+                ];
+
+                if (!validTypes.includes(this.selectedFile.type)) {
+                    this.importErrors = [
+                        "Invalid file type. Please upload an Excel (.xlsx, .xls) or CSV file.",
+                    ];
+                    this.selectedFile = null;
+                    event.target.value = null; // Reset file input
+                }
+
+                // Validate file size (max 10MB)
+                if (this.selectedFile && this.selectedFile.size > 10485760) {
+                    this.importErrors = [
+                        "File size exceeds maximum limit (10MB).",
+                    ];
+                    this.selectedFile = null;
+                    event.target.value = null; // Reset file input
+                }
+            }
+        },
+
+        /**
+         * Start the import process
+         */
+        async startImport() {
+            if (!this.selectedFile) {
+                Swal.fire({
+                    title: "Cảnh báo",
+                    text: "Vui lòng chọn tệp để tải lên",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+                return;
+            }
+
+            // Confirm before proceeding with SweetAlert2
+            const result = await Swal.fire({
+                title: "Xác nhận tải lên",
+                text: "Dữ liệu công nợ hiện có với cùng số hóa đơn sẽ bị cập nhật. Bạn có chắc chắn muốn tiếp tục?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Tải lên",
+                cancelButtonText: "Hủy",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-secondary",
+                },
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            this.isImporting = true;
+            this.importErrors = [];
+
+            // Create FormData object for file upload
+            const formData = new FormData();
+            formData.append("file", this.selectedFile);
+
+            try {
+                // Upload file to server
+                const response = await axios.post(
+                    "/api/import-congno-dichvu-khautru",
+                    formData,
+                    {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                        onUploadProgress: (progressEvent) => {
+                            // Calculate and update upload progress percentage
+                            const percentCompleted = Math.round(
+                                (progressEvent.loaded * 100) /
+                                    progressEvent.total
+                            );
+                            this.uploadProgress = percentCompleted;
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    this.uploadProgress = 100;
+                    this.processingRecords = true;
+
+                    // Begin checking the import progress
+                    await this.checkImportProgress(response.data.import_id);
+                } else {
+                    this.isImporting = false;
+                    this.importErrors = response.data.errors || [
+                        "Đã xảy ra lỗi không xác định trong quá trình nhập.",
+                    ];
+                    console.error("Import failed:", response.data);
+
+                    // Use SweetAlert2 to show failure
+                    Swal.fire({
+                        title: "Thất bại",
+                        text: "Nhập dữ liệu không thành công. Vui lòng kiểm tra lỗi và thử lại.",
+                        icon: "error",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
+                }
+            } catch (error) {
+                this.isImporting = false;
+                console.error("Import error:", error);
+
+                if (error.response) {
+                    if (error.response.status === 401) {
+                        this.handleAuthError();
+                    } else {
+                        this.importErrors =
+                            error.response.data.errors ||
+                            Array.isArray(error.response.data.message)
+                                ? error.response.data.message
+                                : [
+                                      error.response.data.message ||
+                                          "Lỗi máy chủ",
+                                  ];
+                    }
+                } else if (error.request) {
+                    // Request made but no response received
+                    this.importErrors = [
+                        "Không có phản hồi từ máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.",
+                    ];
+                } else {
+                    // Error setting up the request
+                    this.importErrors = [
+                        "Lỗi mạng. Vui lòng kiểm tra kết nối của bạn và thử lại: " +
+                            error.message,
+                    ];
+                }
+
+                // Use SweetAlert2 to show error
+                Swal.fire({
+                    title: "Lỗi",
+                    text: "Lỗi khi nhập dữ liệu. Vui lòng kiểm tra chi tiết lỗi hiển thị bên dưới.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+            }
+        },
+
+        /**
+         * Check the progress of the import process
+         */
+        async checkImportProgress(importId) {
+            if (!importId) {
+                this.importErrors = ["Invalid import ID. Please try again."];
+                return;
+            }
+
+            try {
+                const response = await axios.get(
+                    `/api/import-congno-dichvu-khautru-progress/${importId}`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                const data = response.data;
+
+                if (data.finished) {
+                    this.processedRecords = data.processed || 0;
+                    this.totalRecords = data.total || 0;
+                    this.processingProgress = 100;
+                    this.processingRecords = false;
+                    this.isImporting = false;
+
+                    if (data.errors && data.errors.length > 0) {
+                        this.importErrors = data.errors;
+
+                        // Show error notification with SweetAlert2
+                        Swal.fire({
+                            title: "Cảnh báo",
+                            text: `Tải lên hoàn tất với ${data.errors.length} lỗi. Vui lòng kiểm tra danh sách lỗi bên dưới.`,
+                            icon: "warning",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        });
+                    } else {
+                        // Success notification
+                        setTimeout(() => {
+                            // Close the modal
+                            this.closeImportModal();
+
+                            // Show success toast
+                            Swal.fire({
+                                toast: true,
+                                position: "top-end",
+                                icon: "success",
+                                title: "Tải lên thành công",
+                                text: `Đã xử lý ${data.processed} bản ghi.`,
+                                showConfirmButton: false,
+                                timer: 3000,
+                                timerProgressBar: true,
+                                didOpen: (toast) => {
+                                    toast.addEventListener(
+                                        "mouseenter",
+                                        Swal.stopTimer
+                                    );
+                                    toast.addEventListener(
+                                        "mouseleave",
+                                        Swal.resumeTimer
+                                    );
+                                },
+                            });
+
+                            // Refresh data to get the latest changes
+                            this.fetchData();
+                        }, 1000);
+                    }
+                } else {
+                    // Update progress
+                    this.processedRecords = data.processed || 0;
+                    this.totalRecords = data.total || 0;
+
+                    if (this.totalRecords > 0) {
+                        this.processingProgress = Math.round(
+                            (this.processedRecords / this.totalRecords) * 100
+                        );
+                    }
+
+                    // Update import errors if any are available during processing
+                    if (data.errors && data.errors.length > 0) {
+                        this.importErrors = data.errors;
+                    }
+
+                    // Check again after a delay
+                    setTimeout(() => this.checkImportProgress(importId), 1000);
+                }
+            } catch (error) {
+                console.error("Error checking import progress:", error);
+
+                if (error.response && error.response.status === 401) {
+                    this.handleAuthError();
+                    return;
+                }
+
+                this.isImporting = false;
+                this.importErrors = [
+                    "Lỗi khi theo dõi tiến trình tải lên. Quá trình tải lên có thể vẫn đang được xử lý trong nền.",
+                    "Vui lòng làm mới trang sau vài phút để xem dữ liệu đã được tải lên hay chưa.",
+                ];
+
+                if (error.response && error.response.data) {
+                    if (typeof error.response.data === "string") {
+                        this.importErrors.push(error.response.data);
+                    } else if (error.response.data.message) {
+                        this.importErrors.push(error.response.data.message);
+                    }
+                }
+            }
+        },
+        /**
          * Download template for import
          */
         downloadImportTemplate() {

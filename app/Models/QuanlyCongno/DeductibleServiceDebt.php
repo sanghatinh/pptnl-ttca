@@ -10,11 +10,40 @@ class DeductibleServiceDebt extends Model
     use HasFactory;
 
     /**
-     * The table associated with the model.
+     * ชื่อตารางที่เชื่อมต่อกับโมเดล
      *
      * @var string
      */
     protected $table = 'deductible_service_debt';
+
+    /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
+    public $timestamps = false;
+
+    /**
+     * Indicates if the model's ID is auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
+
+    /**
+     * The primary key for the model.
+     * แม้ว่าตารางจะไม่มี primary key แต่เราต้องระบุเพื่อให้ Laravel ทำงานได้ถูกต้อง
+     * 
+     * @var string
+     */
+    protected $primaryKey = 'invoicenumber';
+
+    /**
+     * The "type" of the primary key ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
 
     /**
      * The attributes that are mass assignable.
@@ -43,7 +72,7 @@ class DeductibleServiceDebt extends Model
         'loai_dau_tu',
         'tram',
         'ma_nhan_vien',
-        'description'
+        'description',
     ];
 
     /**
@@ -53,12 +82,12 @@ class DeductibleServiceDebt extends Model
      */
     protected $casts = [
         'ngay_phat_sinh' => 'date',
-        'ty_gia_quy_doi' => 'decimal:4',
-        'so_tien_theo_gia_tri_dau_tu' => 'decimal:2',
-        'so_tien_no_goc_da_quy' => 'decimal:2',
-        'da_tra_goc' => 'decimal:2',
-        'so_tien_con_lai' => 'decimal:2',
-        'tien_lai' => 'decimal:2',
-        'lai_suat' => 'decimal:2'
+        'ty_gia_quy_doi' => 'float',
+        'so_tien_theo_gia_tri_dau_tu' => 'float',
+        'so_tien_no_goc_da_quy' => 'float',
+        'da_tra_goc' => 'float',
+        'so_tien_con_lai' => 'float',
+        'tien_lai' => 'float',
+        'lai_suat' => 'float',
     ];
 }

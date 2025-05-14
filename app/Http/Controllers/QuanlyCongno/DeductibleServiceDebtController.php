@@ -4,7 +4,7 @@ namespace App\Http\Controllers\QuanlyCongno;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\DeductibleServiceDebt;
+use App\Models\QuanlyCongno\DeductibleServiceDebt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -143,6 +143,7 @@ private function getUniqueValues()
 }
 
 
+
 /**
  * Start the import process
  *
@@ -178,9 +179,61 @@ public function startImport(Request $request)
         
         Cache::put('import_congno_dichvu_khautru_' . $importId, $importData, 3600);
         
-        // Process the file in the background
-        dispatch(function() use ($request, $importId) {
-            $this->processImportFile($request->file('file'), $importId);
+        // ดึงไฟล์ที่อัปโหลด
+        $file = $request->file('file');
+        
+        // ตรวจสอบว่าไฟล์ถูกอัพโหลดอย่างถูกต้อง
+        if (!$file || !$file->isValid()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid upload file'
+            ], 400);
+        }
+        
+        // สร้างชื่อไฟล์ชั่วคราว
+        $fileName = $importId . '.' . $file->getClientOriginalExtension();
+        $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $fileName;
+        
+        // ย้ายไฟล์ไปยังโฟลเดอร์ temporary ของระบบโดยตรง
+        if (!copy($file->getRealPath(), $tempPath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to copy file to temporary directory'
+            ], 500);
+        }
+        
+        // ตรวจสอบว่าไฟล์สามารถเข้าถึงได้หรือไม่
+        if (!file_exists($tempPath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File stored but not accessible: ' . $tempPath
+            ], 500);
+        }
+        
+        // Process the file in background using the temporary path
+        dispatch(function() use ($tempPath, $importId) {
+            try {
+                // ตรวจสอบไฟล์อีกครั้งก่อนเริ่มประมวลผลในพื้นหลัง
+                if (!file_exists($tempPath)) {
+                    throw new \Exception("Temp file not found: $tempPath");
+                }
+                
+                $this->processImportFile($tempPath, $importId);
+            } catch (\Exception $e) {
+                Log::error('Error in dispatch callback: ' . $e->getMessage());
+                $importData = Cache::get('import_congno_dichvu_khautru_' . $importId);
+                if ($importData) {
+                    $importData['errors'] = array_merge($importData['errors'] ?? [], [$e->getMessage()]);
+                    $importData['success'] = false;
+                    $importData['finished'] = true;
+                    Cache::put('import_congno_dichvu_khautru_' . $importId, $importData, 3600);
+                }
+            } finally {
+                // ลบไฟล์ชั่วคราวหลังจากประมวลผลเสร็จ
+                if (file_exists($tempPath)) {
+                    @unlink($tempPath);
+                }
+            }
         })->afterResponse();
         
         return response()->json([
@@ -189,7 +242,9 @@ public function startImport(Request $request)
             'import_id' => $importId
         ]);
     } catch (\Exception $e) {
-        Log::error('Error starting import process: ' . $e->getMessage());
+        Log::error('Error starting import process: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
         return response()->json([
             'success' => false,
             'message' => 'Error starting import process: ' . $e->getMessage()
@@ -197,16 +252,31 @@ public function startImport(Request $request)
     }
 }
 
+
 /**
  * Process the uploaded file
  *
  * @param \Illuminate\Http\UploadedFile $file
  * @param string $importId
  */
-private function processImportFile($file, $importId)
+private function processImportFile($filePath, $importId)
 {
     try {
-        $spreadsheet = IOFactory::load($file);
+        // ตรวจสอบว่าไฟล์มีอยู่จริงหรือไม่
+        if (!file_exists($filePath)) {
+            throw new \Exception("File \"$filePath\" does not exist.");
+        }
+        
+        // Log file information for debugging
+        Log::info('Starting to process import file', [
+            'path' => $filePath,
+            'exists' => file_exists($filePath),
+            'size' => file_exists($filePath) ? filesize($filePath) : 'N/A',
+            'import_id' => $importId
+        ]);
+        
+        // Load the file using the file path
+        $spreadsheet = IOFactory::load($filePath);
         $worksheet = $spreadsheet->getActiveSheet();
         $rows = $worksheet->toArray();
         
@@ -278,8 +348,8 @@ private function processImportFile($file, $importId)
                     }
                 }
                 
-                // Check for required fields
-                $requiredFields = ['tram', 'invoice_number', 'vu_dau_tu', 'so_tien_no_goc_da_quy'];
+                // Check for required fields - ใช้ field ที่ถูกต้องตามฐานข้อมูล 'invoicenumber'
+                $requiredFields = ['tram', 'invoicenumber', 'vu_dau_tu', 'so_tien_no_goc_da_quy'];
                 $missingFields = [];
                 
                 foreach ($requiredFields as $field) {
@@ -293,24 +363,30 @@ private function processImportFile($file, $importId)
                     continue;
                 }
                 
-                // Check if record exists by invoice_number
-                $existingRecord = DeductibleServiceDebt::where('invoice_number', $rowData['invoice_number'])->first();
-                
-                if ($existingRecord) {
-                    // Update existing record
-                    $existingRecord->update($rowData);
-                } else {
-                    // Create new record
-                    DeductibleServiceDebt::create($rowData);
-                }
-                
-                $processedCount++;
-                
-                // Update progress every 10 records
-                if ($processedCount % 10 === 0) {
-                    $importData = Cache::get('import_congno_dichvu_khautru_' . $importId);
-                    $importData['processed'] = $processedCount;
-                    Cache::put('import_congno_dichvu_khautru_' . $importId, $importData, 3600);
+                try {
+                    // Check if record exists by invoicenumber
+                    $exists = DeductibleServiceDebt::where('invoicenumber', $rowData['invoicenumber'])->exists();
+                    
+                    if ($exists) {
+                        // แก้ไขเป็นการใช้ query builder เพื่อหลีกเลี่ยงปัญหา primary key
+                        DeductibleServiceDebt::where('invoicenumber', $rowData['invoicenumber'])
+                            ->update($rowData);
+                    } else {
+                        // Create new record
+                        DeductibleServiceDebt::create($rowData);
+                    }
+                    
+                    $processedCount++;
+                    
+                    // Update progress every 10 records
+                    if ($processedCount % 10 === 0) {
+                        $importData = Cache::get('import_congno_dichvu_khautru_' . $importId);
+                        $importData['processed'] = $processedCount;
+                        Cache::put('import_congno_dichvu_khautru_' . $importId, $importData, 3600);
+                    }
+                } catch (\Exception $e) {
+                    $errors[] = "Row " . ($rowIndex + 2) . ": Database error: " . $e->getMessage();
+                    Log::error("Database error processing row " . ($rowIndex + 2) . ": " . $e->getMessage());
                 }
                 
             } catch (\Exception $e) {
@@ -319,22 +395,37 @@ private function processImportFile($file, $importId)
             }
         }
         
+        // Clear cache to ensure fresh data after import
+        Cache::forget('deductible_service_unique_values');
+        
         // Update final status
         $importData = Cache::get('import_congno_dichvu_khautru_' . $importId);
         $importData['processed'] = $processedCount;
         $importData['errors'] = $errors;
         $importData['finished'] = true;
+        $importData['success'] = $processedCount > 0; // ตั้งเป็น true ถ้าอย่างน้อยนำเข้าได้ 1 รายการ
         
         Cache::put('import_congno_dichvu_khautru_' . $importId, $importData, 3600);
         
     } catch (\Exception $e) {
-        $importData = Cache::get('import_congno_dichvu_khautru_' . $importId);
-        $importData['errors'] = array_merge($importData['errors'] ?? [], [$e->getMessage()]);
-        $importData['success'] = false;
-        $importData['finished'] = true;
-        Cache::put('import_congno_dichvu_khautru_' . $importId, $importData, 3600);
-        
         Log::error('Import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+        
+        $importData = Cache::get('import_congno_dichvu_khautru_' . $importId);
+        if ($importData) {
+            $importData['errors'] = array_merge($importData['errors'] ?? [], [$e->getMessage()]);
+            $importData['success'] = false;
+            $importData['finished'] = true;
+            Cache::put('import_congno_dichvu_khautru_' . $importId, $importData, 3600);
+        } else {
+            // ถ้าไม่พบข้อมูลใน Cache สร้างใหม่
+            Cache::put('import_congno_dichvu_khautru_' . $importId, [
+                'processed' => 0,
+                'total' => 0,
+                'success' => false,
+                'finished' => true,
+                'errors' => [$e->getMessage()]
+            ], 3600);
+        }
     }
 }
 
@@ -345,27 +436,28 @@ private function getColumnMapping($headers)
 {
     // Define mapping from common header names to database columns
     $possibleHeaderMappings = [
-        'tram' => ['tram', 'Tram', 'TRAM', 'station', 'Station', 'STATION'],
-        'invoice_number' => ['invoice_number', 'Invoice_Number', 'invoicenumber', 'ma_hoa_don', 'invoice', 'so_hoa_don'],
-        'vu_dau_tu' => ['vu_dau_tu', 'Vu_Dau_Tu', 'VuDauTu', 'investment_project', 'crop'],
+        'tram' => ['tram', 'Trạm', 'TRAM', 'station', 'Station', 'STATION'],
+        'invoicenumber' => ['Invoice Number', 'Invoice_Number', 'invoicenumber', 'ma_hoa_don', 'invoice', 'so_hoa_don'],
+        'vu_dau_tu' => ['Vụ đầu tư', 'Vu_Dau_Tu', 'VuDauTu', 'investment_project', 'crop'],
         'category_debt' => ['category_debt', 'Category_Debt', 'loai_no', 'debt_type'],
         'description' => ['description', 'Description', 'mo_ta', 'note', 'ghi_chu'],
-        'ngay_phat_sinh' => ['ngay_phat_sinh', 'Ngay_Phat_Sinh', 'date', 'transaction_date'],
-        'loai_tien' => ['loai_tien', 'Loai_Tien', 'currency', 'don_vi_tien', 'currency_type'],
-        'ty_gia_quy_doi' => ['ty_gia_quy_doi', 'Ty_Gia_Quy_Doi', 'exchange_rate', 'ti_gia'],
-        'so_tien_theo_gia_tri_dau_tu' => ['so_tien_theo_gia_tri_dau_tu', 'So_Tien_Theo_Gia_Tri_Dau_Tu', 'investment_value'],
-        'so_tien_no_goc_da_quy' => ['so_tien_no_goc_da_quy', 'So_Tien_No_Goc_Da_Quy', 'principal_amount', 'so_tien_no_goc'],
-        'da_tra_goc' => ['da_tra_goc', 'Da_Tra_Goc', 'paid_amount', 'paid_principal', 'so_tien_da_tra'],
-        'so_tien_con_lai' => ['so_tien_con_lai', 'So_Tien_Con_Lai', 'remaining_amount', 'so_tien_du_no'],
-        'tien_lai' => ['tien_lai', 'Tien_Lai', 'interest_amount', 'lai'],
-        'ma_khach_hang_ca_nhan' => ['ma_khach_hang_ca_nhan', 'Ma_Khach_Hang_Ca_Nhan', 'individual_customer_code'],
-        'khach_hang_ca_nhan' => ['khach_hang_ca_nhan', 'Khach_Hang_Ca_Nhan', 'individual_customer_name'],
-        'ma_khach_hang_doanh_nghiep' => ['ma_khach_hang_doanh_nghiep', 'Ma_Khach_Hang_Doanh_Nghiep', 'business_customer_code'],
-        'khach_hang_doanh_nghiep' => ['khach_hang_doanh_nghiep', 'Khach_Hang_Doanh_Nghiep', 'business_customer_name'],
-        'lai_suat' => ['lai_suat', 'Lai_Suat', 'interest_rate', 'rate'],
-        'loai_lai_suat' => ['loai_lai_suat', 'Loai_Lai_Suat', 'interest_type', 'rate_type'],
-        'vu_thanh_toan' => ['vu_thanh_toan', 'Vu_Thanh_Toan', 'payment_crop', 'payment_season'],
-        'loai_dau_tu' => ['loai_dau_tu', 'Loai_Dau_Tu', 'investment_type', 'type']
+        'ngay_phat_sinh' => ['Ngày phát sinh', 'Ngay_Phat_Sinh', 'date', 'transaction_date'],
+        'loai_tien' => ['Loại tiền', 'Loai_Tien', 'currency', 'don_vi_tien', 'currency_type'],
+        'ty_gia_quy_doi' => ['Tỷ giá quy đổi', 'Ty_Gia_Quy_Doi', 'exchange_rate', 'ti_gia'],
+        'so_tien_theo_gia_tri_dau_tu' => ['Số tiền theo giá trị đầu tư', 'So_Tien_Theo_Gia_Tri_Dau_Tu', 'investment_value'],
+        'so_tien_no_goc_da_quy' => ['Số tiền nợ gốc đã quy', 'So_Tien_No_Goc_Da_Quy', 'principal_amount', 'so_tien_no_goc'],
+        'da_tra_goc' => ['Đã trả gốc', 'Da_Tra_Goc', 'paid_amount', 'paid_principal', 'so_tien_da_tra'],
+        'so_tien_con_lai' => ['Số tiền còn lại', 'So_Tien_Con_Lai', 'remaining_amount', 'so_tien_du_no'],
+        'tien_lai' => ['Tiền lãi', 'Tien_Lai', 'interest_amount', 'lai'],
+        'ma_khach_hang_ca_nhan' => ['Mã khách hàng cá nhân', 'Ma_Khach_Hang_Ca_Nhan', 'individual_customer_code'],
+        'khach_hang_ca_nhan' => ['Khách hàng cá nhân', 'Khach_Hang_Ca_Nhan', 'individual_customer_name'],
+        'ma_khach_hang_doanh_nghiep' => ['Mã Khách hàng doanh nghiệp', 'Ma_Khach_Hang_Doanh_Nghiep', 'business_customer_code'],
+        'khach_hang_doanh_nghiep' => ['Khách hàng doanh nghiệp', 'Khach_Hang_Doanh_Nghiep', 'business_customer_name'],
+        'lai_suat' => ['Lãi suất', 'Lai_Suat', 'interest_rate', 'rate'],
+        'loai_lai_suat' => ['Loại lãi suất', 'Loai_Lai_Suat', 'interest_type', 'rate_type'],
+        'vu_thanh_toan' => ['Vụ thanh toán', 'Vu_Thanh_Toan', 'payment_crop', 'payment_season'],
+        'loai_dau_tu' => ['Loại đầu tư', 'Loai_Dau_Tu', 'investment_type', 'type'],
+        'ma_nhan_vien' => ['Mã nhân viên']
     ];
     
     $columnMapping = [];
