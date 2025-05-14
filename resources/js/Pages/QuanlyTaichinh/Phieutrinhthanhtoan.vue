@@ -1963,42 +1963,331 @@ export default {
             exportModal.show();
         },
 
-        closeExportModal() {
-            const exportModal = window.bootstrap.Modal.getInstance(
-                document.getElementById("exportModal")
-            );
-            if (exportModal) {
-                exportModal.hide();
-            }
-        },
-
+        // Add these methods to your existing methods object in Phieutrinhthanhtoan.vue
         exportToExcelCurrentPage() {
-            // Implementation for exporting current page
-            console.log("Exporting current page to Excel");
-            // Close modal after action
-            this.closeExportModal();
+            this.loading = true;
+
+            // Get the current page data from paginatedItems
+            setTimeout(() => {
+                if (this.paginatedItems.length > 0) {
+                    try {
+                        // Import xlsx and FileSaver dynamically
+                        import("xlsx").then((XLSX) => {
+                            import("file-saver").then((module) => {
+                                const FileSaver = module.default;
+
+                                // Format data for export
+                                const exportData = this.paginatedItems.map(
+                                    (item) => {
+                                        return {
+                                            "Mã trình thanh toán":
+                                                item.maTrinhThanhToan || "",
+                                            "Tiêu đề": item.tieuDe || "",
+                                            "Vụ đầu tư":
+                                                this.getInvestmentProjectName(
+                                                    item.vuDauTu
+                                                ) || "",
+                                            "Loại thanh toán":
+                                                item.loaiThanhToan || "",
+                                            "Trạng thái":
+                                                this.formatStatus(
+                                                    item.trangThaiThanhToan
+                                                ) || "",
+                                            "Số đợt thanh toán":
+                                                item.soDotThanhToan || "",
+                                            "Số tờ trình": item.soToTrinh || "",
+                                            "Ngày tạo":
+                                                this.formatDate(item.ngayTao) ||
+                                                "",
+                                            "Ngày thanh toán":
+                                                this.formatDate(
+                                                    item.ngayThanhToan
+                                                ) || "Chưa thanh toán",
+                                            "Tổng tiền thanh toán":
+                                                item.tongTienThanhToan
+                                                    ? parseFloat(
+                                                          item.tongTienThanhToan
+                                                      )
+                                                    : 0,
+                                            "Người tạo": item.nguoiTao || "",
+                                        };
+                                    }
+                                );
+
+                                // Create a worksheet
+                                const worksheet =
+                                    XLSX.utils.json_to_sheet(exportData);
+
+                                // Set column widths
+                                const columnWidths = [
+                                    { wpx: 120 }, // Mã trình thanh toán
+                                    { wpx: 150 }, // Tiêu đề
+                                    { wpx: 120 }, // Vụ đầu tư
+                                    { wpx: 120 }, // Loại thanh toán
+                                    { wpx: 120 }, // Trạng thái
+                                    { wpx: 100 }, // Số đợt thanh toán
+                                    { wpx: 100 }, // Số tờ trình
+                                    { wpx: 100 }, // Ngày tạo
+                                    { wpx: 100 }, // Ngày thanh toán
+                                    { wpx: 120 }, // Tổng tiền thanh toán
+                                    { wpx: 120 }, // Người tạo
+                                ];
+                                worksheet["!cols"] = columnWidths;
+
+                                // Create a workbook
+                                const workbook = XLSX.utils.book_new();
+                                XLSX.utils.book_append_sheet(
+                                    workbook,
+                                    worksheet,
+                                    "Phiếu trình thanh toán"
+                                );
+
+                                // Create an Excel file
+                                const excelBuffer = XLSX.write(workbook, {
+                                    bookType: "xlsx",
+                                    type: "array",
+                                });
+
+                                // Save the file
+                                const blob = new Blob([excelBuffer], {
+                                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                });
+                                FileSaver.saveAs(
+                                    blob,
+                                    `phieu_trinh_thanh_toan_current_page_${
+                                        new Date().toISOString().split("T")[0]
+                                    }.xlsx`
+                                );
+
+                                // Show success notification using SweetAlert2 toast
+                                Swal.fire({
+                                    title: "Xuất thành công!",
+                                    text: `Đã xuất ${exportData.length} bản ghi ra tệp Excel`,
+                                    icon: "success",
+                                    toast: true,
+                                    position: "top-end",
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true,
+                                    didOpen: (toast) => {
+                                        toast.addEventListener(
+                                            "mouseenter",
+                                            Swal.stopTimer
+                                        );
+                                        toast.addEventListener(
+                                            "mouseleave",
+                                            Swal.resumeTimer
+                                        );
+                                    },
+                                });
+                            });
+                        });
+                    } catch (error) {
+                        console.error("Export error:", error);
+
+                        // Show error toast
+                        Swal.fire({
+                            title: "Xuất không thành công!",
+                            text: "Đã xảy ra lỗi khi xuất dữ liệu. Vui lòng thử lại.",
+                            icon: "error",
+                            toast: true,
+                            position: "top-end",
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                        });
+                    }
+                } else {
+                    // Show warning toast for no data
+                    Swal.fire({
+                        title: "Không có dữ liệu!",
+                        text: "Không tìm thấy dữ liệu cần xuất.",
+                        icon: "warning",
+                        toast: true,
+                        position: "top-end",
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                    });
+                }
+                this.loading = false;
+
+                // Close modal after export
+                this.closeExportModal();
+            }, 100);
         },
 
         exportToExcelAllPages() {
-            // Implementation for exporting all data
-            console.log("Exporting all data to Excel");
-            // Close modal after action
-            this.closeExportModal();
+            this.loading = true;
+
+            // Use all filtered items instead of just the current page
+            setTimeout(() => {
+                if (this.filteredItems && this.filteredItems.length > 0) {
+                    try {
+                        // Import xlsx and FileSaver dynamically
+                        import("xlsx").then((XLSX) => {
+                            import("file-saver").then((module) => {
+                                const FileSaver = module.default;
+
+                                // Format data for export
+                                const exportData = this.filteredItems.map(
+                                    (item) => {
+                                        return {
+                                            "Mã trình thanh toán":
+                                                item.maTrinhThanhToan || "",
+                                            "Tiêu đề": item.tieuDe || "",
+                                            "Vụ đầu tư":
+                                                this.getInvestmentProjectName(
+                                                    item.vuDauTu
+                                                ) || "",
+                                            "Loại thanh toán":
+                                                item.loaiThanhToan || "",
+                                            "Trạng thái":
+                                                this.formatStatus(
+                                                    item.trangThaiThanhToan
+                                                ) || "",
+                                            "Số đợt thanh toán":
+                                                item.soDotThanhToan || "",
+                                            "Số tờ trình": item.soToTrinh || "",
+                                            "Ngày tạo":
+                                                this.formatDate(item.ngayTao) ||
+                                                "",
+                                            "Ngày thanh toán":
+                                                this.formatDate(
+                                                    item.ngayThanhToan
+                                                ) || "Chưa thanh toán",
+                                            "Tổng tiền thanh toán":
+                                                item.tongTienThanhToan
+                                                    ? parseFloat(
+                                                          item.tongTienThanhToan
+                                                      )
+                                                    : 0,
+                                            "Người tạo": item.nguoiTao || "",
+                                        };
+                                    }
+                                );
+
+                                // Create a worksheet
+                                const worksheet =
+                                    XLSX.utils.json_to_sheet(exportData);
+
+                                // Set column widths
+                                const columnWidths = [
+                                    { wpx: 120 }, // Mã trình thanh toán
+                                    { wpx: 150 }, // Tiêu đề
+                                    { wpx: 120 }, // Vụ đầu tư
+                                    { wpx: 120 }, // Loại thanh toán
+                                    { wpx: 120 }, // Trạng thái
+                                    { wpx: 100 }, // Số đợt thanh toán
+                                    { wpx: 100 }, // Số tờ trình
+                                    { wpx: 100 }, // Ngày tạo
+                                    { wpx: 100 }, // Ngày thanh toán
+                                    { wpx: 120 }, // Tổng tiền thanh toán
+                                    { wpx: 120 }, // Người tạo
+                                ];
+                                worksheet["!cols"] = columnWidths;
+
+                                // Create a workbook
+                                const workbook = XLSX.utils.book_new();
+                                XLSX.utils.book_append_sheet(
+                                    workbook,
+                                    worksheet,
+                                    "Phiếu trình thanh toán"
+                                );
+
+                                // Create an Excel file
+                                const excelBuffer = XLSX.write(workbook, {
+                                    bookType: "xlsx",
+                                    type: "array",
+                                });
+
+                                // Save the file
+                                const blob = new Blob([excelBuffer], {
+                                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                });
+                                FileSaver.saveAs(
+                                    blob,
+                                    `phieu_trinh_thanh_toan_all_data_${
+                                        new Date().toISOString().split("T")[0]
+                                    }.xlsx`
+                                );
+
+                                // Show success notification using SweetAlert2 toast
+                                Swal.fire({
+                                    title: "Xuất thành công!",
+                                    text: `Đã xuất ${exportData.length} bản ghi ra tệp Excel`,
+                                    icon: "success",
+                                    toast: true,
+                                    position: "top-end",
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true,
+                                    didOpen: (toast) => {
+                                        toast.addEventListener(
+                                            "mouseenter",
+                                            Swal.stopTimer
+                                        );
+                                        toast.addEventListener(
+                                            "mouseleave",
+                                            Swal.resumeTimer
+                                        );
+                                    },
+                                });
+                            });
+                        });
+                    } catch (error) {
+                        console.error("Export error:", error);
+
+                        // Show error toast
+                        Swal.fire({
+                            title: "Xuất không thành công!",
+                            text: "Đã xảy ra lỗi khi xuất dữ liệu. Vui lòng thử lại.",
+                            icon: "error",
+                            toast: true,
+                            position: "top-end",
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                        });
+                    }
+                } else {
+                    // Show warning toast for no data
+                    Swal.fire({
+                        title: "Không có dữ liệu!",
+                        text: "Không tìm thấy dữ liệu cần xuất.",
+                        icon: "warning",
+                        toast: true,
+                        position: "top-end",
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                    });
+                }
+                this.loading = false;
+
+                // Close modal after export
+                this.closeExportModal();
+            }, 100);
         },
 
-        importData() {
-            const importModal = new window.bootstrap.Modal(
-                document.getElementById("importModal")
-            );
-            importModal.show();
-        },
+        closeExportModal() {
+            // Check if we have stored a modal reference and use it
+            if (this.exportModal) {
+                this.exportModal.hide();
+            } else {
+                // Try to close using direct DOM manipulation if Bootstrap isn't working properly
+                const modalElement = document.getElementById("exportModal");
+                if (modalElement) {
+                    modalElement.classList.remove("show");
+                    modalElement.style.display = "none";
+                    document.body.classList.remove("modal-open");
 
-        closeImportModal() {
-            const importModal = window.bootstrap.Modal.getInstance(
-                document.getElementById("importModal")
-            );
-            if (importModal) {
-                importModal.hide();
+                    // Remove backdrop
+                    const backdrop = document.querySelector(".modal-backdrop");
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }
             }
         },
 
@@ -2006,13 +2295,6 @@ export default {
             this.selectedFile = event.target.files[0];
             // Reset any previous import errors
             this.importErrors = [];
-        },
-
-        importFile() {
-            // Implementation for importing file
-            console.log("Importing file:", this.selectedFile);
-            // Close modal after action
-            this.closeImportModal();
         },
     },
 

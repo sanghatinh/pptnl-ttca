@@ -17,6 +17,7 @@ use App\Http\Controllers\QuanlyHS\PhieuGiaoNhanHomGiongController;
 use App\Http\Controllers\QuanlyHS\PaymentRequestController;
 use App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers;
 use App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController;
+use App\Http\Controllers\QuanlyCongno\DeductibleServiceDebtController;
 
 
 Route::apiResource('roles', RoleController::class);
@@ -192,7 +193,9 @@ Route::get('/payment-requests-dichvu/{id}/processing-history', [PaymentRequestCo
 Route::put('/payment-requests-dichvu/{id}/update', [PhieudenghithanhtoandvControllers::class, 'updateDocument']);
 
 
-
+//Công nợ dịch vụ khấu trừ
+ // QuanlyCongno routes
+    Route::get('/congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'index']);
 
 
 

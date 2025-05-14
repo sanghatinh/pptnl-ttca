@@ -164,16 +164,17 @@
                             <ul>
                                 <li>
                                     <router-link
-                                        to="/"
+                                        to="/CongnoDichvuKhautru"
                                         :class="
-                                            $route.path === '/'
+                                            $route.path ===
+                                            '/CongnoDichvuKhautru'
                                                 ? 'current-page'
                                                 : ''
                                         "
                                         @click="closeSidebar"
                                     >
                                         <span class="menu-text"
-                                            >Công nợ dich vụ</span
+                                            >Công nợ dịch vụ khấu trừ</span
                                         >
                                     </router-link>
                                 </li>
