@@ -220,7 +220,10 @@
                                                     class="fas fa-filter"
                                                     :class="{
                                                         'text-green-500':
-                                                            columnFilters.tram,
+                                                            selectedFilterValues.tram &&
+                                                            selectedFilterValues
+                                                                .tram.length >
+                                                                0,
                                                     }"
                                                 ></i>
                                             </button>
@@ -228,14 +231,63 @@
                                                 v-if="activeFilter === 'tram'"
                                                 class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
                                             >
-                                                <input
-                                                    type="text"
-                                                    v-model="columnFilters.tram"
-                                                    class="form-control mb-2"
-                                                    placeholder="Lọc theo trạm..."
-                                                />
+                                                <!-- Debug info -->
                                                 <div
-                                                    class="flex justify-between"
+                                                    class="text-xs text-gray-500 mb-2"
+                                                >
+                                                    {{
+                                                        uniqueValues.tram
+                                                            ? uniqueValues.tram
+                                                                  .length
+                                                            : 0
+                                                    }}
+                                                    options found
+                                                </div>
+
+                                                <div
+                                                    class="max-h-40 overflow-y-auto"
+                                                >
+                                                    <template
+                                                        v-if="
+                                                            uniqueValues.tram &&
+                                                            uniqueValues.tram
+                                                                .length > 0
+                                                        "
+                                                    >
+                                                        <div
+                                                            v-for="(
+                                                                option, index
+                                                            ) in uniqueValues.tram"
+                                                            :key="index"
+                                                            class="flex items-center mb-2"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                :id="`tram-${index}`"
+                                                                :value="option"
+                                                                v-model="
+                                                                    selectedFilterValues.tram
+                                                                "
+                                                                class="form-checkbox h-4 w-4 text-green-600"
+                                                            />
+                                                            <label
+                                                                :for="`tram-${index}`"
+                                                                class="ml-2 text-gray-700"
+                                                            >
+                                                                {{ option }}
+                                                            </label>
+                                                        </div>
+                                                    </template>
+                                                    <div
+                                                        v-else
+                                                        class="text-center py-2 text-gray-500"
+                                                    >
+                                                        No options available
+                                                    </div>
+                                                </div>
+
+                                                <div
+                                                    class="flex justify-between mt-2"
                                                 >
                                                     <button
                                                         @click="
@@ -256,7 +308,6 @@
                                                 </div>
                                             </div>
                                         </th>
-
                                         <!-- Invoice Number -->
                                         <th>
                                             Invoice Number
@@ -1595,7 +1646,7 @@
                                     <tr
                                         v-for="item in paginatedItems.data"
                                         :key="item.id"
-                                        @click="viewDetails(item)"
+                                        @dbclick="viewDetails(item)"
                                         class="desktop-row cursor-pointer"
                                     >
                                         <td>{{ item.tram }}</td>
@@ -1949,6 +2000,9 @@ export default {
             isLoading: false,
             congnoList: [],
             allCongnoList: [],
+            dataInitialized: false,
+
+            filterDebounce: null,
             paginatedItems: {
                 data: [],
                 current_page: 1,
@@ -2046,6 +2100,15 @@ export default {
         };
     },
     computed: {
+        shouldShowFilter() {
+            return (field) => {
+                return (
+                    this.dataInitialized &&
+                    this.uniqueValues[field] &&
+                    this.uniqueValues[field].length > 0
+                );
+            };
+        },
         filteredItems() {
             return this.congnoList.filter((item) => {
                 // Apply global search
@@ -2204,6 +2267,11 @@ export default {
                                 .toString()
                                 .includes(this.columnFilters.lai_suat))) &&
                     // Dropdown filters with multiple selections
+                    (this.selectedFilterValues.tram.length === 0 ||
+                        (item.tram &&
+                            this.selectedFilterValues.tram.includes(
+                                item.tram
+                            ))) &&
                     (this.selectedFilterValues.vu_dau_tu.length === 0 ||
                         (item.vu_dau_tu &&
                             this.selectedFilterValues.vu_dau_tu.includes(
@@ -2240,6 +2308,41 @@ export default {
         },
     },
     methods: {
+        extractSpecificUniqueValues(field) {
+            if (!this.allCongnoList || this.allCongnoList.length === 0) {
+                console.warn(
+                    `Cannot extract ${field} values: no data available`
+                );
+                return;
+            }
+
+            // สกัดค่า unique
+            let values = [
+                ...new Set(
+                    this.allCongnoList
+                        .map((item) => item[field])
+                        .filter(Boolean) // กรองค่า null/undefined ออก
+                ),
+            ].sort();
+
+            // ทำให้แน่ใจว่า Vue reactivity จะทำงาน โดยการใช้ Vue.set หรือการกำหนดค่าใหม่ทั้งหมด
+            const newUniqueValues = { ...this.uniqueValues };
+            newUniqueValues[field] = values;
+            this.uniqueValues = newUniqueValues;
+        },
+        applyFilter(column) {
+            try {
+                this.activeFilter = null;
+                this.currentPage = 1;
+                this.applyFiltersAndPagination(1);
+            } catch (error) {
+                console.error(
+                    `Error applying filter for column ${column}:`,
+                    error
+                );
+                // Show user-friendly error message if needed
+            }
+        },
         // Add this method
         sortTable(field) {
             // If field is already active, toggle sort order
@@ -2251,8 +2354,8 @@ export default {
                 this.sortOrder = "asc";
             }
 
-            // Refetch data with new sorting
-            this.fetchData(this.currentPage);
+            // Apply client-side sorting
+            this.applyFiltersAndPagination(this.currentPage);
         },
         formatDate(date) {
             if (!date) return "";
@@ -2280,23 +2383,22 @@ export default {
         },
         pageChanged(page) {
             this.currentPage = page;
-            this.fetchData(page);
+            this.applyFiltersAndPagination(page);
         },
-        async fetchData(page = 1) {
+        async fetchData(page = 1, initialFetch = false) {
             this.isLoading = true;
             try {
-                console.log("Fetching data with params:", {
-                    page,
-                    per_page: this.perPage,
-                    ...this.getFilterParams(),
-                });
+                // Only request all data on initial fetch
+                const params = initialFetch
+                    ? { all: true }
+                    : {
+                          page,
+                          per_page: this.perPage,
+                          ...this.getFilterParams(),
+                      };
 
                 const response = await axios.get("/api/congno-dichvu-khautru", {
-                    params: {
-                        page,
-                        per_page: this.perPage,
-                        ...this.getFilterParams(),
-                    },
+                    params: params,
                     headers: {
                         Authorization: "Bearer " + this.store.getToken,
                     },
@@ -2306,24 +2408,50 @@ export default {
                 const responseData = response.data;
 
                 if (responseData && responseData.status === "success") {
-                    // Directly use the paginated data from the backend
-                    this.paginatedItems = responseData.data;
+                    if (initialFetch) {
+                        // ทำเครื่องหมายว่าข้อมูลถูกโหลดสมบูรณ์แล้ว
+                        this.dataInitialized = true;
 
-                    // Set current page
-                    this.currentPage = this.paginatedItems.current_page;
+                        // Check if data is an array directly or nested
+                        if (Array.isArray(responseData.data)) {
+                            this.allCongnoList = responseData.data;
+                        } else if (
+                            responseData.data &&
+                            Array.isArray(responseData.data.data)
+                        ) {
+                            this.allCongnoList = responseData.data.data;
+                        } else {
+                            console.error(
+                                "Unexpected data format:",
+                                responseData.data
+                            );
+                            this.allCongnoList = [];
 
-                    // Update unique values for dropdown filters
-                    if (responseData.unique_filters) {
-                        this.uniqueValues = responseData.unique_filters;
-                        console.log(
-                            "Unique values updated:",
-                            this.uniqueValues
-                        );
-                    }
+                            Swal.fire({
+                                title: "Error",
+                                text: "Invalid data format received from server",
+                                icon: "error",
+                                confirmButtonText: "OK",
+                            });
+                            return;
+                        }
 
-                    // Update totals if present
-                    if (responseData.totals) {
-                        this.totals = responseData.totals;
+                        // Sample data for verification
+                        if (this.allCongnoList.length > 0) {
+                        }
+
+                        // Process unique values for filters
+                        this.extractUniqueValues();
+
+                        // Calculate totals from all data
+                        this.calculateTotals();
+
+                        // Apply client-side pagination for the first page
+                        this.applyFiltersAndPagination(1);
+                    } else {
+                        // Using backend pagination (only for subsequent requests if needed)
+                        this.paginatedItems = responseData.data;
+                        this.currentPage = this.paginatedItems.current_page;
                     }
                 } else {
                     console.warn(
@@ -2354,6 +2482,249 @@ export default {
             } finally {
                 this.isLoading = false;
             }
+        },
+
+        // Extract unique values from all data for filters
+        extractUniqueValues() {
+            if (!this.allCongnoList || this.allCongnoList.length === 0) {
+                return;
+            }
+
+            // Initialize unique value containers
+            const filterFields = [
+                "tram",
+                "vu_dau_tu",
+                "category_debt",
+                "loai_tien",
+                "loai_lai_suat",
+                "vu_thanh_toan",
+                "loai_dau_tu",
+            ];
+
+            const newUniqueValues = {}; // สร้างออบเจ็กต์ใหม่
+
+            filterFields.forEach((field) => {
+                // ตรวจสอบว่า field มีอยู่จริงในข้อมูลหรือไม่
+                const hasField = this.allCongnoList.some(
+                    (item) => item[field] !== undefined
+                );
+
+                if (!hasField) {
+                    console.warn(`Field ${field} not found in data`);
+                    newUniqueValues[field] = [];
+                    return;
+                }
+
+                newUniqueValues[field] = [
+                    ...new Set(
+                        this.allCongnoList
+                            .map((item) => item[field])
+                            .filter(Boolean) // Remove null/undefined values
+                    ),
+                ].sort(); // Sort values alphabetically
+            });
+
+            // ใช้การกำหนดค่าใหม่ทั้งออบเจ็กต์แทนการกำหนดทีละฟิลด์
+            this.uniqueValues = newUniqueValues;
+        },
+
+        // Calculate totals from all filtered data
+        calculateTotals() {
+            const filteredData = this.applyFilters();
+
+            this.totals = {
+                total_debt: filteredData.reduce(
+                    (sum, item) =>
+                        sum + (parseFloat(item.so_tien_no_goc_da_quy) || 0),
+                    0
+                ),
+                total_paid: filteredData.reduce(
+                    (sum, item) => sum + (parseFloat(item.da_tra_goc) || 0),
+                    0
+                ),
+                total_remaining: filteredData.reduce(
+                    (sum, item) =>
+                        sum + (parseFloat(item.so_tien_con_lai) || 0),
+                    0
+                ),
+                total_interest: filteredData.reduce(
+                    (sum, item) => sum + (parseFloat(item.tien_lai) || 0),
+                    0
+                ),
+            };
+        },
+
+        // Apply all filters to the full dataset
+        applyFilters() {
+            if (!this.allCongnoList || this.allCongnoList.length === 0)
+                return [];
+
+            return this.allCongnoList.filter((item) => {
+                // Apply global search
+                const matchesSearch =
+                    !this.search ||
+                    (item.tram &&
+                        item.tram
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.invoicenumber &&
+                        item.invoicenumber
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.description &&
+                        item.description
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.khach_hang_ca_nhan &&
+                        item.khach_hang_ca_nhan
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.khach_hang_doanh_nghiep &&
+                        item.khach_hang_doanh_nghiep
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase()));
+
+                // Apply status filter
+                const matchesStatus =
+                    this.statusFilter === "all" ||
+                    item.status === this.statusFilter;
+
+                // Apply column filters (text inputs)
+                const matchesColumnFilters = Object.entries(
+                    this.columnFilters
+                ).every(([key, value]) => {
+                    if (!value) return true;
+
+                    // Date field special handling
+                    if (key === "ngay_phat_sinh" && item[key]) {
+                        return (
+                            this.formatDateForComparison(item[key]) ===
+                            this.formatDateForComparison(value)
+                        );
+                    }
+
+                    // Number fields
+                    if (
+                        [
+                            "ty_gia_quy_doi",
+                            "so_tien_theo_gia_tri_dau_tu",
+                            "so_tien_no_goc_da_quy",
+                            "da_tra_goc",
+                            "so_tien_con_lai",
+                            "tien_lai",
+                            "lai_suat",
+                        ].includes(key)
+                    ) {
+                        return (
+                            item[key] !== undefined &&
+                            item[key].toString().includes(value)
+                        );
+                    }
+
+                    // Default text field handling
+                    return (
+                        item[key] &&
+                        item[key]
+                            .toString()
+                            .toLowerCase()
+                            .includes(value.toLowerCase())
+                    );
+                });
+
+                // Apply dropdown selection filters (checkboxes)
+                const matchesDropdownFilters = Object.entries(
+                    this.selectedFilterValues
+                ).every(([key, values]) => {
+                    return (
+                        values.length === 0 ||
+                        (item[key] && values.includes(item[key]))
+                    );
+                });
+
+                return (
+                    matchesSearch &&
+                    matchesStatus &&
+                    matchesColumnFilters &&
+                    matchesDropdownFilters
+                );
+            });
+        },
+
+        // Handle sorting
+        applySorting(data) {
+            if (!data || data.length === 0) return [];
+
+            return [...data].sort((a, b) => {
+                let valueA = a[this.sortField];
+                let valueB = b[this.sortField];
+
+                // Handle numeric fields
+                if (
+                    [
+                        "ty_gia_quy_doi",
+                        "so_tien_theo_gia_tri_dau_tu",
+                        "so_tien_no_goc_da_quy",
+                        "da_tra_goc",
+                        "so_tien_con_lai",
+                        "tien_lai",
+                        "lai_suat",
+                    ].includes(this.sortField)
+                ) {
+                    valueA = parseFloat(valueA) || 0;
+                    valueB = parseFloat(valueB) || 0;
+                }
+                // Handle date fields
+                else if (this.sortField === "ngay_phat_sinh") {
+                    valueA = new Date(valueA || 0).getTime();
+                    valueB = new Date(valueB || 0).getTime();
+                }
+                // Default string comparison
+                else {
+                    valueA = valueA ? valueA.toString().toLowerCase() : "";
+                    valueB = valueB ? valueB.toString().toLowerCase() : "";
+                }
+
+                if (this.sortOrder === "asc") {
+                    return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+                } else {
+                    return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+                }
+            });
+        },
+
+        // Apply filters, sorting, and pagination
+        applyFiltersAndPagination(page = 1) {
+            // Apply filters
+            const filteredData = this.applyFilters();
+
+            // Apply sorting
+            const sortedData = this.applySorting(filteredData);
+
+            // Calculate pagination
+            const totalItems = sortedData.length;
+            const totalPages = Math.ceil(totalItems / this.perPage);
+            const startIndex = (page - 1) * this.perPage;
+            const endIndex = Math.min(startIndex + this.perPage, totalItems);
+
+            // Get paginated items
+            const items = sortedData.slice(startIndex, endIndex);
+
+            // Update paginated items object
+            this.paginatedItems = {
+                data: items,
+                current_page: page,
+                last_page: totalPages,
+                per_page: this.perPage,
+                total: totalItems,
+                from: totalItems ? startIndex + 1 : 0,
+                to: endIndex,
+            };
+
+            // Update current page
+            this.currentPage = page;
+
+            // Update totals based on filtered data
+            this.calculateTotals();
         },
 
         // Helper method to prepare filter parameters
@@ -2426,7 +2797,7 @@ export default {
 
             // Reset to first page
             this.currentPage = 1;
-            this.fetchData(1);
+            this.applyFiltersAndPagination(1);
         },
         async viewDetails(item) {
             try {
@@ -2491,9 +2862,13 @@ export default {
         },
         // Column filter methods
         toggleFilter(column) {
-            this.activeFilter = this.activeFilter === column ? null : column;
+            // ถ้ากำลังเปิดฟิลเตอร์อยู่แล้ว ให้ปิด
+            if (this.activeFilter === column) {
+                this.activeFilter = null;
+                return;
+            }
 
-            // If opening filter for dropdown columns, ensure unique values are populated
+            // ตรวจสอบข้อมูลก่อนเปิดฟิลเตอร์
             if (
                 [
                     "tram",
@@ -2503,11 +2878,22 @@ export default {
                     "loai_lai_suat",
                     "vu_thanh_toan",
                     "loai_dau_tu",
-                ].includes(column) &&
-                this.activeFilter === column
+                ].includes(column)
             ) {
-                this.updateUniqueValues(column);
+                if (
+                    !this.uniqueValues[column] ||
+                    this.uniqueValues[column].length === 0
+                ) {
+                    console.warn(
+                        `No unique values found for ${column}, re-extracting`
+                    );
+                    this.extractSpecificUniqueValues(column);
+                } else {
+                }
             }
+
+            // เปิดฟิลเตอร์
+            this.activeFilter = column;
         },
         updateUniqueValues(column) {
             if (
@@ -2547,14 +2933,102 @@ export default {
                 this.columnFilters[column] = "";
             }
             this.currentPage = 1;
-            // Immediately fetch updated data when resetting a filter
-            this.fetchData(1);
+            this.applyFiltersAndPagination(1);
         },
-        applyFilter(column) {
-            this.activeFilter = null;
-            this.currentPage = 1;
-            // Immediately fetch updated data when applying a filter
-            this.fetchData(1);
+
+        applyFilters() {
+            if (!this.allCongnoList || this.allCongnoList.length === 0)
+                return [];
+
+            return this.allCongnoList.filter((item) => {
+                // Apply global search
+                const matchesSearch =
+                    !this.search ||
+                    (item.tram &&
+                        item.tram
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.invoicenumber &&
+                        item.invoicenumber
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.description &&
+                        item.description
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.khach_hang_ca_nhan &&
+                        item.khach_hang_ca_nhan
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.khach_hang_doanh_nghiep &&
+                        item.khach_hang_doanh_nghiep
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase()));
+
+                // Apply status filter
+                const matchesStatus =
+                    this.statusFilter === "all" ||
+                    item.status === this.statusFilter;
+
+                // Apply column filters (text inputs)
+                const matchesColumnFilters = Object.entries(
+                    this.columnFilters
+                ).every(([key, value]) => {
+                    if (!value) return true;
+
+                    // Date field special handling
+                    if (key === "ngay_phat_sinh" && item[key]) {
+                        return (
+                            this.formatDateForComparison(item[key]) ===
+                            this.formatDateForComparison(value)
+                        );
+                    }
+
+                    // Number fields
+                    if (
+                        [
+                            "ty_gia_quy_doi",
+                            "so_tien_theo_gia_tri_dau_tu",
+                            "so_tien_no_goc_da_quy",
+                            "da_tra_goc",
+                            "so_tien_con_lai",
+                            "tien_lai",
+                            "lai_suat",
+                        ].includes(key)
+                    ) {
+                        return (
+                            item[key] !== undefined &&
+                            item[key].toString().includes(value)
+                        );
+                    }
+
+                    // Default text field handling
+                    return (
+                        item[key] &&
+                        item[key]
+                            .toString()
+                            .toLowerCase()
+                            .includes(value.toLowerCase())
+                    );
+                });
+
+                // Apply dropdown selection filters (checkboxes)
+                const matchesDropdownFilters = Object.entries(
+                    this.selectedFilterValues
+                ).every(([key, values]) => {
+                    return (
+                        values.length === 0 ||
+                        (item[key] && values.includes(item[key]))
+                    );
+                });
+
+                return (
+                    matchesSearch &&
+                    matchesStatus &&
+                    matchesColumnFilters &&
+                    matchesDropdownFilters
+                );
+            });
         },
         // Export methods
         showExportModal() {
@@ -3316,18 +3790,36 @@ export default {
         search(newVal, oldVal) {
             if (newVal !== oldVal) {
                 this.currentPage = 1;
-                // Use debounce to avoid too many API calls
+                // Use debounce to avoid too many calculations
                 clearTimeout(this.searchDebounce);
                 this.searchDebounce = setTimeout(() => {
-                    this.fetchData(1);
+                    this.applyFiltersAndPagination(1);
                 }, 500);
             }
         },
         statusFilter(newVal, oldVal) {
             if (newVal !== oldVal) {
                 this.currentPage = 1;
-                this.fetchData(1);
+                this.applyFiltersAndPagination(1);
             }
+        },
+        // Add watcher for column filters
+        columnFilters: {
+            handler() {
+                clearTimeout(this.filterDebounce);
+                this.filterDebounce = setTimeout(() => {
+                    this.currentPage = 1;
+                    this.applyFiltersAndPagination(1);
+                }, 500);
+            },
+            deep: true,
+        },
+        selectedFilterValues: {
+            handler() {
+                this.currentPage = 1;
+                this.applyFiltersAndPagination(1);
+            },
+            deep: true,
         },
         paginatedItems: {
             handler() {
@@ -3343,20 +3835,27 @@ export default {
         },
     },
     mounted() {
-        this.fetchData();
-
-        // Initialize unique values for dropdown filters
-        [
-            "tram",
-            "vu_dau_tu",
-            "category_debt",
-            "loai_tien",
-            "loai_lai_suat",
-            "vu_thanh_toan",
-            "loai_dau_tu",
-        ].forEach((column) => {
-            this.updateUniqueValues(column);
-        });
+        // Initialize uniqueValues with empty arrays
+        this.uniqueValues = {
+            tram: [],
+            vu_dau_tu: [],
+            category_debt: [],
+            loai_tien: [],
+            loai_lai_suat: [],
+            vu_thanh_toan: [],
+            loai_dau_tu: [],
+        };
+        // ทำให้แน่ใจว่า selectedFilterValues ถูกเริ่มต้นเป็น object ว่างเช่นกัน
+        this.selectedFilterValues = {
+            tram: [],
+            vu_dau_tu: [],
+            category_debt: [],
+            loai_tien: [],
+            loai_lai_suat: [],
+            vu_thanh_toan: [],
+            loai_dau_tu: [],
+        };
+        this.fetchData(1, true);
 
         // Watch for screen size changes to toggle mobile view
         window.addEventListener("resize", () => {
@@ -3365,7 +3864,9 @@ export default {
         });
 
         // Initialize PerfectScrollbar
-        this.initPerfectScrollbar();
+        this.$nextTick(() => {
+            this.initPerfectScrollbar();
+        });
     },
     updated() {
         // Update scrollbar after component updates
