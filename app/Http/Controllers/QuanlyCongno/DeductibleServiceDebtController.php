@@ -533,22 +533,33 @@ public function showDetails($invoicenumber)
             ], 404);
         }
         
-        // Fetch payment history
-        $paymentHistory = DB::table('Logs_Phieu_Tinh_Lai_dv')
-            ->where('Invoice_Number_Phan_Bo_Dau_Tu', $invoicenumber)
-            ->orderBy('Ngay_Tra', 'desc')
-            ->get()
-            ->map(function ($payment) {
-                return [
-                    'receipt_code' => $payment->Ma_So_Phieu_PDN_Thu_No ?? null,
-                    'invoice_number' => $payment->Invoice_Number_Phan_Bo_Dau_Tu ?? null,
-                    'principal_paid' => $payment->Da_Tra_Goc ?? 0,
-                    'interest_paid' => $payment->Tien_Lai ?? 0,
-                    'payment_date' => $payment->Ngay_Tra ?? null,
-                    'category_debt' => $payment->Category_Debt ?? null,
-                ];
-            });
-        
+        // Fetch payment history with additional information
+        $paymentHistory = DB::table('Logs_Phieu_Tinh_Lai_dv as l')
+            ->where('l.Invoice_Number_Phan_Bo_Dau_Tu', $invoicenumber)
+            ->leftJoin('tb_phieu_trinh_thanh_toan as pt', 'l.So_Tro_Trinh', '=', 'pt.so_to_trinh')
+            ->leftJoin('tb_de_nghi_thanhtoan_dv as dv', function($join) use ($debt) {
+                $join->on('pt.ma_trinh_thanh_toan', '=', 'dv.ma_trinh_thanh_toan');
+                
+                // Choose the correct customer ID field based on what's available in the debt record
+                if (!empty($debt->ma_khach_hang_ca_nhan)) {
+                    $join->where('dv.ma_khach_hang_ca_nhan', '=', $debt->ma_khach_hang_ca_nhan);
+                } else if (!empty($debt->ma_khach_hang_doanh_nghiep)) {
+                    $join->where('dv.ma_khach_hang_doanh_nghiep', '=', $debt->ma_khach_hang_doanh_nghiep);
+                }
+            })
+            ->select(
+                'l.Ma_So_Phieu_PDN_Thu_No as receipt_code',
+                'l.Invoice_Number_Phan_Bo_Dau_Tu as invoice_number',
+                'l.Da_Tra_Goc as principal_paid',
+                'l.Tien_Lai as interest_paid',
+                'l.Ngay_Tra as payment_date',
+                'l.Category_Debt as category_debt',
+                'l.So_Tro_Trinh as proposal_number', // Added field for Số tờ trình
+                'dv.ma_giai_ngan as disbursement_code' // Added field for Mã giải ngân
+            )
+            ->orderBy('l.Ngay_Tra', 'desc')
+            ->get();
+            
         return response()->json([
             'success' => true,
             'document' => $debt,
@@ -556,11 +567,10 @@ public function showDetails($invoicenumber)
         ]);
         
     } catch (\Exception $e) {
-        Log::error('Error fetching debt details: ' . $e->getMessage());
-        
+        Log::error('Error retrieving debt details: ' . $e->getMessage());
         return response()->json([
             'success' => false,
-            'message' => 'Có lỗi xảy ra khi lấy thông tin chi tiết công nợ.',
+            'message' => 'Đã xảy ra lỗi khi tải dữ liệu công nợ.',
             'error' => $e->getMessage()
         ], 500);
     }

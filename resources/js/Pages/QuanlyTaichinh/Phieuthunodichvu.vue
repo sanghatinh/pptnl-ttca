@@ -1320,7 +1320,6 @@
                                     <tr
                                         v-for="item in paginatedItems.data"
                                         :key="item.id"
-                                        @click="viewDetails(item)"
                                         class="desktop-row cursor-pointer"
                                     >
                                         <td>{{ item.ma_so_phieu }}</td>
@@ -1401,7 +1400,6 @@
                 v-for="item in paginatedItems.data"
                 :key="item.id"
                 class="card border p-4 mb-4 rounded shadow hover:shadow-green-500 transition-shadow duration-300"
-                @click="viewDetails(item)"
             >
                 <div class="flex-1 justify-items-start">
                     <div class="mb-2">
@@ -2212,61 +2210,7 @@ export default {
             // Reset to first page
             this.currentPage = 1;
         },
-        async viewDetails(item) {
-            try {
-                // Show loading indicator
-                this.isLoading = true;
-
-                // Check access permissions via API
-                const response = await axios.get(
-                    `/api/phieu-thu-no-dich-vu/${item.ma_so_phieu}/check-access`,
-                    {
-                        headers: {
-                            Authorization: "Bearer " + this.store.getToken,
-                        },
-                    }
-                );
-
-                // If access is granted
-                if (response.data.hasAccess) {
-                    // Navigate to details page
-                    this.$router.push(
-                        `/Details_Phieuthunodichvu/${item.ma_so_phieu}`
-                    );
-                } else {
-                    // If no access, redirect to unauthorized page
-                    this.$router.push("/unauthorized");
-                }
-            } catch (error) {
-                console.error("Error checking access:", error);
-
-                if (error.response?.status === 401) {
-                    // Case of expired or invalid token
-                    localStorage.removeItem("web_token");
-                    localStorage.removeItem("web_user");
-                    this.store.logout();
-                    this.$router.push("/login");
-                } else {
-                    // Case of other errors
-                    this.$router.push("/unauthorized");
-
-                    // Show error notification
-                    Swal.fire({
-                        title: "Lỗi",
-                        text: "Bạn không có quyền truy cập dữ liệu này",
-                        icon: "error",
-                        confirmButtonText: "OK",
-                        buttonsStyling: false,
-                        customClass: {
-                            confirmButton: "btn btn-success",
-                        },
-                    });
-                }
-            } finally {
-                // Hide loading indicator
-                this.isLoading = false;
-            }
-        },
+   
         handleAuthError() {
             localStorage.removeItem("web_token");
             localStorage.removeItem("web_user");
