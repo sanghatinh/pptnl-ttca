@@ -198,6 +198,7 @@ Route::put('/payment-requests-dichvu/{id}/update', [PhieudenghithanhtoandvContro
     Route::get('/congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'index']);
 Route::get('/import-congno-dichvu-khautru-progress/{importId}', [DeductibleServiceDebtController::class, 'checkImportProgress']);
 Route::post('/import-congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'startImport']);
+Route::get('/congno-dichvu-khautru/{invoicenumber}', [DeductibleServiceDebtController::class, 'showDetails']);
 
 });
 

@@ -5,11 +5,13 @@ namespace App\Http\Controllers\QuanlyCongno;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\QuanlyCongno\DeductibleServiceDebt;
+use App\Models\Quanlytaichinh\Phieuthunodichvu;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class DeductibleServiceDebtController extends Controller
 {
@@ -507,5 +509,62 @@ public function checkImportProgress($importId)
     
     return response()->json($importData);
 }
+
+
+
+/**
+ * Show the specified debt details by invoicenumber.
+ *
+ * @param  string  $invoicenumber
+ * @return \Illuminate\Http\Response
+ */
+public function showDetails($invoicenumber)
+{
+    try {
+        // Fetch debt details
+        $debt = DB::table('deductible_service_debt')
+            ->where('invoicenumber', $invoicenumber)
+            ->first();
+            
+        if (!$debt) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy thông tin công nợ.'
+            ], 404);
+        }
+        
+        // Fetch payment history
+        $paymentHistory = DB::table('Logs_Phieu_Tinh_Lai_dv')
+            ->where('Invoice_Number_Phan_Bo_Dau_Tu', $invoicenumber)
+            ->orderBy('Ngay_Tra', 'desc')
+            ->get()
+            ->map(function ($payment) {
+                return [
+                    'receipt_code' => $payment->Ma_So_Phieu_PDN_Thu_No ?? null,
+                    'invoice_number' => $payment->Invoice_Number_Phan_Bo_Dau_Tu ?? null,
+                    'principal_paid' => $payment->Da_Tra_Goc ?? 0,
+                    'interest_paid' => $payment->Tien_Lai ?? 0,
+                    'payment_date' => $payment->Ngay_Tra ?? null,
+                    'category_debt' => $payment->Category_Debt ?? null,
+                ];
+            });
+        
+        return response()->json([
+            'success' => true,
+            'document' => $debt,
+            'paymentHistory' => $paymentHistory
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error fetching debt details: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Có lỗi xảy ra khi lấy thông tin chi tiết công nợ.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 
 }

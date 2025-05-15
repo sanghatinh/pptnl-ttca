@@ -1701,7 +1701,7 @@
                                     <tr
                                         v-for="item in paginatedItems.data"
                                         :key="item.id"
-                                        @dbclick="viewDetails(item)"
+                                        @click="viewDetails(item)"
                                         class="desktop-row cursor-pointer"
                                     >
                                         <td>{{ item.tram }}</td>
@@ -2969,51 +2969,24 @@ export default {
                 // Show loading indicator
                 this.isLoading = true;
 
-                // Check access permissions via API
-                const response = await axios.get(
-                    `/api/congno-dichvu-khautru/${item.id}/check-access`,
-                    {
-                        headers: {
-                            Authorization: "Bearer " + this.store.getToken,
-                        },
-                    }
+                // Navigate directly to details page without permission check
+                this.$router.push(
+                    `/Details_CongnoDichVuKhauTru/${item.invoicenumber}`
                 );
-
-                // If access is granted
-                if (response.data.hasAccess) {
-                    // Navigate to details page
-                    this.$router.push(
-                        `/Details_CongnoDichVuKhauTru/${item.id}`
-                    );
-                } else {
-                    // If no access, redirect to unauthorized page
-                    this.$router.push("/unauthorized");
-                }
             } catch (error) {
-                console.error("Error checking access:", error);
+                console.error("Error navigating to details:", error);
 
-                if (error.response?.status === 401) {
-                    // Case of expired or invalid token
-                    localStorage.removeItem("web_token");
-                    localStorage.removeItem("web_user");
-                    this.store.logout();
-                    this.$router.push("/login");
-                } else {
-                    // Case of other errors
-                    this.$router.push("/unauthorized");
-
-                    // Show error notification
-                    Swal.fire({
-                        title: "Lỗi",
-                        text: "Bạn không có quyền truy cập dữ liệu này",
-                        icon: "error",
-                        confirmButtonText: "OK",
-                        buttonsStyling: false,
-                        customClass: {
-                            confirmButton: "btn btn-success",
-                        },
-                    });
-                }
+                // Handle any navigation errors
+                Swal.fire({
+                    title: "Lỗi",
+                    text: "Không thể mở chi tiết công nợ",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
             } finally {
                 // Hide loading indicator
                 this.isLoading = false;
@@ -5210,7 +5183,7 @@ export default {
 .badge {
     display: inline-block;
     padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
+    font-size: 1rem;
     font-weight: 500;
     line-height: 1;
     text-align: center;
@@ -5252,7 +5225,7 @@ export default {
 .badge {
     display: inline-block;
     padding: 0.3em 0.65em;
-    font-size: 0.75em;
+    font-size: 1em;
     font-weight: 600;
     line-height: 1;
     text-align: center;
