@@ -1,13 +1,11 @@
 <template>
     <div class="debt-details-container">
         <breadcrumb-vue />
-
-        <!-- Loading indicator -->
-        <div v-if="isLoading" class="text-center my-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+        <!-- Loading starts -->
+        <div id="loading-wrapper" v-if="isLoading">
+            <div class="spinner-border" role="status">
+                <span class="sr-only">Loading...</span>
             </div>
-            <p class="mt-2">Đang tải dữ liệu...</p>
         </div>
 
         <!-- Error message display -->
@@ -99,10 +97,17 @@
                                         :class="
                                             getCategoryBadgeClass(
                                                 document.category_debt
-                                            )
+                                            ).class
                                         "
                                     >
-                                        {{ document.category_debt || "" }}
+                                        <i
+                                            :class="
+                                                getCategoryBadgeClass(
+                                                    document.category_debt
+                                                ).icon + ' me-1'
+                                            "
+                                        ></i>
+                                        {{ document.category_debt }}
                                     </span>
                                 </div>
                             </div>
@@ -799,7 +804,14 @@
                                     </td>
                                     <td>{{ payment.invoice_number }}</td>
                                     <td>
-                                        {{ payment.disbursement_code || "N/A" }}
+                                        <router-link
+                                            v-if="payment.disbursement_code"
+                                            :to="`/Details_Phieudenghithanhtoandichvu/${payment.disbursement_code}`"
+                                            class="disbursement-code-link"
+                                        >
+                                            {{ payment.disbursement_code }}
+                                        </router-link>
+                                        <span v-else>N/A</span>
                                     </td>
                                     <!-- New column -->
                                     <td>
@@ -830,9 +842,16 @@
                                             :class="
                                                 getCategoryBadgeClass(
                                                     payment.category_debt
-                                                )
+                                                ).class
                                             "
                                         >
+                                            <i
+                                                :class="
+                                                    getCategoryBadgeClass(
+                                                        payment.category_debt
+                                                    ).icon + ' me-1'
+                                                "
+                                            ></i>
                                             {{ payment.category_debt }}
                                         </span>
                                     </td>
@@ -1244,17 +1263,37 @@ export default {
         getCategoryBadgeClass(category) {
             if (!category) return "badge bg-secondary text-white";
 
-            // Map different categories to different colors
+            // Map different categories to different colors and icons
             const categoryColors = {
-                "Ứng dầu": "badge bg-blue-100 text-blue-800",
-                MMTB: "badge bg-red-100 text-red-800",
-                "Sữa chữa": "badge bg-purple-100 text-purple-800",
-                "Ứng tiền trồng": "badge bg-amber-100 text-amber-800",
-                "Ứng tiền chăm sóc": "badge bg-green-100 text-green-700",
+                "Ứng dầu": {
+                    class: "badge bg-blue-600 text-white",
+                    icon: "fas fa-oil-can",
+                },
+                MMTB: {
+                    class: "badge bg-red-600 text-white",
+                    icon: "fas fa-tools",
+                },
+                "Sữa chữa": {
+                    class: "badge bg-purple-600 text-white",
+                    icon: "fas fa-wrench",
+                },
+                "Ứng tiền trồng": {
+                    class: "badge bg-amber-600 text-white",
+                    icon: "fas fa-seedling",
+                },
+                "Ứng tiền chăm sóc": {
+                    class: "badge bg-green-600 text-white",
+                    icon: "fas fa-hand-holding-heart",
+                },
             };
 
-            // Return the corresponding class or a default one
-            return categoryColors[category] || "badge bg-secondary text-white";
+            // Return just the class if category doesn't exist in our mapping
+            if (!categoryColors[category]) {
+                return "badge bg-secondary text-white";
+            }
+
+            // Return the badge class and icon info
+            return categoryColors[category];
         },
         goBack() {
             this.$router.push("/CongnoDichvuKhautru");
@@ -1512,18 +1551,6 @@ export default {
 }
 
 /* Filter dropdown positioning */
-.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
-    position: absolute;
-    top: calc(100% + 5px);
-    left: 0;
-    min-width: 250px;
-    max-width: 300px;
-    z-index: 1050;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-        0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
 
 /* Add a subtle pointer indicator for dropdown */
 .absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10:before {
@@ -1678,12 +1705,73 @@ export default {
 
 /* Make table responsive */
 .table-responsive {
+    min-height: 350px;
     position: relative;
+    width: 100%;
+    white-space: nowrap;
+    overflow-x: auto; /* Enable horizontal scrolling if needed */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on touch devices */
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    white-space: nowrap; /* ป้องกันการขึ้นบรรทัดใหม่ */
+    table-layout: auto; /* Change from fixed to auto layout */
+}
+
+/* Ensure table headers have proper spacing */
+.payment-history-table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #4b5563;
+    white-space: nowrap;
+    min-width: 120px; /* Minimum width for columns */
+    padding: 0.75rem 1rem;
+    position: relative;
+}
+
+/* Adjust filter dropdowns position */
+.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    min-width: 250px;
+    max-width: 300px;
+    z-index: 1050;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+/* Loading indicator */
+#loading-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.7);
+    z-index: 9999;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: #198754;
+}
+/* Add this to the style section */
+.disbursement-code-link {
+    color: #0d6efd;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.disbursement-code-link:hover {
+    color: #0a58ca;
+    text-decoration: underline;
 }
 </style>

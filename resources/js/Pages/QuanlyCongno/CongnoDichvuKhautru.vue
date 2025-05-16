@@ -1701,7 +1701,7 @@
                                     <tr
                                         v-for="item in paginatedItems.data"
                                         :key="item.id"
-                                        @click="viewDetails(item)"
+                                        @dblclick="viewDetails(item)"
                                         class="desktop-row cursor-pointer"
                                     >
                                         <td>{{ item.tram }}</td>
@@ -2432,6 +2432,66 @@ export default {
         },
     },
     methods: {
+        saveFilterState() {
+            const filterState = {
+                search: this.search,
+                statusFilter: this.statusFilter,
+                columnFilters: { ...this.columnFilters },
+                selectedFilterValues: JSON.parse(
+                    JSON.stringify(this.selectedFilterValues)
+                ),
+                currentPage: this.currentPage,
+                sortField: this.sortField,
+                sortOrder: this.sortOrder,
+                activeFilter: this.activeFilter,
+            };
+            localStorage.setItem(
+                "congno_filter_state",
+                JSON.stringify(filterState)
+            );
+        },
+        restoreFilterState() {
+            const savedState = localStorage.getItem("congno_filter_state");
+            if (savedState) {
+                try {
+                    const filterState = JSON.parse(savedState);
+
+                    // กำหนดค่าให้กับตัวแปรต่างๆ
+                    this.search = filterState.search || "";
+                    this.statusFilter = filterState.statusFilter || "all";
+                    this.columnFilters = filterState.columnFilters || {};
+                    this.selectedFilterValues =
+                        filterState.selectedFilterValues || {
+                            tram: [],
+                            vu_dau_tu: [],
+                            category_debt: [],
+                            loai_tien: [],
+                            loai_lai_suat: [],
+                            vu_thanh_toan: [],
+                            loai_dau_tu: [],
+                        };
+                    this.currentPage = filterState.currentPage || 1;
+                    this.sortField = filterState.sortField || "ngay_phat_sinh";
+                    this.sortOrder = filterState.sortOrder || "desc";
+
+                    console.log("Restored filter state:", filterState);
+
+                    // ทำให้แน่ใจว่าข้อมูลถูกดึงและประมวลผลตามสถานะที่บันทึกไว้
+                    this.fetchData(1, true, () => {
+                        // หลังจากดึงข้อมูลเสร็จ ให้ apply ฟิลเตอร์และการแบ่งหน้า
+                        this.$nextTick(() => {
+                            this.applyFiltersAndPagination(this.currentPage);
+                        });
+                    });
+
+                    return true;
+                } catch (error) {
+                    console.error("Error restoring filter state:", error);
+                    return false;
+                }
+            }
+            return false;
+        },
         extractSpecificUniqueValues(field) {
             if (!this.allCongnoList || this.allCongnoList.length === 0) {
                 console.warn(
@@ -2526,7 +2586,7 @@ export default {
             this.currentPage = page;
             this.applyFiltersAndPagination(page);
         },
-        async fetchData(page = 1, initialFetch = false) {
+        async fetchData(page = 1, initialFetch = false, callback = null) {
             this.isLoading = true;
             try {
                 // Only request all data on initial fetch
@@ -2577,24 +2637,28 @@ export default {
                             return;
                         }
 
-                        // Sample data for verification
-                        if (this.allCongnoList.length > 0) {
-                        }
-
                         // Process unique values for filters
                         this.extractUniqueValues();
 
                         // Calculate totals from all data
                         this.calculateTotals();
+
                         // After setting uniqueValues, update statusOptions
                         this.updateStatusOptions();
 
-                        // Apply client-side pagination for the first page
-                        this.applyFiltersAndPagination(1);
+                        // ถ้าไม่มีการ restore filter ให้ apply ฟิลเตอร์เริ่มต้น
+                        if (!callback) {
+                            this.applyFiltersAndPagination(1);
+                        }
                     } else {
                         // Using backend pagination (only for subsequent requests if needed)
                         this.paginatedItems = responseData.data;
                         this.currentPage = this.paginatedItems.current_page;
+                    }
+
+                    // เรียก callback ถ้ามีการส่งมา
+                    if (typeof callback === "function") {
+                        callback();
                     }
                 } else {
                     console.warn(
@@ -2730,13 +2794,21 @@ export default {
                 // Apply status filter
                 const matchesStatus =
                     this.statusFilter === "all" ||
-                    item.status === this.statusFilter;
+                    (item.category_debt &&
+                        item.category_debt === this.statusFilter);
 
                 // Apply column filters (text inputs)
                 const matchesColumnFilters = Object.entries(
                     this.columnFilters
                 ).every(([key, value]) => {
                     if (!value) return true;
+
+                    // Log specific filter for debugging
+                    if (key === "khach_hang_ca_nhan") {
+                        console.log(
+                            `Checking '${key}' filter: item value='${item[key]}', filter value='${value}'`
+                        );
+                    }
 
                     // Date field special handling
                     if (key === "ngay_phat_sinh" && item[key]) {
@@ -2764,13 +2836,13 @@ export default {
                         );
                     }
 
-                    // Default text field handling
+                    // Default text field handling - ensure case-insensitive matching
                     return (
                         item[key] &&
                         item[key]
                             .toString()
                             .toLowerCase()
-                            .includes(value.toLowerCase())
+                            .includes(value.toString().toLowerCase())
                     );
                 });
 
@@ -2837,6 +2909,19 @@ export default {
 
         // Apply filters, sorting, and pagination
         applyFiltersAndPagination(page = 1) {
+            // ตรวจสอบว่ามีข้อมูลให้กรองหรือไม่
+            if (!this.allCongnoList || this.allCongnoList.length === 0) {
+                console.warn("No data available for filtering");
+                return;
+            }
+
+            console.log("Applying filters with:", {
+                search: this.search,
+                statusFilter: this.statusFilter,
+                columnFilters: this.columnFilters,
+                selectedFilterValues: this.selectedFilterValues,
+            });
+
             // Apply filters
             const filteredData = this.applyFilters();
 
@@ -2868,6 +2953,11 @@ export default {
 
             // Update totals based on filtered data
             this.calculateTotals();
+
+            // ปรับปรุง scroll bar หลังจาก apply filter
+            this.$nextTick(() => {
+                this.updateScrollbar();
+            });
         },
 
         // Add to the methods section
@@ -2963,11 +3053,16 @@ export default {
             // Reset to first page
             this.currentPage = 1;
             this.applyFiltersAndPagination(1);
+            // ล้าง localStorage เมื่อรีเซ็ตฟิลเตอร์ทั้งหมด
+            localStorage.removeItem("congno_filter_state");
         },
         async viewDetails(item) {
             try {
                 // Show loading indicator
                 this.isLoading = true;
+
+                // บันทึกสถานะฟิลเตอร์ก่อนนำทาง
+                this.saveFilterState();
 
                 // Navigate directly to details page without permission check
                 this.$router.push(
@@ -4384,7 +4479,13 @@ export default {
             vu_thanh_toan: [],
             loai_dau_tu: [],
         };
-        this.fetchData(1, true);
+        // พยายามเรียกคืนสถานะที่บันทึกไว้ก่อน
+        const restored = this.restoreFilterState();
+
+        // ถ้าไม่สามารถเรียกคืนสถานะได้ ให้โหลดข้อมูลตามปกติ
+        if (!restored) {
+            this.fetchData(1, true);
+        }
 
         // Watch for screen size changes to toggle mobile view
         window.addEventListener("resize", () => {
