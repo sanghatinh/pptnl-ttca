@@ -265,10 +265,35 @@
                                 <thead>
                                     <tr>
                                         <!-- Trạm -->
-                                        <th>
+                                        <th @click="sortTable('tram')">
                                             Trạm
+                                            <span class="sort-icon">
+                                                <i
+                                                    class="fas"
+                                                    :class="{
+                                                        'fa-sort':
+                                                            sortField !==
+                                                            'tram',
+                                                        'fa-sort-up':
+                                                            sortField ===
+                                                                'tram' &&
+                                                            sortOrder === 'asc',
+                                                        'fa-sort-down':
+                                                            sortField ===
+                                                                'tram' &&
+                                                            sortOrder ===
+                                                                'desc',
+                                                        'sort-active':
+                                                            sortField ===
+                                                            'tram',
+                                                    }"
+                                                >
+                                                </i>
+                                            </span>
                                             <button
-                                                @click="toggleFilter('tram')"
+                                                @click.stop="
+                                                    toggleFilter('tram')
+                                                "
                                                 class="filter-btn"
                                             >
                                                 <i
@@ -425,10 +450,33 @@
                                         </th>
 
                                         <!-- Vụ đầu tư -->
-                                        <th>
+                                        <th @click="sortTable('vu_dau_tu')">
                                             Vụ đầu tư
+                                            <span class="sort-icon">
+                                                <i
+                                                    class="fas"
+                                                    :class="{
+                                                        'fa-sort':
+                                                            sortField !==
+                                                            'vu_dau_tu',
+                                                        'fa-sort-up':
+                                                            sortField ===
+                                                                'vu_dau_tu' &&
+                                                            sortOrder === 'asc',
+                                                        'fa-sort-down':
+                                                            sortField ===
+                                                                'vu_dau_tu' &&
+                                                            sortOrder ===
+                                                                'desc',
+                                                        'sort-active':
+                                                            sortField ===
+                                                            'vu_dau_tu',
+                                                    }"
+                                                >
+                                                </i>
+                                            </span>
                                             <button
-                                                @click="
+                                                @click.stop="
                                                     toggleFilter('vu_dau_tu')
                                                 "
                                                 class="filter-btn"
@@ -505,10 +553,33 @@
                                         </th>
 
                                         <!-- Category Debt -->
-                                        <th>
+                                        <th @click="sortTable('category_debt')">
                                             Category Debt
+                                            <span class="sort-icon">
+                                                <i
+                                                    class="fas"
+                                                    :class="{
+                                                        'fa-sort':
+                                                            sortField !==
+                                                            'category_debt',
+                                                        'fa-sort-up':
+                                                            sortField ===
+                                                                'category_debt' &&
+                                                            sortOrder === 'asc',
+                                                        'fa-sort-down':
+                                                            sortField ===
+                                                                'category_debt' &&
+                                                            sortOrder ===
+                                                                'desc',
+                                                        'sort-active':
+                                                            sortField ===
+                                                            'category_debt',
+                                                    }"
+                                                >
+                                                </i>
+                                            </span>
                                             <button
-                                                @click="
+                                                @click.stop="
                                                     toggleFilter(
                                                         'category_debt'
                                                     )
@@ -647,10 +718,35 @@
                                         </th>
 
                                         <!-- Ngày phát sinh -->
-                                        <th>
+                                        <th
+                                            @click="sortTable('ngay_phat_sinh')"
+                                        >
                                             Ngày phát sinh
+                                            <span class="sort-icon">
+                                                <i
+                                                    class="fas"
+                                                    :class="{
+                                                        'fa-sort':
+                                                            sortField !==
+                                                            'ngay_phat_sinh',
+                                                        'fa-sort-up':
+                                                            sortField ===
+                                                                'ngay_phat_sinh' &&
+                                                            sortOrder === 'asc',
+                                                        'fa-sort-down':
+                                                            sortField ===
+                                                                'ngay_phat_sinh' &&
+                                                            sortOrder ===
+                                                                'desc',
+                                                        'sort-active':
+                                                            sortField ===
+                                                            'ngay_phat_sinh',
+                                                    }"
+                                                >
+                                                </i>
+                                            </span>
                                             <button
-                                                @click="
+                                                @click.stop="
                                                     toggleFilter(
                                                         'ngay_phat_sinh'
                                                     )
@@ -707,10 +803,33 @@
                                         </th>
 
                                         <!-- Loại tiền -->
-                                        <th>
+                                        <th @click="sortTable('loai_tien')">
                                             Loại tiền
+                                            <span class="sort-icon">
+                                                <i
+                                                    class="fas"
+                                                    :class="{
+                                                        'fa-sort':
+                                                            sortField !==
+                                                            'loai_tien',
+                                                        'fa-sort-up':
+                                                            sortField ===
+                                                                'loai_tien' &&
+                                                            sortOrder === 'asc',
+                                                        'fa-sort-down':
+                                                            sortField ===
+                                                                'loai_tien' &&
+                                                            sortOrder ===
+                                                                'desc',
+                                                        'sort-active':
+                                                            sortField ===
+                                                            'loai_tien',
+                                                    }"
+                                                >
+                                                </i>
+                                            </span>
                                             <button
-                                                @click="
+                                                @click.stop="
                                                     toggleFilter('loai_tien')
                                                 "
                                                 class="filter-btn"
@@ -970,10 +1089,33 @@
                                         </th>
 
                                         <!-- Đã trả gốc -->
-                                        <th>
+                                        <th @click="sortTable('da_tra_goc')">
                                             Đã trả gốc
+                                            <span class="sort-icon">
+                                                <i
+                                                    class="fas"
+                                                    :class="{
+                                                        'fa-sort':
+                                                            sortField !==
+                                                            'da_tra_goc',
+                                                        'fa-sort-up':
+                                                            sortField ===
+                                                                'da_tra_goc' &&
+                                                            sortOrder === 'asc',
+                                                        'fa-sort-down':
+                                                            sortField ===
+                                                                'da_tra_goc' &&
+                                                            sortOrder ===
+                                                                'desc',
+                                                        'sort-active':
+                                                            sortField ===
+                                                            'da_tra_goc',
+                                                    }"
+                                                >
+                                                </i>
+                                            </span>
                                             <button
-                                                @click="
+                                                @click.stop="
                                                     toggleFilter('da_tra_goc')
                                                 "
                                                 class="filter-btn"
@@ -1029,10 +1171,37 @@
                                         </th>
 
                                         <!-- Số tiền còn lại -->
-                                        <th>
+                                        <th
+                                            @click="
+                                                sortTable('so_tien_con_lai')
+                                            "
+                                        >
                                             Số tiền còn lại
+                                            <span class="sort-icon">
+                                                <i
+                                                    class="fas"
+                                                    :class="{
+                                                        'fa-sort':
+                                                            sortField !==
+                                                            'so_tien_con_lai',
+                                                        'fa-sort-up':
+                                                            sortField ===
+                                                                'so_tien_con_lai' &&
+                                                            sortOrder === 'asc',
+                                                        'fa-sort-down':
+                                                            sortField ===
+                                                                'so_tien_con_lai' &&
+                                                            sortOrder ===
+                                                                'desc',
+                                                        'sort-active':
+                                                            sortField ===
+                                                            'so_tien_con_lai',
+                                                    }"
+                                                >
+                                                </i>
+                                            </span>
                                             <button
-                                                @click="
+                                                @click.stop="
                                                     toggleFilter(
                                                         'so_tien_con_lai'
                                                     )
@@ -2528,7 +2697,11 @@ export default {
             }
         },
         // Add this method
+        // Inside the methods section
         sortTable(field) {
+            // Close any open filter dropdown
+            this.activeFilter = null;
+
             // If field is already active, toggle sort order
             if (this.sortField === field) {
                 this.sortOrder = this.sortOrder === "asc" ? "desc" : "asc";
@@ -2540,6 +2713,9 @@ export default {
 
             // Apply client-side sorting
             this.applyFiltersAndPagination(this.currentPage);
+
+            // Save filter state with new sorting
+            this.saveFilterState();
         },
         getCategoryBadgeClass(category) {
             if (!category) return "badge bg-secondary text-white";
@@ -3094,14 +3270,15 @@ export default {
             this.$router.push("/login");
         },
         // Column filter methods
+        // Inside the methods section
         toggleFilter(column) {
-            // ถ้ากำลังเปิดฟิลเตอร์อยู่แล้ว ให้ปิด
+            // If the same filter is already active, close it
             if (this.activeFilter === column) {
                 this.activeFilter = null;
                 return;
             }
 
-            // ตรวจสอบข้อมูลก่อนเปิดฟิลเตอร์
+            // Check data before opening filter
             if (
                 [
                     "tram",
@@ -3121,11 +3298,10 @@ export default {
                         `No unique values found for ${column}, re-extracting`
                     );
                     this.extractSpecificUniqueValues(column);
-                } else {
                 }
             }
 
-            // เปิดฟิลเตอร์
+            // Open the filter
             this.activeFilter = column;
         },
         updateUniqueValues(column) {
@@ -4547,10 +4723,18 @@ export default {
 .table-container-wrapper {
     position: relative;
     width: 100%;
+    min-height: 550px; /* Set minimum height for the table container */
+    display: flex;
+    flex-direction: column;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    background-color: #ffffff;
 }
 
 .table-scroll-container {
     position: relative;
+    min-height: 550px; /* Minimum height for content area */
     max-height: calc(100vh - 240px);
     overflow: auto;
     border: 1px solid #e5e7eb;
@@ -4585,6 +4769,9 @@ export default {
     text-align: left;
     color: #374151;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    position: relative;
+    user-select: none;
 }
 
 /* Custom scrollbar styling to match perfect-scrollbar */
@@ -5421,5 +5608,14 @@ export default {
 }
 .text-white {
     color: #ffffff;
+}
+
+.sort-icon {
+    margin-left: 5px;
+    font-size: 0.8em;
+}
+
+.sort-active {
+    color: #10b981;
 }
 </style>

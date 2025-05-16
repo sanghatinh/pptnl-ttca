@@ -269,23 +269,38 @@
                                         </th>
 
                                         <!-- Trạm with unique dropdown filter -->
-                                        <th class="px-4 py-2">
-                                            Trạm
-                                            <button
-                                                @click="toggleFilter('station')"
-                                                class="filter-btn"
+                                        <th
+                                            class="px-4 py-2"
+                                            @click="sortTable('station')"
+                                        >
+                                            <div
+                                                class="d-flex align-items-center"
                                             >
+                                                Trạm
                                                 <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.station &&
-                                                            selectedFilterValues
-                                                                .station
-                                                                .length > 0,
-                                                    }"
+                                                    :class="
+                                                        getSortIcon('station')
+                                                    "
+                                                    class="ml-1"
                                                 ></i>
-                                            </button>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter('station')
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                selectedFilterValues.station &&
+                                                                selectedFilterValues
+                                                                    .station
+                                                                    .length > 0,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter === 'station'
@@ -394,10 +409,23 @@
                                         </th>
 
                                         <!-- Vụ đầu tư with unique dropdown filter -->
-                                        <th class="px-4 py-2">
+                                        <th
+                                            class="px-4 py-2"
+                                            @click="
+                                                sortTable('investment_project')
+                                            "
+                                        >
                                             Vụ đầu tư
+                                            <i
+                                                :class="
+                                                    getSortIcon(
+                                                        'investment_project'
+                                                    )
+                                                "
+                                                class="ml-1"
+                                            ></i>
                                             <button
-                                                @click="
+                                                @click.stop="
                                                     toggleFilter(
                                                         'investment_project'
                                                     )
@@ -474,7 +502,16 @@
                                         </th>
 
                                         <!-- Số lượng hồ sơ - no filter -->
-                                        <th class="px-4 py-2">
+                                        <th
+                                            class="px-4 py-2"
+                                            @click="sortTable('file_count')"
+                                        >
+                                            <i
+                                                :class="
+                                                    getSortIcon('file_count')
+                                                "
+                                                class="ml-1"
+                                            ></i>
                                             Số lượng hồ sơ
                                         </th>
 
@@ -559,10 +596,19 @@
                                         </th>
 
                                         <!-- Ngày lập with date filter -->
-                                        <th class="px-4 py-2">
+                                        <th
+                                            class="px-4 py-2"
+                                            @click="sortTable('created_date')"
+                                        >
                                             Ngày lập
+                                            <i
+                                                :class="
+                                                    getSortIcon('created_date')
+                                                "
+                                                class="ml-1"
+                                            ></i>
                                             <button
-                                                @click="
+                                                @click.stop="
                                                     toggleFilter('created_date')
                                                 "
                                                 class="filter-btn"
@@ -731,10 +777,19 @@
                                         </th>
 
                                         <!-- Ngày nhận with date filter -->
-                                        <th class="px-4 py-2">
+                                        <th
+                                            class="px-4 py-2"
+                                            @click="sortTable('received_date')"
+                                        >
                                             Ngày nhận
+                                            <i
+                                                :class="
+                                                    getSortIcon('received_date')
+                                                "
+                                                class="ml-1"
+                                            ></i>
                                             <button
-                                                @click="
+                                                @click.stop="
                                                     toggleFilter(
                                                         'received_date'
                                                     )
@@ -791,10 +846,19 @@
                                         </th>
 
                                         <!-- Trạng thái with unique dropdown filter -->
-                                        <th class="px-4 py-2">
+                                        <th
+                                            class="px-4 py-2"
+                                            @click="sortTable('status')"
+                                        >
                                             Trạng thái
+                                            <i
+                                                :class="getSortIcon('status')"
+                                                class="ml-1"
+                                            ></i>
                                             <button
-                                                @click="toggleFilter('status')"
+                                                @click.stop="
+                                                    toggleFilter('status')
+                                                "
                                                 class="filter-btn"
                                             >
                                                 <i
@@ -882,39 +946,41 @@
                                             />
                                         </td>
                                         <td
-                                            class="border px-4 py-2"
-                                            @click="goToEditPage(item.id)"
+                                            class="border px-4 py-2 clickable-cell"
+                                            @dblclick="goToEditPage(item.id)"
                                         >
-                                            {{ item.document_code }}
+                                            <span class="document-code">{{
+                                                item.document_code
+                                            }}</span>
                                         </td>
                                         <td
                                             class="border px-4 py-2"
-                                            @click="goToEditPage(item.id)"
+                                            @dblclick="goToEditPage(item.id)"
                                         >
                                             {{ item.station }}
                                         </td>
 
                                         <td
                                             class="border px-4 py-2"
-                                            @click="goToEditPage(item.id)"
+                                            @dblclick="goToEditPage(item.id)"
                                         >
                                             {{ item.title }}
                                         </td>
                                         <td
                                             class="border px-4 py-2"
-                                            @click="goToEditPage(item.id)"
+                                            @dblclick="goToEditPage(item.id)"
                                         >
                                             {{ item.investment_project }}
                                         </td>
                                         <td
                                             class="border px-4 py-2"
-                                            @click="goToEditPage(item.id)"
+                                            @dblclick="goToEditPage(item.id)"
                                         >
                                             {{ item.file_count }}
                                         </td>
                                         <td
                                             class="border px-4 py-2"
-                                            @click="goToEditPage(item.id)"
+                                            @dblclick="goToEditPage(item.id)"
                                         >
                                             {{ item.document_type }}
                                         </td>
@@ -994,7 +1060,7 @@
                 v-for="item in paginatedDeliveries.data"
                 :key="item.id"
                 class="card border p-4 mb-4 rounded shadow hover:shadow-green-500 transition-shadow duration-300"
-                @click="goToEditPage(item.id)"
+                @dblclick="goToEditPage(item.id)"
             >
                 <div class="flex">
                     <!-- ห้องแรก: แสดงแค่สถานะ logo -->
@@ -1016,7 +1082,9 @@
                     <div class="flex-1 justify-items-start">
                         <div class="mb-2">
                             <strong>Mã số phiếu:</strong>
-                            {{ item.document_code }}
+                            <span class="document-code">{{
+                                item.document_code
+                            }}</span>
                         </div>
                         <div class="mb-2">
                             <strong>Tiều đề:</strong> {{ item.title }}
@@ -1091,7 +1159,7 @@ export default {
             documentDeliveries: [],
             search: "",
             currentPage: 1,
-            perPage: 10,
+            perPage: 15,
             isMobile: window.innerWidth < 768,
             selectedItems: [],
             paginationClasses: {
@@ -1102,7 +1170,8 @@ export default {
                 disabled: "opacity-50 cursor-not-allowed",
             },
             ps: null, // Add this for PerfectScrollbar instance
-
+            sortColumn: null,
+            sortDirection: "asc", // 'asc' or 'desc'
             statusFilter: "all",
             statusOptions: [
                 { code: "all", name: "Tất cả trạng thái" },
@@ -1143,7 +1212,7 @@ export default {
             );
         },
         filteredDeliveries() {
-            return this.documentDeliveries.filter((item) => {
+            let filtered = this.documentDeliveries.filter((item) => {
                 // Global search (existing)
                 const matchesSearch =
                     item.document_code
@@ -1253,6 +1322,45 @@ export default {
                     matchesColumnFilters
                 );
             });
+            // Apply sorting if a sort column is specified
+            if (this.sortColumn) {
+                filtered = [...filtered].sort((a, b) => {
+                    // Get values to compare (handle nested properties like status.name)
+                    let aValue = this.sortColumn.includes(".")
+                        ? this.sortColumn
+                              .split(".")
+                              .reduce((obj, key) => obj?.[key], a)
+                        : a[this.sortColumn];
+
+                    let bValue = this.sortColumn.includes(".")
+                        ? this.sortColumn
+                              .split(".")
+                              .reduce((obj, key) => obj?.[key], b)
+                        : b[this.sortColumn];
+
+                    // Handle nulls/undefined values
+                    if (aValue === null || aValue === undefined) aValue = "";
+                    if (bValue === null || bValue === undefined) bValue = "";
+
+                    // Special handling for dates
+                    if (
+                        this.sortColumn === "created_date" ||
+                        this.sortColumn === "received_date"
+                    ) {
+                        aValue = aValue ? new Date(aValue).getTime() : 0;
+                        bValue = bValue ? new Date(bValue).getTime() : 0;
+                    }
+
+                    // Compare based on sort direction
+                    if (this.sortDirection === "asc") {
+                        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+                    } else {
+                        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+                    }
+                });
+            }
+
+            return filtered;
         },
         paginatedDeliveries() {
             const total = this.filteredDeliveries.length;
@@ -1304,6 +1412,147 @@ export default {
         },
     },
     methods: {
+        // Add these methods to the methods section of your component
+        saveFilterState() {
+            // Create a deep copy of the filter state objects to avoid reference issues
+            const filterState = {
+                search: this.search,
+                statusFilter: this.statusFilter,
+                investmentFilter: this.investmentFilter,
+                currentPage: this.currentPage,
+                // Explicitly stringify each property of columnFilters
+                columnFilters: {
+                    document_code: this.columnFilters.document_code || "",
+                    title: this.columnFilters.title || "",
+                    creator: this.columnFilters.creator || "",
+                    receiver: this.columnFilters.receiver || "",
+                    created_date: this.columnFilters.created_date || "",
+                    received_date: this.columnFilters.received_date || "",
+                },
+                // Explicitly copy each property of selectedFilterValues
+                selectedFilterValues: {
+                    station: [...(this.selectedFilterValues.station || [])],
+                    investment_project: [
+                        ...(this.selectedFilterValues.investment_project || []),
+                    ],
+                    document_type: [
+                        ...(this.selectedFilterValues.document_type || []),
+                    ],
+                    status: [...(this.selectedFilterValues.status || [])],
+                },
+                sortColumn: this.sortColumn,
+                sortDirection: this.sortDirection,
+                // Add timestamp for potential expiration functionality
+                timestamp: new Date().getTime(),
+            };
+
+            // console.log("Saving filter state:", JSON.stringify(filterState));
+            localStorage.setItem(
+                "danhsachHosoFilters",
+                JSON.stringify(filterState)
+            );
+        },
+
+        // Improved restoreFilterState method
+        restoreFilterState() {
+            const savedState = localStorage.getItem("danhsachHosoFilters");
+
+            if (savedState) {
+                try {
+                    const filterState = JSON.parse(savedState);
+                    // console.log("Restoring filter state:", filterState);
+
+                    // Restore basic filters
+                    this.search = filterState.search || "";
+                    this.statusFilter = filterState.statusFilter || "all";
+                    this.investmentFilter =
+                        filterState.investmentFilter || "all";
+                    this.currentPage = filterState.currentPage || 1;
+                    this.sortColumn = filterState.sortColumn || null;
+                    this.sortDirection = filterState.sortDirection || "asc";
+
+                    // Restore column filters - check if exists first, then iterate through properties
+                    if (filterState.columnFilters) {
+                        // Initialize columnFilters with default empty values
+                        this.columnFilters = {
+                            document_code: "",
+                            title: "",
+                            creator: "",
+                            receiver: "",
+                            created_date: "",
+                            received_date: "",
+                        };
+
+                        // Explicitly copy each property
+                        Object.keys(filterState.columnFilters).forEach(
+                            (key) => {
+                                if (key in this.columnFilters) {
+                                    this.columnFilters[key] =
+                                        filterState.columnFilters[key];
+                                }
+                            }
+                        );
+                    }
+
+                    // Restore selected filter values - check if exists first
+                    if (filterState.selectedFilterValues) {
+                        // Initialize selectedFilterValues with empty arrays
+                        this.selectedFilterValues = {
+                            station: [],
+                            investment_project: [],
+                            document_type: [],
+                            status: [],
+                        };
+
+                        // Explicitly copy each array
+                        Object.keys(filterState.selectedFilterValues).forEach(
+                            (key) => {
+                                if (
+                                    key in this.selectedFilterValues &&
+                                    Array.isArray(
+                                        filterState.selectedFilterValues[key]
+                                    )
+                                ) {
+                                    this.selectedFilterValues[key] = [
+                                        ...filterState.selectedFilterValues[
+                                            key
+                                        ],
+                                    ];
+                                }
+                            }
+                        );
+                    }
+                } catch (error) {
+                    console.error("Error restoring filter state:", error);
+                    // If restoration fails, reset filters
+                    this.resetAllFilters();
+                }
+            }
+        },
+
+        sortTable(column) {
+            // If clicking the same column, toggle direction
+            if (this.sortColumn === column) {
+                this.sortDirection =
+                    this.sortDirection === "asc" ? "desc" : "asc";
+            } else {
+                // If clicking a new column, set it as the sort column with 'asc' direction
+                this.sortColumn = column;
+                this.sortDirection = "asc";
+            }
+
+            // Reset to first page when sorting changes
+            this.currentPage = 1;
+            // ปิด active filter เมื่อมีการเรียงลำดับ
+            this.activeFilter = null;
+        },
+
+        getSortIcon(column) {
+            if (this.sortColumn !== column) return "fas fa-sort text-gray-300";
+            return this.sortDirection === "asc"
+                ? "fas fa-sort-up text-green-500"
+                : "fas fa-sort-down text-green-500";
+        },
         // Add these new methods for PerfectScrollbar
         initPerfectScrollbar() {
             // Initialize PerfectScrollbar after the DOM is updated
@@ -1467,6 +1716,8 @@ export default {
 
         async fetchData() {
             try {
+                // Log filter state when fetching data
+
                 const response = await axios.get("/api/document-deliveries", {
                     params: {
                         search: this.search,
@@ -1481,6 +1732,7 @@ export default {
                         per_page: 1000,
                         role: this.userRole,
                         station: this.userStation,
+                        // You could add additional filter parameters here if your API supports it
                     },
                     headers: {
                         Authorization: "Bearer " + this.store.getToken,
@@ -1488,7 +1740,7 @@ export default {
                 });
 
                 this.documentDeliveries = response.data.data;
-                this.extractInvestmentProjects(); // Extract unique investment projects
+                this.extractInvestmentProjects();
             } catch (error) {
                 console.error(error);
                 if (error.response?.status === 401) {
@@ -1545,6 +1797,9 @@ export default {
         },
         async goToEditPage(id) {
             try {
+                // Save filter state before navigating
+                this.saveFilterState();
+
                 // Set the loading state to true
                 this.isLoading = true;
 
@@ -1569,19 +1824,16 @@ export default {
                     this.$router.push("/unauthorized");
                 }
             } catch (error) {
+                // Error handling code (unchanged)
                 console.error("Error checking document access:", error);
-                // Hide loading indicator
                 this.isLoading = false;
 
-                // Handle error cases
                 if (error.response?.status === 401) {
-                    // Session expired
                     localStorage.removeItem("web_token");
                     localStorage.removeItem("web_user");
                     this.store.logout();
                     this.$router.push("/login");
                 } else {
-                    // Other errors
                     Swal.fire({
                         title: "Lỗi",
                         text: "Không thể kiểm tra quyền truy cập. Vui lòng thử lại sau.",
@@ -1592,7 +1844,6 @@ export default {
                             confirmButton: "btn btn-success px-4",
                         },
                     });
-                    // Navigate to Unauthorized page for safety
                     this.$router.push("/unauthorized");
                 }
             }
@@ -1733,6 +1984,12 @@ export default {
 
             // Reset to first page
             this.currentPage = 1;
+            // Reset sort
+            this.sortColumn = null;
+            this.sortDirection = "asc";
+
+            // Clear saved filter state from localStorage
+            localStorage.removeItem("danhsachHosoFilters");
         },
 
         formatDateForComparison(date) {
@@ -1744,17 +2001,69 @@ export default {
             return `${year}-${month}-${day}`;
         },
     },
-    mounted() {
-        this.fetchUserInfo();
-        this.fetchData();
-        this.initPerfectScrollbar();
+    // Add the navigation guards here, between methods and created()
+    beforeRouteLeave(to, from, next) {
+        // Save filter state before leaving the route
+        this.saveFilterState();
+        next();
+    },
 
-        // Initialize unique values for dropdown filters
-        // Add after fetchData() completes
-        this.updateUniqueValues("station");
-        this.updateUniqueValues("investment_project");
-        this.updateUniqueValues("document_type");
-        this.updateUniqueValues("status");
+    beforeRouteEnter(to, from, next) {
+        next((vm) => {
+            // Component instance is now available as 'vm'
+            // Always try to restore filter state when entering the route
+            vm.restoreFilterState();
+
+            // Apply filters after restoration with a slight delay
+            setTimeout(() => {
+                // Refresh data with restored filters
+                vm.fetchData();
+            }, 200);
+        });
+    },
+    created() {
+        // Initialize the filter objects first to avoid undefined errors
+        this.columnFilters = {
+            document_code: "",
+            title: "",
+            creator: "",
+            receiver: "",
+            created_date: "",
+            received_date: "",
+        };
+
+        this.selectedFilterValues = {
+            station: [],
+            investment_project: [],
+            document_type: [],
+            status: [],
+        };
+        // This runs before the component is mounted
+        this.restoreFilterState();
+        // Log to verify restoration worked
+    },
+    mounted() {
+        // First restore filter state
+        this.restoreFilterState();
+
+        // Then fetch user info and data with the restored filters
+        this.fetchUserInfo();
+
+        // Slight delay to ensure filters are fully restored before fetching data
+        setTimeout(() => {
+            this.fetchData();
+
+            this.$nextTick(() => {
+                // Initialize after the DOM is updated
+                this.initPerfectScrollbar();
+
+                // Initialize unique values for dropdown filters
+                this.updateUniqueValues("station");
+                this.updateUniqueValues("investment_project");
+                this.updateUniqueValues("document_type");
+                this.updateUniqueValues("status");
+            });
+        }, 100);
 
         window.addEventListener("resize", this.handleResize);
     },
@@ -1770,6 +2079,30 @@ export default {
         }
     },
     watch: {
+        sortColumn() {
+            this.updateScrollbar();
+        },
+        sortDirection() {
+            this.updateScrollbar();
+        },
+        // Add deep watcher for column filters
+        columnFilters: {
+            handler() {
+                this.currentPage = 1;
+                // Don't fetch data immediately as it can cause too many requests
+                // Just save the state
+                this.saveFilterState();
+            },
+            deep: true,
+        },
+        // Deep watcher for selected filter values
+        selectedFilterValues: {
+            handler() {
+                this.currentPage = 1;
+                this.saveFilterState();
+            },
+            deep: true,
+        },
         statusFilter() {
             this.currentPage = 1; // Reset to first page when filter changes
         },
@@ -1886,6 +2219,14 @@ export default {
     border: 1px solid #e5e7eb;
     padding: 0.75rem;
     vertical-align: top;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+.table-auto th .d-flex {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 .pagination-card {
     padding: 0.5rem;
@@ -2150,14 +2491,20 @@ input[type="checkbox"] {
 .table-container-wrapper {
     position: relative;
     width: 100%;
+    margin-bottom: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .table-scroll-container {
     position: relative;
+    min-height: 400px; /* Minimum height added */
     max-height: calc(100vh - 240px);
     overflow: auto;
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
+    background-color: #ffffff;
 }
 
 .table-auto {
@@ -2259,4 +2606,41 @@ input[type="checkbox"] {
         max-height: calc(100vh - 300px);
     }
 }
+
+/* แก้ไขการซ้อนทับของไอคอน */
+.table-auto th i.fa-sort,
+.table-auto th i.fa-sort-up,
+.table-auto th i.fa-sort-down {
+    position: relative;
+    z-index: 90;
+}
+
+.filter-btn {
+    position: relative;
+    z-index: 100;
+}
+
+/* Add this to your existing <style> section */
+.document-code {
+    color: #3490dc; /* Blue color */
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.document-code:hover {
+    color: #2779bd; /* Darker blue on hover */
+    text-decoration: underline;
+}
+
+/* Add hover styling for the entire cell */
+.clickable-cell {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.clickable-cell:hover {
+    background-color: #ebf5ff; /* Light blue background on hover */
+}
 </style>
+,
