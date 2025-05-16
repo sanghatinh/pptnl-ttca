@@ -4723,7 +4723,7 @@ export default {
 .table-container-wrapper {
     position: relative;
     width: 100%;
-    min-height: 550px; /* Set minimum height for the table container */
+    min-height: 410px; /* Set minimum height for the table container */
     display: flex;
     flex-direction: column;
     border-radius: 0.5rem;
@@ -4734,7 +4734,7 @@ export default {
 
 .table-scroll-container {
     position: relative;
-    min-height: 550px; /* Minimum height for content area */
+    min-height: 410px; /* Minimum height for content area */
     max-height: calc(100vh - 240px);
     overflow: auto;
     border: 1px solid #e5e7eb;

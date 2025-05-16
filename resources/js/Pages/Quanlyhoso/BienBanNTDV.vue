@@ -2262,6 +2262,44 @@ export default {
         },
     },
     methods: {
+        saveFilterState() {
+            // เก็บสถานะทั้งหมดของฟิลเตอร์ใน Local Storage
+            const filterState = {
+                search: this.search,
+                statusFilter: this.statusFilter,
+                investmentFilter: this.investmentFilter,
+                deliveryStatusFilter: this.deliveryStatusFilter,
+                columnFilters: this.columnFilters,
+                selectedFilterValues: this.selectedFilterValues,
+                currentPage: this.currentPage,
+                activeFilter: this.activeFilter,
+            };
+            localStorage.setItem(
+                "bienban_filter_state",
+                JSON.stringify(filterState)
+            );
+        },
+
+        loadFilterState() {
+            // โหลดสถานะฟิลเตอร์จาก Local Storage
+            const filterState = localStorage.getItem("bienban_filter_state");
+            if (filterState) {
+                const parsedState = JSON.parse(filterState);
+                this.search = parsedState.search || "";
+                this.statusFilter = parsedState.statusFilter || "all";
+                this.investmentFilter = parsedState.investmentFilter || "all";
+                this.deliveryStatusFilter =
+                    parsedState.deliveryStatusFilter || "all";
+                this.columnFilters =
+                    parsedState.columnFilters || this.columnFilters;
+                this.selectedFilterValues =
+                    parsedState.selectedFilterValues ||
+                    this.selectedFilterValues;
+                this.currentPage = parsedState.currentPage || 1;
+                this.activeFilter = null; // ไม่โหลด activeFilter เพื่อป้องกันปัญหากับ dropdown
+            }
+        },
+
         // Add these new methods for PerfectScrollbar
         initPerfectScrollbar() {
             this.$nextTick(() => {
@@ -2516,6 +2554,9 @@ export default {
         async viewDetails(item) {
             this.isLoading = true;
             try {
+                // บันทึกสถานะฟิลเตอร์ก่อนนำทางไปหน้ารายละเอียด
+                this.saveFilterState();
+
                 // ตรวจสอบสิทธิ์การเข้าถึงก่อนการนำทาง
                 const response = await axios.get(
                     `/api/bien-ban-nghiemthu/${item.ma_nghiem_thu}/check-access`,
@@ -2642,6 +2683,8 @@ export default {
             this.deliveryStatusFilter = "all";
 
             this.currentPage = 1;
+            // ลบสถานะฟิลเตอร์จาก Local Storage
+            localStorage.removeItem("bienban_filter_state");
         },
 
         applyFilter(column) {
@@ -3910,8 +3953,10 @@ export default {
         },
     },
     mounted() {
+        // โหลดสถานะฟิลเตอร์จาก Local Storage ก่อน
+        this.loadFilterState();
         this.fetchUserInfo();
-        this.fetchBienBanData();
+        // this.fetchBienBanData();
         window.addEventListener("resize", this.checkScreenSize);
         // Initialize PerfectScrollbar after a short delay to ensure DOM is fully rendered
         setTimeout(() => {
@@ -3935,6 +3980,14 @@ export default {
                 console.error("Failed to load Bootstrap:", err);
             });
         this.fetchInvestmentProjects();
+    },
+
+    created() {
+        // ตรวจสอบ route ที่มา (เฉพาะในกรณีที่มีการใช้ route meta)
+        const fromRoute = this.$route.query.from;
+        if (fromRoute === "detail") {
+            this.loadFilterState();
+        }
     },
     beforeUnmount() {
         if (this.ps) {
@@ -4646,6 +4699,7 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     overflow: auto;
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
+    min-height: 410px; /* Add minimum height */
 }
 
 .table-auto {

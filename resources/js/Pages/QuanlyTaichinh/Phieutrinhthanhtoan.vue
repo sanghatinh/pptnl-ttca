@@ -1576,6 +1576,51 @@ export default {
         this.fetchInvestmentProjects();
     },
     methods: {
+        // บันทึกสถานะฟิลเตอร์ลง LocalStorage
+        saveFilterState() {
+            const filterState = {
+                search: this.search,
+                statusFilter: this.statusFilter,
+                investmentFilter: this.investmentFilter,
+                currentPage: this.currentPage,
+                columnFilters: this.columnFilters,
+                selectedFilterValues: this.selectedFilterValues,
+                activeFilter: this.activeFilter,
+            };
+            localStorage.setItem(
+                "payment_request_filter_state",
+                JSON.stringify(filterState)
+            );
+        },
+
+        // เรียกคืนสถานะฟิลเตอร์จาก LocalStorage
+        restoreFilterState() {
+            const savedState = localStorage.getItem(
+                "payment_request_filter_state"
+            );
+            if (savedState) {
+                try {
+                    const filterState = JSON.parse(savedState);
+                    this.search = filterState.search || "";
+                    this.statusFilter = filterState.statusFilter || "all";
+                    this.investmentFilter =
+                        filterState.investmentFilter || "all";
+                    this.currentPage = filterState.currentPage || 1;
+                    this.columnFilters = filterState.columnFilters || {};
+                    this.selectedFilterValues =
+                        filterState.selectedFilterValues || {
+                            vuDauTu: [],
+                            trangThaiThanhToan: [],
+                        };
+                    this.activeFilter = filterState.activeFilter || null;
+                } catch (error) {
+                    console.error("Error restoring filter state:", error);
+                    // Reset to defaults if error
+                    this.resetAllFilters();
+                }
+            }
+        },
+
         // Add this method to fix the error
 
         isStatusSelected(status) {
@@ -1760,7 +1805,7 @@ export default {
                 this.columnFilters[column] = "";
             }
             this.currentPage = 1;
-            this.currentPage = 1;
+            this.saveFilterState(); // บันทึกสถานะหลังจากรีเซ็ตตัวกรอง
         },
 
         // Add authentication error handler
@@ -1814,6 +1859,8 @@ export default {
         },
 
         viewDetails(item) {
+            // บันทึกสถานะฟิลเตอร์ก่อนนำทางไป
+            this.saveFilterState();
             // Navigate to details page
             this.$router.push(
                 `/Details_Phieutrinhthanhtoan/${item.maTrinhThanhToan}`
@@ -1926,6 +1973,8 @@ export default {
         },
 
         resetAllFilters() {
+            // ล้าง LocalStorage เมื่อมีการรีเซ็ตฟิลเตอร์
+            localStorage.removeItem("payment_request_filter_state");
             this.search = "";
             this.statusFilter = "all";
             this.investmentFilter = "all";
@@ -2302,8 +2351,8 @@ export default {
         search() {
             this.currentPage = 1;
             this.updateScrollbar();
+            this.saveFilterState(); // บันทึกสถานะเมื่อมีการเปลี่ยนแปลง
         },
-        // Add this to your existing watchers
         statusFilter() {
             this.currentPage = 1;
 
@@ -2312,6 +2361,26 @@ export default {
             } else {
                 this.columnFilters.trangThaiThanhToan = "";
             }
+            this.saveFilterState(); // บันทึกสถานะเมื่อมีการเปลี่ยนแปลง
+        },
+        investmentFilter() {
+            this.applyInvestmentFilter();
+            this.saveFilterState(); // บันทึกสถานะเมื่อมีการเปลี่ยนแปลง
+        },
+        columnFilters: {
+            handler() {
+                this.saveFilterState(); // บันทึกสถานะเมื่อฟิลเตอร์คอลัมน์เปลี่ยนแปลง
+            },
+            deep: true,
+        },
+        selectedFilterValues: {
+            handler() {
+                this.saveFilterState(); // บันทึกสถานะเมื่อค่าฟิลเตอร์ที่เลือกเปลี่ยนแปลง
+            },
+            deep: true,
+        },
+        currentPage() {
+            this.saveFilterState(); // บันทึกสถานะเมื่อเปลี่ยนหน้า
         },
         paginatedItems: {
             handler() {
@@ -2328,7 +2397,18 @@ export default {
         // Add this to existing watch properties
         investmentFilter() {
             this.applyInvestmentFilter();
+            this.activeFilter = null;
+            this.currentPage = 1;
+            this.saveFilterState(); // บันทึกสถานะหลังจากใช้ตัวกรอง
         },
+    },
+    created() {
+        // เรียกคืนสถานะฟิลเตอร์ก่อนเรียกข้อมูล
+        this.restoreFilterState();
+
+        // เรียกข้อมูลหลังจากเรียกคืนสถานะ
+        this.fetchPaymentRequests();
+        this.fetchInvestmentProjects();
     },
 
     mounted() {
@@ -2338,6 +2418,15 @@ export default {
         // Initialize PerfectScrollbar
         this.initPerfectScrollbar();
         this.fetchInvestmentProjects(); // Add this line
+        // อัปเดตสถานะการใช้งานตามฟิลเตอร์ที่เรียกคืน
+        if (this.investmentFilter !== "all") {
+            this.applyInvestmentFilter();
+        }
+
+        // ตรวจสอบว่าควรใช้การค้นหาหรือไม่
+        if (this.search !== "") {
+            this.currentPage = 1;
+        }
     },
 
     updated() {
@@ -2619,10 +2708,11 @@ export default {
 
 .table-scroll-container {
     position: relative;
-    overflow-x: auto;
-    overflow-y: auto;
-    max-height: calc(100vh - 250px);
-    width: 100%;
+    max-height: calc(100vh - 240px);
+    min-height: 410px; /* Added minimum height */
+    overflow: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
 }
 
 .desktop-row {

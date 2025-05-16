@@ -174,24 +174,40 @@
                                             </div>
                                         </th>
                                         <th>
-                                            Vụ đầu tư
-                                            <button
-                                                @click="
-                                                    toggleFilter('vu_dau_tu')
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.vu_dau_tu &&
-                                                            selectedFilterValues
-                                                                .vu_dau_tu
-                                                                .length > 0,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="th-title"
+                                                    @click="
+                                                        toggleSort('vu_dau_tu')
+                                                    "
+                                                >
+                                                    Vụ đầu tư
+                                                    <span
+                                                        class="sort-indicator"
+                                                        >{{
+                                                            getSortIndicator(
+                                                                "vu_dau_tu"
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'vu_dau_tu'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.vu_dau_tu,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter === 'vu_dau_tu'
@@ -249,26 +265,42 @@
                                             </div>
                                         </th>
                                         <th>
-                                            Loại thanh toán
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'loai_thanh_toan'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.loai_thanh_toan &&
-                                                            selectedFilterValues
-                                                                .loai_thanh_toan
-                                                                .length > 0,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="th-title"
+                                                    @click="
+                                                        toggleSort(
+                                                            'loai_thanh_toan'
+                                                        )
+                                                    "
+                                                >
+                                                    Loại thanh toán
+                                                    <span
+                                                        class="sort-indicator"
+                                                        >{{
+                                                            getSortIndicator(
+                                                                "loai_thanh_toan"
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'loai_thanh_toan'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.loai_thanh_toan,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -327,14 +359,27 @@
                                             </div>
                                         </th>
                                         <th>
-                                            <div
-                                                class="flex items-center justify-between"
-                                            >
-                                                <span
-                                                    >Trạng thái thanh toán</span
-                                                >
-                                                <button
+                                            <div class="th-content">
+                                                <div
+                                                    class="th-title"
                                                     @click="
+                                                        toggleSort(
+                                                            'trang_thai_thanh_toan'
+                                                        )
+                                                    "
+                                                >
+                                                    Trạng thái thanh toán
+                                                    <span
+                                                        class="sort-indicator"
+                                                        >{{
+                                                            getSortIndicator(
+                                                                "trang_thai_thanh_toan"
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </div>
+                                                <button
+                                                    @click.stop="
                                                         toggleFilter(
                                                             'trang_thai_thanh_toan'
                                                         )
@@ -345,10 +390,7 @@
                                                         class="fas fa-filter"
                                                         :class="{
                                                             'text-green-500':
-                                                                selectedFilterValues.trang_thai_thanh_toan &&
-                                                                selectedFilterValues
-                                                                    .trang_thai_thanh_toan
-                                                                    .length > 0,
+                                                                columnFilters.trang_thai_thanh_toan,
                                                         }"
                                                     ></i>
                                                 </button>
@@ -415,23 +457,42 @@
                                             </div>
                                         </th>
                                         <th>
-                                            Ngày thanh toán
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'ngay_thanh_toan'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.ngay_thanh_toan,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="th-title"
+                                                    @click="
+                                                        toggleSort(
+                                                            'ngay_thanh_toan'
+                                                        )
+                                                    "
+                                                >
+                                                    Ngày thanh toán
+                                                    <span
+                                                        class="sort-indicator"
+                                                        >{{
+                                                            getSortIndicator(
+                                                                "ngay_thanh_toan"
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'ngay_thanh_toan'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.ngay_thanh_toan,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -708,27 +769,151 @@
                                                 </div>
                                             </div>
                                         </th>
-                                        <th>Tổng tiền</th>
-                                        <th>Tổng tiền tạm giữ</th>
-                                        <th>Tổng tiền khấu trừ</th>
-                                        <th>Tổng tiền lãi suất</th>
-                                        <th>Tổng tiền thanh toán còn lại</th>
                                         <th>
-                                            Số tờ trình
-                                            <button
-                                                @click="
-                                                    toggleFilter('so_to_trinh')
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.so_to_trinh,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="th-title"
+                                                    @click="
+                                                        toggleSort('tong_tien')
+                                                    "
+                                                >
+                                                    Tổng tiền
+                                                    <span
+                                                        class="sort-indicator"
+                                                        >{{
+                                                            getSortIndicator(
+                                                                "tong_tien"
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            <div class="th-content">
+                                                <div
+                                                    class="th-title"
+                                                    @click="
+                                                        toggleSort(
+                                                            'tong_tien_tam_giu'
+                                                        )
+                                                    "
+                                                >
+                                                    Tổng tiền tạm giữ
+                                                    <span
+                                                        class="sort-indicator"
+                                                        >{{
+                                                            getSortIndicator(
+                                                                "tong_tien_tam_giu"
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            <div class="th-content">
+                                                <div
+                                                    class="th-title"
+                                                    @click="
+                                                        toggleSort(
+                                                            'tong_tien_khau_tru'
+                                                        )
+                                                    "
+                                                >
+                                                    Tổng tiền khấu trừ
+                                                    <span
+                                                        class="sort-indicator"
+                                                        >{{
+                                                            getSortIndicator(
+                                                                "tong_tien_khau_tru"
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            <div class="th-content">
+                                                <div
+                                                    class="th-title"
+                                                    @click="
+                                                        toggleSort(
+                                                            'tong_tien_lai_suat'
+                                                        )
+                                                    "
+                                                >
+                                                    Tổng tiền lãi suất
+                                                    <span
+                                                        class="sort-indicator"
+                                                        >{{
+                                                            getSortIndicator(
+                                                                "tong_tien_lai_suat"
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            <div class="th-content">
+                                                <div
+                                                    class="th-title"
+                                                    @click="
+                                                        toggleSort(
+                                                            'tong_tien_thanh_toan_con_lai'
+                                                        )
+                                                    "
+                                                >
+                                                    Tổng tiền thanh toán còn lại
+                                                    <span
+                                                        class="sort-indicator"
+                                                        >{{
+                                                            getSortIndicator(
+                                                                "tong_tien_thanh_toan_con_lai"
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            <div class="th-content">
+                                                <div
+                                                    class="th-title"
+                                                    @click="
+                                                        toggleSort(
+                                                            'so_to_trinh'
+                                                        )
+                                                    "
+                                                >
+                                                    Số tờ trình
+                                                    <span
+                                                        class="sort-indicator"
+                                                        >{{
+                                                            getSortIndicator(
+                                                                "so_to_trinh"
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'so_to_trinh'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.so_to_trinh,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -771,23 +956,43 @@
                                             </div>
                                         </th>
                                         <th>
-                                            Đợt thanh toán
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'dot_thanh_toan'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.dot_thanh_toan,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="th-title"
+                                                    @click="
+                                                        toggleSort(
+                                                            'dot_thanh_toan'
+                                                        )
+                                                    "
+                                                >
+                                                    Đợt thanh toán
+                                                    <span
+                                                        class="sort-indicator"
+                                                        >{{
+                                                            getSortIndicator(
+                                                                "dot_thanh_toan"
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'dot_thanh_toan'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.dot_thanh_toan,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
+
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1002,7 +1207,7 @@
                         </div>
                         <div class="mb-2">
                             <strong>Tổng tiền khấu trừ:</strong>
-                            {{ formatCurrency(item.tong_tien_tam_giu) }}
+                            {{ formatCurrency(item.tong_tien_khau_tru) }}
                         </div>
                         <div class="mb-2">
                             <strong>Tổng tiền lãi suất:</strong>
@@ -1130,6 +1335,8 @@ export default {
                 so_to_trinh: "",
                 dot_thanh_toan: "",
             },
+            sortColumn: null,
+            sortDirection: "asc", // 'asc' or 'desc'
             activeFilter: null,
             selectedFile: null,
             uploadProgress: 0,
@@ -1184,7 +1391,7 @@ export default {
             };
         },
         filteredItems() {
-            return this.phieuList.filter((item) => {
+            let items = this.phieuList.filter((item) => {
                 // Global search
                 const matchesSearch =
                     this.search === "" ||
@@ -1250,6 +1457,41 @@ export default {
                     matchesSelectedFilters
                 );
             });
+            // Apply sorting if a sort column is selected
+            if (this.sortColumn) {
+                items = [...items].sort((a, b) => {
+                    const valueA = a[this.sortColumn];
+                    const valueB = b[this.sortColumn];
+
+                    // Handle numeric values
+                    if (!isNaN(valueA) && !isNaN(valueB)) {
+                        return this.sortDirection === "asc"
+                            ? Number(valueA) - Number(valueB)
+                            : Number(valueB) - Number(valueA);
+                    }
+
+                    // Handle date values
+                    if (this.sortColumn === "ngay_thanh_toan") {
+                        const dateA = valueA ? new Date(valueA).getTime() : 0;
+                        const dateB = valueB ? new Date(valueB).getTime() : 0;
+                        return this.sortDirection === "asc"
+                            ? dateA - dateB
+                            : dateB - dateA;
+                    }
+
+                    // Handle strings (case-insensitive)
+                    const strA = valueA ? valueA.toString().toLowerCase() : "";
+                    const strB = valueB ? valueB.toString().toLowerCase() : "";
+
+                    if (this.sortDirection === "asc") {
+                        return strA.localeCompare(strB);
+                    } else {
+                        return strB.localeCompare(strA);
+                    }
+                });
+            }
+
+            return items;
         },
         paginatedItems() {
             const page = this.currentPage || 1;
@@ -1277,6 +1519,48 @@ export default {
         },
     },
     methods: {
+        toggleSort(column) {
+            // If clicking on the same column, toggle direction
+            if (this.sortColumn === column) {
+                this.sortDirection =
+                    this.sortDirection === "asc" ? "desc" : "asc";
+            } else {
+                // New column, set to ascending by default
+                this.sortColumn = column;
+                this.sortDirection = "asc";
+            }
+        },
+        getSortIndicator(column) {
+            if (this.sortColumn !== column) return "";
+            return this.sortDirection === "asc" ? "↑" : "↓";
+        },
+        // Save state to localStorage before navigating to detail
+        saveFilterState() {
+            const filterState = {
+                search: this.search,
+                statusFilter: this.statusFilter,
+                columnFilters: this.columnFilters,
+                selectedFilterValues: this.selectedFilterValues,
+                currentPage: this.currentPage,
+            };
+            localStorage.setItem(
+                "phieuDichvu_filterState",
+                JSON.stringify(filterState)
+            );
+        },
+
+        // Load state from localStorage when mounting the component
+        loadFilterState() {
+            const savedState = localStorage.getItem("phieuDichvu_filterState");
+            if (savedState) {
+                const filterState = JSON.parse(savedState);
+                this.search = filterState.search;
+                this.statusFilter = filterState.statusFilter;
+                this.columnFilters = filterState.columnFilters;
+                this.selectedFilterValues = filterState.selectedFilterValues;
+                this.currentPage = filterState.currentPage;
+            }
+        },
         formatDate(date) {
             if (!date) return "";
             const d = new Date(date);
@@ -1337,7 +1621,12 @@ export default {
 
             return links;
         },
-        async fetchPhieuData(page = 1) {
+        async fetchPhieuData(page = null) {
+            // If page is not provided, use the current page (for when returning from details)
+            if (page === null) {
+                page = this.currentPage || 1;
+            }
+
             this.isLoading = true;
             try {
                 const params = {
@@ -1355,6 +1644,17 @@ export default {
                     }
                 });
 
+                // Add selected filter values for dropdown filters
+                Object.keys(this.selectedFilterValues).forEach((key) => {
+                    if (
+                        this.selectedFilterValues[key] &&
+                        this.selectedFilterValues[key].length > 0
+                    ) {
+                        params[`filter_${key}`] =
+                            this.selectedFilterValues[key].join(",");
+                    }
+                });
+
                 const response = await axios.get(
                     "/api/tai-chinh/phieu-de-nghi-thanh-toan-dv",
                     {
@@ -1369,12 +1669,16 @@ export default {
 
                 if (response.data && response.data.success) {
                     this.phieuList = response.data.data;
-                    this.currentPage = response.data.pagination.current_page;
+                    // Only update currentPage if we explicitly passed a page number
+                    if (page !== null) {
+                        this.currentPage =
+                            response.data.pagination.current_page;
+                    }
                     this.totalPages = response.data.pagination.last_page;
                     this.totalRecords = response.data.pagination.total;
 
                     // Store the entire collection for operations that need all data
-                    if (page === 1) {
+                    if (page === 1 || this.allPhieuList.length === 0) {
                         this.allPhieuList = [...this.phieuList];
                     }
 
@@ -1384,7 +1688,15 @@ export default {
                             ...this.uniqueValues,
                             ...response.data.unique_filters,
                         };
+                    } else {
+                        // If server doesn't provide unique values, extract them from data
+                        this.updateAllUniqueValues();
                     }
+
+                    // Update scrollbar after data is loaded
+                    this.$nextTick(() => {
+                        this.updateScrollbar();
+                    });
                 } else {
                     console.error("Failed to fetch payment request data");
                     Swal.fire({
@@ -1408,6 +1720,26 @@ export default {
                 this.isLoading = false;
             }
         },
+
+        // Add helper method to update all unique values
+        updateAllUniqueValues() {
+            // Update unique values for all dropdown filters
+            const dropdownColumns = [
+                "vu_dau_tu",
+                "loai_thanh_toan",
+                "trang_thai_thanh_toan",
+            ];
+
+            dropdownColumns.forEach((column) => {
+                const uniqueSet = new Set();
+                this.phieuList.forEach((item) => {
+                    if (item[column]) {
+                        uniqueSet.add(item[column]);
+                    }
+                });
+                this.uniqueValues[column] = Array.from(uniqueSet).sort();
+            });
+        },
         resetAllFilters() {
             // Reset global search
             this.search = "";
@@ -1430,11 +1762,15 @@ export default {
 
             // Reset to first page
             this.currentPage = 1;
+            // Clear saved filter state in localStorage
+            localStorage.removeItem("phieuDichvu_filterState");
             this.fetchPhieuData(1);
         },
         async viewDetails(item) {
             try {
                 this.isLoading = true;
+                // Save filter state before navigating
+                this.saveFilterState();
                 // Navigate to detail page
                 this.$router.push({
                     name: "Details_Phieudenghithanhtoandichvu",
@@ -1771,6 +2107,8 @@ export default {
         },
     },
     mounted() {
+        // Load saved filter state if available
+        this.loadFilterState();
         this.fetchPhieuData();
 
         // Add PerfectScrollbar initialization
@@ -1835,6 +2173,7 @@ export default {
 .table-scroll-container {
     position: relative;
     max-height: calc(100vh - 240px);
+    min-height: 410px; /* Add this line to set the minimum height */
     overflow: auto;
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
@@ -2205,5 +2544,48 @@ td:nth-child(4) {
         justify-content: center;
         font-size: 12px;
     }
+}
+/* Table header styling for sorting */
+.th-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.th-title {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    flex-grow: 1;
+    padding-right: 8px;
+}
+
+.th-title:hover {
+    color: #198754;
+}
+
+.sort-indicator {
+    margin-left: 4px;
+    font-weight: bold;
+}
+
+/* Ensure filter button remains separate */
+/* .filter-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+} */
+
+.filter-btn:hover {
+    color: #198754;
 }
 </style>

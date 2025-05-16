@@ -16,14 +16,35 @@
                         class="form-select status-select"
                     >
                         <option
-                            v-for="option in statusOptions"
+                            v-for="option in statusOptionsWithCount"
                             :key="option.code"
                             :value="option.code"
                         >
-                            {{ option.name }}
+                            {{ option.name }} ({{ option.count }})
                         </option>
                     </select>
                 </div>
+                <div class="filter-section">
+                    <div class="relative">
+                        <select
+                            v-model="selectedFilterValues.vu_dau_tu"
+                            class="form-select status-select w-full"
+                            @change="applyFilter('vu_dau_tu')"
+                        >
+                            <option value="">Tất cả</option>
+                            <option
+                                v-for="(
+                                    option, index
+                                ) in uniqueValues.vu_dau_tu"
+                                :key="index"
+                                :value="option"
+                            >
+                                {{ option }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
                 <!-- Actions dropdown menu -->
                 <div class="actions-menu">
                     <div class="dropdown">
@@ -1677,11 +1698,7 @@ export default {
             perPage: 50,
             ps: null,
             statusOptions: [
-                { code: "all", name: "Tất cả" },
-                { code: "active", name: "Đang nợ" },
-                { code: "paid", name: "Đã thanh toán" },
-                { code: "overdue", name: "Quá hạn" },
-                { code: "cancelled", name: "Đã hủy" },
+                { code: "all", name: "Tất cả" }, // Keep "All" option as default
             ],
             paginationClasses: {
                 ul: "flex list-none pagination",
@@ -1751,6 +1768,262 @@ export default {
         };
     },
     computed: {
+        statusOptionsWithCount() {
+            // กรองรายการตามการค้นหาและฟิลเตอร์คอลัมน์อื่นๆ ทั้งหมด ยกเว้นฟิลเตอร์ category_debt
+            const baseFilteredItems = this.phieuList.filter((item) => {
+                // Apply global search
+                const matchesSearch =
+                    (item.ma_so_phieu &&
+                        item.ma_so_phieu
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.invoice_number &&
+                        item.invoice_number
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.khach_hang &&
+                        item.khach_hang
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.khach_hang_ca_nhan &&
+                        item.khach_hang_ca_nhan
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.khach_hang_doanh_nghiep &&
+                        item.khach_hang_doanh_nghiep
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.ma_khach_hang_ca_nhan &&
+                        item.ma_khach_hang_ca_nhan
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.ma_khach_hang_doanh_nghiep &&
+                        item.ma_khach_hang_doanh_nghiep
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.so_tro_trinh &&
+                        item.so_tro_trinh
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase()));
+
+                // Apply all column filters except category_debt (which is our status filter)
+                const matchesColumnFilters =
+                    // Mã số phiếu
+                    (!this.columnFilters.ma_so_phieu ||
+                        (item.ma_so_phieu &&
+                            item.ma_so_phieu
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.ma_so_phieu.toLowerCase()
+                                ))) &&
+                    // Mã số phiếu phân bổ
+                    (!this.columnFilters.ma_so_phieu_phan_bo ||
+                        (item.ma_so_phieu_phan_bo &&
+                            item.ma_so_phieu_phan_bo
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.ma_so_phieu_phan_bo.toLowerCase()
+                                ))) &&
+                    // Phân bổ đầu tư
+                    (!this.columnFilters.phan_bo_dau_tu ||
+                        (item.phan_bo_dau_tu &&
+                            item.phan_bo_dau_tu
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.phan_bo_dau_tu.toLowerCase()
+                                ))) &&
+                    // Số phiếu phân bổ
+                    (!this.columnFilters.so_phieu_phan_bo_dau_tu ||
+                        (item.so_phieu_phan_bo_dau_tu &&
+                            item.so_phieu_phan_bo_dau_tu
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.so_phieu_phan_bo_dau_tu.toLowerCase()
+                                ))) &&
+                    // Invoice Number
+                    (!this.columnFilters.invoice_number ||
+                        (item.invoice_number &&
+                            item.invoice_number
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.invoice_number.toLowerCase()
+                                ))) &&
+                    // Đã trả gốc
+                    (!this.columnFilters.da_tra_goc ||
+                        (item.da_tra_goc !== undefined &&
+                            item.da_tra_goc
+                                .toString()
+                                .includes(this.columnFilters.da_tra_goc))) &&
+                    // Ngày vay
+                    (!this.columnFilters.ngay_vay ||
+                        (item.ngay_vay &&
+                            this.formatDateForComparison(item.ngay_vay) ===
+                                this.formatDateForComparison(
+                                    this.columnFilters.ngay_vay
+                                ))) &&
+                    // Ngày trả
+                    (!this.columnFilters.ngay_tra ||
+                        (item.ngay_tra &&
+                            this.formatDateForComparison(item.ngay_tra) ===
+                                this.formatDateForComparison(
+                                    this.columnFilters.ngay_tra
+                                ))) &&
+                    // Lãi suất
+                    (!this.columnFilters.lai_suat ||
+                        (item.lai_suat !== undefined &&
+                            item.lai_suat
+                                .toString()
+                                .includes(this.columnFilters.lai_suat))) &&
+                    // Tiền lãi
+                    (!this.columnFilters.tien_lai ||
+                        (item.tien_lai !== undefined &&
+                            item.tien_lai
+                                .toString()
+                                .includes(this.columnFilters.tien_lai))) &&
+                    // Tình trạng (dropdown filter)
+                    (this.selectedFilterValues.tinh_trang.length === 0 ||
+                        (item.tinh_trang &&
+                            this.selectedFilterValues.tinh_trang.includes(
+                                item.tinh_trang
+                            ))) &&
+                    // Tình trạng duyệt (dropdown filter)
+                    (this.selectedFilterValues.tinh_trang_duyet.length === 0 ||
+                        (item.tinh_trang_duyet &&
+                            this.selectedFilterValues.tinh_trang_duyet.includes(
+                                item.tinh_trang_duyet
+                            ))) &&
+                    // Đã hỗ trợ lãi (dropdown filter)
+                    (this.selectedFilterValues.da_ho_tro_lai.length === 0 ||
+                        (item.da_ho_tro_lai !== undefined &&
+                            this.selectedFilterValues.da_ho_tro_lai.includes(
+                                item.da_ho_tro_lai
+                            ))) &&
+                    // Phiếu tính tiền mía
+                    (!this.columnFilters.phieu_tinh_tien_mia ||
+                        (item.phieu_tinh_tien_mia &&
+                            item.phieu_tinh_tien_mia
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.phieu_tinh_tien_mia.toLowerCase()
+                                ))) &&
+                    // Created On
+                    (!this.columnFilters.created_on ||
+                        (item.created_on &&
+                            this.formatDateForComparison(item.created_on) ===
+                                this.formatDateForComparison(
+                                    this.columnFilters.created_on
+                                ))) &&
+                    // Vụ thanh toán (dropdown filter)
+                    (this.selectedFilterValues.vu_thanh_toan.length === 0 ||
+                        (item.vu_thanh_toan &&
+                            this.selectedFilterValues.vu_thanh_toan.includes(
+                                item.vu_thanh_toan
+                            ))) &&
+                    // Khách hàng
+                    (!this.columnFilters.khach_hang ||
+                        (item.khach_hang &&
+                            item.khach_hang
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.khach_hang.toLowerCase()
+                                ))) &&
+                    // Khách hàng cá nhân
+                    (!this.columnFilters.khach_hang_ca_nhan ||
+                        (item.khach_hang_ca_nhan &&
+                            item.khach_hang_ca_nhan
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.khach_hang_ca_nhan.toLowerCase()
+                                ))) &&
+                    // Khách hàng doanh nghiệp
+                    (!this.columnFilters.khach_hang_doanh_nghiep ||
+                        (item.khach_hang_doanh_nghiep &&
+                            item.khach_hang_doanh_nghiep
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.khach_hang_doanh_nghiep.toLowerCase()
+                                ))) &&
+                    // Xóa nợ (dropdown filter)
+                    (this.selectedFilterValues.xoa_no.length === 0 ||
+                        (item.xoa_no !== undefined &&
+                            this.selectedFilterValues.xoa_no.includes(
+                                item.xoa_no
+                            ))) &&
+                    // Vụ đầu tư (dropdown filter)
+                    (this.selectedFilterValues.vu_dau_tu.length === 0 ||
+                        (item.vu_dau_tu &&
+                            this.selectedFilterValues.vu_dau_tu.includes(
+                                item.vu_dau_tu
+                            ))) &&
+                    // Owner
+                    (!this.columnFilters.owner ||
+                        (item.owner &&
+                            item.owner
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.owner.toLowerCase()
+                                ))) &&
+                    // Số trờ trình
+                    (!this.columnFilters.so_tro_trinh ||
+                        (item.so_tro_trinh &&
+                            item.so_tro_trinh
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.so_tro_trinh.toLowerCase()
+                                ))) &&
+                    // Description
+                    (!this.columnFilters.description ||
+                        (item.description &&
+                            item.description
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.description.toLowerCase()
+                                ))) &&
+                    // Mã khách hàng cá nhân
+                    (!this.columnFilters.ma_khach_hang_ca_nhan ||
+                        (item.ma_khach_hang_ca_nhan &&
+                            item.ma_khach_hang_ca_nhan
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.ma_khach_hang_ca_nhan.toLowerCase()
+                                ))) &&
+                    // Mã khách hàng doanh nghiệp
+                    (!this.columnFilters.ma_khach_hang_doanh_nghiep ||
+                        (item.ma_khach_hang_doanh_nghiep &&
+                            item.ma_khach_hang_doanh_nghiep
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.ma_khach_hang_doanh_nghiep.toLowerCase()
+                                )));
+
+                // Return true if item matches search and all other column filters (except category_debt)
+                return matchesSearch && matchesColumnFilters;
+            });
+
+            // For "all" option, count is the total number of filtered items
+            const all = {
+                code: "all",
+                name: "Tất cả",
+                count: baseFilteredItems.length,
+            };
+
+            // For other options, count the matching items for each category
+            const options = this.statusOptions
+                .filter((option) => option.code !== "all")
+                .map((option) => {
+                    const count = baseFilteredItems.filter(
+                        (item) => item.category_debt === option.code
+                    ).length;
+
+                    return {
+                        ...option,
+                        count: count,
+                    };
+                });
+
+            // Return combined array with "all" as first option
+            return [all, ...options];
+        },
         filteredItems() {
             return this.phieuList.filter((item) => {
                 // Apply global search
@@ -1774,20 +2047,29 @@ export default {
                     (item.khach_hang_doanh_nghiep &&
                         item.khach_hang_doanh_nghiep
                             .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.ma_khach_hang_ca_nhan &&
+                        item.ma_khach_hang_ca_nhan
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.ma_khach_hang_doanh_nghiep &&
+                        item.ma_khach_hang_doanh_nghiep
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.so_tro_trinh &&
+                        item.so_tro_trinh
+                            .toLowerCase()
                             .includes(this.search.toLowerCase()));
 
-                // Apply status filter
+                // Apply Vụ đầu tư filter
+                const matchesVuDauTu =
+                    !this.selectedFilterValues.vu_dau_tu ||
+                    item.vu_dau_tu === this.selectedFilterValues.vu_dau_tu;
+
+                // Apply status filter - now filtering by category_debt instead of tinh_trang
                 let matchesStatus = true;
                 if (this.statusFilter !== "all") {
-                    if (this.statusFilter === "active") {
-                        matchesStatus = item.tinh_trang === "active";
-                    } else if (this.statusFilter === "paid") {
-                        matchesStatus = item.tinh_trang === "paid";
-                    } else if (this.statusFilter === "overdue") {
-                        matchesStatus = item.tinh_trang === "overdue";
-                    } else if (this.statusFilter === "cancelled") {
-                        matchesStatus = item.tinh_trang === "cancelled";
-                    }
+                    matchesStatus = item.category_debt === this.statusFilter;
                 }
 
                 // Apply column filters
@@ -2166,6 +2448,15 @@ export default {
                                 .filter(Boolean)
                         ),
                     ];
+
+                    // Update statusOptions based on unique category_debt values
+                    this.statusOptions = [
+                        { code: "all", name: "Tất cả" }, // Keep "All" option
+                        ...this.uniqueValues.category_debt.map((category) => ({
+                            code: category,
+                            name: category,
+                        })),
+                    ];
                 } else {
                     throw new Error(response.data.message);
                 }
@@ -2210,7 +2501,7 @@ export default {
             // Reset to first page
             this.currentPage = 1;
         },
-   
+
         handleAuthError() {
             localStorage.removeItem("web_token");
             localStorage.removeItem("web_user");
@@ -3120,6 +3411,7 @@ export default {
     overflow: auto;
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
+    min-height: 410px; /* Added minimum height */
 }
 
 .table-auto {

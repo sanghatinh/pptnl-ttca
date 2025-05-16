@@ -269,20 +269,24 @@
                                         </th>
 
                                         <!-- Trạm with unique dropdown filter -->
-                                        <th
-                                            class="px-4 py-2"
-                                            @click="sortTable('station')"
-                                        >
-                                            <div
-                                                class="d-flex align-items-center"
-                                            >
-                                                Trạm
-                                                <i
-                                                    :class="
-                                                        getSortIcon('station')
+                                        <th class="px-4 py-2">
+                                            <div class="column-header">
+                                                <div
+                                                    class="header-content"
+                                                    @click="
+                                                        sortTable('station')
                                                     "
-                                                    class="ml-1"
-                                                ></i>
+                                                >
+                                                    Trạm
+                                                    <i
+                                                        :class="
+                                                            getSortIcon(
+                                                                'station'
+                                                            )
+                                                        "
+                                                        class="sort-icon ml-1"
+                                                    ></i>
+                                                </div>
                                                 <button
                                                     @click.stop="
                                                         toggleFilter('station')
@@ -298,7 +302,8 @@
                                                                     .station
                                                                     .length > 0,
                                                         }"
-                                                    ></i>
+                                                    >
+                                                    </i>
                                                 </button>
                                             </div>
                                             <div
@@ -409,40 +414,46 @@
                                         </th>
 
                                         <!-- Vụ đầu tư with unique dropdown filter -->
-                                        <th
-                                            class="px-4 py-2"
-                                            @click="
-                                                sortTable('investment_project')
-                                            "
-                                        >
-                                            Vụ đầu tư
-                                            <i
-                                                :class="
-                                                    getSortIcon(
-                                                        'investment_project'
-                                                    )
-                                                "
-                                                class="ml-1"
-                                            ></i>
-                                            <button
-                                                @click.stop="
-                                                    toggleFilter(
-                                                        'investment_project'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.investment_project &&
-                                                            selectedFilterValues
-                                                                .investment_project
-                                                                .length > 0,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                        <th class="px-4 py-2">
+                                            <div class="column-header">
+                                                <div
+                                                    class="header-content"
+                                                    @click="
+                                                        sortTable(
+                                                            'investment_project'
+                                                        )
+                                                    "
+                                                >
+                                                    Trạm
+                                                    <i
+                                                        :class="
+                                                            getSortIcon(
+                                                                'investment_project'
+                                                            )
+                                                        "
+                                                        class="sort-icon"
+                                                    ></i>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'investment_project'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                selectedFilterValues.investment_project &&
+                                                                selectedFilterValues
+                                                                    .investment_project
+                                                                    .length > 0,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -596,31 +607,47 @@
                                         </th>
 
                                         <!-- Ngày lập with date filter -->
-                                        <th
-                                            class="px-4 py-2"
-                                            @click="sortTable('created_date')"
-                                        >
-                                            Ngày lập
-                                            <i
-                                                :class="
-                                                    getSortIcon('created_date')
-                                                "
-                                                class="ml-1"
-                                            ></i>
-                                            <button
-                                                @click.stop="
-                                                    toggleFilter('created_date')
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.created_date,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                        <th class="px-4 py-2">
+                                            <div class="column-header">
+                                                <div
+                                                    class="header-content"
+                                                    @click="
+                                                        sortTable(
+                                                            'created_date'
+                                                        )
+                                                    "
+                                                >
+                                                    Ngày tạo
+                                                    <i
+                                                        :class="
+                                                            getSortIcon(
+                                                                'created_date'
+                                                            )
+                                                        "
+                                                        class="sort-icon"
+                                                    ></i>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'created_date'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                selectedFilterValues.created_date &&
+                                                                selectedFilterValues
+                                                                    .created_date
+                                                                    .length > 0,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
+
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -777,33 +804,46 @@
                                         </th>
 
                                         <!-- Ngày nhận with date filter -->
-                                        <th
-                                            class="px-4 py-2"
-                                            @click="sortTable('received_date')"
-                                        >
-                                            Ngày nhận
-                                            <i
-                                                :class="
-                                                    getSortIcon('received_date')
-                                                "
-                                                class="ml-1"
-                                            ></i>
-                                            <button
-                                                @click.stop="
-                                                    toggleFilter(
-                                                        'received_date'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.received_date,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                        <th class="px-4 py-2">
+                                            <div class="column-header">
+                                                <div
+                                                    class="header-content"
+                                                    @click="
+                                                        sortTable(
+                                                            'received_date'
+                                                        )
+                                                    "
+                                                >
+                                                    Ngày nhận
+                                                    <i
+                                                        :class="
+                                                            getSortIcon(
+                                                                'received_date'
+                                                            )
+                                                        "
+                                                        class="sort-icon"
+                                                    ></i>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'received_date'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                selectedFilterValues.received_date &&
+                                                                selectedFilterValues
+                                                                    .received_date
+                                                                    .length > 0,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -846,32 +886,40 @@
                                         </th>
 
                                         <!-- Trạng thái with unique dropdown filter -->
-                                        <th
-                                            class="px-4 py-2"
-                                            @click="sortTable('status')"
-                                        >
-                                            Trạng thái
-                                            <i
-                                                :class="getSortIcon('status')"
-                                                class="ml-1"
-                                            ></i>
-                                            <button
-                                                @click.stop="
-                                                    toggleFilter('status')
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.status &&
-                                                            selectedFilterValues
-                                                                .status.length >
-                                                                0,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                        <th class="px-4 py-2">
+                                            <div class="column-header">
+                                                <div
+                                                    class="header-content"
+                                                    @click="sortTable('status')"
+                                                >
+                                                    Trạng thái giao nhận HS
+                                                    <i
+                                                        :class="
+                                                            getSortIcon(
+                                                                'status'
+                                                            )
+                                                        "
+                                                        class="sort-icon"
+                                                    ></i>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter('status')
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                selectedFilterValues.status &&
+                                                                selectedFilterValues
+                                                                    .status
+                                                                    .length > 0,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="activeFilter === 'status'"
                                                 class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
@@ -2607,14 +2655,6 @@ input[type="checkbox"] {
     }
 }
 
-/* แก้ไขการซ้อนทับของไอคอน */
-.table-auto th i.fa-sort,
-.table-auto th i.fa-sort-up,
-.table-auto th i.fa-sort-down {
-    position: relative;
-    z-index: 90;
-}
-
 .filter-btn {
     position: relative;
     z-index: 100;
@@ -2642,5 +2682,45 @@ input[type="checkbox"] {
 .clickable-cell:hover {
     background-color: #ebf5ff; /* Light blue background on hover */
 }
+
+/* Add these styles to separate sort and filter functionality */
+.column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    position: relative;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    flex-grow: 1;
+}
+
+.sort-icon {
+    margin-left: 4px;
+}
+
+/* .filter-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    z-index: 100;
+} */
+
+/* Prevent the parent element from capturing filter button clicks */
+.filter-btn:focus {
+    outline: none;
+}
+
+/* Make the popup position correctly */
+.filter-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 1000;
+}
 </style>
-,
