@@ -309,20 +309,32 @@ export default {
                 // บันทึกลงใน store
                 this.store.setToken(data.token);
                 this.store.setUser(data.user);
-                this.store.setUserType(this.activeTab); // เพิ่มบรรทัดนี้
+                this.store.setUserType(this.activeTab);
 
-                // รีเซ็ตฟอร์ม
-                if (this.activeTab === "employee") {
-                    this.employee.username = "";
-                    this.employee.password = "";
-                } else {
-                    this.farmer.identifier = "";
-                    this.farmer.password = "";
+                // เพิ่มเก็บข้อมูล supplier_number กรณีเป็น farmer
+                if (this.activeTab === "farmer" && data.user.ma_kh_ca_nhan) {
+                    this.store.setSupplierId(data.user.ma_kh_ca_nhan);
+                    localStorage.setItem(
+                        "supplier_id",
+                        data.user.ma_kh_ca_nhan
+                    );
+                } else if (
+                    this.activeTab === "farmer" &&
+                    data.user.ma_kh_doanh_nghiep
+                ) {
+                    this.store.setSupplierId(data.user.ma_kh_doanh_nghiep);
+                    localStorage.setItem(
+                        "supplier_id",
+                        data.user.ma_kh_doanh_nghiep
+                    );
                 }
 
-                // นำทางไปยังหน้า dashboard
-                this.$router.push("/").then(() => {
-                    this.$router.go(0);
+                // โหลดสิทธิ์และ components
+                this.store.loadPermissionsAndComponents().then(() => {
+                    // นำทางไปยังหน้า dashboard
+                    this.$router.push("/").then(() => {
+                        this.$router.go(0);
+                    });
                 });
             } else {
                 this.errorMessage =

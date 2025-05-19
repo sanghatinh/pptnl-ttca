@@ -31,6 +31,8 @@ Route::get('/logout', [UserController::class, 'logout']);
 // Add route for farmer login
 Route::post('/farmer-login', [UserController::class, 'farmerLogin']);
 
+    Route::get('/farmer/permissions', [UserController::class, 'getFarmerPermissions']);
+Route::get('/farmer/components', [UserController::class, 'getFarmerComponents']);
 
 Route::group(['middleware' => ['auth:api']], function () {
 
@@ -49,6 +51,9 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::delete('/user/delete/{id}', [UserController::class, 'deleteuser']);
     Route::get('/user/permissions', [UserController::class, 'getUserPermissions']);
     Route::get('/user/components', [UserController::class, 'getUserComponents']);
+
+
+
 
 });
 

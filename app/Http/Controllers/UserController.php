@@ -293,29 +293,163 @@ public function deleteuser($id)
 }
 
 //เพิ่มฟังก์ชันใน UserController เพื่อดึงข้อมูล permissions
+public function getFarmerPermissions(Request $request)
+{
+    try {
+        $permissions = [];
+        
+        // ดึง token จาก header
+        $token = $request->bearerToken();
+        
+        if (!$token) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        
+        try {
+            // ถอดรหัส token เพื่อดึงข้อมูล
+            $payload = JWTAuth::setToken($token)->getPayload();
+            $farmerId = $payload->get('sub'); // ดึง subject (ID) จาก token
+            
+            // ดึงข้อมูล farmer
+            $farmer = UserFarmer::find($farmerId);
+            
+            if (!$farmer) {
+                return response()->json(['error' => 'Farmer not found'], 404);
+            }
+            
+            // ใช้ supplier_number จากข้อมูล farmer
+            $supplierId = $farmer->supplier_number;
+            
+            // ดึงข้อมูล role จากตาราง userfarmer_role
+            $roles = DB::table('userfarmer_role')
+                ->where('supplier_number', $supplierId)
+                ->pluck('role_id');
+                
+            // ดึงสิทธิ์ทั้งหมดของ role นั้น
+            foreach ($roles as $roleId) {
+                $rolePermissions = DB::table('permission_role')
+                    ->join('permissions', 'permissions.id', '=', 'permission_role.permission_id')
+                    ->where('permission_role.role_id', $roleId)
+                    ->pluck('permissions.name');
+                    
+                foreach ($rolePermissions as $permission) {
+                    $permissions[] = $permission;
+                }
+            }
+            
+            $permissions = array_values(array_unique($permissions));
+            return response()->json($permissions);
+            
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Invalid token'], 401);
+        }
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+
+public function getFarmerComponents(Request $request)
+{
+    try {
+        $components = [];
+        
+        // ดึง token จาก header
+        $token = $request->bearerToken();
+        
+        if (!$token) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        
+        try {
+            // ถอดรหัส token เพื่อดึงข้อมูล
+            $payload = JWTAuth::setToken($token)->getPayload();
+            $farmerId = $payload->get('sub'); // ดึง subject (ID) จาก token
+            
+            // ดึงข้อมูล farmer
+            $farmer = UserFarmer::find($farmerId);
+            
+            if (!$farmer) {
+                return response()->json(['error' => 'Farmer not found'], 404);
+            }
+            
+            // ใช้ supplier_number จากข้อมูล farmer
+          $supplierId = $farmer->supplier_number;
+            
+            // ดึงข้อมูล role จากตาราง userfarmer_role
+            $roles = DB::table('userfarmer_role')
+                ->where('supplier_number', $supplierId)
+                ->pluck('role_id');
+                
+            // ดึง components ทั้งหมดของ role นั้น
+            foreach ($roles as $roleId) {
+                $roleComponents = DB::table('role_component')
+                    ->join('components', 'components.id', '=', 'role_component.component_id')
+                    ->where('role_component.role_id', $roleId)
+                    ->where('role_component.can_view', 1)
+                    ->pluck('components.name');
+                    
+                foreach ($roleComponents as $component) {
+                    $components[] = $component;
+                }
+            }
+            
+            $components = array_values(array_unique($components));
+            return response()->json($components);
+            
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Invalid token'], 401);
+        }
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+// ปรับปรุงฟังก์ชัน getUserPermissions
 public function getUserPermissions()
 {
     try {
         $user = Auth::user();
         $permissions = [];
-
-        // Attempt to load roles from the relationship (user_role)
-        $userRoles = $user->roles;
-
-        // If no roles are found through user_role but role_id exists, load that role
-        if ($userRoles->isEmpty() && $user->role_id) {
-            $role = \App\Models\Role::with('permissions')->find($user->role_id);
-            if ($role) {
-                $userRoles = collect([$role]);
+        $userType = request()->header('X-User-Type', 'employee'); // ดึงข้อมูลประเภทผู้ใช้จาก header
+        
+        // ตรวจสอบประเภทผู้ใช้
+        if ($userType === 'farmer') {
+            // กรณีเป็น farmer
+            $supplierId = request()->header('X-Supplier-Number');
+            
+            // ดึงข้อมูล role จากตาราง userfarmer_role
+            $roles = DB::table('userfarmer_role')
+                ->where('supplier_number', $supplierId)
+                ->pluck('role_id');
+                
+            // ดึงสิทธิ์ทั้งหมดของ role นั้น
+            foreach ($roles as $roleId) {
+                $rolePermissions = DB::table('permission_role')
+                    ->join('permissions', 'permissions.id', '=', 'permission_role.permission_id')
+                    ->where('permission_role.role_id', $roleId)
+                    ->pluck('permissions.name');
+                    
+                foreach ($rolePermissions as $permission) {
+                    $permissions[] = $permission;
+                }
             }
-        }
-
-        // Loop through each role and collect permission names
-        foreach ($userRoles as $role) {
-            // Ensure permissions relationship is loaded
-            $rolePermissions = $role->permissions;
-            foreach ($rolePermissions as $permission) {
-                $permissions[] = $permission->name;
+        } else {
+            // กรณีเป็น employee (ใช้โค้ดเดิม)
+            $userRoles = $user->roles;
+            
+            // หากไม่มีข้อมูลใน user_role แต่มี role_id ในตาราง users ให้ดึง role เดียวจาก role_id
+            if ($userRoles->isEmpty() && $user->role_id) {
+                $role = \App\Models\Role::with('permissions')->find($user->role_id);
+                if ($role) {
+                    $userRoles = collect([$role]);
+                }
+            }
+    
+            // Loop through each role and collect permission names
+            foreach ($userRoles as $role) {
+                $rolePermissions = $role->permissions;
+                foreach ($rolePermissions as $permission) {
+                    $permissions[] = $permission->name;
+                }
             }
         }
 
@@ -325,29 +459,56 @@ public function getUserPermissions()
         return response()->json(['error' => $e->getMessage()], 500);
     }
 }
-//เพิ่มฟังก์ชันใน UserController เพื่อดึงข้อมูล components
+
+// ปรับปรุงฟังก์ชัน getUserComponents
 public function getUserComponents()
 {
     try {
-        $user = Auth::user();
         $components = [];
+        $userType = request()->header('X-User-Type', 'employee'); // ดึงข้อมูลประเภทผู้ใช้จาก header
         
-        // พยายามโหลด roles ที่เชื่อมโยงผ่านตาราง user_role
-        $userRoles = $user->roles;
-        
-        // หากไม่มีข้อมูลใน user_role แต่มี role_id ในตาราง users ให้ดึง role เดียวจาก role_id
-        if ($userRoles->isEmpty() && $user->role_id) {
-            $role = \App\Models\Role::with('components')->find($user->role_id);
-            if ($role) {
-                $userRoles = collect([$role]);
+        if ($userType === 'farmer') {
+            // กรณีเป็น farmer
+            $supplierId = request()->header('X-Supplier-Number');
+            
+            // ดึงข้อมูล role จากตาราง userfarmer_role
+            $roles = DB::table('userfarmer_role')
+                ->where('supplier_number', $supplierId)
+                ->pluck('role_id');
+                
+            // ดึง components ทั้งหมดของ role นั้น
+            foreach ($roles as $roleId) {
+                $roleComponents = DB::table('role_component')
+                    ->join('components', 'components.id', '=', 'role_component.component_id')
+                    ->where('role_component.role_id', $roleId)
+                    ->where('role_component.can_view', 1)
+                    ->pluck('components.name');
+                    
+                foreach ($roleComponents as $component) {
+                    $components[] = $component;
+                }
             }
-        }
-        
-        // ตรวจสอบและดึง component ที่มี can_view = 1 ของแต่ละ role
-        foreach ($userRoles as $role) {
-            $roleComponents = $role->components()->wherePivot('can_view', 1)->get();
-            foreach ($roleComponents as $component) {
-                $components[] = $component->name;
+        } else {
+            // กรณีเป็น employee (ใช้โค้ดเดิม)
+            $user = Auth::user();
+            
+            // พยายามโหลด roles ที่เชื่อมโยงผ่านตาราง user_role
+            $userRoles = $user->roles;
+            
+            // หากไม่มีข้อมูลใน user_role แต่มี role_id ในตาราง users ให้ดึง role เดียวจาก role_id
+            if ($userRoles->isEmpty() && $user->role_id) {
+                $role = \App\Models\Role::with('components')->find($user->role_id);
+                if ($role) {
+                    $userRoles = collect([$role]);
+                }
+            }
+            
+            // ตรวจสอบและดึง component ที่มี can_view = 1 ของแต่ละ role
+            foreach ($userRoles as $role) {
+                $roleComponents = $role->components()->wherePivot('can_view', 1)->get();
+                foreach ($roleComponents as $component) {
+                    $components[] = $component->name;
+                }
             }
         }
         

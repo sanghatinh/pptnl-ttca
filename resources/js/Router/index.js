@@ -30,6 +30,7 @@ const authMiddleware = (to, from, next) => {
     const token = localStorage.getItem("web_token");
     const userJson = localStorage.getItem("web_user");
     const userType = localStorage.getItem("user_type");
+    const supplierId = localStorage.getItem("supplier_id");
     const store = useStore();
 
     if (token) {
@@ -46,12 +47,34 @@ const authMiddleware = (to, from, next) => {
             }
         }
 
-        // ตั้งค่า userType ใน store (สำคัญสำหรับ Farmer)
+        // ตั้งค่า userType ใน store
         if (userType) {
             store.setUserType(userType);
         }
 
-        next();
+        // ตั้งค่า supplierId ใน store (กรณีเป็น farmer)
+        if (userType === "farmer" && supplierId) {
+            store.setSupplierId(supplierId);
+        }
+
+        // โหลดสิทธิ์และ components ก่อนเข้าเพจ
+        store
+            .loadPermissionsAndComponents()
+            .then(() => {
+                next();
+            })
+            .catch(() => {
+                // กรณีมีปัญหาในการโหลดสิทธิ์ ให้ logout
+                localStorage.removeItem("web_token");
+                localStorage.removeItem("web_user");
+                localStorage.removeItem("user_type");
+                localStorage.removeItem("supplier_id");
+                store.logout();
+                next({
+                    path: "/login",
+                    replace: true,
+                });
+            });
     } else {
         next({
             path: "/login",

@@ -31,7 +31,7 @@
                                 <!-- Assuming permission check for each dashboard if needed -->
 
                                 <li
-                                    v-if="userCanViewComponent('Quản lý hồ sơ')"
+                                    v-if="hasAccessToComponent('Quản lý hồ sơ')"
                                 >
                                     <router-link
                                         to="/DanhsachHoso"
@@ -283,13 +283,34 @@ export default {
         };
     },
     methods: {
+        hasAccessToComponent(componentName) {
+            return this.store.getUserComponents.includes(componentName);
+        },
+
+        // ตรวจสอบว่ามีสิทธิ์นั้นหรือไม่
+        hasPermission(permissionName) {
+            return this.store.getUserPermissions.includes(permissionName);
+        },
         fetchUserData() {
+            // กำหนด headers
+            const headers = {
+                Authorization: "Bearer " + this.store.getToken,
+            };
+
+            // เลือก endpoint ตามประเภทผู้ใช้
+            const userType = this.store.getUserType;
+            const permissionsEndpoint =
+                userType === "farmer"
+                    ? "/api/farmer/permissions"
+                    : "/api/user/permissions";
+            const componentsEndpoint =
+                userType === "farmer"
+                    ? "/api/farmer/components"
+                    : "/api/user/components";
+
             // Fetch user permissions
             axios
-                .get("/api/user/permissions", {
-                    headers: { Authorization: "Bearer " + this.store.getToken },
-                })
-
+                .get(permissionsEndpoint, { headers })
                 .then((response) => {
                     this.userPermissions = response.data;
                 })
@@ -299,9 +320,7 @@ export default {
 
             // Fetch user components
             axios
-                .get("/api/user/components", {
-                    headers: { Authorization: "Bearer " + this.store.getToken },
-                })
+                .get(componentsEndpoint, { headers })
                 .then((response) => {
                     this.userComponents = response.data;
                 })
