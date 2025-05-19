@@ -28,6 +28,9 @@ Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 Route::get('/logout', [UserController::class, 'logout']);
 
+// Add route for farmer login
+Route::post('/farmer-login', [UserController::class, 'farmerLogin']);
+
 
 Route::group(['middleware' => ['auth:api']], function () {
 

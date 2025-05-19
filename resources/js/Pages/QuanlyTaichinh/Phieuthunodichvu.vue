@@ -113,45 +113,130 @@
             </div>
         </div>
 
+        <!-- Add this after the top toolbar with search and actions -->
+        <div class="row mb-0">
+            <div class="col-12">
+                <div class="totals-container">
+                    <div class="total-card total-count">
+                        <div class="total-icon">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div class="total-content">
+                            <div class="total-label">Tổng số phiếu</div>
+                            <div class="total-value">
+                                {{ totals.total_count }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="total-card total-debt">
+                        <div class="total-icon">
+                            <i class="fas fa-money-bill"></i>
+                        </div>
+                        <div class="total-content">
+                            <div class="total-label">Tổng tiền đã trả gốc</div>
+                            <div class="total-value">
+                                {{ formatCurrency(totals.total_paid) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="total-card total-interest">
+                        <div class="total-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="total-content">
+                            <div class="total-label">Tổng tiền lãi</div>
+                            <div class="total-value">
+                                {{ formatCurrency(totals.total_interest) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Mobile Controls -->
         <div
             class="mobile-controls p-3 bg-white rounded-lg shadow-sm mb-3"
             v-if="isMobile"
         >
-            <div class="flex gap-2 mb-3">
-                <div class="flex-1 relative">
+            <div class="flex flex-col gap-3">
+                <!-- Search bar with icon and filter icon in the same row -->
+                <div class="search-filter-container">
+                    <div class="search-container relative">
+                        <span
+                            class="search-icon absolute left-3 top-1/2 transform -translate-y-1/2"
+                        >
+                            <i class="fas fa-search text-gray-400"></i>
+                        </span>
+
+                        <input
+                            v-model="search"
+                            type="text"
+                            placeholder="Tìm kiếm phiếu..."
+                            class="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        />
+                    </div>
+
+                    <button
+                        class="date-filter-toggle-btn"
+                        @click="toggleDateFilter"
+                        :class="{ active: dateRange.active }"
+                        title="Lọc theo ngày trả"
+                    >
+                        <i class="fas fa-calendar-alt"></i>
+                        <span
+                            class="filter-indicator"
+                            v-if="dateRange.active"
+                        ></span>
+                    </button>
+
                     <span
-                        class="absolute inset-y-0 left-0 flex items-center pl-3"
+                        class="reset-all-filters-btn-mobile"
+                        title="Reset all filters"
+                        @click="resetAllFilters"
                     >
-                        <i class="fas fa-search text-gray-400"></i>
+                        <i class="fas fa-redo-alt"></i>
                     </span>
-                    <input
-                        v-model="search"
-                        type="text"
-                        placeholder="Tìm kiếm phiếu..."
-                        class="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                    />
                 </div>
-            </div>
-            <div class="flex gap-2">
-                <select
-                    v-model="statusFilter"
-                    class="form-select status-select flex-1"
-                >
-                    <option
-                        v-for="option in statusOptions"
-                        :key="option.code"
-                        :value="option.code"
+
+                <!-- Filters and other controls -->
+                <div class="flex gap-2">
+                    <select
+                        v-model="statusFilter"
+                        class="form-select status-select flex-1"
                     >
-                        {{ option.name }}
-                    </option>
-                </select>
-                <button
-                    class="btn-icon bg-light rounded-circle p-2"
-                    @click="showActionsMenu"
-                >
-                    <i class="fas fa-ellipsis-v"></i>
-                </button>
+                        <option
+                            v-for="option in statusOptionsWithCount"
+                            :key="option.code"
+                            :value="option.code"
+                        >
+                            {{ option.name }} ({{ option.count }})
+                        </option>
+                    </select>
+
+                    <select
+                        v-model="selectedFilterValues.vu_dau_tu"
+                        class="form-select status-select flex-1"
+                        @change="applyFilter('vu_dau_tu')"
+                    >
+                        <option value="">Vụ đầu tư</option>
+                        <option
+                            v-for="(option, index) in uniqueValues.vu_dau_tu"
+                            :key="index"
+                            :value="option"
+                        >
+                            {{ option }}
+                        </option>
+                    </select>
+
+                    <button
+                        class="btn-icon bg-light rounded-circle p-2"
+                        @click="showActionsMenu"
+                    >
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -294,6 +379,64 @@
                                                 </div>
                                             </div>
                                         </th>
+                                        <!-- Add this column in the table header after the "Mã số phiếu" column -->
+                                        <th>
+                                            Mã giải ngân
+                                            <button
+                                                @click="
+                                                    toggleFilter('ma_giai_ngan')
+                                                "
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.ma_giai_ngan,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    activeFilter ===
+                                                    'ma_giai_ngan'
+                                                "
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    v-model="
+                                                        columnFilters.ma_giai_ngan
+                                                    "
+                                                    class="form-control mb-2"
+                                                    placeholder="Lọc theo mã giải ngân..."
+                                                />
+                                                <div
+                                                    class="flex justify-between"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'ma_giai_ngan'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-light"
+                                                    >
+                                                        Reset
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'ma_giai_ngan'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
 
                                         <!-- Invoice Number -->
                                         <th>
@@ -346,6 +489,88 @@
                                                         @click="
                                                             applyFilter(
                                                                 'invoice_number'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
+
+                                        <!-- Category Debt -->
+                                        <th>
+                                            Category Debt
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'category_debt'
+                                                    )
+                                                "
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            selectedFilterValues.category_debt &&
+                                                            selectedFilterValues
+                                                                .category_debt
+                                                                .length > 0,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    activeFilter ===
+                                                    'category_debt'
+                                                "
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <div
+                                                    class="max-h-40 overflow-y-auto"
+                                                >
+                                                    <div
+                                                        v-for="(
+                                                            option, index
+                                                        ) in uniqueValues.category_debt"
+                                                        :key="index"
+                                                        class="flex items-center mb-2"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            :id="`category_debt-${index}`"
+                                                            :value="option"
+                                                            v-model="
+                                                                selectedFilterValues.category_debt
+                                                            "
+                                                            class="form-checkbox h-4 w-4 text-green-600"
+                                                        />
+                                                        <label
+                                                            :for="`category_debt-${index}`"
+                                                            class="ml-2 text-gray-700"
+                                                            >{{ option }}</label
+                                                        >
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="flex justify-between"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'category_debt'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-light"
+                                                    >
+                                                        Reset
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'category_debt'
                                                             )
                                                         "
                                                         class="btn btn-sm btn-success"
@@ -1109,88 +1334,6 @@
                                             </div>
                                         </th>
 
-                                        <!-- Category Debt -->
-                                        <th>
-                                            Category Debt
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'category_debt'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.category_debt &&
-                                                            selectedFilterValues
-                                                                .category_debt
-                                                                .length > 0,
-                                                    }"
-                                                ></i>
-                                            </button>
-                                            <div
-                                                v-if="
-                                                    activeFilter ===
-                                                    'category_debt'
-                                                "
-                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                            >
-                                                <div
-                                                    class="max-h-40 overflow-y-auto"
-                                                >
-                                                    <div
-                                                        v-for="(
-                                                            option, index
-                                                        ) in uniqueValues.category_debt"
-                                                        :key="index"
-                                                        class="flex items-center mb-2"
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            :id="`category_debt-${index}`"
-                                                            :value="option"
-                                                            v-model="
-                                                                selectedFilterValues.category_debt
-                                                            "
-                                                            class="form-checkbox h-4 w-4 text-green-600"
-                                                        />
-                                                        <label
-                                                            :for="`category_debt-${index}`"
-                                                            class="ml-2 text-gray-700"
-                                                            >{{ option }}</label
-                                                        >
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    class="flex justify-between"
-                                                >
-                                                    <button
-                                                        @click="
-                                                            resetFilter(
-                                                                'category_debt'
-                                                            )
-                                                        "
-                                                        class="btn btn-sm btn-light"
-                                                    >
-                                                        Reset
-                                                    </button>
-                                                    <button
-                                                        @click="
-                                                            applyFilter(
-                                                                'category_debt'
-                                                            )
-                                                        "
-                                                        class="btn btn-sm btn-success"
-                                                    >
-                                                        Apply
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </th>
-
                                         <!-- Description -->
                                         <th>
                                             Description
@@ -1345,7 +1488,36 @@
                                     >
                                         <td>{{ item.ma_so_phieu }}</td>
                                         <td>{{ item.phan_bo_dau_tu }}</td>
+                                        <td>
+                                            <router-link
+                                                v-if="item.ma_giai_ngan"
+                                                :to="`/Details_Phieudenghithanhtoandichvu/${item.ma_giai_ngan}`"
+                                                class="text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors"
+                                            >
+                                                {{ item.ma_giai_ngan }}
+                                            </router-link>
+                                            <span v-else>N/A</span>
+                                        </td>
                                         <td>{{ item.invoice_number }}</td>
+                                        <td>
+                                            <span
+                                                :class="
+                                                    getCategoryBadgeClass(
+                                                        item.category_debt
+                                                    ).class
+                                                "
+                                            >
+                                                <i
+                                                    :class="
+                                                        getCategoryBadgeClass(
+                                                            item.category_debt
+                                                        ).icon
+                                                    "
+                                                    class="mr-1"
+                                                ></i>
+                                                {{ item.category_debt }}
+                                            </span>
+                                        </td>
                                         <td>
                                             {{
                                                 formatCurrency(item.da_tra_goc)
@@ -1372,7 +1544,7 @@
                                             }}
                                         </td>
                                         <td>{{ item.so_tro_trinh }}</td>
-                                        <td>{{ item.category_debt }}</td>
+
                                         <td>{{ item.description }}</td>
                                         <td>
                                             <span
@@ -1422,60 +1594,116 @@
                 :key="item.id"
                 class="card border p-4 mb-4 rounded shadow hover:shadow-green-500 transition-shadow duration-300"
             >
-                <div class="flex-1 justify-items-start">
-                    <div class="mb-2">
-                        <strong>Mã số phiếu:</strong>
-                        {{ item.ma_so_phieu }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Invoice Number:</strong>
+                <div
+                    class="card-header-mobile mb-3 d-flex justify-content-between align-items-center"
+                >
+                    <h6 class="mb-0 font-weight-bold text-truncate">
                         {{ item.invoice_number }}
-                    </div>
-                    <div class="mb-2">
+                    </h6>
+                    <span
+                        :class="getCategoryBadgeClass(item.category_debt).class"
+                        class="d-inline-flex align-items-center"
+                    >
+                        <i
+                            :class="
+                                getCategoryBadgeClass(item.category_debt).icon
+                            "
+                            class="mr-1"
+                        ></i>
+                        {{ item.category_debt }}
+                    </span>
+                </div>
+
+                <div class="customer-info p-2 rounded mb-3">
+                    <div class="mb-1">
                         <strong>Khách hàng:</strong>
-                        {{ item.khach_hang }}
+                        <span v-if="item.khach_hang_ca_nhan">{{
+                            item.khach_hang_ca_nhan
+                        }}</span>
+                        <span v-else>{{
+                            item.khach_hang_doanh_nghiep || "N/A"
+                        }}</span>
                     </div>
-                    <div class="mb-2">
-                        <strong>Đã trả gốc:</strong>
-                        {{ formatCurrency(item.da_tra_goc) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Tiền lãi:</strong>
-                        {{ formatCurrency(item.tien_lai) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Ngày vay:</strong>
-                        {{ formatDate(item.ngay_vay) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Ngày trả:</strong>
-                        {{ formatDate(item.ngay_tra) }}
-                    </div>
-                    <div class="mb-2">
-                        <strong>Tình trạng:</strong>
+                    <div class="d-flex justify-content-between">
                         <span
-                            :class="statusClass(item.tinh_trang)"
-                            class="flex items-center"
+                            ><strong>Mã KH:</strong>
+                            {{
+                                item.ma_khach_hang_ca_nhan ||
+                                item.ma_khach_hang_doanh_nghiep ||
+                                "N/A"
+                            }}</span
                         >
-                            <i
-                                :class="statusIcons(item.tinh_trang)"
-                                class="mr-1"
-                            ></i>
-                            {{ formatStatus(item.tinh_trang) }}
-                        </span>
                     </div>
-                    <div class="mb-2">
-                        <strong>Vụ đầu tư:</strong>
-                        {{ item.vu_dau_tu }}
+                    <div class="mb-1">
+                        <strong>Mã giải ngân:</strong>
+                        <router-link
+                            v-if="item.ma_giai_ngan"
+                            :to="`/Details_Phieudenghithanhtoandichvu/${item.ma_giai_ngan}`"
+                            class="text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors"
+                        >
+                            {{ item.ma_giai_ngan }}
+                        </router-link>
+                        <span v-else>N/A</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span
+                            ><strong>Description:</strong>
+                            {{ item.description }}</span
+                        >
                     </div>
                 </div>
+
+                <div class="d-flex justify-content-between mb-3">
+                    <div class="financial-item">
+                        <div class="financial-label">Đã trả gốc</div>
+                        <div class="financial-value text-success">
+                            {{ formatCurrency(item.da_tra_goc) }}
+                        </div>
+                    </div>
+                    <div class="financial-item">
+                        <div class="financial-label">Tiền lãi</div>
+                        <div class="financial-value text-warning">
+                            {{ formatCurrency(item.tien_lai) }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dates-section d-flex justify-content-between mb-3">
+                    <div class="date-item">
+                        <div class="date-label">
+                            <i class="fas fa-calendar-plus mr-1"></i> Ngày vay
+                        </div>
+                        <div class="date-value">
+                            {{ formatDate(item.ngay_vay) }}
+                        </div>
+                    </div>
+                    <div class="date-item">
+                        <div class="date-label">
+                            <i class="fas fa-calendar-check mr-1"></i> Ngày trả
+                        </div>
+                        <div class="date-value">
+                            {{ formatDate(item.ngay_tra) }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-light text-dark">
+                        <i class="fas fa-percentage mr-1"></i>
+                        {{ item.lai_suat }}% ({{ item.vu_dau_tu || "N/A" }})
+                    </span>
+                    <span class="card-btn">
+                        <i class="fas fa-chevron-right"></i>
+                    </span>
+                </div>
             </div>
+
             <div class="flex justify-center mt-4">
                 <div class="pagination-card">
                     <Bootstrap5Pagination
                         :data="paginatedItems"
                         @pagination-change-page="pageChanged"
-                        :limit="5"
+                        :limit="3"
                         :classes="paginationClasses"
                     />
                 </div>
@@ -1735,7 +1963,19 @@ export default {
                 description: "",
                 ma_khach_hang_ca_nhan: "",
                 ma_khach_hang_doanh_nghiep: "",
+                ma_giai_ngan: "", // Add this line
             },
+            dateRange: {
+                startDate: "",
+                endDate: "",
+                active: false,
+            },
+            totals: {
+                total_paid: 0,
+                total_interest: 0,
+                total_count: 0,
+            },
+            showDateFilter: false,
             activeFilter: null,
             selectedFile: null,
             uploadProgress: 0,
@@ -1803,6 +2043,10 @@ export default {
                             .includes(this.search.toLowerCase())) ||
                     (item.so_tro_trinh &&
                         item.so_tro_trinh
+                            .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.ma_giai_ngan && // Add this condition
+                        item.ma_giai_ngan
                             .toLowerCase()
                             .includes(this.search.toLowerCase()));
 
@@ -2059,7 +2303,20 @@ export default {
                     (item.so_tro_trinh &&
                         item.so_tro_trinh
                             .toLowerCase()
+                            .includes(this.search.toLowerCase())) ||
+                    (item.ma_giai_ngan && // Add this condition
+                        item.ma_giai_ngan
+                            .toLowerCase()
                             .includes(this.search.toLowerCase()));
+
+                // Apply date range filter for ngay_tra
+                const passesDateRangeFilter =
+                    !this.dateRange.active ||
+                    (item.ngay_tra &&
+                        new Date(this.formatDateForComparison(item.ngay_tra)) >=
+                            new Date(this.dateRange.startDate) &&
+                        new Date(this.formatDateForComparison(item.ngay_tra)) <=
+                            new Date(this.dateRange.endDate));
 
                 // Apply Vụ đầu tư filter
                 const matchesVuDauTu =
@@ -2146,6 +2403,14 @@ export default {
                             item.tien_lai
                                 .toString()
                                 .includes(this.columnFilters.tien_lai))) &&
+                    // Mã giải ngân
+                    (!this.columnFilters.ma_giai_ngan ||
+                        (item.ma_giai_ngan &&
+                            item.ma_giai_ngan
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.ma_giai_ngan.toLowerCase()
+                                ))) &&
                     // Tình trạng (dropdown filter)
                     (this.selectedFilterValues.tinh_trang.length === 0 ||
                         (item.tinh_trang &&
@@ -2268,7 +2533,12 @@ export default {
                                     this.columnFilters.ma_khach_hang_doanh_nghiep.toLowerCase()
                                 )));
 
-                return matchesSearch && matchesStatus && matchesColumnFilters;
+                return (
+                    matchesSearch &&
+                    matchesStatus &&
+                    matchesColumnFilters &&
+                    passesDateRangeFilter
+                );
             });
         },
         paginatedItems() {
@@ -2298,6 +2568,235 @@ export default {
         },
     },
     methods: {
+        toggleDateFilter() {
+            // Instead of toggling a local element, show a modal dialog
+            Swal.fire({
+                title: '<i class="fas fa-calendar-alt text-success me-2"></i> Lọc theo ngày trả',
+                html: `
+            <div class="date-modal-content">
+                <div class="date-input-groups mb-3">
+                    <div class="date-input-group mb-3">
+                        <label class="date-label text-start d-block mb-1">Từ ngày</label>
+                        <input 
+                            type="date" 
+                            id="swal-date-from" 
+                            class="form-control date-input" 
+                            value="${this.dateRange.startDate}"
+                        />
+                    </div>
+                    <div class="date-input-group">
+                        <label class="date-label text-start d-block mb-1">Đến ngày</label>
+                        <input 
+                            type="date" 
+                            id="swal-date-to" 
+                            class="form-control date-input" 
+                            value="${this.dateRange.endDate}"
+                        />
+                    </div>
+                </div>
+                <div class="invalid-feedback" id="date-error" style="display: none;">
+                    Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc
+                </div>
+            </div>
+        `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-check me-1"></i> Áp dụng',
+                cancelButtonText: '<i class="fas fa-times me-1"></i> Hủy',
+                customClass: {
+                    container: "date-filter-modal",
+                    popup: "date-filter-popup",
+                    confirmButton: "btn btn-success",
+                    cancelButton: "btn btn-outline-secondary",
+                    actions: "swal2-actions-custom-gap",
+                },
+                buttonsStyling: false,
+                showCloseButton: true,
+                preConfirm: () => {
+                    const startDate =
+                        document.getElementById("swal-date-from").value;
+                    const endDate =
+                        document.getElementById("swal-date-to").value;
+
+                    // Validate dates
+                    if (
+                        startDate &&
+                        endDate &&
+                        new Date(startDate) > new Date(endDate)
+                    ) {
+                        document.getElementById("date-error").style.display =
+                            "block";
+                        return false;
+                    }
+
+                    return {
+                        startDate: startDate,
+                        endDate: endDate,
+                    };
+                },
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    // Update the date range and apply filter
+                    this.dateRange.startDate = result.value.startDate;
+                    this.dateRange.endDate = result.value.endDate;
+
+                    if (this.dateRange.startDate && this.dateRange.endDate) {
+                        this.dateRange.active = true;
+                        this.currentPage = 1;
+                    } else {
+                        // If both dates are empty, reset the filter
+                        this.resetDateRange();
+                    }
+                }
+            });
+        },
+        // Apply date range filter for ngay_tra
+        applyDateRangeFilter() {
+            if (this.dateRange.startDate && this.dateRange.endDate) {
+                // Check if start date is before end date
+                if (
+                    new Date(this.dateRange.startDate) >
+                    new Date(this.dateRange.endDate)
+                ) {
+                    // Swap dates if start date is later than end date
+                    const temp = this.dateRange.startDate;
+                    this.dateRange.startDate = this.dateRange.endDate;
+                    this.dateRange.endDate = temp;
+                }
+
+                this.dateRange.active = true;
+                this.currentPage = 1;
+
+                // Optionally hide the date filter panel after applying
+                // this.showDateFilter = false;
+            }
+        },
+
+        // Reset date range filter
+        resetDateRange() {
+            this.dateRange.startDate = "";
+            this.dateRange.endDate = "";
+            this.dateRange.active = false;
+            this.currentPage = 1;
+
+            // Show success toast
+            const Toast = Swal.mixin({
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+            });
+
+            Toast.fire({
+                icon: "success",
+                title: "Đã xóa bộ lọc ngày trả",
+            });
+        },
+        getActiveDateFilterText() {
+            if (!this.dateRange.active) return "";
+
+            const formatDisplayDate = (dateStr) => {
+                if (!dateStr) return "";
+                const date = new Date(dateStr);
+                return date.toLocaleDateString("vi-VN");
+            };
+
+            return `${formatDisplayDate(
+                this.dateRange.startDate
+            )} - ${formatDisplayDate(this.dateRange.endDate)}`;
+        },
+        // Add this method to the methods section of your component
+        getCategoryBadgeClass(category) {
+            if (!category) return "badge bg-secondary text-white";
+
+            // Map different categories to different colors and icons
+            const categoryColors = {
+                "Ứng dầu": {
+                    class: "badge bg-blue-600 text-white",
+                    icon: "fas fa-oil-can",
+                },
+                MMTB: {
+                    class: "badge bg-red-600 text-white",
+                    icon: "fas fa-tools",
+                },
+                "Sữa chữa": {
+                    class: "badge bg-purple-600 text-white",
+                    icon: "fas fa-wrench",
+                },
+                "Ứng tiền trồng": {
+                    class: "badge bg-amber-600 text-white",
+                    icon: "fas fa-seedling",
+                },
+                "Ứng tiền chăm sóc": {
+                    class: "badge bg-green-600 text-white",
+                    icon: "fas fa-hand-holding-heart",
+                },
+            };
+
+            // Return just the class if category doesn't exist in our mapping
+            if (!categoryColors[category]) {
+                return "badge bg-secondary text-white";
+            }
+
+            // Return the badge class and icon info
+            return categoryColors[category];
+        },
+        showActionsMenu() {
+            Swal.fire({
+                title: "Actions",
+                html: `
+        <div class="d-grid gap-2">
+            <button onclick="exportToExcel()" class="btn btn-outline-success mb-2">
+                <i class="fas fa-file-excel text-success me-2"></i> Export to Excel
+            </button>
+            <button onclick="importData()" class="btn btn-outline-primary mb-2">
+                <i class="fas fa-upload text-primary me-2"></i> Import Data
+            </button>
+            <button onclick="downloadTemplate()" class="btn btn-outline-info mb-2">
+                <i class="fas fa-file-download text-info me-2"></i> Download Template
+            </button>
+        </div>
+        `,
+                showConfirmButton: false,
+                showCloseButton: true,
+                didOpen: () => {
+                    // Define global functions for the buttons
+                    window.exportToExcel = () => {
+                        Swal.close();
+                        this.showExportModal();
+                    };
+                    window.importData = () => {
+                        Swal.close();
+                        this.importData();
+                    };
+                    window.downloadTemplate = () => {
+                        Swal.close();
+                        this.downloadImportTemplate();
+                    };
+                },
+                willClose: () => {
+                    // Clean up global functions
+                    delete window.exportToExcel;
+                    delete window.importData;
+                    delete window.downloadTemplate;
+                },
+            });
+        },
+        calculateTotals() {
+            const filteredData = this.filteredItems;
+
+            this.totals = {
+                total_paid: filteredData.reduce(
+                    (sum, item) => sum + (parseFloat(item.da_tra_goc) || 0),
+                    0
+                ),
+                total_interest: filteredData.reduce(
+                    (sum, item) => sum + (parseFloat(item.tien_lai) || 0),
+                    0
+                ),
+                total_count: filteredData.length,
+            };
+        },
         formatDate(date) {
             if (!date) return "";
             const d = new Date(date);
@@ -2479,6 +2978,11 @@ export default {
             }
         },
         resetAllFilters() {
+            // Also reset date range
+            this.dateRange.startDate = "";
+            this.dateRange.endDate = "";
+            this.dateRange.active = false;
+            this.showDateFilter = false;
             // Reset global search
             this.search = "";
 
@@ -2656,6 +3160,7 @@ export default {
                             "Phân bổ đầu tư": item.phan_bo_dau_tu || "",
                             "Số phiếu PB đầu tư":
                                 item.so_phieu_phan_bo_dau_tu || "",
+                            "Mã giải ngân": item.ma_giai_ngan || "", // Add this line
                             "Invoice Number": item.invoice_number || "",
                             "Đã trả gốc": item.da_tra_goc || 0,
                             "Ngày vay": item.ngay_vay
@@ -2709,6 +3214,7 @@ export default {
                             { wch: 15 }, // Mã PB đầu tư
                             { wch: 20 }, // Phân bổ đầu tư
                             { wch: 20 }, // Số phiếu PB đầu tư
+                            { wch: 15 }, // Mã giải ngân
                             { wch: 15 }, // Invoice Number
                             { wch: 15 }, // Đã trả gốc
                             { wch: 15 }, // Ngày vay
@@ -3324,6 +3830,7 @@ export default {
         },
         filteredItems: {
             handler() {
+                this.calculateTotals();
                 this.updateScrollbar();
             },
             deep: true,
@@ -3763,5 +4270,518 @@ export default {
         margin-left: auto;
         margin-right: auto;
     }
+}
+
+/* Totals cards styling */
+.totals-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-bottom: 0.5rem;
+    justify-content: space-between;
+    background-color: white;
+    padding: 1rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.total-card {
+    background-color: #ffffff;
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+    position: relative;
+}
+
+.total-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.total-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    margin-right: 1rem;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.total-content {
+    flex-grow: 1;
+}
+
+.total-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+}
+
+.total-value {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+/* Card specific colors */
+.total-debt {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-left: 4px solid #3b82f6;
+}
+
+.total-debt .total-icon {
+    color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.2);
+}
+
+.total-debt .total-value {
+    color: #1e40af;
+}
+
+.total-interest {
+    background-color: rgba(245, 158, 11, 0.1);
+    border-left: 4px solid #f59e0b;
+}
+
+.total-interest .total-icon {
+    color: #f59e0b;
+    background-color: rgba(245, 158, 11, 0.2);
+}
+
+.total-interest .total-value {
+    color: #b45309;
+}
+
+.total-count {
+    background-color: rgba(16, 185, 129, 0.1);
+    border-left: 4px solid #10b981;
+}
+
+.total-count .total-icon {
+    color: #10b981;
+    background-color: rgba(16, 185, 129, 0.2);
+}
+
+.total-count .total-value {
+    color: #065f46;
+}
+
+.total-custom {
+    background-color: rgba(139, 92, 246, 0.1);
+    border-left: 4px solid #8b5cf6;
+}
+
+.total-custom .total-icon {
+    color: #8b5cf6;
+    background-color: rgba(139, 92, 246, 0.2);
+}
+
+.total-custom .total-value {
+    color: #5b21b6;
+}
+
+/* Mobile card improvements */
+.card-header-mobile {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 0.75rem;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+    display: inline-flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+.customer-info {
+    background-color: rgba(243, 244, 246, 0.7);
+}
+
+.financial-item {
+    text-align: center;
+    flex: 1;
+}
+
+.financial-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.financial-value {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.date-item {
+    flex: 1;
+    text-align: center;
+}
+
+.date-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.date-value {
+    font-weight: 500;
+}
+
+.card-btn {
+    color: #10b981;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: rgba(16, 185, 129, 0.1);
+    transition: all 0.2s;
+}
+
+.reset-all-filters-btn-mobile {
+    /* position: absolute; */
+    right: 15px;
+    top: 0px;
+    z-index: 99;
+    font-size: 0.875rem;
+    cursor: pointer;
+    color: #fff;
+    background: #198754;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .totals-container {
+        gap: 0.75rem;
+    }
+
+    .total-card {
+        min-width: calc(50% - 0.5rem);
+        flex: 0 0 calc(50% - 0.5rem);
+        padding: 0.75rem;
+    }
+
+    .total-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+        margin-right: 0.75rem;
+    }
+
+    .total-label {
+        font-size: 0.75rem;
+    }
+
+    .total-value {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .totals-container {
+        flex-direction: column;
+    }
+
+    .total-card {
+        width: 100%;
+        min-width: 100%;
+    }
+}
+
+/* Add these styles to your <style> section */
+
+/* Search and Filter Container Layout */
+.search-filter-container {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+}
+
+.search-container {
+    flex: 0.9; /* Takes 90% of the space */
+}
+
+/* Date Filter Toggle Button */
+.date-filter-toggle-btn {
+    flex: 0.1; /* Takes 10% of the space */
+    min-width: 40px;
+    max-width: 45px;
+    height: 40px;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    font-size: 1rem;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.date-filter-toggle-btn:hover {
+    background-color: #e5e7eb;
+    color: #10b981;
+}
+
+.date-filter-toggle-btn.active {
+    background-color: #dcfce7;
+    color: #10b981;
+    border-color: #10b981;
+}
+
+/* Filter active indicator (small dot) */
+.filter-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    background-color: #ef4444;
+    border-radius: 50%;
+}
+
+/* Date Range Filter Styling */
+.date-range-filter {
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-top: 0.25rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.date-range-filter.active {
+    border-color: #10b981;
+    background-color: rgba(16, 185, 129, 0.05);
+}
+
+.date-range-filter[style*="display: block"] {
+    max-height: 250px;
+    opacity: 1;
+    visibility: visible;
+    margin-bottom: 0.75rem;
+}
+
+.date-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.date-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+    display: flex;
+    align-items: center;
+}
+
+.date-close-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: none;
+    background-color: #f3f4f6;
+    color: #6b7280;
+    transition: all 0.2s;
+}
+
+.date-close-btn:hover {
+    background-color: #e5e7eb;
+    color: #ef4444;
+}
+
+.date-range-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.date-input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.date-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.date-input {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    font-size: 0.875rem;
+    background-color: white;
+    transition: all 0.2s ease;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.date-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.date-reset-btn {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    color: #4b5563;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.date-reset-btn:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+    border-color: #fca5a5;
+}
+
+.date-apply-btn {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    background-color: #10b981;
+    border: 1px solid #059669;
+    color: white;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.date-apply-btn:hover {
+    background-color: #059669;
+}
+
+.date-apply-btn:disabled {
+    background-color: #9ca3af;
+    border-color: #6b7280;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Additional CSS for the date filter modal */
+.date-filter-popup {
+    border-radius: 1rem;
+    padding: 1rem;
+}
+
+.date-input-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.swal2-title {
+    font-size: 1.25rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.date-filter-modal .swal2-html-container {
+    margin-top: 0.5rem;
+}
+
+/* Mobile optimizations */
+@media (max-width: 480px) {
+    .date-filter-modal .swal2-popup {
+        padding: 1rem;
+        width: 90% !important;
+    }
+    .swal2-actions-custom-gap {
+        gap: 10px !important;
+    }
+
+    .date-filter-modal .swal2-title {
+        font-size: 1rem !important;
+    }
+}
+
+/* Add styling for the hint */
+.active-filter-hint {
+    position: absolute;
+    top: -30px;
+    right: 0;
+    background-color: #ffffff;
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: none;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+.date-filter-toggle-btn:hover .active-filter-hint {
+    display: block;
+}
+
+/* Router link styling */
+.text-blue-600 {
+    color: #2563eb;
+}
+.hover\:text-blue-800:hover {
+    color: #1e40af;
+}
+.hover\:underline:hover {
+    text-decoration: underline;
+}
+.font-medium {
+    font-weight: 500;
+}
+.transition-colors {
+    transition: color 0.2s ease;
 }
 </style>

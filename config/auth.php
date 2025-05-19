@@ -35,15 +35,33 @@ return [
     |
     */
 
+  
     'guards' => [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
         'api' => [
             'driver' => 'jwt',
             'provider' => 'users',
-       
+        ],
+        
+        'farmer' => [
+            'driver' => 'jwt',
+            'provider' => 'farmers',
+        ],
+    ],
+
+    'providers' => [
+        'users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\User::class,
+        ],
+        
+        'farmers' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Farmer\UserFarmer::class,
         ],
     ],
 

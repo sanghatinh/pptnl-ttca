@@ -28,12 +28,29 @@ import Unauthorized from "../Pages/Unauthorized.vue";
 
 const authMiddleware = (to, from, next) => {
     const token = localStorage.getItem("web_token");
-    const user = localStorage.getItem("web_user");
+    const userJson = localStorage.getItem("web_user");
+    const userType = localStorage.getItem("user_type");
     const store = useStore();
 
     if (token) {
+        // ตั้งค่า token ใน store
         store.setToken(token);
-        store.setUser(user);
+
+        // ตั้งค่า user ใน store
+        if (userJson) {
+            try {
+                const user = JSON.parse(userJson);
+                store.setUser(user);
+            } catch (e) {
+                console.error("Error parsing user data:", e);
+            }
+        }
+
+        // ตั้งค่า userType ใน store (สำคัญสำหรับ Farmer)
+        if (userType) {
+            store.setUserType(userType);
+        }
+
         next();
     } else {
         next({
@@ -42,7 +59,6 @@ const authMiddleware = (to, from, next) => {
         });
     }
 };
-
 const routes = [
     {
         name: "Home",
@@ -356,10 +372,24 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
     const token = localStorage.getItem("web_token");
+    const userType = localStorage.getItem("user_type");
+    const store = useStore();
+
+    // เส้นทางที่ไม่ต้องการการยืนยันตัวตน
+    const publicRoutes = ["/login", "/register"];
+
+    // เส้นทางที่อนุญาตให้เกษตรกรเข้าถึงได้
+    const farmerAllowedRoutes = [
+        "/",
+        "/Profile",
+        "/unauthorized",
+        // เพิ่มเส้นทางอื่นๆ ที่ต้องการให้เกษตรกรเข้าถึงได้
+    ];
+
     if (to.meta.middleware) {
         to.meta.middleware.forEach((middleware) => middleware(to, from, next));
     } else {
-        if (to.path == "/login" || to.path == "/") {
+        if (publicRoutes.includes(to.path)) {
             if (token) {
                 next({
                     name: "Home",
@@ -369,7 +399,15 @@ router.beforeEach((to, from, next) => {
                 next();
             }
         } else {
-            next();
+            // ตรวจสอบหากเป็น farmer และพยายามเข้าถึงหน้าที่ไม่ได้รับอนุญาต
+            if (
+                userType === "farmer" &&
+                !farmerAllowedRoutes.includes(to.path)
+            ) {
+                next("/unauthorized");
+            } else {
+                next();
+            }
         }
     }
 });

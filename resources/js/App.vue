@@ -7,21 +7,28 @@
     </div>
     <!-- Loading ends -->
 
-    <!-- Page wrapper start -->
-    <div class="page-wrapper">
+    <!-- For login/non-authenticated pages -->
+    <div
+        v-if="!store.getToken || $route.path === '/login'"
+        class="auth-wrapper"
+    >
+        <router-view></router-view>
+    </div>
+
+    <!-- For authenticated pages -->
+    <div v-else class="page-wrapper">
         <!-- Page content start  -->
         <div class="page-content">
             <!-- Sidebar menu -->
-            <side-barmenu v-if="store.getToken"></side-barmenu>
+            <side-barmenu></side-barmenu>
             <!-- Sidebar menu end -->
             <!-- Header start -->
-            <header-bar v-if="store.getToken"></header-bar>
+            <header-bar></header-bar>
             <!--Heder END-->
 
             <!-- Main container stars -->
             <div class="main-container">
                 <router-view></router-view>
-                <!-- {{ store.getToken }} -->
                 <!-- Main container end -->
             </div>
             <!-- Page content end -->
@@ -45,4 +52,11 @@ export default {
     name: "Sidebarmenu",
 };
 </script>
-<style lang=""></style>
+<style>
+.auth-wrapper {
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
+}
+</style>

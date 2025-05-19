@@ -5,9 +5,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Farmer\UserFarmer;
 use JWTAuth;
 use Illuminate\Support\Facades\Auth;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
+use Illuminate\Support\Str; 
+use Illuminate\Support\Facades\Validator; 
 
 
 class UserController extends Controller
@@ -414,6 +417,120 @@ public function getUsersByIds(Request $request)
         ], 500);
     }
 }
+
+
+
+/**
+ * Farmer login method - handles authentication for farmers
+ * 
+ * @param Request $request
+ * @return JsonResponse
+ */
+
+
+public function farmerLogin(Request $request)
+{
+    try {
+        // Validate incoming request
+        $validator = Validator::make($request->all(), [
+            'identifier' => 'required|string',
+            'password' => 'required|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vui lòng cung cấp thông tin đầy đủ.'
+            ], 422);
+        }
+
+        $identifier = $request->identifier;
+        $password = $request->password;
+        
+        // Find the farmer by identifiers
+        $farmer = UserFarmer::where('ma_kh_ca_nhan', $identifier)
+            ->orWhere('ma_kh_doanh_nghiep', $identifier)
+            ->orWhere('phone', $identifier)
+            ->first();
+            
+        if (!$farmer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy tài khoản nông dân với thông tin đã cung cấp.'
+            ], 401);
+        }
+        
+        // Check if account is active
+        if ($farmer->status !== 'active') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tài khoản của bạn đã bị khóa.'
+            ], 403);
+        }
+        
+        // Password verification
+        $passwordMatches = false;
+        
+        // Try bcrypt verification first
+        try {
+            $passwordMatches = Hash::check($password, $farmer->password);
+        } catch (\Exception $e) {
+            // If bcrypt verification fails, try direct comparison
+            $passwordMatches = ($password === $farmer->password);
+            
+            if ($passwordMatches) {
+                $farmer->password = Hash::make($password);
+                $farmer->save();
+            }
+        }
+        
+        if (!$passwordMatches) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mật khẩu không đúng.'
+            ], 401);
+        }
+        
+        // Generate token directly with JWTAuth instead of using auth guard
+        $token = JWTAuth::fromUser($farmer);
+        
+        // Set TTL if remember_me is true
+        if ($request->remember_me) {
+            JWTAuth::factory()->setTTL(60 * 24 * 7); // 7 days
+        }
+        
+        // Prepare user data for response
+        $userData = [
+            'id' => $farmer->id,
+            'name' => $farmer->name,
+            'ma_kh_ca_nhan' => $farmer->ma_kh_ca_nhan,
+            'ma_kh_doanh_nghiep' => $farmer->ma_kh_doanh_nghiep,
+            'phone' => $farmer->phone,
+            'email' => $farmer->email,
+            'user_type' => 'farmer',
+        ];
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Đăng nhập thành công',
+            'token' => $token,
+            'user' => $userData
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Farmer login error: ' . $e->getMessage());
+        // Enable detailed error reporting in development
+        $errorMessage = config('app.debug') 
+            ? 'Error: ' . $e->getMessage() 
+            : 'Có lỗi xảy ra trong quá trình đăng nhập. Vui lòng thử lại sau.';
+        
+        return response()->json([
+            'success' => false,
+            'message' => $errorMessage
+        ], 500);
+    }
+}
+
 
 
 
