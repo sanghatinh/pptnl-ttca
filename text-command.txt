@@ -6,6 +6,7 @@ Larvel
     - php artisan install:api    = ຄຳສັ່ງສ້າງ-ຕິດຕັ້ງ api 
     - php artisan route:cache  : ຄຳສັ່ງເຄຼຍ Route Cache
     -php artisan cache:clear
+    -php artisan config:clear
     -php artisan make:controller MyController  เพื่อสร้าง Controller 
     -php artisan make:model Component
 
@@ -21,7 +22,7 @@ Git
     - git push                   = ຄຳສັ່ງ ອັບໂຫຼດໂປຼເຈັກຂື້ນ github 
     - git pull                   = ຄຳສັ່ງ ອັບເດດ ໂຄດລ່າສຸດຈາກ github
 
-    - git add . && git commit -m "v1.6.3.2" && git push
+    - git add . && git commit -m "v1.6.3.3" && git push
 
 
     -cls = ຄຳສັ່ງ clear cmd

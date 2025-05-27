@@ -45,6 +45,19 @@ export const useStore = defineStore("auth", {
             this.userComponents = [];
             this.supplierId = null;
         },
+        // เพิ่มฟังก์ชันใหม่ที่นี่
+        getAuthHeaders() {
+            const headers = {
+                Authorization: `Bearer ${this.token}`,
+                "X-User-Type": this.userType || "employee",
+            };
+
+            if (this.userType === "farmer" && this.supplierId) {
+                headers["X-Supplier-Number"] = this.supplierId;
+            }
+
+            return headers;
+        },
         // เพิ่มฟังก์ชันสำหรับโหลดสิทธิ์และ components
         async loadPermissionsAndComponents() {
             try {

@@ -2774,11 +2774,12 @@ export default {
                           ...this.getFilterParams(),
                       };
 
+                // Use the store's getAuthHeaders method
+                const headers = this.store.getAuthHeaders();
+
                 const response = await axios.get("/api/congno-dichvu-khautru", {
                     params: params,
-                    headers: {
-                        Authorization: "Bearer " + this.store.getToken,
-                    },
+                    headers: headers, // ใช้ headers จาก store
                 });
 
                 // Process successful response

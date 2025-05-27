@@ -1,45 +1,91 @@
 <?php
-// In the handle method, add support for farmer authentication
 namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-public function handle($request, Closure $next)
+use JWTAuth;
+use Exception;
+use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use App\Models\Farmer\UserFarmer;
+
+class JwtMiddleware 
 {
-    try {
-        $user = JWTAuth::parseToken()->authenticate();
-        
-        // Check if token is for a farmer (which won't authenticate against the User model)
-        if (!$user) {
-            $payload = JWTAuth::parseToken()->getPayload();
+    public function handle(Request $request, Closure $next)
+    {
+        try {
+            // ดึง token จาก Authorization header
+            $token = $request->bearerToken();
             
-            // If this token belongs to a farmer, handle differently
-            if ($payload->get('user_type') === 'farmer') {
-                $farmerId = $payload->get('sub');
-                
-                // Verify farmer exists and is active
-                $farmer = DB::table('user_farmer')->where('id', $farmerId)->first();
-                
-                if (!$farmer || $farmer->status !== 'active') {
-                    return response()->json(['error' => 'Tài khoản không tồn tại hoặc đã bị khóa'], 401);
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token not provided'
+                ], 401);
+            }
+
+            // ตรวจสอบและถอดรหัส token
+            $payload = JWTAuth::setToken($token)->getPayload();
+            $userId = $payload->get('sub');
+            
+            // ดึงข้อมูล user type จาก header
+            $userType = $request->header('X-User-Type', 'employee');
+            
+            // ตรวจสอบผู้ใช้ตามประเภท
+            if ($userType === 'farmer') {
+                $user = UserFarmer::find($userId);
+                if (!$user || $user->status !== 'active') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Farmer account not found or inactive'
+                    ], 401);
                 }
                 
-                // Add farmer to request for later use
-                $request->attributes->add(['user_type' => 'farmer', 'user' => $farmer]);
-                return $next($request);
+                // เพิ่ม supplier number ใน header สำหรับใช้ใน controller
+                $request->headers->set('X-User-Type', 'farmer');
+                $request->headers->set('X-Supplier-Number', $user->supplier_number ?? $user->ma_kh_ca_nhan);
+                
+            } else {
+                $user = User::find($userId);
+                if (!$user || $user->status !== 'active') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Employee account not found or inactive'
+                    ], 401);
+                }
+                
+                $request->headers->set('X-User-Type', 'employee');
             }
             
-            return response()->json(['error' => 'Không tìm thấy người dùng'], 401);
+            // เพิ่มข้อมูลผู้ใช้ใน request สำหรับใช้ใน controller
+            $request->merge(['authenticated_user' => $user]);
+            $request->headers->set('X-User-ID', $userId);
+            
+            return $next($request);
+            
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token has expired'
+            ], 401);
+            
+        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token is invalid'
+            ], 401);
+            
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token error: ' . $e->getMessage()
+            ], 401);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication failed'
+            ], 500);
         }
-    } catch (TokenExpiredException $e) {
-        return response()->json(['error' => 'Token đã hết hạn'], 401);
-    } catch (TokenInvalidException $e) {
-        return response()->json(['error' => 'Token không hợp lệ'], 401);
-    } catch (JWTException $e) {
-        return response()->json(['error' => 'Token không được cung cấp'], 401);
     }
-
-    // Add employee type to request
-    $request->attributes->add(['user_type' => 'employee']);
-    return $next($request);
 }

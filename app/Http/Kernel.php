@@ -64,5 +64,8 @@ class Kernel extends HttpKernel
         'permission' => \App\Http\Middleware\CheckPermission::class,
         'check.user.status' => \App\Http\Middleware\CheckUserStatus::class,
         'document.access' => \App\Http\Middleware\CheckDocumentAccess::class,
+        'jwt.token.validation' => \App\Http\Middleware\JwtMiddleware::class,
     ];
+
+
 }
