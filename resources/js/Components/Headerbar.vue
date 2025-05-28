@@ -144,8 +144,7 @@ export default {
                 })
                 .then((res) => {
                     if (res.data.success) {
-                        localStorage.removeItem("web_token");
-                        localStorage.removeItem("web_user");
+                        this.clearAllLocalStorage();
                         this.store.logout();
                         this.$router.push("/login");
                     }
@@ -153,12 +152,36 @@ export default {
                 .catch((err) => {
                     console.log(err);
                     if (err.response && err.response.status === 401) {
-                        localStorage.removeItem("web_token");
-                        localStorage.removeItem("web_user");
+                        this.clearAllLocalStorage();
                         this.store.logout();
                         this.$router.push("/login");
                     }
                 });
+        },
+
+        clearAllLocalStorage() {
+            // วิธีการลบ localStorage ทั้งหมด (ใช้ด้วยความระมัดระวัง)
+            localStorage.clear();
+
+            // หรือใช้วิธีการที่ปลอดภัยกว่า - ลบเฉพาะที่เกี่ยวข้องกับโปรเจค
+            const projectKeys = [
+                "web_token",
+                "web_user",
+                "user_type",
+                "supplier_id",
+                "bienban_filter_state",
+                "payment_request_filter_state",
+                "congno_filter_state",
+            ];
+
+            projectKeys.forEach((key) => localStorage.removeItem(key));
+
+            // ลบ keys ที่มี pattern เฉพาะ
+            Object.keys(localStorage).forEach((key) => {
+                if (key.startsWith("import_congno_dichvu_khautru_")) {
+                    localStorage.removeItem(key);
+                }
+            });
         },
     },
 };

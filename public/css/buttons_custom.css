@@ -2,348 +2,367 @@
 .button-30 {
     align-items: center;
     appearance: none;
-    background-color: #fcfcfd;
-    border-radius: 4px;
-    border-width: 0;
-    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
+    background: linear-gradient(135deg, #fcfcfd 0%, #f8f9fa 100%);
+    border-radius: 8px;
+    border: 1px solid rgba(45, 35, 66, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
     box-sizing: border-box;
     color: #36395a;
     cursor: pointer;
     display: inline-flex;
     font-family: "Be Vietnam Pro", serif;
-    height: 35px;
+    height: 40px;
     justify-content: center;
     line-height: 1;
     list-style: none;
     overflow: hidden;
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 20px;
+    padding-right: 20px;
     position: relative;
-    text-align: left;
+    text-align: center;
     text-decoration: none;
-    transition: box-shadow 0.15s, transform 0.15s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
     white-space: nowrap;
-    will-change: box-shadow, transform;
     font-size: 14px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
 }
 
 .button-30:focus {
-    box-shadow: #d6d6e7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(45, 35, 66, 0.1),
+        0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
 }
 
 .button-30:hover {
-    box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
     transform: translateY(-2px);
+    box-shadow: 0 10px 16px -4px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    background: linear-gradient(135deg, #ffffff 0%, #fcfcfd 100%);
 }
 
 .button-30:active {
-    box-shadow: #d6d6e7 0 3px 7px inset;
-    transform: translateY(2px);
+    transform: translateY(0px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 /* CSS save button */
 .button-30-save {
     align-items: center;
     appearance: none;
-    background-color: #01902d;
-    border-radius: 4px;
-    border-width: 0;
-    box-shadow: rgba(45, 35, 66, 0.3) 0 2px 4px,
-        rgba(45, 35, 66, 0.2) 0 7px 13px -3px, #27ae60 0 -3px 0 inset;
+    background: linear-gradient(135deg, #01902d 0%, #27ae60 100%);
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(1, 144, 45, 0.3),
+        0 2px 4px -1px rgba(1, 144, 45, 0.2);
     box-sizing: border-box;
     color: #fff;
     cursor: pointer;
     display: inline-flex;
-    height: 35px;
+    height: 40px;
     justify-content: center;
     line-height: 1;
     list-style: none;
     overflow: hidden;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
     position: relative;
-    text-align: left;
+    text-align: center;
     text-decoration: none;
-    transition: box-shadow 0.15s, transform 0.15s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
     white-space: nowrap;
-    will-change: box-shadow, transform;
     font-size: 14px;
+    font-weight: 500;
     font-family: "Be Vietnam Pro", serif;
 }
 
 .button-30-save:focus {
-    box-shadow: #27ae60 0 0 0 1.5px inset, rgba(45, 35, 66, 0.3) 0 2px 4px,
-        rgba(45, 35, 66, 0.2) 0 7px 13px -3px, #27ae60 0 -3px 0 inset;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.3),
+        0 4px 6px -1px rgba(1, 144, 45, 0.3);
+    transform: translateY(-1px);
 }
 
 .button-30-save:hover {
-    box-shadow: rgba(45, 35, 66, 0.3) 0 4px 8px,
-        rgba(45, 35, 66, 0.2) 0 7px 13px -3px, #27ae60 0 -3px 0 inset;
     transform: translateY(-2px);
+    box-shadow: 0 10px 16px -4px rgba(1, 144, 45, 0.3),
+        0 4px 6px -2px rgba(1, 144, 45, 0.2);
+    background: linear-gradient(135deg, #229954 0%, #2ecc71 100%);
 }
 
 .button-30-save:active {
-    box-shadow: rgba(1, 144, 45, 0.5) 0 3px 7px inset;
-    transform: translateY(2px);
+    transform: translateY(0px);
+    background: linear-gradient(135deg, #186a3b 0%, #01902d 100%);
 }
 
 /* CSS del button */
 .button-30-del {
     align-items: center;
     appearance: none;
-    background-color: #dc143c;
-    border-radius: 4px;
-    border-width: 0;
-    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #dc143c 0 -3px 0 inset;
+    background: linear-gradient(135deg, #dc143c 0%, #e74c3c 100%);
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(220, 20, 60, 0.3),
+        0 2px 4px -1px rgba(220, 20, 60, 0.2);
     box-sizing: border-box;
     color: #fff;
     cursor: pointer;
     display: inline-flex;
-    height: 35px;
+    height: 40px;
     justify-content: center;
     line-height: 1;
     list-style: none;
     overflow: hidden;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
     position: relative;
-    text-align: left;
+    text-align: center;
     text-decoration: none;
-    transition: box-shadow 0.15s, transform 0.15s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
     white-space: nowrap;
-    will-change: box-shadow, transform;
     font-size: 14px;
+    font-weight: 500;
     font-family: "Be Vietnam Pro", serif;
 }
 
 .button-30-del:focus {
-    box-shadow: #dc143c 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #dc143c 0 -3px 0 inset;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.3),
+        0 4px 6px -1px rgba(220, 20, 60, 0.3);
+    transform: translateY(-1px);
 }
 
 .button-30-del:hover {
-    box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #dc143c 0 -3px 0 inset;
     transform: translateY(-2px);
+    box-shadow: 0 10px 16px -4px rgba(220, 20, 60, 0.3),
+        0 4px 6px -2px rgba(220, 20, 60, 0.2);
+    background: linear-gradient(135deg, #e74c3c 0%, #ec7063 100%);
 }
 
 .button-30-del:active {
-    box-shadow: #d6d6e7 0 3px 7px inset;
-    transform: translateY(2px);
+    transform: translateY(0px);
+    background: linear-gradient(135deg, #a93226 0%, #dc143c 100%);
 }
 
 /* CSS text-green button */
 .button-30-text-green {
     align-items: center;
     appearance: none;
-    background-color: #fcfcfd;
-    border-radius: 4px;
-    border-width: 0;
-    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
+    background: linear-gradient(135deg, #fcfcfd 0%, #f8f9fa 100%);
+    border-radius: 8px;
+    border: 2px solid #01902d;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
     box-sizing: border-box;
     color: #01902d;
     cursor: pointer;
     display: inline-flex;
     font-family: "Be Vietnam Pro", serif;
-    height: 35px;
+    height: 40px;
     justify-content: center;
     line-height: 1;
     list-style: none;
     overflow: hidden;
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 20px;
+    padding-right: 20px;
     position: relative;
-    text-align: left;
+    text-align: center;
     text-decoration: none;
-    transition: box-shadow 0.15s, transform 0.15s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
     white-space: nowrap;
-    will-change: box-shadow, transform;
     font-size: 14px;
+    font-weight: 500;
 }
 
 .button-30-text-green:focus {
-    box-shadow: #d6d6e7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(1, 144, 45, 0.2),
+        0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
 }
 
 .button-30-text-green:hover {
-    box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
     transform: translateY(-2px);
+    box-shadow: 0 10px 16px -4px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+    border-color: #27ae60;
 }
 
 .button-30-text-green:active {
-    box-shadow: #d6d6e7 0 3px 7px inset;
-    transform: translateY(2px);
+    transform: translateY(0px);
+    background: #f0fdf4;
 }
 
 /* CSS text-red button */
 .button-30-text-red {
     align-items: center;
     appearance: none;
-    background-color: #fcfcfd;
-    border-radius: 4px;
-    border-width: 0;
-    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
+    background: linear-gradient(135deg, #fcfcfd 0%, #f8f9fa 100%);
+    border-radius: 8px;
+    border: 2px solid #dc143c;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
     box-sizing: border-box;
     color: #dc143c;
     cursor: pointer;
     display: inline-flex;
     font-family: "Be Vietnam Pro", serif;
-    height: 35px;
+    height: 40px;
     justify-content: center;
     line-height: 1;
     list-style: none;
     overflow: hidden;
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 20px;
+    padding-right: 20px;
     position: relative;
-    text-align: left;
+    text-align: center;
     text-decoration: none;
-    transition: box-shadow 0.15s, transform 0.15s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
     white-space: nowrap;
-    will-change: box-shadow, transform;
     font-size: 14px;
+    font-weight: 500;
 }
 
 .button-30-text-red:focus {
-    box-shadow: #d6d6e7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.2),
+        0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
 }
 
 .button-30-text-red:hover {
-    box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #d6d6e7 0 -3px 0 inset;
     transform: translateY(-2px);
+    box-shadow: 0 10px 16px -4px rgba(0, 0, 0, 0.1),
+        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+    border-color: #e74c3c;
 }
 
-.button-30-text-green:active {
-    box-shadow: #d6d6e7 0 3px 7px inset;
-    transform: translateY(2px);
+.button-30-text-red:active {
+    transform: translateY(0px);
+    background: #fef2f2;
 }
 
 /* CSS yellow button */
 .button-30-yellow {
     align-items: center;
     appearance: none;
-    background-color: #ffd54f; /* Light yellow color */
-    border-radius: 4px;
-    border-width: 0;
-    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #e6b800 0 -3px 0 inset;
+    background: linear-gradient(135deg, #ffd54f 0%, #ffecb3 100%);
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(255, 213, 79, 0.4),
+        0 2px 4px -1px rgba(255, 213, 79, 0.3);
     box-sizing: border-box;
-    color: #555555; /* Dark gray text - not too dark but still readable */
+    color: #4a4a4a;
     cursor: pointer;
     display: inline-flex;
     font-family: "Be Vietnam Pro", serif;
-    height: 35px;
+    height: 40px;
     justify-content: center;
     line-height: 1;
     list-style: none;
     overflow: hidden;
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 20px;
+    padding-right: 20px;
     position: relative;
-    text-align: left;
+    text-align: center;
     text-decoration: none;
-    transition: box-shadow 0.15s, transform 0.15s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
     white-space: nowrap;
-    will-change: box-shadow, transform;
     font-size: 14px;
-    font-weight: 500; /* Slightly bold to improve readability on yellow */
-    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2); /* Text shadow for better contrast */
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .button-30-yellow:focus {
-    box-shadow: #e6b800 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #e6b800 0 -3px 0 inset;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 213, 79, 0.3),
+        0 4px 6px -1px rgba(255, 213, 79, 0.4);
+    transform: translateY(-1px);
 }
 
 .button-30-yellow:hover {
-    box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #e6b800 0 -3px 0 inset;
     transform: translateY(-2px);
-    background-color: #ffca28; /* Slightly darker on hover */
+    box-shadow: 0 10px 16px -4px rgba(255, 213, 79, 0.4),
+        0 4px 6px -2px rgba(255, 213, 79, 0.3);
+    background: linear-gradient(135deg, #ffca28 0%, #ffe082 100%);
 }
 
 .button-30-yellow:active {
-    box-shadow: #e6b800 0 3px 7px inset;
-    transform: translateY(2px);
-    background-color: #ffc107; /* Even darker when active */
+    transform: translateY(0px);
+    background: linear-gradient(135deg, #ffc107 0%, #ffd54f 100%);
 }
 
 /* CSS blue button */
 .button-30-blue {
     align-items: center;
     appearance: none;
-    background-color: #1e88e5; /* Blue color */
-    border-radius: 4px;
-    border-width: 0;
-    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #1565c0 0 -3px 0 inset;
+    background: linear-gradient(135deg, #1e88e5 0%, #42a5f5 100%);
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(30, 136, 229, 0.3),
+        0 2px 4px -1px rgba(30, 136, 229, 0.2);
     box-sizing: border-box;
-    color: #ffffff; /* White text for contrast */
+    color: #ffffff;
     cursor: pointer;
     display: inline-flex;
     font-family: "Be Vietnam Pro", serif;
-    height: 35px;
+    height: 40px;
     justify-content: center;
     line-height: 1;
     list-style: none;
     overflow: hidden;
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 20px;
+    padding-right: 20px;
     position: relative;
-    text-align: left;
+    text-align: center;
     text-decoration: none;
-    transition: box-shadow 0.15s, transform 0.15s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
     white-space: nowrap;
-    will-change: box-shadow, transform;
     font-size: 14px;
     font-weight: 500;
 }
 
 .button-30-blue:focus {
-    box-shadow: #1565c0 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #1565c0 0 -3px 0 inset;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.3),
+        0 4px 6px -1px rgba(30, 136, 229, 0.3);
+    transform: translateY(-1px);
 }
 
 .button-30-blue:hover {
-    box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px,
-        rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #1565c0 0 -3px 0 inset;
     transform: translateY(-2px);
-    background-color: #1976d2; /* Slightly darker on hover */
+    box-shadow: 0 10px 16px -4px rgba(30, 136, 229, 0.3),
+        0 4px 6px -2px rgba(30, 136, 229, 0.2);
+    background: linear-gradient(135deg, #1976d2 0%, #1e88e5 100%);
 }
 
 .button-30-blue:active {
-    box-shadow: #1565c0 0 3px 7px inset;
-    transform: translateY(2px);
-    background-color: #1565c0; /* Less dark blue when active */
+    transform: translateY(0px);
+    background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
 }

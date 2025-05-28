@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
 use Illuminate\Support\Str; 
 use Illuminate\Support\Facades\Validator; 
+use App\Services\CloudinaryService; 
+use Illuminate\Support\Facades\Log;
 
 
 class UserController extends Controller
@@ -173,47 +175,160 @@ public function getUsers()
 }
 
 // เพิ่มฟังก์ชันใน UserController Add new user
+
 public function addnewuser(Request $request)
 {
     $request->validate([
         'username'   => 'required|unique:users',
-        'password'   => 'required',
+        'password'   => 'required|min:6',
         'full_name'  => 'required',
         'email'      => 'nullable|email|unique:users',
         'phone'      => 'nullable|string',
         'position'   => 'required|string',
         'station'    => 'required|string',
         'role_id'    => 'required|exists:roles,id',
-        'status'     => 'required|in:active,inactive',
+        'status'     => 'required|string',
         'ma_nhan_vien' => 'nullable|string',
+        'image'      => 'nullable|string' // เปลี่ยนเป็น string สำหรับ public_id
     ]);
+
+    DB::beginTransaction();
 
     try {
         $user = new User();
-        $user->username    = $request->username;
-        $user->password    = Hash::make($request->password);
-        $user->full_name   = $request->full_name;
-        $user->email       = $request->email;
-        $user->phone       = $request->phone;
-        $user->position    = $request->position;
-        $user->station     = $request->station;
-        $user->role_id     = $request->role_id;
-        $user->status      = $request->status;
+        $user->username = $request->username;
+        $user->password = Hash::make($request->password);
+        $user->full_name = $request->full_name;
+        $user->email = $request->email;
+        $user->phone = $request->phone;
+        $user->position = $request->position;
+        $user->station = $request->station;
+        $user->status = $request->status;
         $user->ma_nhan_vien = $request->ma_nhan_vien;
+        $user->role_id = $request->role_id;
+
+        // ถ้ามี image public_id ให้บันทึก
+        if ($request->filled('image')) {
+            $user->image = $request->image;
+            Log::info('User image set from public_id', [
+                'public_id' => $request->image
+            ]);
+        }
 
         // Set created_user from currently logged in user
         $user->created_user = Auth::id();
         $user->save();
 
-        // Sync join table user_role. Assumes User model defines a roles() relationship.
+        // Sync join table user_role
         $user->roles()->sync([$request->role_id]);
 
-        return response()->json(['message' => 'success'], 201);
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'success',
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'full_name' => $user->full_name,
+                'image' => $user->image,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'position' => $user->position,
+                'station' => $user->station,
+                'status' => $user->status,
+                'role_id' => $user->role_id,
+                'ma_nhan_vien' => $user->ma_nhan_vien
+            ]
+        ], 201);
+
     } catch (\Illuminate\Database\QueryException $ex) {
-        return response()->json(['error' => $ex->getMessage()], 500);
+        DB::rollBack();
+        Log::error('Database error in addnewuser: ' . $ex->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Database error occurred',
+            'error' => $ex->getMessage()
+        ], 500);
+    } catch (\Exception $ex) {
+        DB::rollBack();
+        Log::error('General error in addnewuser: ' . $ex->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while creating user',
+            'error' => $ex->getMessage()
+        ], 500);
     }
 }
 
+// แก้ไข method uploadUserImage เช่นกัน
+
+public function uploadUserImage(Request $request)
+{
+    Log::info('Upload user image request received', [
+        'has_file' => $request->hasFile('image'),
+        'file_size' => $request->hasFile('image') ? $request->file('image')->getSize() : 0
+    ]);
+
+    $request->validate([
+        'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120'
+    ]);
+
+    try {
+        // ตรวจสอบไฟล์ก่อน
+        if (!$request->hasFile('image')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No image file provided'
+            ], 400);
+        }
+
+        $file = $request->file('image');
+        if (!$file->isValid()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid image file'
+            ], 400);
+        }
+
+        // ใช้ CloudinaryService
+        $cloudinaryService = new CloudinaryService();
+        
+        // ลองใช้ unsigned upload ก่อน (ต้องสร้าง upload preset: ml_default ใน Cloudinary console)
+        $result = $cloudinaryService->uploadImageUnsigned($file, 'ml_default');
+        
+        // ถ้าไม่สำเร็จ ลองใช้ signed upload
+        if (!$result['success']) {
+            $result = $cloudinaryService->uploadImageSimple($file, 'users/temp');
+        }
+        
+        if ($result['success']) {
+            return response()->json([
+                'success' => true,
+                'image_url' => $result['secure_url'],
+                'public_id' => $result['public_id']
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Upload failed',
+                'error' => $result['error'] ?? 'Unknown error'
+            ], 500);
+        }
+        
+    } catch (\Exception $e) {
+        Log::error('Upload user image exception', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to upload image',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 public function edituser($id)
 {
     try {

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useStore } from "../Store/Auth";
 import axios from "axios"; // เพิ่มบรรทัดนี้ถ้ายังไม่มี
+import AddUser from "../Pages/Admin/AddUser.vue";
 import Home from "../Pages/Dashboard.vue";
 import Taohoso from "../Pages/Quanlyhoso/TaoGiaoNhanhoso.vue";
 import Danhsachhoso from "../Pages/Quanlyhoso/DanhsachHoso.vue";
@@ -87,6 +88,14 @@ const routes = [
         name: "Home",
         path: "/",
         component: Home,
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
+        name: "AddUser",
+        path: "/AddUser",
+        component: AddUser,
         meta: {
             middleware: [authMiddleware],
         },

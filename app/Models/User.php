@@ -31,6 +31,7 @@ class User extends Authenticatable implements JWTSubject
   'role_id',
   'status',
   'ma_nhan_vien',
+  'image',
     ];
 
     /**
@@ -110,5 +111,76 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->belongsTo(ListPosition::class, 'position', 'id_position');
     }
+
+
+/**
+ * Get the Cloudinary image URL from public_id
+ * 
+ * @param string|null $transformation
+ * @return string|null
+ */
+public function getImageUrlAttribute($transformation = null)
+{
+    if (!$this->image) {
+        return null;
+    }
+    
+    // ถ้า image เป็น public_id ให้สร้าง URL
+    if (!str_contains($this->image, 'http')) {
+        $cloudinaryService = new \App\Services\CloudinaryService();
+        
+        $defaultTransformation = [
+            'width' => 200,
+            'height' => 200,
+            'crop' => 'fill',
+            'gravity' => 'face',
+            'quality' => 'auto:good'
+        ];
+        
+        $transform = $transformation ?? $defaultTransformation;
+        
+        return $cloudinaryService->getTransformationUrl($this->image, $transform);
+    }
+    
+    // ถ้าเป็น URL อยู่แล้วให้ return ตรงๆ
+    return $this->image;
+}
+
+/**
+ * Get different sizes of the image
+ */
+public function getImageThumbnailAttribute()
+{
+    return $this->getImageUrlAttribute([
+        'width' => 100,
+        'height' => 100,
+        'crop' => 'fill',
+        'gravity' => 'face'
+    ]);
+}
+
+public function getImageMediumAttribute()
+{
+    return $this->getImageUrlAttribute([
+        'width' => 300,
+        'height' => 300,
+        'crop' => 'fill',
+        'gravity' => 'face'
+    ]);
+}
+
+public function getImageLargeAttribute()
+{
+    return $this->getImageUrlAttribute([
+        'width' => 600,
+        'height' => 600,
+        'crop' => 'fill',
+        'gravity' => 'face'
+    ]);
+}
+
+
+
+
 
 }

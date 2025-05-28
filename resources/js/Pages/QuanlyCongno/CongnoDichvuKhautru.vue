@@ -3267,6 +3267,10 @@ export default {
         handleAuthError() {
             localStorage.removeItem("web_token");
             localStorage.removeItem("web_user");
+            localStorage.removeItem("congno_filter_state");
+            localStorage.removeItem("supplier_id");
+            localStorage.removeItem("user_type");
+
             this.store.logout();
             this.$router.push("/login");
         },
