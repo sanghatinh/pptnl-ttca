@@ -693,7 +693,7 @@
                                 :disabled="isLoading"
                                 class="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Reset
+                                Cancel
                             </button>
                         </div>
                     </form>
@@ -891,8 +891,8 @@ export default {
                 if (!file.type.startsWith("image/")) {
                     this.$swal({
                         icon: "error",
-                        title: "Invalid file type",
-                        text: "Please select an image file",
+                        title: "Loại tệp không hợp lệ",
+                        text: "Vui lòng chọn tệp hình ảnh",
                         showConfirmButton: true,
                     });
                     return;
@@ -902,8 +902,8 @@ export default {
                 if (file.size > 5 * 1024 * 1024) {
                     this.$swal({
                         icon: "error",
-                        title: "File too large",
-                        text: "Image size should be less than 5MB",
+                        title: "Tệp quá lớn",
+                        text: "Kích thước hình ảnh phải nhỏ hơn 5MB",
                         showConfirmButton: true,
                     });
                     return;
@@ -922,7 +922,7 @@ export default {
                     toast: true,
                     position: "top-end",
                     icon: "info",
-                    title: "Image ready for upload!",
+                    title: "Hình ảnh đã sẵn sàng để tải lên!",
                     showConfirmButton: false,
                     timer: 1500,
                 });
@@ -954,7 +954,7 @@ export default {
                         toast: true,
                         position: "top-end",
                         icon: "success",
-                        title: "Image uploaded successfully!",
+                        title: "Tải lên hình ảnh thành công!",
                         showConfirmButton: false,
                         timer: 1500,
                     });
@@ -967,7 +967,7 @@ export default {
                     toast: true,
                     position: "top-end",
                     icon: "error",
-                    title: "Image upload failed",
+                    title: "Tải lên hình ảnh thất bại",
                     showConfirmButton: false,
                     timer: 2000,
                 });
@@ -980,14 +980,14 @@ export default {
         async confirmDeleteUser() {
             try {
                 const result = await this.$swal({
-                    title: "Delete User?",
-                    text: "Are you sure you want to delete this user? This action cannot be undone.",
+                    title: "Xóa người dùng?",
+                    text: "Bạn có chắc chắn muốn xóa người dùng này? Hành động này không thể hoàn tác.",
                     icon: "warning",
                     showCancelButton: true,
                     confirmButtonColor: "#ef4444",
                     cancelButtonColor: "#6b7280",
-                    confirmButtonText: "Yes, delete it!",
-                    cancelButtonText: "Cancel",
+                    confirmButtonText: "Có, xóa nó!",
+                    cancelButtonText: "Hủy",
                     reverseButtons: true,
                 });
 
@@ -1001,7 +1001,7 @@ export default {
 
         async deleteUser() {
             this.isLoading = true;
-            this.loadingMessage = "Deleting user...";
+            this.loadingMessage = "Đang xóa người dùng...";
 
             try {
                 const response = await axios.delete(
@@ -1017,8 +1017,8 @@ export default {
                 if (response.data.success) {
                     this.$swal({
                         icon: "success",
-                        title: "Deleted!",
-                        text: "User has been deleted successfully.",
+                        title: "Đã xóa!",
+                        text: "Người dùng đã được xóa thành công.",
                         showConfirmButton: false,
                         timer: 2000,
                     }).then(() => {
@@ -1027,21 +1027,23 @@ export default {
                 } else {
                     this.$swal({
                         icon: "error",
-                        title: "Delete Failed!",
-                        text: response.data.message || "Failed to delete user",
+                        title: "Xóa thất bại!",
+                        text:
+                            response.data.message || "Không thể xóa người dùng",
                         showConfirmButton: true,
                     });
                 }
             } catch (error) {
                 console.error("Delete user error:", error);
 
-                let errorMessage = "An error occurred while deleting the user";
+                let errorMessage = "Đã xảy ra lỗi khi xóa người dùng";
 
                 if (error.response) {
                     if (error.response.status === 403) {
-                        errorMessage = "You cannot delete your own account";
+                        errorMessage =
+                            "Bạn không thể xóa tài khoản của chính mình";
                     } else if (error.response.status === 404) {
-                        errorMessage = "User not found";
+                        errorMessage = "Không tìm thấy người dùng";
                     } else if (error.response.status === 401) {
                         this.handleAuthError(error);
                         return;
@@ -1050,18 +1052,19 @@ export default {
                             error.response.data.message || errorMessage;
                     }
                 } else if (error.code === "ECONNABORTED") {
-                    errorMessage = "Request timed out. Please try again.";
+                    errorMessage =
+                        "Hết thời gian chờ yêu cầu. Vui lòng thử lại.";
                 }
 
                 this.$swal({
                     icon: "error",
-                    title: "Delete Failed!",
+                    title: "Xóa thất bại!",
                     text: errorMessage,
                     showConfirmButton: true,
                 });
             } finally {
                 this.isLoading = false;
-                this.loadingMessage = "Processing...";
+                this.loadingMessage = "Đang xử lý...";
             }
         },
 
@@ -1070,14 +1073,14 @@ export default {
             this.closeImageModal();
             try {
                 const result = await this.$swal({
-                    title: "Delete Image?",
-                    text: "Are you sure you want to delete this image?",
+                    title: "Xóa hình ảnh?",
+                    text: "Bạn có chắc chắn muốn xóa hình ảnh này?",
                     icon: "warning",
                     showCancelButton: true,
                     confirmButtonColor: "#ef4444",
                     cancelButtonColor: "#6b7280",
-                    confirmButtonText: "Yes, delete it!",
-                    cancelButtonText: "Cancel",
+                    confirmButtonText: "Có, xóa nó!",
+                    cancelButtonText: "Hủy",
                     reverseButtons: true,
                 });
 
@@ -1119,28 +1122,28 @@ export default {
                         toast: true,
                         position: "top-end",
                         icon: "success",
-                        title: "Image deleted successfully!",
+                        title: "Xóa hình ảnh thành công!",
                         showConfirmButton: false,
                         timer: 1500,
                     });
                 } else {
                     this.$swal({
                         icon: "error",
-                        title: "Delete Failed!",
-                        text: response.data.message || "Failed to delete image",
+                        title: "Xóa thất bại!",
+                        text: response.data.message || "Không thể xóa hình ảnh",
                         showConfirmButton: true,
                     });
                 }
             } catch (error) {
                 console.error("Delete image error:", error);
 
-                let errorMessage = "An error occurred while deleting the image";
+                let errorMessage = "Đã xảy ra lỗi khi xóa hình ảnh";
 
                 if (error.response) {
                     if (error.response.status === 400) {
-                        errorMessage = "User has no image to delete";
+                        errorMessage = "Người dùng không có hình ảnh để xóa";
                     } else if (error.response.status === 404) {
-                        errorMessage = "User not found";
+                        errorMessage = "Không tìm thấy người dùng";
                     } else if (error.response.status === 401) {
                         this.handleAuthError(error);
                         return;
@@ -1149,12 +1152,13 @@ export default {
                             error.response.data.message || errorMessage;
                     }
                 } else if (error.code === "ECONNABORTED") {
-                    errorMessage = "Request timed out. Please try again.";
+                    errorMessage =
+                        "Hết thời gian chờ yêu cầu. Vui lòng thử lại.";
                 }
 
                 this.$swal({
                     icon: "error",
-                    title: "Delete Failed!",
+                    title: "Xóa thất bại!",
                     text: errorMessage,
                     showConfirmButton: true,
                 });
@@ -1175,8 +1179,8 @@ export default {
             ) {
                 this.$swal({
                     icon: "warning",
-                    title: "Missing Required Fields",
-                    text: "Please fill in all required fields marked with *",
+                    title: "Thiếu trường bắt buộc",
+                    text: "Vui lòng điền vào tất cả các trường bắt buộc được đánh dấu *",
                     showConfirmButton: true,
                 });
                 return false;
@@ -1186,8 +1190,8 @@ export default {
             if (this.user.email && !this.isValidEmail(this.user.email)) {
                 this.$swal({
                     icon: "warning",
-                    title: "Invalid Email",
-                    text: "Please enter a valid email address",
+                    title: "Email không hợp lệ",
+                    text: "Vui lòng nhập địa chỉ email hợp lệ",
                     showConfirmButton: true,
                 });
                 return false;
@@ -1202,8 +1206,8 @@ export default {
                 if (!this.passwordForm.currentPassword) {
                     this.$swal({
                         icon: "warning",
-                        title: "Current Password Required",
-                        text: "Please enter your current password to change it",
+                        title: "Yêu cầu mật khẩu hiện tại",
+                        text: "Vui lòng nhập mật khẩu hiện tại để thay đổi",
                         showConfirmButton: true,
                     });
                     return false;
@@ -1212,8 +1216,8 @@ export default {
                 if (!this.passwordForm.newPassword) {
                     this.$swal({
                         icon: "warning",
-                        title: "New Password Required",
-                        text: "Please enter your new password",
+                        title: "Yêu cầu mật khẩu mới",
+                        text: "Vui lòng nhập mật khẩu mới của bạn",
                         showConfirmButton: true,
                     });
                     return false;
@@ -1222,8 +1226,8 @@ export default {
                 if (this.passwordForm.newPassword.length < 6) {
                     this.$swal({
                         icon: "warning",
-                        title: "Password Too Short",
-                        text: "New password must be at least 6 characters long",
+                        title: "Mật khẩu quá ngắn",
+                        text: "Mật khẩu mới phải có ít nhất 6 ký tự",
                         showConfirmButton: true,
                     });
                     return false;
@@ -1235,8 +1239,8 @@ export default {
                 ) {
                     this.$swal({
                         icon: "warning",
-                        title: "Password Mismatch",
-                        text: "New password and confirmation do not match",
+                        title: "Mật khẩu không khớp",
+                        text: "Mật khẩu mới và xác nhận không khớp",
                         showConfirmButton: true,
                     });
                     return false;
@@ -1256,22 +1260,22 @@ export default {
             if (!this.validateForm()) return;
 
             this.isLoading = true;
-            this.loadingMessage = "Updating profile...";
+            this.loadingMessage = "Đang cập nhật hồ sơ...";
 
             try {
                 let imagePublicId = this.user.image_public_id;
 
                 // Upload new image if selected
                 if (this.selectedImageFile) {
-                    this.loadingMessage = "Uploading image...";
+                    this.loadingMessage = "Đang tải lên hình ảnh...";
                     const imageResult = await this.uploadImageSeparately();
                     if (imageResult && imageResult.success) {
                         imagePublicId = imageResult.public_id;
                     } else {
                         this.$swal({
                             icon: "warning",
-                            title: "Image Upload Failed",
-                            text: "Profile will be updated without new image. You can try uploading again later.",
+                            title: "Tải lên hình ảnh thất bại",
+                            text: "Hồ sơ sẽ được cập nhật mà không có hình ảnh mới. Bạn có thể thử tải lên lại sau.",
                             showConfirmButton: true,
                         });
                     }
@@ -1304,7 +1308,7 @@ export default {
                         this.passwordForm.confirmPassword;
                 }
 
-                this.loadingMessage = "Saving changes...";
+                this.loadingMessage = "Đang lưu thay đổi...";
 
                 // Send update request
                 const response = await axios.put(
@@ -1322,8 +1326,8 @@ export default {
                 if (response.data.success) {
                     this.$swal({
                         icon: "success",
-                        title: "Success!",
-                        text: "User profile updated successfully!",
+                        title: "Thành công!",
+                        text: "Hồ sơ người dùng đã được cập nhật thành công!",
                         showConfirmButton: false,
                         timer: 2000,
                     }).then(() => {
@@ -1332,36 +1336,35 @@ export default {
                         // Clear image upload state
                         this.clearImageUploadState();
                         // Optionally redirect
-                        this.$router.push("/User");
+                        // this.$router.push("/User");
                     });
                 } else {
                     this.$swal({
                         icon: "error",
-                        title: "Update Failed!",
+                        title: "Cập nhật thất bại!",
                         text:
                             response.data.message ||
-                            "Failed to update user profile",
+                            "Không thể cập nhật hồ sơ người dùng",
                         showConfirmButton: true,
                     });
                 }
             } catch (err) {
                 console.error("Update user error:", err);
 
-                let errorMessage =
-                    "An error occurred while updating the profile";
+                let errorMessage = "Đã xảy ra lỗi khi cập nhật hồ sơ";
 
                 if (err.response) {
                     if (err.response.status === 422) {
                         if (
                             err.response.data.message ===
-                            "รหัสผ่านเก่าไม่ถูกต้อง"
+                            "Mật khẩu cũ không đúng"
                         ) {
                             errorMessage =
-                                "รหัสผ่านเก่าไม่ถูกต้อง กรุณาตรวจสอบและลองใหม่อีกครั้ง";
+                                "Mật khẩu cũ không đúng. Vui lòng kiểm tra và thử lại";
                         } else {
                             const errors = err.response.data.errors;
                             if (errors) {
-                                errorMessage = "Validation errors:\n";
+                                errorMessage = "Lỗi xác thực:\n";
                                 Object.keys(errors).forEach((key) => {
                                     errorMessage += `• ${errors[key][0]}\n`;
                                 });
@@ -1375,18 +1378,19 @@ export default {
                             err.response.data.message || errorMessage;
                     }
                 } else if (err.code === "ECONNABORTED") {
-                    errorMessage = "Request timed out. Please try again.";
+                    errorMessage =
+                        "Hết thời gian chờ yêu cầu. Vui lòng thử lại.";
                 }
 
                 this.$swal({
                     icon: "error",
-                    title: "Update Failed!",
+                    title: "Cập nhật thất bại!",
                     text: errorMessage,
                     showConfirmButton: true,
                 });
             } finally {
                 this.isLoading = false;
-                this.loadingMessage = "Processing...";
+                this.loadingMessage = "Đang xử lý...";
             }
         },
 
@@ -1411,29 +1415,7 @@ export default {
         },
 
         resetForm() {
-            this.$swal({
-                title: "Reset Form?",
-                text: "Are you sure you want to reset all changes?",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonText: "Yes, reset it!",
-                cancelButtonText: "Cancel",
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    this.loadUserData();
-                    this.clearPasswordForm();
-                    this.clearImageUploadState();
-
-                    this.$swal({
-                        toast: true,
-                        position: "top-end",
-                        icon: "success",
-                        title: "Form reset successfully!",
-                        showConfirmButton: false,
-                        timer: 1500,
-                    });
-                }
-            });
+            this.$router.push("/User");
         },
 
         handleAuthError(error) {

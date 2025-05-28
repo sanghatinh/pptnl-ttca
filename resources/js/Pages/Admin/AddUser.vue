@@ -703,8 +703,8 @@ export default {
                 if (!file.type.startsWith("image/")) {
                     this.$swal({
                         icon: "error",
-                        title: "Invalid file type",
-                        text: "Please select an image file",
+                        title: "Loại tệp không hợp lệ",
+                        text: "Vui lòng chọn tệp hình ảnh",
                         showConfirmButton: true,
                     });
                     return;
@@ -714,8 +714,8 @@ export default {
                 if (file.size > 5 * 1024 * 1024) {
                     this.$swal({
                         icon: "error",
-                        title: "File too large",
-                        text: "Image size should be less than 5MB",
+                        title: "Tệp quá lớn",
+                        text: "Kích thước hình ảnh phải nhỏ hơn 5MB",
                         showConfirmButton: true,
                     });
                     return;
@@ -734,7 +734,7 @@ export default {
                     toast: true,
                     position: "top-end",
                     icon: "info",
-                    title: "Image ready for upload!",
+                    title: "Hình ảnh đã sẵn sàng để tải lên!",
                     showConfirmButton: false,
                     timer: 1500,
                 });
@@ -766,7 +766,7 @@ export default {
                         toast: true,
                         position: "top-end",
                         icon: "success",
-                        title: "Image uploaded successfully!",
+                        title: "Tải lên hình ảnh thành công!",
                         showConfirmButton: false,
                         timer: 1500,
                     });
@@ -775,8 +775,8 @@ export default {
                 console.error("Image upload error:", error);
                 this.$swal({
                     icon: "error",
-                    title: "Upload failed",
-                    text: "Failed to upload image. Please try again.",
+                    title: "Tải lên thất bại",
+                    text: "Không thể tải lên hình ảnh. Vui lòng thử lại.",
                     showConfirmButton: true,
                 });
                 // Reset preview on error
@@ -784,15 +784,6 @@ export default {
                 this.selectedImageFile = null;
             } finally {
                 this.uploadingImage = false;
-            }
-        },
-
-        handleAuthError(error) {
-            if (error.response && error.response.status === 401) {
-                localStorage.removeItem("web_token");
-                localStorage.removeItem("web_user");
-                this.store.logout();
-                this.$router.push("/login");
             }
         },
 
@@ -809,8 +800,8 @@ export default {
             ) {
                 this.$swal({
                     icon: "warning",
-                    title: "Missing Required Fields",
-                    text: "Please fill in all required fields marked with *",
+                    title: "Thiếu trường bắt buộc",
+                    text: "Vui lòng điền vào tất cả các trường bắt buộc được đánh dấu *",
                     showConfirmButton: true,
                 });
                 return;
@@ -819,8 +810,8 @@ export default {
             if (this.user.password.length < 6) {
                 this.$swal({
                     icon: "warning",
-                    title: "Password Too Short",
-                    text: "Password must be at least 6 characters long",
+                    title: "Mật khẩu quá ngắn",
+                    text: "Mật khẩu phải có ít nhất 6 ký tự",
                     showConfirmButton: true,
                 });
                 return;
@@ -841,8 +832,8 @@ export default {
                         // ถ้าอัปโหลดรูปภาพล้มเหลว ให้แสดงข้อความแต่ยังคงสร้าง user
                         this.$swal({
                             icon: "warning",
-                            title: "Image Upload Failed",
-                            text: "User will be created without profile image. You can add it later.",
+                            title: "Tải lên hình ảnh thất bại",
+                            text: "Người dùng sẽ được tạo mà không có ảnh đại diện. Bạn có thể thêm sau.",
                             showConfirmButton: true,
                         });
                     }
@@ -885,8 +876,8 @@ export default {
                 ) {
                     this.$swal({
                         icon: "success",
-                        title: "Success!",
-                        text: "User created successfully!",
+                        title: "Thành công!",
+                        text: "Tạo người dùng thành công!",
                         showConfirmButton: false,
                         timer: 2000,
                     }).then(() => {
@@ -896,8 +887,9 @@ export default {
                 } else {
                     this.$swal({
                         icon: "error",
-                        title: "Error!",
-                        text: response.data.message || "Failed to create user",
+                        title: "Lỗi!",
+                        text:
+                            response.data.message || "Không thể tạo người dùng",
                         showConfirmButton: true,
                     });
                 }
@@ -909,15 +901,14 @@ export default {
                 if (err.response) {
                     if (err.response.status === 422) {
                         const errors = err.response.data.errors;
-                        let errorMessage =
-                            "Please check the following errors:\n";
+                        let errorMessage = "Vui lòng kiểm tra các lỗi sau:\n";
                         Object.keys(errors).forEach((key) => {
                             errorMessage += `• ${errors[key][0]}\n`;
                         });
 
                         this.$swal({
                             icon: "error",
-                            title: "Validation Error!",
+                            title: "Lỗi xác thực!",
                             text: errorMessage,
                             showConfirmButton: true,
                         });
@@ -926,25 +917,25 @@ export default {
                     } else {
                         this.$swal({
                             icon: "error",
-                            title: "Error!",
+                            title: "Lỗi!",
                             text:
                                 err.response.data.message ||
-                                "An error occurred while creating user",
+                                "Đã xảy ra lỗi khi tạo người dùng",
                             showConfirmButton: true,
                         });
                     }
                 } else if (err.code === "ECONNABORTED") {
                     this.$swal({
                         icon: "error",
-                        title: "Timeout!",
-                        text: "Request timed out. Please try again.",
+                        title: "Hết thời gian!",
+                        text: "Yêu cầu đã hết thời gian. Vui lòng thử lại.",
                         showConfirmButton: true,
                     });
                 } else {
                     this.$swal({
                         icon: "error",
-                        title: "Network Error!",
-                        text: "Please check your internet connection and try again.",
+                        title: "Lỗi mạng!",
+                        text: "Vui lòng kiểm tra kết nối internet và thử lại.",
                         showConfirmButton: true,
                     });
                 }
@@ -976,7 +967,7 @@ export default {
                         toast: true,
                         position: "top-end",
                         icon: "success",
-                        title: "Image uploaded successfully!",
+                        title: "Tải lên hình ảnh thành công!",
                         showConfirmButton: false,
                         timer: 1500,
                     });
@@ -989,7 +980,7 @@ export default {
                     toast: true,
                     position: "top-end",
                     icon: "error",
-                    title: "Image upload failed",
+                    title: "Tải lên hình ảnh thất bại",
                     showConfirmButton: false,
                     timer: 2000,
                 });
