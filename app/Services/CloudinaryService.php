@@ -4,87 +4,158 @@ namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class CloudinaryService
 {
     private $cloudName;
     private $apiKey;
     private $apiSecret;
+    private $uploadUrl;
+    private $destroyUrl;
 
     public function __construct()
     {
         $this->cloudName = config('cloudinary.cloud_name', 'dhtgcccax');
         $this->apiKey = config('cloudinary.api_key', '163561997864559');
         $this->apiSecret = config('cloudinary.api_secret', 'PG3yyAHUdTWtq4EFDA7-3HZuJEs');
+        $this->uploadUrl = "https://api.cloudinary.com/v1_1/{$this->cloudName}/image/upload";
+        $this->destroyUrl = "https://api.cloudinary.com/v1_1/{$this->cloudName}/image/destroy";
     }
 
     /**
-     * Upload an image to Cloudinary using direct API
-     *
-     * @param UploadedFile $file
-     * @param string $folder
-     * @param array $options
-     * @return array
+     * Upload รูปแบบ optimized พร้อม auto-transformation
      */
-   public function uploadImageUnsigned(UploadedFile $file, string $uploadPreset = 'ml_default'): array
-{
-    try {
-        if (!$file || !$file->isValid()) {
-            return [
-                'success' => false,
-                'error' => 'Invalid file provided'
-            ];
+    public function uploadImageOptimized(UploadedFile $file, array $options = []): array
+    {
+        try {
+            if (!$this->validateFile($file)) {
+                return $this->errorResponse('Invalid file provided');
+            }
+
+            $uploadPreset = $options['upload_preset'] ?? 'ml_default';
+            $folder = $options['folder'] ?? 'users';
+            $quality = $options['quality'] ?? 'auto:good';
+            $format = $options['format'] ?? 'auto';
+
+            Log::info('Starting optimized Cloudinary upload', [
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'folder' => $folder
+            ]);
+
+            // ลอง unsigned upload ก่อน (เร็วกว่า)
+            $result = $this->uploadUnsigned($file, $uploadPreset, $quality, $format);
+            
+            // ถ้าไม่สำเร็จ ลอง signed upload
+            if (!$result['success']) {
+                Log::info('Unsigned upload failed, trying signed upload');
+                $result = $this->uploadSigned($file, $folder, $quality, $format);
+            }
+
+            return $result;
+
+        } catch (\Exception $e) {
+            Log::error('Optimized upload error: ' . $e->getMessage());
+            return $this->errorResponse($e->getMessage());
         }
+    }
 
-        Log::info('Starting unsigned Cloudinary upload', [
-            'original_name' => $file->getClientOriginalName(),
-            'upload_preset' => $uploadPreset
-        ]);
-
+    /**
+     * Upload แบบ unsigned (เร็วกว่า)
+     */
+    private function uploadUnsigned(UploadedFile $file, string $uploadPreset, string $quality, string $format): array
+    {
         $postData = [
             'file' => new \CURLFile($file->getPathname(), $file->getMimeType(), $file->getClientOriginalName()),
-            'upload_preset' => $uploadPreset
+            'upload_preset' => $uploadPreset,
+            'quality' => $quality,
+            'fetch_format' => $format
+        ];
+
+        return $this->executeCurlRequest($this->uploadUrl, $postData, 'unsigned');
+    }
+
+    /**
+     * Upload แบบ signed
+     */
+    private function uploadSigned(UploadedFile $file, string $folder, string $quality, string $format): array
+    {
+        $timestamp = time();
+        $public_id = $this->generatePublicId($file, $folder);
+        
+        // Parameters for signature
+        $params = [
+            'timestamp' => $timestamp,
+            'public_id' => $public_id,
+            'folder' => $folder,
+            'quality' => $quality,
+            'fetch_format' => $format,
+            'overwrite' => 'true'
         ];
         
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://api.cloudinary.com/v1_1/{$this->cloudName}/image/upload");
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        $signature = $this->generateSignature($params);
         
+        $postData = array_merge($params, [
+            'file' => new \CURLFile($file->getPathname(), $file->getMimeType(), $file->getClientOriginalName()),
+            'api_key' => $this->apiKey,
+            'signature' => $signature
+        ]);
+
+        return $this->executeCurlRequest($this->uploadUrl, $postData, 'signed');
+    }
+
+    /**
+     * Execute cURL request with optimized settings
+     */
+    private function executeCurlRequest(string $url, array $postData, string $type): array
+    {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_POST => 1,
+            CURLOPT_POSTFIELDS => $postData,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT => 120, // เพิ่ม timeout
+            CURLOPT_CONNECTTIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_ENCODING => '', // Enable compression
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 3,
+            CURLOPT_USERAGENT => 'TTCA-PTNL/1.0'
+        ]);
+        
+        $startTime = microtime(true);
         $response = curl_exec($ch);
+        $uploadTime = microtime(true) - $startTime;
+        
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
+        $info = curl_getinfo($ch);
         curl_close($ch);
-        
+
+        Log::info("Cloudinary {$type} upload completed", [
+            'upload_time' => round($uploadTime, 2) . 's',
+            'http_code' => $httpCode,
+            'upload_size' => $info['size_upload'] ?? 0
+        ]);
+
         if ($curlError) {
-            return [
-                'success' => false,
-                'error' => $curlError,
-                'message' => 'Network error'
-            ];
+            return $this->errorResponse($curlError, 'Network error');
         }
-        
+
         if ($httpCode !== 200) {
-            return [
-                'success' => false,
-                'error' => $response,
-                'message' => 'Upload failed'
-            ];
+            Log::error("Cloudinary upload failed", ['response' => $response, 'http_code' => $httpCode]);
+            return $this->errorResponse($response, 'Upload failed');
         }
-        
+
         $result = json_decode($response, true);
         
         if (isset($result['error'])) {
-            return [
-                'success' => false,
-                'error' => $result['error']['message'] ?? 'Unknown error',
-                'message' => 'Upload failed'
-            ];
+            return $this->errorResponse($result['error']['message'] ?? 'Unknown error', 'Upload failed');
         }
-        
+
         return [
             'success' => true,
             'secure_url' => $result['secure_url'] ?? '',
@@ -93,94 +164,66 @@ class CloudinaryService
             'height' => $result['height'] ?? null,
             'format' => $result['format'] ?? null,
             'bytes' => $result['bytes'] ?? null,
-        ];
-
-    } catch (\Exception $e) {
-        Log::error('Cloudinary unsigned upload error: ' . $e->getMessage());
-        
-        return [
-            'success' => false,
-            'error' => $e->getMessage(),
-            'message' => 'Failed to upload image to Cloudinary'
+            'upload_time' => round($uploadTime, 2)
         ];
     }
-}
 
     /**
-     * Upload แบบง่ายๆ โดยใช้ signature แบบพื้นฐาน
+     * Upload with progress callback
      */
-    public function uploadImageSimple(UploadedFile $file, string $folder = 'users', array $simpleOptions = []): array
+    public function uploadWithProgress(UploadedFile $file, callable $progressCallback = null, array $options = []): array
     {
         try {
-            // ตรวจสอบไฟล์ก่อน
-            if (!$file || !$file->isValid()) {
-                return [
-                    'success' => false,
-                    'error' => 'Invalid file provided'
-                ];
+            if (!$this->validateFile($file)) {
+                return $this->errorResponse('Invalid file provided');
             }
 
-            Log::info('Starting simple Cloudinary upload', [
-                'original_name' => $file->getClientOriginalName(),
-                'folder' => $folder
+            $uploadPreset = $options['upload_preset'] ?? 'ml_default';
+            
+            $postData = [
+                'file' => new \CURLFile($file->getPathname(), $file->getMimeType(), $file->getClientOriginalName()),
+                'upload_preset' => $uploadPreset,
+                'quality' => 'auto:good',
+                'fetch_format' => 'auto'
+            ];
+
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $this->uploadUrl,
+                CURLOPT_POST => 1,
+                CURLOPT_POSTFIELDS => $postData,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_TIMEOUT => 120,
+                CURLOPT_NOPROGRESS => false,
+                CURLOPT_PROGRESSFUNCTION => function($resource, $download_size, $downloaded, $upload_size, $uploaded) use ($progressCallback) {
+                    if ($upload_size > 0 && $progressCallback) {
+                        $percentage = round(($uploaded / $upload_size) * 100);
+                        $progressCallback($percentage, $uploaded, $upload_size);
+                    }
+                    return 0; // Continue upload
+                }
             ]);
 
-            $timestamp = time();
-            
-            // สร้าง signature แบบง่าย
-           $signature = sha1("timestamp={$timestamp}{$this->apiSecret}");
-            
-          $postData = [
-    'file' => new \CURLFile($file->getPathname(), $file->getMimeType(), $file->getClientOriginalName()),
-    'api_key' => $this->apiKey,
-    'timestamp' => $timestamp,
-    'signature' => $signature
-];
-            
-            // เพิ่ม folder ถ้ามี
-            if ($folder) {
-                $postData['folder'] = $folder;
-            }
-            
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, "https://api.cloudinary.com/v1_1/{$this->cloudName}/image/upload");
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-            
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
             curl_close($ch);
-            
+
             if ($curlError) {
-                return [
-                    'success' => false,
-                    'error' => $curlError,
-                    'message' => 'Network error'
-                ];
+                return $this->errorResponse($curlError, 'Network error');
             }
-            
+
             if ($httpCode !== 200) {
-                return [
-                    'success' => false,
-                    'error' => $response,
-                    'message' => 'Upload failed'
-                ];
+                return $this->errorResponse($response, 'Upload failed');
             }
-            
+
             $result = json_decode($response, true);
             
             if (isset($result['error'])) {
-                return [
-                    'success' => false,
-                    'error' => $result['error']['message'] ?? 'Unknown error',
-                    'message' => 'Upload failed'
-                ];
+                return $this->errorResponse($result['error']['message'] ?? 'Unknown error', 'Upload failed');
             }
-            
+
             return [
                 'success' => true,
                 'secure_url' => $result['secure_url'] ?? '',
@@ -188,23 +231,147 @@ class CloudinaryService
                 'width' => $result['width'] ?? null,
                 'height' => $result['height'] ?? null,
                 'format' => $result['format'] ?? null,
-                'bytes' => $result['bytes'] ?? null,
+                'bytes' => $result['bytes'] ?? null
             ];
 
         } catch (\Exception $e) {
-            Log::error('Cloudinary simple upload error: ' . $e->getMessage());
-            
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-                'message' => 'Failed to upload image to Cloudinary'
-            ];
+            Log::error('Upload with progress error: ' . $e->getMessage());
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     /**
-     * Delete an image from Cloudinary
+     * Batch upload หลายไฟล์พร้อมกัน
      */
+    public function batchUpload(array $files, array $options = []): array
+    {
+        $results = [];
+        $successful = 0;
+        $failed = 0;
+
+        foreach ($files as $index => $file) {
+            Log::info("Batch upload: Processing file {$index}");
+            
+            $result = $this->uploadImageOptimized($file, $options);
+            
+            if ($result['success']) {
+                $successful++;
+            } else {
+                $failed++;
+            }
+            
+            $results[] = array_merge($result, ['file_index' => $index]);
+        }
+
+        return [
+            'success' => $failed === 0,
+            'total' => count($files),
+            'successful' => $successful,
+            'failed' => $failed,
+            'results' => $results
+        ];
+    }
+
+    /**
+     * Enhanced delete with retry mechanism
+     */
+    public function deleteImageEnhanced(string $publicId, int $retries = 3): array
+    {
+        for ($attempt = 1; $attempt <= $retries; $attempt++) {
+            $result = $this->deleteImage($publicId);
+            
+            if ($result['success']) {
+                return $result;
+            }
+            
+            if ($attempt < $retries) {
+                Log::info("Delete attempt {$attempt} failed, retrying...", ['public_id' => $publicId]);
+                sleep(1); // Wait 1 second before retry
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Helper methods
+     */
+    private function validateFile(UploadedFile $file): bool
+    {
+        if (!$file || !$file->isValid()) {
+            return false;
+        }
+
+        // Check file size (10MB max)
+        if ($file->getSize() > 10 * 1024 * 1024) {
+            return false;
+        }
+
+        // Check file type
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($file->getMimeType(), $allowedTypes)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function generatePublicId(UploadedFile $file, string $folder): string
+    {
+        $extension = $file->getClientOriginalExtension();
+        $basename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $timestamp = time();
+        
+        return "{$folder}/" . preg_replace('/[^a-zA-Z0-9_-]/', '_', $basename) . "_{$timestamp}";
+    }
+
+    private function generateSignature(array $params): string
+    {
+        ksort($params);
+        $stringToSign = '';
+        
+        foreach ($params as $key => $value) {
+            if (!empty($value)) {
+                $stringToSign .= "{$key}={$value}&";
+            }
+        }
+        
+        $stringToSign = rtrim($stringToSign, '&') . $this->apiSecret;
+        return sha1($stringToSign);
+    }
+
+    private function errorResponse(string $error, string $message = 'Operation failed'): array
+    {
+        return [
+            'success' => false,
+            'error' => $error,
+            'message' => $message
+        ];
+    }
+
+    /**
+     * Get cached transformation URL
+     */
+    public function getCachedTransformationUrl(string $publicId, array $transformations = []): string
+    {
+        $cacheKey = 'cloudinary_url_' . md5($publicId . serialize($transformations));
+        
+        return Cache::remember($cacheKey, 3600, function() use ($publicId, $transformations) {
+            return $this->getTransformationUrl($publicId, $transformations);
+        });
+    }
+
+    // Keep existing methods for backward compatibility
+    public function uploadImageUnsigned(UploadedFile $file, string $uploadPreset = 'ml_default'): array
+    {
+        return $this->uploadImageOptimized($file, ['upload_preset' => $uploadPreset]);
+    }
+
+    public function uploadImageSimple(UploadedFile $file, string $folder = 'users', array $simpleOptions = []): array
+    {
+        return $this->uploadImageOptimized($file, array_merge(['folder' => $folder], $simpleOptions));
+    }
+
     public function deleteImage(string $publicId): array
     {
         try {
@@ -219,7 +386,7 @@ class CloudinaryService
             ];
             
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, "https://api.cloudinary.com/v1_1/{$this->cloudName}/image/destroy");
+            curl_setopt($ch, CURLOPT_URL, $this->destroyUrl);
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -262,9 +429,6 @@ class CloudinaryService
         }
     }
 
-    /**
-     * Generate transformation URL
-     */
     public function getTransformationUrl(string $publicId, array $transformations = []): string
     {
         try {

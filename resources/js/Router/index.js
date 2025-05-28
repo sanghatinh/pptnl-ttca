@@ -101,6 +101,14 @@ const routes = [
         },
     },
     {
+        name: "EditUser",
+        path: "/EditUser/:id",
+        component: () => import("../Pages/Admin/EditUser.vue"),
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
         name: "Taohoso",
         path: "/Taonewhoso",
         component: Taohoso,

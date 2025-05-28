@@ -891,7 +891,7 @@ export default {
                         timer: 2000,
                     }).then(() => {
                         this.resetForm();
-                        this.$router.push("/admin/users");
+                        this.$router.push("/AddUser");
                     });
                 } else {
                     this.$swal({

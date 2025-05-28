@@ -47,6 +47,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/users', [UserController::class, 'getUsers']);
     Route::post('/user/add', [UserController::class, 'addnewuser']);
     Route::post('/user/upload-image', [UserController::class, 'uploadUserImage']);
+     Route::delete('/user/{id}/delete-image', [UserController::class, 'deleteUserImage']);
     Route::put('/user/update/{id}', [UserController::class, 'updateuser']);
     Route::get('/user/edit/{id}', [UserController::class, 'edituser']);
     Route::delete('/user/delete/{id}', [UserController::class, 'deleteuser']);

@@ -271,11 +271,10 @@ public function uploadUserImage(Request $request)
     ]);
 
     $request->validate([
-        'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120'
+        'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240' // 10MB max
     ]);
 
     try {
-        // ตรวจสอบไฟล์ก่อน
         if (!$request->hasFile('image')) {
             return response()->json([
                 'success' => false,
@@ -291,22 +290,27 @@ public function uploadUserImage(Request $request)
             ], 400);
         }
 
-        // ใช้ CloudinaryService
         $cloudinaryService = new CloudinaryService();
         
-        // ลองใช้ unsigned upload ก่อน (ต้องสร้าง upload preset: ml_default ใน Cloudinary console)
-        $result = $cloudinaryService->uploadImageUnsigned($file, 'ml_default');
-        
-        // ถ้าไม่สำเร็จ ลองใช้ signed upload
-        if (!$result['success']) {
-            $result = $cloudinaryService->uploadImageSimple($file, 'users/temp');
-        }
+        // ใช้ uploadImageOptimized แทน
+        $result = $cloudinaryService->uploadImageOptimized($file, [
+            'upload_preset' => 'ml_default',
+            'folder' => 'users',
+            'quality' => 'auto:good',
+            'format' => 'auto'
+        ]);
         
         if ($result['success']) {
+            Log::info('Image upload successful', [
+                'public_id' => $result['public_id'],
+                'upload_time' => $result['upload_time'] ?? 0
+            ]);
+            
             return response()->json([
                 'success' => true,
                 'image_url' => $result['secure_url'],
-                'public_id' => $result['public_id']
+                'public_id' => $result['public_id'],
+                'upload_time' => $result['upload_time'] ?? 0
             ]);
         } else {
             return response()->json([
@@ -332,10 +336,43 @@ public function uploadUserImage(Request $request)
 public function edituser($id)
 {
     try {
-        $user = User::find($id);
-        $user->password = ''; // เคลียร์ฟิลด์รหัสผ่านเพื่อความปลอดภัย
-        return response()->json($user);
+        $user = User::with('roles')->find($id);
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+        
+        // สร้าง Cloudinary URL สำหรับรูปภาพ
+        $imageUrl = null;
+        if ($user->image) {
+            $cloudinaryService = new CloudinaryService();
+            $imageUrl = $cloudinaryService->getTransformationUrl($user->image, [
+                'width' => 200,
+                'height' => 200,
+                'crop' => 'fill',
+                'gravity' => 'face',
+                'quality' => 'auto:good'
+            ]);
+        }
+        
+        $userData = [
+            'id' => $user->id,
+            'username' => $user->username,
+            'full_name' => $user->full_name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'position' => $user->position,
+            'station' => $user->station,
+            'role_id' => $user->role_id,
+            'status' => $user->status,
+            'ma_nhan_vien' => $user->ma_nhan_vien,
+            'image' => $imageUrl,
+            'image_public_id' => $user->image // เก็บ public_id ไว้สำหรับการลบ
+        ];
+        
+        return response()->json($userData);
+        
     } catch (\Exception $e) {
+        Log::error('Error in edituser: ' . $e->getMessage());
         return response()->json(['error' => $e->getMessage()], 500);
     }
 }
@@ -352,7 +389,13 @@ public function updateuser(Request $request, $id)
         'role_id'    => 'required|exists:roles,id',
         'status'     => 'required|in:active,inactive',
         'ma_nhan_vien' => 'nullable|string',
+        'current_password' => 'nullable|string|min:6',
+        'new_password' => 'nullable|string|min:6|required_with:current_password',
+        'confirm_password' => 'nullable|string|same:new_password|required_with:new_password',
+        'image' => 'nullable|string', // สำหรับ public_id จาก Cloudinary
     ]);
+
+    DB::beginTransaction();
 
     try {
         $user = User::find($id);
@@ -360,6 +403,22 @@ public function updateuser(Request $request, $id)
             return response()->json(['error' => 'User not found'], 404);
         }
 
+        // ตรวจสอบรหัสผ่านเก่าก่อน (ถ้ามีการส่งมา)
+        if ($request->filled('current_password')) {
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'รหัสผ่านเก่าไม่ถูกต้อง'
+                ], 422);
+            }
+            
+            // ถ้ารหัสผ่านเก่าถูกต้อง ให้อัปเดตรหัสผ่านใหม่
+            $user->password = Hash::make($request->new_password);
+            
+            Log::info('Password updated for user', ['user_id' => $id]);
+        }
+
+        // อัปเดตข้อมูลทั่วไป
         $user->username   = $request->username;
         $user->full_name  = $request->full_name;
         $user->email      = $request->email;
@@ -370,9 +429,21 @@ public function updateuser(Request $request, $id)
         $user->status     = $request->status;
         $user->ma_nhan_vien = $request->ma_nhan_vien;
 
-        // Update password only if provided
-        if ($request->filled('password')) {
-            $user->password = Hash::make($request->password);
+        // อัปเดตรูปภาพ (ถ้ามี)
+        if ($request->filled('image')) {
+            // ลบรูปเก่าจาก Cloudinary (ถ้ามี)
+            if ($user->image) {
+                try {
+                    $cloudinaryService = new CloudinaryService();
+                    $cloudinaryService->deleteImageEnhanced($user->image);
+                    Log::info('Old image deleted from Cloudinary', ['old_image' => $user->image]);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to delete old image from Cloudinary: ' . $e->getMessage());
+                }
+            }
+            
+            $user->image = $request->image;
+            Log::info('User image updated', ['user_id' => $id, 'new_image' => $request->image]);
         }
 
         $user->save();
@@ -380,9 +451,42 @@ public function updateuser(Request $request, $id)
         // Sync join table user_role
         $user->roles()->sync([$request->role_id]);
 
-        return response()->json(['message' => 'success'], 200);
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'success',
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'full_name' => $user->full_name,
+                'image' => $user->image,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'position' => $user->position,
+                'station' => $user->station,
+                'status' => $user->status,
+                'role_id' => $user->role_id,
+                'ma_nhan_vien' => $user->ma_nhan_vien
+            ]
+        ], 200);
+
     } catch (\Illuminate\Database\QueryException $ex) {
-        return response()->json(['error' => $ex->getMessage()], 500);
+        DB::rollBack();
+        Log::error('Database error in updateuser: ' . $ex->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Database error occurred',
+            'error' => $ex->getMessage()
+        ], 500);
+    } catch (\Exception $ex) {
+        DB::rollBack();
+        Log::error('General error in updateuser: ' . $ex->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while updating user',
+            'error' => $ex->getMessage()
+        ], 500);
     }
 }
 
@@ -390,20 +494,141 @@ public function updateuser(Request $request, $id)
 //Delete user
 public function deleteuser($id)
 {
+    DB::beginTransaction();
+    
     try {
         $user = User::find($id);
         if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        // ตรวจสอบไม่ให้ลบตัวเอง
+        if ($user->id === Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot delete your own account'
+            ], 403);
+        }
+
+        // ลบรูปภาพจาก Cloudinary (ถ้ามี)
+        if ($user->image) {
+            try {
+                $cloudinaryService = new CloudinaryService();
+                $deleteResult = $cloudinaryService->deleteImageEnhanced($user->image);
+                
+                if ($deleteResult['success']) {
+                    Log::info('User image deleted from Cloudinary successfully', [
+                        'user_id' => $id,
+                        'public_id' => $user->image
+                    ]);
+                } else {
+                    Log::warning('Failed to delete user image from Cloudinary', [
+                        'user_id' => $id,
+                        'public_id' => $user->image,
+                        'error' => $deleteResult['error'] ?? 'Unknown error'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Exception while deleting user image from Cloudinary: ' . $e->getMessage());
+            }
         }
 
         // Detach associated roles in user_role join table
         $user->roles()->detach();
+        
+        // Delete user record
         $user->delete();
 
-        return response()->json(['message' => 'success'], 200);
+        DB::commit();
+
+        Log::info('User deleted successfully', ['user_id' => $id]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User deleted successfully'
+        ], 200);
+        
     } catch (\Exception $e) {
-        \Log::error('Error deleting user: ' . $e->getMessage());
-        return response()->json(['error' => $e->getMessage()], 500);
+        DB::rollBack();
+        Log::error('Error deleting user: ' . $e->getMessage(), [
+            'user_id' => $id,
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while deleting user',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+// เพิ่มฟังก์ชันลบรูปภาพของ user
+public function deleteUserImage(Request $request, $id)
+{
+    DB::beginTransaction();
+    
+    try {
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        if (!$user->image) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User has no image to delete'
+            ], 400);
+        }
+
+        // ลบรูปภาพจาก Cloudinary
+        $cloudinaryService = new CloudinaryService();
+        $deleteResult = $cloudinaryService->deleteImageEnhanced($user->image);
+        
+        if ($deleteResult['success']) {
+            // อัปเดต database - ลบ public_id
+            $user->image = null;
+            $user->save();
+            
+            DB::commit();
+            
+            Log::info('User image deleted successfully', [
+                'user_id' => $id,
+                'public_id' => $user->image
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Image deleted successfully'
+            ]);
+        } else {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete image from Cloudinary',
+                'error' => $deleteResult['error'] ?? 'Unknown error'
+            ], 500);
+        }
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error deleting user image: ' . $e->getMessage(), [
+            'user_id' => $id,
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while deleting image',
+            'error' => $e->getMessage()
+        ], 500);
     }
 }
 
