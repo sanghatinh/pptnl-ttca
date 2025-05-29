@@ -319,8 +319,7 @@ export default {
 .login-page {
     min-height: 100vh;
     width: 100vw;
-    background: url("/public/img/Logo/AdobeStock431936490Preview.JPG")
-        center/cover no-repeat;
+    background: url("/public/img/Logo/ttca_agsris.JPG") center/cover no-repeat;
     display: flex;
     align-items: center;
     justify-content: center;

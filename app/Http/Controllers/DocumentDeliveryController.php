@@ -114,19 +114,19 @@ class DocumentDeliveryController extends Controller
      
             
             $document = DocumentDelivery::create([
-                'document_code'      => $documentCode,
-                'created_date'       => $request->input('created_date'),
-               'title'             => 'PGNHS-' . $request->input('document_type') . '-' . str_replace('PGNHS-', '', $documentCode),
-                'investment_project' => $investmentName, // ยังเก็บชื่อเต็มไว้
-                'creator_id'         => $request->input('creator_id'),
-                'station'           => $request->input('station'),
-                'document_type'      => $request->input('document_type'),
-                'receiver_id'        => $request->input('receiver_id'),
-                'received_date'      => $request->input('received_date'),
-                'file_count'        => $request->input('file_count'),
-                'loan_status'       => $request->input('loan_status'),
-                'status'            => 'creating'
-            ]);
+            'document_code'      => $documentCode,
+            'created_date'       => $request->input('created_date'),
+           'title'             => 'PGNHS-' . $request->input('document_type') . '-' . str_replace('PGNHS-', '', $documentCode),
+            'investment_project' => $investmentName, // ยังเก็บชื่อเต็มไว้
+            'creator_id'         => $request->input('creator_id'),
+            'station'           => $request->input('station'),
+            'document_type'      => $request->input('document_type'),
+            'receiver_id'        => null, // เปลี่ยนจาก $request->input('receiver_id') เป็น null
+            'received_date'      => null, // เปลี่ยนจาก $request->input('received_date') เป็น null
+            'file_count'        => $request->input('file_count'),
+            'loan_status'       => $request->input('loan_status'),
+            'status'            => 'creating'
+        ]);
 
             // Log the create action
             // Log the create action - action_by จะเป็น creator_id
@@ -262,16 +262,41 @@ public function destroy($id)
     }
 }
 
-    public function searchBienBanNgheThu(Request $request)
-    {
+  public function searchBienBanNgheThu(Request $request)
+{
+    try {
+        $user = auth()->user();
+        
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         $search = $request->input('search');
         $investmentProject = $request->input('investment_project');
         $station = $request->input('station');
         
         $query = \DB::table('tb_bien_ban_nghiemthu_dv')
-            ->where('vu_dau_tu', $investmentProject)
-            ->where('tram', $station);
-    
+            ->where('vu_dau_tu', $investmentProject);
+
+        // Apply role-based filtering
+        switch ($user->position) {
+            case 'department_head':
+            case 'office_workers':
+                // Can access all records - no additional filtering needed
+               
+                break;
+                
+            case 'Station_Chief':
+            case 'Farm_worker':
+                // Can only access records from their own station
+                $query->where('tram', $user->station);
+                break;
+                
+            default:
+                // Unknown role - restrict access
+                return response()->json(['error' => 'Unauthorized position'], 403);
+        }
+
         if ($search) {
             $query->where('ma_nghiem_thu', 'LIKE', "%{$search}%");
         }
@@ -281,12 +306,19 @@ public function destroy($id)
         \Log::info('Search params:', [
             'search' => $search,
             'investment_project' => $investmentProject,
-            'station' => $station
+            'station' => $station,
+            'user_position' => $user->position,
+            'user_station' => $user->station
         ]);
-        \Log::info('Results:', ['count' => $results->count(), 'data' => $results]);
+        \Log::info('Results:', ['count' => $results->count()]);
         
         return response()->json($results);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error in searchBienBanNgheThu: ' . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
 
     public function addMapping(Request $request) {
         try {
@@ -347,34 +379,61 @@ public function destroy($id)
 
     //Modal add hom giong tao phieu giao nhan
     public function searchBienBanHomGiong(Request $request)
-    {
-        try {
-            $search = $request->input('search');
-            $investmentProject = $request->input('investment_project');
-            
-            $query = \DB::table('bien_ban_nghiem_thu_hom_giong')
-                ->where('vu_dau_tu', $investmentProject);
-    
-            if ($search) {
-                $query->where('ma_so_phieu', 'LIKE', "%{$search}%");
-            }
-                
-            $results = $query->limit(10)->get();
-            
-            \Log::info('Search params:', [
-                'search' => $search,
-                'investment_project' => $investmentProject
-            ]);
-            \Log::info('Results:', ['count' => $results->count(), 'data' => $results]);
-            
-            return response()->json($results);
-    
-        } catch (\Exception $e) {
-            \Log::error('Error in searchBienBanHomGiong: ' . $e->getMessage());
-            return response()->json(['error' => $e->getMessage()], 500);
+{
+    try {
+        $user = auth()->user();
+        
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
-    }
 
+        $search = $request->input('search');
+        $investmentProject = $request->input('investment_project');
+        $station = $request->input('station');
+        
+        $query = \DB::table('bien_ban_nghiem_thu_hom_giong')
+            ->where('vu_dau_tu', $investmentProject);
+
+        // Apply role-based filtering
+        switch ($user->position) {
+            case 'department_head':
+            case 'office_workers':
+                // Can access all records from all stations - no filtering needed
+                break;
+                
+            case 'Station_Chief':
+            case 'Farm_worker':
+                // Can only access records from their own station
+                $query->where('tram', $user->station);
+                break;
+                
+            default:
+                // Unknown role - restrict access
+                return response()->json(['error' => 'Unauthorized position'], 403);
+        }
+
+        if ($search) {
+            $query->where('ma_so_phieu', 'LIKE', "%{$search}%");
+        }
+            
+        $results = $query->limit(10)->get();
+        
+        \Log::info('Search params:', [
+            'search' => $search,
+            'investment_project' => $investmentProject,
+            'station' => $station,
+            'user_position' => $user->position,
+            'user_station' => $user->station
+        ]);
+        \Log::info('Results:', ['count' => $results->count()]);
+        
+        return response()->json($results);
+
+    } catch (\Exception $e) {
+        \Log::error('Error in searchBienBanHomGiong: ' . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
 public function addMappingHomGiong(Request $request)
 {
     try {

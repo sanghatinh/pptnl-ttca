@@ -15,13 +15,26 @@ use App\Models\User;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 
+
 class BienBanNghiemThuController extends Controller
 {
    
- public function index(Request $request)
+
+public function index(Request $request)
 {
     try {
-        $user = auth()->user();
+        // Get user type and user info from headers set by JwtMiddleware
+        $userType = $request->header('X-User-Type', 'employee');
+        
+        // Debug: Log headers received
+        \Log::info('Headers received in BienBanNghiemThu index:', [
+            'X-User-Type' => $request->header('X-User-Type'),
+            'X-User-ID' => $request->header('X-User-ID'),
+            'X-User-Position' => $request->header('X-User-Position'),
+            'X-User-Station' => $request->header('X-User-Station'),
+            'X-User-Ma-Nhan-Vien' => $request->header('X-User-Ma-Nhan-Vien'),
+            'X-Supplier-Number' => $request->header('X-Supplier-Number')
+        ]);
         
         // Start with base query on bien ban table
         $query = \DB::table('tb_bien_ban_nghiemthu_dv as bb')
@@ -47,29 +60,133 @@ class BienBanNghiemThuController extends Controller
              'bb.ma_nghiem_thu', '=', 'logs.ma_nghiem_thu')
               ->leftJoin('tb_phieu_trinh_thanh_toan as pttt', 'logs.ma_trinh_thanh_toan', '=', 'pttt.ma_trinh_thanh_toan');
 
-        // Apply role-based filtering
-        switch ($user->position) {
-            case 'department_head':
-            case 'office_workers':
-                // See all records - no filtering needed
-                break;
-                
-            case 'Station_Chief':
-                // Filter by user's station
-                $query->where('bb.tram', $user->station);
-                break;
-                
-            case 'Farm_worker':
-                // Filter by employee code
-                $query->where('bb.ma_nhan_vien', $user->ma_nhan_vien);
-                break;
-                
-            default:
-                // Default case - return no records
+        // Apply role-based filtering based on user type
+        if ($userType === 'farmer') {
+            // For farmer users
+            $supplierId = $request->header('X-Supplier-Number');
+            
+            \Log::info('Farmer authentication details:', [
+                'supplierId' => $supplierId,
+                'userType' => $userType
+            ]);
+            
+            if (!$supplierId) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized position'
-                ], 403);
+                    'message' => 'Farmer identifier not found'
+                ], 401);
+            }
+            
+            // Debug: ดูข้อมูลทั้งหมดใน table ก่อน filter
+            $totalRecords = \DB::table('tb_bien_ban_nghiemthu_dv')->count();
+            \Log::info('Total records in tb_bien_ban_nghiemthu_dv: ' . $totalRecords);
+            
+            // Debug: ดูข้อมูล customer codes ที่มีในระบบ
+            $sampleRecords = \DB::table('tb_bien_ban_nghiemthu_dv')
+                ->select('ma_nghiem_thu', 'MaKH_DTDV_Canhan', 'MaKH_DTDV_DN', 'MaKH_Chumia_Canhan', 'MaKH_Chumia_DN')
+                ->limit(5)
+                ->get();
+            \Log::info('Sample customer codes in database:', $sampleRecords->toArray());
+            
+            // Filter records based on farmer's customer codes
+            $query->where(function($q) use ($supplierId) {
+                $q->where('bb.MaKH_DTDV_Canhan', $supplierId)
+                  ->orWhere('bb.MaKH_DTDV_DN', $supplierId)
+                  ->orWhere('bb.MaKH_Chumia_Canhan', $supplierId)
+                  ->orWhere('bb.MaKH_Chumia_DN', $supplierId);
+            });
+            
+            // Debug: ตรวจสอบ SQL query ที่จะถูกรัน
+            $sql = $query->toSql();
+            $bindings = $query->getBindings();
+            \Log::info('SQL Query for farmer filter:', [
+                'sql' => $sql,
+                'bindings' => $bindings
+            ]);
+            
+            // Debug: ทดสอบการ query โดยตรงกับ supplierId
+            $directMatchCount = \DB::table('tb_bien_ban_nghiemthu_dv')
+                ->where(function($q) use ($supplierId) {
+                    $q->where('MaKH_DTDV_Canhan', $supplierId)
+                      ->orWhere('MaKH_DTDV_DN', $supplierId)
+                      ->orWhere('MaKH_Chumia_Canhan', $supplierId)
+                      ->orWhere('MaKH_Chumia_DN', $supplierId);
+                })->count();
+            \Log::info('Direct match count for supplierId ' . $supplierId . ': ' . $directMatchCount);
+            
+        } else {
+            // For employee users - use JWT authentication data from headers
+            $userId = $request->header('X-User-ID');
+            $userPosition = $request->header('X-User-Position');
+            $userStation = $request->header('X-User-Station');
+            $userMaNhanVien = $request->header('X-User-Ma-Nhan-Vien');
+            
+            \Log::info('Employee authentication details:', [
+                'userId' => $userId,
+                'userPosition' => $userPosition,
+                'userStation' => $userStation,
+                'userMaNhanVien' => $userMaNhanVien
+            ]);
+            
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employee authentication required'
+                ], 401);
+            }
+            
+            // Apply role-based filtering for employees based on position
+            switch ($userPosition) {
+                case 'department_head':
+                case 'office_workers':
+                    \Log::info('User has department_head/office_workers access - no filtering');
+                    // See all records - no filtering needed
+                    break;
+                    
+                case 'Station_Chief':
+                    \Log::info('User is Station_Chief, filtering by station: ' . $userStation);
+                    // Filter by user's station
+                    if ($userStation) {
+                        $query->where('bb.tram', $userStation);
+                    }
+                    break;
+                    
+                case 'Farm_worker':
+                    \Log::info('User is Farm_worker, filtering by employee code: ' . $userMaNhanVien);
+                    // Filter by employee code
+                    if ($userMaNhanVien) {
+                        $query->where('bb.ma_nhan_vien', $userMaNhanVien);
+                    }
+                    break;
+                    
+                case null:
+                case '':
+                    // กรณีที่ position เป็น null หรือ empty string
+                    \Log::warning('User position is null or empty for user ID: ' . $userId);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'User position not set. Please contact administrator to set your position.',
+                        'debug_info' => [
+                            'userType' => $userType,
+                            'userPosition' => $userPosition,
+                            'userId' => $userId,
+                            'note' => 'Position field is null or empty in database'
+                        ]
+                    ], 403);
+                    
+                default:
+                    \Log::warning('Unknown user position: ' . $userPosition);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized position: ' . $userPosition,
+                        'debug_info' => [
+                            'userType' => $userType,
+                            'userPosition' => $userPosition,
+                            'userId' => $userId,
+                            'valid_positions' => ['department_head', 'office_workers', 'Station_Chief', 'Farm_worker']
+                        ]
+                    ], 403);
+            }
         }
 
         // Select all fields from bien_ban table and additional fields from related tables
@@ -87,6 +204,19 @@ class BienBanNghiemThuController extends Controller
         // Get the filtered records
         $records = $query->get();
         
+        \Log::info('Records retrieved: ' . count($records));
+        
+        // Debug: แสดงข้อมูลบางส่วนของผลลัพธ์
+        if (count($records) > 0) {
+            \Log::info('First record sample:', [
+                'ma_nghiem_thu' => $records[0]->ma_nghiem_thu ?? 'N/A',
+                'MaKH_DTDV_Canhan' => $records[0]->MaKH_DTDV_Canhan ?? 'N/A',
+                'MaKH_DTDV_DN' => $records[0]->MaKH_DTDV_DN ?? 'N/A',
+                'MaKH_Chumia_Canhan' => $records[0]->MaKH_Chumia_Canhan ?? 'N/A',
+                'MaKH_Chumia_DN' => $records[0]->MaKH_Chumia_DN ?? 'N/A'
+            ]);
+        }
+        
         // Add processing_status to each record based on payment data
         foreach ($records as $record) {
             if ($record->trang_thai_thanh_toan === 'paid') {
@@ -102,7 +232,13 @@ class BienBanNghiemThuController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $records
+            'data' => $records,
+            'user_type' => $userType,
+            'debug_info' => [
+                'supplier_id' => $request->header('X-Supplier-Number'),
+                'total_records' => count($records),
+                'filter_applied' => $userType === 'farmer' ? 'customer_codes' : 'employee_filter'
+            ]
         ]);
 
     } catch (\Exception $e) {
@@ -113,6 +249,9 @@ class BienBanNghiemThuController extends Controller
         ], 500);
     }
 }
+
+
+
     // Import data from Excel/CSV
     public function importData(Request $request)
     {
@@ -541,33 +680,71 @@ public function show($id)
     }
 }
 
-    public function checkAccess($id)
-    {
-        try {
-            // ดึงข้อมูล user ที่กำลังเข้าใช้งาน
-            $user = auth()->user();
+public function checkAccess($id, Request $request)
+{
+    try {
+        // Get user type and authentication info from headers set by JwtMiddleware
+        $userType = $request->header('X-User-Type', 'employee');
+        
+        // Debug: Log headers received
+        \Log::info('Headers received in checkAccess:', [
+            'X-User-Type' => $request->header('X-User-Type'),
+            'X-User-ID' => $request->header('X-User-ID'),
+            'X-User-Position' => $request->header('X-User-Position'),
+            'X-User-Station' => $request->header('X-User-Station'),
+            'X-User-Ma-Nhan-Vien' => $request->header('X-User-Ma-Nhan-Vien'),
+            'X-Supplier-Number' => $request->header('X-Supplier-Number')
+        ]);
+        
+        // ค้นหาเอกสารที่ต้องการเข้าถึง
+        $document = \DB::table('tb_bien_ban_nghiemthu_dv')
+            ->where('ma_nghiem_thu', $id)
+            ->first();
             
-            if (!$user) {
+        if (!$document) {
+            return response()->json([
+                'hasAccess' => false,
+                'message' => 'Document not found'
+            ], 404);
+        }
+        
+        if ($userType === 'farmer') {
+            // For farmer users
+            $supplierId = $request->header('X-Supplier-Number');
+            
+            if (!$supplierId) {
                 return response()->json([
                     'hasAccess' => false,
-                    'message' => 'Unauthorized'
+                    'message' => 'Farmer identifier not found'
                 ], 401);
             }
             
-            // ค้นหาเอกสารที่ต้องการเข้าถึง
-            $document = \DB::table('tb_bien_ban_nghiemthu_dv')
-                ->where('ma_nghiem_thu', $id)
-                ->first();
-                
-            if (!$document) {
+            // Check if farmer has access to this document
+            $hasAccess = ($document->MaKH_DTDV_Canhan === $supplierId) ||
+                        ($document->MaKH_DTDV_DN === $supplierId) ||
+                        ($document->MaKH_Chumia_Canhan === $supplierId) ||
+                        ($document->MaKH_Chumia_DN === $supplierId);
+                        
+            return response()->json([
+                'hasAccess' => $hasAccess
+            ]);
+            
+        } else {
+            // For employee users - use JWT authentication data from headers
+            $userId = $request->header('X-User-ID');
+            $userPosition = $request->header('X-User-Position');
+            $userStation = $request->header('X-User-Station');
+            $userMaNhanVien = $request->header('X-User-Ma-Nhan-Vien');
+            
+            if (!$userId) {
                 return response()->json([
                     'hasAccess' => false,
-                    'message' => 'Document not found'
-                ], 404);
+                    'message' => 'Employee authentication required'
+                ], 401);
             }
             
             // ตรวจสอบสิทธิ์ตามบทบาท
-            switch ($user->position) {
+            switch ($userPosition) {
                 case 'department_head':
                 case 'office_workers':
                     // สามารถเข้าถึงได้ทั้งหมด
@@ -577,33 +754,40 @@ public function show($id)
                     
                 case 'Station_Chief':
                     // เข้าถึงได้เฉพาะเอกสารของ station ตัวเอง
-                    $hasAccess = $document->tram === $user->station;
+                    $hasAccess = $document->tram === $userStation;
                     return response()->json([
                         'hasAccess' => $hasAccess
                     ]);
                     
                 case 'Farm_worker':
                     // เข้าถึงได้เฉพาะเอกสารที่เป็นของพนักงานคนนั้น
-                    $hasAccess = $document->ma_nhan_vien === $user->ma_nhan_vien;
+                    $hasAccess = $document->ma_nhan_vien === $userMaNhanVien;
                     return response()->json([
                         'hasAccess' => $hasAccess
                     ]);
                     
                 default:
                     // กรณีไม่มีบทบาทที่กำหนด
+                    \Log::warning('Unknown position in checkAccess: ' . $userPosition);
                     return response()->json([
                         'hasAccess' => false,
-                        'message' => 'Undefined role permission'
+                        'message' => 'Unauthorized position: ' . $userPosition,
+                        'debug_info' => [
+                            'userType' => $userType,
+                            'userPosition' => $userPosition,
+                            'userId' => $userId
+                        ]
                     ]);
             }
-        } catch (\Exception $e) {
-            \Log::error('Error in checkAccess: ' . $e->getMessage());
-            return response()->json([
-                'hasAccess' => false,
-                'message' => 'Server error: ' . $e->getMessage()
-            ], 500);
         }
+    } catch (\Exception $e) {
+        \Log::error('Error in checkAccess: ' . $e->getMessage());
+        return response()->json([
+            'hasAccess' => false,
+            'message' => 'Server error: ' . $e->getMessage()
+        ], 500);
     }
+}
 
 
 public function processingHistoryNghiemthuDV($id)

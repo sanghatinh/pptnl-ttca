@@ -100,13 +100,7 @@ Route::get('/document-deliveries/{id}', [DocumentDeliveryController::class, 'sho
 Route::get('/document-deliveries/{id}/check-access', [DocumentDeliveryController::class, 'checkAccess']);
 
 
-  // เพิ่ม route สำหรับดึงข้อมูลผู้ใช้งาน
-  Route::get('/user-info', function(Request $request) {
-    return $request->user();
-});
-
-
-Route::get('/user-info', [UserController::class, 'getUserInfo']);
+  
 
 // เพิ่ม route สำหรับดึงข้อมูลบทบาทตามตำแหน่ง
 Route::get('/get-role-by-position', function(Request $request) {
@@ -119,14 +113,8 @@ Route::get('/get-role-by-position', function(Request $request) {
     return response()->json(['role' => $role]);
 });
 
-//Load ข้อมูลตาลาง tb_bien_ban_nghiemthu_dv
-Route::get('/bien-ban-nghiem-thu', [BienBanNghiemThuController::class, 'index']);
-//Load details ข้อมูลตาลาง tb_bien_ban_nghiemthu_dv
-Route::get('/bienban-nghiemthu/{id}', [BienBanNghiemThuController::class, 'show']);
-// เพิ่ม route สำหรับตรวจสอบสิทธิ์การเข้าถึงเอกสาร bien-ban-nghiemthu
-Route::get('/bien-ban-nghiemthu/{id}/check-access', [BienBanNghiemThuController::class, 'checkAccess']);
-//Timeline bieenban-nghiemthu
-Route::get('/bienban-nghiemthu/{id}/history', [BienBanNghiemThuController::class, 'processingHistoryNghiemthuDV']);
+
+
 
 // Import data routes for BienBanNghiemThu
 Route::post('/import-bienban-nghiemthu', [BienBanNghiemThuController::class, 'importData']);
@@ -149,7 +137,7 @@ Route::post('/create-payment-request', [PaymentRequestController::class, 'create
 Route::get('/payment-requests', [PaymentRequestController::class, 'index']);
 
 // ดึงข้อมูลโครงการลงทุน
-Route::get('/investment-projects', [PaymentRequestController::class, 'getInvestmentProjects']);
+
 
 // ดึงรายละเอียดเอกสารขอเบิกเงิน
 // Add or modify this route:
@@ -215,5 +203,26 @@ Route::get('/congno-dichvu-khautru/{invoicenumber}', [DeductibleServiceDebtContr
 
 
 Route::middleware([\App\Http\Middleware\JwtMiddleware::class])->group(function () {
-     Route::get('/congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'index']);
+Route::get('/congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'index']);
+//Load ข้อมูลตาลาง tb_bien_ban_nghiemthu_dv
+Route::get('/bien-ban-nghiem-thu', [BienBanNghiemThuController::class, 'index']);
+//Load details ข้อมูลตาลาง tb_bien_ban_nghiemthu_dv
+Route::get('/bienban-nghiemthu/{id}', [BienBanNghiemThuController::class, 'show']);
+// เพิ่ม route สำหรับตรวจสอบสิทธิ์การเข้าถึงเอกสาร bien-ban-nghiemthu
+Route::get('/bien-ban-nghiemthu/{id}/check-access', [BienBanNghiemThuController::class, 'checkAccess']);
+//Timeline bieenban-nghiemthu
+Route::get('/bienban-nghiemthu/{id}/history', [BienBanNghiemThuController::class, 'processingHistoryNghiemthuDV']);
+//สำหรับดึงข้อมูลผู้ใช้งาน
+Route::get('/user-info', [UserController::class, 'getUserInfo']);
+
 });
+
+
+
+Route::get('/investment-projects', [PaymentRequestController::class, 'getInvestmentProjects']);
+// เพิ่ม route สำหรับดึงข้อมูลผู้ใช้งาน
+//   Route::get('/user-info', function(Request $request) {
+//     return $request->user();
+// });
+
+

@@ -612,7 +612,13 @@
                                                     </button>
                                                 </td>
                                                 <td
-                                                    class="text-primary fw-medium"
+                                                    class="text-primary fw-medium clickable-cell"
+                                                    @click="
+                                                        navigateToNghiemThuDetails(
+                                                            item.ma_nghiem_thu
+                                                        )
+                                                    "
+                                                    title="Xem chi tiết nghiệm thu"
                                                 >
                                                     {{ item.ma_nghiem_thu }}
                                                 </td>
@@ -1288,14 +1294,9 @@ export default {
     //     window.removeEventListener("scroll", this.handleScroll);
     // },
     methods: {
-        // Add this new method
-        // handleScroll() {
-        //     const container = document.querySelector(".sticky-wrapper");
-        //     if (container) {
-        //         window.addEventListener("scroll", this.handleScroll);
-        //     }
-        // },
-        // formatNumber method
+        navigateToNghiemThuDetails(maNghiemThu) {
+            this.$router.push(`/Details_NghiemthuDV/${maNghiemThu}`);
+        },
         formatNumber(value) {
             if (!value) return "";
             return new Intl.NumberFormat("en-US", {
@@ -2816,5 +2817,17 @@ export default {
 .ps__rail-y.ps--clicking .ps__thumb-y {
     width: 6px;
     background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Clickable cell styling */
+.clickable-cell {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clickable-cell:hover {
+    background-color: #e3f2fd !important;
+    text-decoration: underline;
+    transform: translateY(-1px);
 }
 </style>

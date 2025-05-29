@@ -2480,9 +2480,7 @@ export default {
         async fetchUserInfo() {
             try {
                 const response = await axios.get("/api/user-info", {
-                    headers: {
-                        Authorization: "Bearer " + this.store.getToken,
-                    },
+                    headers: this.store.getAuthHeaders(),
                 });
 
                 const user = response.data;
@@ -2511,9 +2509,7 @@ export default {
                         station: this.userStation,
                         ma_nhan_vien: this.userEmployeeCode,
                     },
-                    headers: {
-                        Authorization: "Bearer " + this.store.getToken,
-                    },
+                    headers: this.store.getAuthHeaders(),
                 });
 
                 if (response.data.success) {
@@ -3693,9 +3689,7 @@ export default {
         async fetchInvestmentProjects() {
             try {
                 const response = await axios.get("/api/investment-projects", {
-                    headers: {
-                        Authorization: `Bearer ${this.store.getToken}`,
-                    },
+                    headers: this.store.getAuthHeaders(),
                 });
 
                 if (response.data.success) {

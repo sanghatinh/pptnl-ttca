@@ -863,19 +863,133 @@ public function getUserComponents()
 public function getUserInfo(Request $request)
 {
     try {
-        $user = auth()->user();
+        // ดึงข้อมูลประเภทผู้ใช้จาก header ที่ถูกตั้งค่าโดย JwtMiddleware
+        $userType = $request->header('X-User-Type', 'employee');
         
-        return response()->json([
-            'success' => true,
-            'id' => $user->id,
-            'position' => $user->position,
-            'station' => $user->station,
-            'ma_nhan_vien' => $user->ma_nhan_vien,
-            'full_name' => $user->full_name
-        ]);
+        if ($userType === 'farmer') {
+            // กรณีเป็น farmer - ลองดึงข้อมูลจากหลายแหล่ง
+            $farmerId = $request->header('X-User-ID');
+            $supplierId = $request->header('X-Supplier-Number');
+            
+            // ถ้าไม่มี X-User-ID ลองดึงจาก JWT token โดยตรง
+            if (!$farmerId) {
+                try {
+                    $token = $request->bearerToken();
+                    if ($token) {
+                        $payload = JWTAuth::setToken($token)->getPayload();
+                        $farmerId = $payload->get('sub');
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Error extracting farmer ID from token: ' . $e->getMessage());
+                }
+            }
+            
+            if (!$farmerId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Farmer authentication required',
+                    'debug' => [
+                        'user_type' => $userType,
+                        'farmer_id' => $farmerId,
+                        'supplier_id' => $supplierId,
+                        'has_token' => $request->bearerToken() ? true : false
+                    ]
+                ], 401);
+            }
+            
+            // ดึงข้อมูล farmer จาก database
+            $farmer = UserFarmer::find($farmerId);
+            
+            if (!$farmer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Farmer not found',
+                    'debug' => [
+                        'farmer_id' => $farmerId
+                    ]
+                ], 404);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'id' => $farmer->id,
+                'name' => $farmer->name,
+                'ma_kh_ca_nhan' => $farmer->ma_kh_ca_nhan,
+                'ma_kh_doanh_nghiep' => $farmer->ma_kh_doanh_nghiep,
+                'phone' => $farmer->phone,
+                'email' => $farmer->email,
+                'supplier_number' => $farmer->supplier_number,
+                'user_type' => 'farmer'
+            ]);
+            
+        } else {
+            // กรณีเป็น employee
+            $userId = $request->header('X-User-ID');
+            $userPosition = $request->header('X-User-Position');
+            $userStation = $request->header('X-User-Station');
+            $userMaNhanVien = $request->header('X-User-Ma-Nhan-Vien');
+            
+            // ถ้าไม่มี X-User-ID ลองดึงจาก JWT token โดยตรง
+            if (!$userId) {
+                try {
+                    $token = $request->bearerToken();
+                    if ($token) {
+                        $payload = JWTAuth::setToken($token)->getPayload();
+                        $userId = $payload->get('sub');
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Error extracting user ID from token: ' . $e->getMessage());
+                }
+            }
+            
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employee authentication required',
+                    'debug' => [
+                        'user_type' => $userType,
+                        'user_id' => $userId,
+                        'has_token' => $request->bearerToken() ? true : false
+                    ]
+                ], 401);
+            }
+            
+            // ดึงข้อมูล employee จาก database
+            $user = User::find($userId);
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employee not found',
+                    'debug' => [
+                        'user_id' => $userId
+                    ]
+                ], 404);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'id' => $user->id,
+                'username' => $user->username,
+                'position' => $user->position,
+                'station' => $user->station,
+                'ma_nhan_vien' => $user->ma_nhan_vien,
+                'full_name' => $user->full_name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role_id' => $user->role_id,
+                'user_type' => 'employee'
+            ]);
+        }
         
     } catch (\Exception $e) {
-        \Log::error('Error in getUserInfo: ' . $e->getMessage());
+        \Log::error('Error in getUserInfo: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'user_type' => $request->header('X-User-Type'),
+            'user_id' => $request->header('X-User-ID'),
+            'headers' => $request->headers->all()
+        ]);
+        
         return response()->json([
             'success' => false,
             'message' => 'Error retrieving user info',
@@ -883,8 +997,6 @@ public function getUserInfo(Request $request)
         ], 500);
     }
 }
-
-
 /**
  * Get users by IDs
  * 

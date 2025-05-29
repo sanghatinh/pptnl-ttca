@@ -14,7 +14,6 @@ class JwtMiddleware
     public function handle(Request $request, Closure $next)
     {
         try {
-            // ดึง token จาก Authorization header
             $token = $request->bearerToken();
             
             if (!$token) {
@@ -24,13 +23,11 @@ class JwtMiddleware
                 ], 401);
             }
 
-            // ตรวจสอบและถอดรหัส token
+            // ถอดรหัส token
             $payload = JWTAuth::setToken($token)->getPayload();
             $userId = $payload->get('sub');
-            
-            // ดึงข้อมูล user type จาก header
-            $userType = $request->header('X-User-Type', 'employee');
-            
+            $userType = $payload->get('user_type', 'employee');
+
             // ตรวจสอบผู้ใช้ตามประเภท
             if ($userType === 'farmer') {
                 $user = UserFarmer::find($userId);
@@ -43,7 +40,8 @@ class JwtMiddleware
                 
                 // เพิ่ม supplier number ใน header สำหรับใช้ใน controller
                 $request->headers->set('X-User-Type', 'farmer');
-                $request->headers->set('X-Supplier-Number', $user->supplier_number ?? $user->ma_kh_ca_nhan);
+                  $request->headers->set('X-User-ID', $userId); // เพิ่มบรรทัดนี้
+                $request->headers->set('X-Supplier-Number', $user->ma_kh_doanh_nghiep ?? $user->ma_kh_ca_nhan);
                 
             } else {
                 $user = User::find($userId);
@@ -54,15 +52,16 @@ class JwtMiddleware
                     ], 401);
                 }
                 
+                // เพิ่ม headers สำหรับ employee
                 $request->headers->set('X-User-Type', 'employee');
+                $request->headers->set('X-User-ID', $user->id);
+                $request->headers->set('X-User-Position', $user->position);
+                $request->headers->set('X-User-Station', $user->station);
+                $request->headers->set('X-User-Ma-Nhan-Vien', $user->ma_nhan_vien);
             }
-            
-            // เพิ่มข้อมูลผู้ใช้ใน request สำหรับใช้ใน controller
-            $request->merge(['authenticated_user' => $user]);
-            $request->headers->set('X-User-ID', $userId);
-            
+
             return $next($request);
-            
+
         } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
             return response()->json([
                 'success' => false,

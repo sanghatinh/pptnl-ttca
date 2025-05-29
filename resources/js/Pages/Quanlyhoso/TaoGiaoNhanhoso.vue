@@ -1423,7 +1423,7 @@ export default {
                 this.document.creator_id = parsedUser.id;
                 this.document.creator_name = parsedUser.full_name;
                 this.document.station = parsedUser.station;
-                this.document.receiver_id = parsedUser.id;
+                // this.document.receiver_id = parsedUser.id;
             }
         },
         fetchInvestmentProjects() {

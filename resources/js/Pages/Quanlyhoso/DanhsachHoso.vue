@@ -43,7 +43,7 @@
                         </option>
                     </select>
                 </div>
-                <div class="investment-filter ms-3">
+                <!-- <div class="investment-filter ms-3">
                     <select
                         v-model="investmentFilter"
                         class="form-select investment-select"
@@ -57,7 +57,7 @@
                             {{ project }}
                         </option>
                     </select>
-                </div>
+                </div> -->
                 <div
                     class="col d-flex justify-content-end gap-3 align-items-center"
                 >
@@ -985,7 +985,7 @@
                                         class="desktop-row"
                                     >
                                         <!-- New checkbox column for each row -->
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             <input
                                                 type="checkbox"
                                                 v-model="selectedItems"
@@ -994,7 +994,7 @@
                                             />
                                         </td>
                                         <td
-                                            class="border px-4 py-2 clickable-cell"
+                                            class="px-4 py-2 clickable-cell"
                                             @dblclick="goToEditPage(item.id)"
                                         >
                                             <span class="document-code">{{
@@ -1002,40 +1002,40 @@
                                             }}</span>
                                         </td>
                                         <td
-                                            class="border px-4 py-2"
+                                            class="px-4 py-2"
                                             @dblclick="goToEditPage(item.id)"
                                         >
                                             {{ item.station }}
                                         </td>
 
                                         <td
-                                            class="border px-4 py-2"
+                                            class="px-4 py-2"
                                             @dblclick="goToEditPage(item.id)"
                                         >
                                             {{ item.title }}
                                         </td>
                                         <td
-                                            class="border px-4 py-2"
+                                            class="px-4 py-2"
                                             @dblclick="goToEditPage(item.id)"
                                         >
                                             {{ item.investment_project }}
                                         </td>
                                         <td
-                                            class="border px-4 py-2"
+                                            class="px-4 py-2"
                                             @dblclick="goToEditPage(item.id)"
                                         >
                                             {{ item.file_count }}
                                         </td>
                                         <td
-                                            class="border px-4 py-2"
+                                            class="px-4 py-2"
                                             @dblclick="goToEditPage(item.id)"
                                         >
                                             {{ item.document_type }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{ formatDate(item.created_date) }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             <i
                                                 class="fas fa-user text-blue-500"
                                             ></i>
@@ -1043,7 +1043,7 @@
                                                 item.creator?.full_name || "N/A"
                                             }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             <template v-if="item.receiver">
                                                 <i
                                                     class="fas fa-user text-green-500"
@@ -1056,7 +1056,7 @@
                                                 >
                                             </template>
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{
                                                 item.received_date
                                                     ? formatDate(
@@ -1065,7 +1065,7 @@
                                                     : "-"
                                             }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             <span
                                                 :class="
                                                     statusClass(
@@ -2011,6 +2011,8 @@ export default {
         },
 
         resetAllFilters() {
+            // Clear saved filter state from localStorage
+            localStorage.removeItem("danhsachHosoFilters");
             // Reset global search
             this.search = "";
 
@@ -2036,8 +2038,8 @@ export default {
             this.sortColumn = null;
             this.sortDirection = "asc";
 
-            // Clear saved filter state from localStorage
-            localStorage.removeItem("danhsachHosoFilters");
+            // Refresh data
+            this.fetchData();
         },
 
         formatDateForComparison(date) {
@@ -2239,9 +2241,23 @@ export default {
 .card {
     background: #fff;
     border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
+    border-radius: 1.5rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: box-shadow 0.3s ease;
+    overflow: hidden;
+}
+
+.card::before {
+    border-radius: 1.5rem 1.5rem 0 0;
+    content: "";
+    position: absolute;
+
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #10b981 0%, #059669 50%, #10b981 100%);
+    z-index: 1;
 }
 .card:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -2253,6 +2269,11 @@ export default {
     background-color: #f0f9f0;
     box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
 }
+.table-auto {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
 .table-auto th,
 .table-auto td {
     text-align: left;
@@ -2261,10 +2282,12 @@ export default {
     text-overflow: clip;
     word-wrap: break-word;
     font-size: 0.875rem;
+    border: none; /* Remove all borders */
+    border-bottom: 1px solid #e5e7eb;
 }
 .table-auto th {
     background-color: #e7e7e7;
-    border: 1px solid #e5e7eb;
+    border: none; /* Remove all borders */
     padding: 0.75rem;
     vertical-align: top;
     cursor: pointer;
