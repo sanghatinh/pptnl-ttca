@@ -1,93 +1,199 @@
 import { defineStore } from "pinia";
+import axios from "axios";
+
 export const useStore = defineStore("auth", {
     state: () => ({
-        user: null,
-        token: null,
-        userType: null,
+        token: localStorage.getItem("web_token") || "",
+        user: JSON.parse(localStorage.getItem("web_user") || "{}"),
+        userType: localStorage.getItem("user_type") || "employee",
+        supplierId: localStorage.getItem("supplier_id") || "",
         userPermissions: [],
         userComponents: [],
-        supplierId: null, // เพิ่มสำหรับเก็บ supplier_number กรณีเป็น farmer
+        isLoading: false,
+        isInitialized: false,
     }),
+
     getters: {
-        getUser: (state) => state.user,
         getToken: (state) => state.token,
+        getUser: (state) => state.user,
         getUserType: (state) => state.userType,
-        isFarmer: (state) => state.userType === "farmer",
-        isEmployee: (state) => state.userType === "employee",
+        getSupplierId: (state) => state.supplierId,
         getUserPermissions: (state) => state.userPermissions,
         getUserComponents: (state) => state.userComponents,
-        getSupplierId: (state) => state.supplierId,
-    },
-    actions: {
-        setUser(new_user) {
-            this.user = new_user;
+        getIsLoading: (state) => state.isLoading,
+        getIsInitialized: (state) => state.isInitialized,
+
+        // Helper getters
+        hasPermission: (state) => (permissionName) => {
+            return state.userPermissions.includes(permissionName);
         },
-        setToken(new_token) {
-            this.token = new_token;
+
+        canViewComponent: (state) => (componentName) => {
+            return state.userComponents.includes(componentName);
         },
-        setUserType(type) {
-            this.userType = type;
+
+        isAuthenticated: (state) => {
+            return !!state.token && Object.keys(state.user).length > 0;
         },
-        setSupplierId(id) {
-            this.supplierId = id;
-        },
-        setUserPermissions(permissions) {
-            this.userPermissions = permissions;
-        },
-        setUserComponents(components) {
-            this.userComponents = components;
-        },
-        logout() {
-            this.user = null;
-            this.token = null;
-            this.userType = null;
-            this.userPermissions = [];
-            this.userComponents = [];
-            this.supplierId = null;
-        },
-        // เพิ่มฟังก์ชันใหม่ที่นี่
-        getAuthHeaders() {
+
+        // เพิ่ม getAuthHeaders method
+        getAuthHeaders: (state) => () => {
             const headers = {
-                Authorization: `Bearer ${this.token}`,
-                "X-User-Type": this.userType || "employee",
+                Authorization: `Bearer ${state.token}`,
+                "Content-Type": "application/json",
+                Accept: "application/json",
             };
 
-            if (this.userType === "farmer" && this.supplierId) {
-                headers["X-Supplier-Number"] = this.supplierId;
+            if (state.userType === "farmer" && state.supplierId) {
+                headers["X-User-Type"] = "farmer";
+                headers["X-Supplier-Number"] = state.supplierId;
+            } else {
+                headers["X-User-Type"] = "employee";
             }
 
             return headers;
         },
-        // เพิ่มฟังก์ชันสำหรับโหลดสิทธิ์และ components
+    },
+
+    actions: {
+        setToken(token) {
+            this.token = token;
+            localStorage.setItem("web_token", token);
+            this.setupAxiosInterceptors();
+        },
+
+        setUser(user) {
+            this.user = user;
+            localStorage.setItem("web_user", JSON.stringify(user));
+        },
+
+        setUserType(type) {
+            this.userType = type;
+            localStorage.setItem("user_type", type);
+        },
+
+        setSupplierId(id) {
+            this.supplierId = id;
+            localStorage.setItem("supplier_id", id);
+        },
+
+        setUserPermissions(permissions) {
+            this.userPermissions = permissions;
+        },
+
+        setUserComponents(components) {
+            this.userComponents = components;
+        },
+
+        setIsInitialized(status) {
+            this.isInitialized = status;
+        },
+
+        logout() {
+            this.token = "";
+            this.user = {};
+            this.userType = "employee";
+            this.supplierId = "";
+            this.userPermissions = [];
+            this.userComponents = [];
+            this.isInitialized = false;
+
+            // Clear localStorage
+            const keysToRemove = [
+                "web_token",
+                "web_user",
+                "user_type",
+                "supplier_id",
+                "bienban_filter_state",
+                "payment_request_filter_state",
+                "congno_filter_state",
+            ];
+
+            keysToRemove.forEach((key) => localStorage.removeItem(key));
+        },
+
+        setupAxiosInterceptors() {
+            // Set default authorization header
+            axios.defaults.headers.common[
+                "Authorization"
+            ] = `Bearer ${this.token}`;
+
+            // Add request interceptor for user type and supplier ID
+            axios.interceptors.request.use((config) => {
+                if (this.userType === "farmer" && this.supplierId) {
+                    config.headers["X-User-Type"] = this.userType;
+                    config.headers["X-Supplier-Number"] = this.supplierId;
+                } else {
+                    config.headers["X-User-Type"] = "employee";
+                }
+                return config;
+            });
+
+            // Add response interceptor for handling 401 errors
+            axios.interceptors.response.use(
+                (response) => response,
+                (error) => {
+                    if (error.response?.status === 401) {
+                        this.logout();
+                        window.location.href = "/login";
+                    }
+                    return Promise.reject(error);
+                }
+            );
+        },
+
+        async initializeAuth() {
+            if (this.isInitialized) {
+                return true;
+            }
+
+            if (!this.token) {
+                return false;
+            }
+
+            this.isLoading = true;
+
+            try {
+                this.setupAxiosInterceptors();
+                await this.loadPermissionsAndComponents();
+                this.isInitialized = true;
+                return true;
+            } catch (error) {
+                console.error("Error initializing auth:", error);
+                this.logout();
+                return false;
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
         async loadPermissionsAndComponents() {
             try {
-                // กำหนด headers สำหรับการดึงข้อมูล
                 const headers = {
                     Authorization: `Bearer ${this.token}`,
                 };
 
                 let permissionsEndpoint, componentsEndpoint;
 
-                // เลือก endpoint ตามประเภทผู้ใช้
                 if (this.userType === "farmer") {
                     permissionsEndpoint = "/api/farmer/permissions";
                     componentsEndpoint = "/api/farmer/components";
+                    headers["X-User-Type"] = "farmer";
+                    headers["X-Supplier-Number"] = this.supplierId;
                 } else {
                     permissionsEndpoint = "/api/user/permissions";
                     componentsEndpoint = "/api/user/components";
+                    headers["X-User-Type"] = "employee";
                 }
 
-                // เรียกดึงข้อมูลสิทธิ์
-                const permissionsResponse = await axios.get(
-                    permissionsEndpoint,
-                    { headers }
-                );
-                this.setUserPermissions(permissionsResponse.data);
+                // Load permissions and components in parallel
+                const [permissionsResponse, componentsResponse] =
+                    await Promise.all([
+                        axios.get(permissionsEndpoint, { headers }),
+                        axios.get(componentsEndpoint, { headers }),
+                    ]);
 
-                // เรียกดึงข้อมูล components
-                const componentsResponse = await axios.get(componentsEndpoint, {
-                    headers,
-                });
+                this.setUserPermissions(permissionsResponse.data);
                 this.setUserComponents(componentsResponse.data);
 
                 return true;
@@ -96,8 +202,38 @@ export const useStore = defineStore("auth", {
                     "Error loading permissions and components:",
                     error
                 );
+                throw error;
+            }
+        },
+
+        async refreshPermissions() {
+            if (!this.token) return false;
+
+            try {
+                await this.loadPermissionsAndComponents();
+                return true;
+            } catch (error) {
+                console.error("Error refreshing permissions:", error);
                 return false;
             }
+        },
+
+        // เพิ่ม method สำหรับสร้าง headers (alternative approach)
+        getHeaders() {
+            const headers = {
+                Authorization: `Bearer ${this.token}`,
+                "Content-Type": "application/json",
+                Accept: "application/json",
+            };
+
+            if (this.userType === "farmer" && this.supplierId) {
+                headers["X-User-Type"] = "farmer";
+                headers["X-Supplier-Number"] = this.supplierId;
+            } else {
+                headers["X-User-Type"] = "employee";
+            }
+
+            return headers;
         },
     },
 });

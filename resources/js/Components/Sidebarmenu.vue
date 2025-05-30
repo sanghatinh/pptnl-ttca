@@ -21,18 +21,29 @@
             <div class="sidebar-menu">
                 <ul>
                     <li class="header-menu">General</li>
-                    <li class="sidebar-dropdown active">
-                        <a href="#">
+                    <li
+                        class="sidebar-dropdown"
+                        :class="{ active: activeDropdowns.documents }"
+                    >
+                        <a
+                            href="#"
+                            @click.prevent="toggleDropdown('documents')"
+                        >
                             <i class="fa-solid fa-folder-open"></i>
                             <span class="menu-text">Quản lý hồ sơ</span>
                         </a>
-                        <div class="sidebar-submenu">
+                        <div
+                            class="sidebar-submenu"
+                            :style="{
+                                display: activeDropdowns.documents
+                                    ? 'block'
+                                    : 'none',
+                            }"
+                        >
                             <ul>
                                 <!-- Assuming permission check for each dashboard if needed -->
 
-                                <li
-                                    v-if="hasAccessToComponent('Quản lý hồ sơ')"
-                                >
+                                <li v-if="canViewComponent('Quản lý hồ sơ')">
                                     <router-link
                                         to="/DanhsachHoso"
                                         :class="
@@ -48,9 +59,7 @@
                                     </router-link>
                                 </li>
 
-                                <li
-                                    v-if="userCanViewComponent('Quản lý hồ sơ')"
-                                >
+                                <li v-if="canViewComponent('Quản lý hồ sơ')">
                                     <router-link
                                         to="/Bienbannghiemthudichvu"
                                         :class="
@@ -66,9 +75,7 @@
                                         >
                                     </router-link>
                                 </li>
-                                <li
-                                    v-if="userCanViewComponent('Quản lý hồ sơ')"
-                                >
+                                <li v-if="canViewComponent('Quản lý hồ sơ')">
                                     <router-link
                                         to="/Phieugiaonhanhomgiong"
                                         :class="
@@ -91,12 +98,22 @@
 
                 <!-- Quản lý tài chính -->
                 <ul>
-                    <li class="sidebar-dropdown active">
-                        <a href="#">
+                    <li
+                        class="sidebar-dropdown"
+                        :class="{ active: activeDropdowns.finance }"
+                    >
+                        <a href="#" @click.prevent="toggleDropdown('finance')">
                             <i class="fa-solid fa-hand-holding-dollar"></i>
                             <span class="menu-text">Quản lý tài chính</span>
                         </a>
-                        <div class="sidebar-submenu">
+                        <div
+                            class="sidebar-submenu"
+                            :style="{
+                                display: activeDropdowns.finance
+                                    ? 'block'
+                                    : 'none',
+                            }"
+                        >
                             <ul>
                                 <li>
                                     <router-link
@@ -155,12 +172,22 @@
 
                 <!-- Quản lý công nợ-->
                 <ul>
-                    <li class="sidebar-dropdown active">
-                        <a href="#">
+                    <li
+                        class="sidebar-dropdown"
+                        :class="{ active: activeDropdowns.debt }"
+                    >
+                        <a href="#" @click.prevent="toggleDropdown('debt')">
                             <i class="fas fa-file-invoice-dollar"></i>
                             <span class="menu-text">Quản lý công nợ</span>
                         </a>
-                        <div class="sidebar-submenu">
+                        <div
+                            class="sidebar-submenu"
+                            :style="{
+                                display: activeDropdowns.debt
+                                    ? 'block'
+                                    : 'none',
+                            }"
+                        >
                             <ul>
                                 <li>
                                     <router-link
@@ -185,18 +212,24 @@
 
                 <!-- Quản lý hệ thống -->
                 <ul>
-                    <li class="sidebar-dropdown active">
-                        <a href="#">
+                    <li
+                        class="sidebar-dropdown"
+                        :class="{ active: activeDropdowns.system }"
+                    >
+                        <a href="#" @click.prevent="toggleDropdown('system')">
                             <i class="fa-solid fa-screwdriver-wrench"></i>
                             <span class="menu-text">Quản lý hệ thống</span>
                         </a>
-                        <div class="sidebar-submenu">
+                        <div
+                            class="sidebar-submenu"
+                            :style="{
+                                display: activeDropdowns.system
+                                    ? 'block'
+                                    : 'none',
+                            }"
+                        >
                             <ul>
-                                <li
-                                    v-if="
-                                        userCanViewComponent('Danh sách User')
-                                    "
-                                >
+                                <li v-if="canViewComponent('Danh sách User')">
                                     <router-link
                                         to="/user"
                                         :class="
@@ -209,7 +242,7 @@
                                         <span>Danh sách User</span>
                                     </router-link>
                                 </li>
-                                <li v-if="userCanViewComponent('Cấp quyền')">
+                                <li v-if="canViewComponent('Cấp quyền')">
                                     <router-link
                                         to="/permission"
                                         :class="
@@ -222,11 +255,7 @@
                                         <span>Cấp quyền</span>
                                     </router-link>
                                 </li>
-                                <li
-                                    v-if="
-                                        userCanViewComponent('Nhóm Cấp quyền')
-                                    "
-                                >
+                                <li v-if="canViewComponent('Nhóm Cấp quyền')">
                                     <router-link
                                         to="/role"
                                         :class="
@@ -267,11 +296,15 @@
 <script>
 import axios from "axios";
 import { useStore } from "../Store/Auth";
+import { usePermissions } from "../Composables/usePermissions";
 export default {
     setup() {
         const store = useStore();
+        const { hasPermission, canViewComponent } = usePermissions();
         return {
             store,
+            hasPermission,
+            canViewComponent,
         };
     },
     data() {
@@ -280,60 +313,82 @@ export default {
             userPermissions: [],
             userComponents: [],
             isMobile: false,
+            // เพิ่ม state สำหรับควบคุม dropdown
+            activeDropdowns: {
+                documents: false,
+                finance: false,
+                debt: false,
+                system: false,
+            },
         };
     },
+    watch: {
+        // ตรวจสอบเมื่อ route เปลี่ยน เพื่อเปิด dropdown ที่เกี่ยวข้อง
+        "$route.path"(newPath) {
+            this.setActiveDropdownBasedOnRoute(newPath);
+        },
+        // ตรวจสอบการเปลี่ยนแปลงใน store (เช่น หลัง login)
+        "store.token"(newToken) {
+            if (newToken) {
+                // หลัง login เรียกใช้ function เพื่อ reset dropdown
+                this.initializeDropdowns();
+            }
+        },
+    },
     methods: {
-        hasAccessToComponent(componentName) {
-            return this.store.getUserComponents.includes(componentName);
+        // ฟังก์ชันสำหรับ toggle dropdown
+        toggleDropdown(dropdownName) {
+            // ปิด dropdown อื่นๆ ก่อน (ถ้าต้องการให้เปิดได้ทีละอัน)
+            // Object.keys(this.activeDropdowns).forEach(key => {
+            //     if (key !== dropdownName) {
+            //         this.activeDropdowns[key] = false;
+            //     }
+            // });
+
+            // Toggle dropdown ที่เลือก
+            this.activeDropdowns[dropdownName] =
+                !this.activeDropdowns[dropdownName];
         },
 
-        // ตรวจสอบว่ามีสิทธิ์นั้นหรือไม่
-        hasPermission(permissionName) {
-            return this.store.getUserPermissions.includes(permissionName);
-        },
-        fetchUserData() {
-            // กำหนด headers
-            const headers = {
-                Authorization: "Bearer " + this.store.getToken,
-            };
+        // ฟังก์ชันเพื่อกำหนด dropdown ที่ active ตาม route
+        setActiveDropdownBasedOnRoute(path) {
+            // Reset ทุก dropdown
+            Object.keys(this.activeDropdowns).forEach((key) => {
+                this.activeDropdowns[key] = false;
+            });
 
-            // เลือก endpoint ตามประเภทผู้ใช้
-            const userType = this.store.getUserType;
-            const permissionsEndpoint =
-                userType === "farmer"
-                    ? "/api/farmer/permissions"
-                    : "/api/user/permissions";
-            const componentsEndpoint =
-                userType === "farmer"
-                    ? "/api/farmer/components"
-                    : "/api/user/components";
+            // เปิด dropdown ตาม route ปัจจุบัน
+            if (
+                path.includes("/DanhsachHoso") ||
+                path.includes("/Bienbannghiemthudichvu") ||
+                path.includes("/Phieugiaonhanhomgiong")
+            ) {
+                this.activeDropdowns.documents = true;
+            } else if (
+                path.includes("/Phieutrinhthanhtoan") ||
+                path.includes("/Phieudenghithanhtoandichvu") ||
+                path.includes("/Phieuthunodichvu")
+            ) {
+                this.activeDropdowns.finance = true;
+            } else if (path.includes("/CongnoDichvuKhautru")) {
+                this.activeDropdowns.debt = true;
+            } else if (
+                path.includes("/user") ||
+                path.includes("/permission") ||
+                path.includes("/role") ||
+                path.includes("/Profile")
+            ) {
+                this.activeDropdowns.system = true;
+            }
+        },
 
-            // Fetch user permissions
-            axios
-                .get(permissionsEndpoint, { headers })
-                .then((response) => {
-                    this.userPermissions = response.data;
-                })
-                .catch((error) =>
-                    console.error("Error fetching permissions:", error)
-                );
+        // ฟังก์ชันเพื่อ initialize dropdown หลัง login
+        initializeDropdowns() {
+            this.$nextTick(() => {
+                this.setActiveDropdownBasedOnRoute(this.$route.path);
+            });
+        },
 
-            // Fetch user components
-            axios
-                .get(componentsEndpoint, { headers })
-                .then((response) => {
-                    this.userComponents = response.data;
-                })
-                .catch((error) =>
-                    console.error("Error fetching components:", error)
-                );
-        },
-        userHasPermission(permissionName) {
-            return this.userPermissions.includes(permissionName);
-        },
-        userCanViewComponent(componentName) {
-            return this.userComponents.includes(componentName);
-        },
         // เพิ่มฟังก์ชันใหม่สำหรับการปิด sidebar บนมือถือ
         closeSidebar() {
             // เช็คว่าอุปกรณ์มีขนาดหน้าจอเล็กหรือไม่ (เช่น มือถือ)
@@ -350,11 +405,13 @@ export default {
         },
     },
     mounted() {
-        this.fetchUserData();
         // ตรวจจับขนาดหน้าจอเมื่อโหลดครั้งแรก
         this.checkScreenSize();
         // ตรวจจับการเปลี่ยนแปลงขนาดหน้าจอ
         window.addEventListener("resize", this.checkScreenSize);
+
+        // Initialize dropdown ตาม route ปัจจุบัน
+        this.initializeDropdowns();
     },
     unmounted() {
         // ลบ event listener เมื่อคอมโพเนนต์ถูกทำลาย
@@ -377,5 +434,23 @@ export default {
 }
 .sidebar-menu ul {
     padding-left: 0;
+}
+
+/* เพิ่ม CSS สำหรับ transition ของ dropdown */
+.sidebar-submenu {
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.sidebar-dropdown.active > a::after {
+    transform: rotate(90deg);
+}
+
+.sidebar-dropdown > a::after {
+    content: "\f107"; /* FontAwesome chevron down */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    float: right;
+    transition: transform 0.3s ease;
 }
 </style>

@@ -9,6 +9,7 @@ import RegisterPage from "./Pages/Register.vue";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { ResizableColumns } from "./Directives/ResizableColumns";
+import permissionsPlugin from "./Plugins/permissions";
 
 //sweetalert2
 import VueSweetalert2 from "vue-sweetalert2";
@@ -34,4 +35,5 @@ app.component("breadcrumb-vue", breadcrumbVue);
 app.component("Register-Page", RegisterPage);
 app.use(pinia);
 app.use(router); // <--- Add this line
+app.use(permissionsPlugin); // Add the permissions plugin
 app.mount("#app-vue");

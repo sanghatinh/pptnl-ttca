@@ -28,59 +28,35 @@ import Profile from "../Pages/Admin/UserProfile.vue";
 import Unauthorized from "../Pages/Unauthorized.vue";
 
 const authMiddleware = async (to, from, next) => {
-    const token = localStorage.getItem("web_token");
-    const userJson = localStorage.getItem("web_user");
-    const userType = localStorage.getItem("user_type");
-    const supplierId = localStorage.getItem("supplier_id");
     const store = useStore();
 
-    if (token) {
-        // ตั้งค่า token ใน store
-        store.setToken(token);
+    // Check if user is authenticated
+    if (!store.isAuthenticated) {
+        next("/login");
+        return;
+    }
 
-        // ตั้งค่า user ใน store
-        if (userJson) {
+    // เพิ่มการตรวจสอบ component permissions
+    if (to.meta.requiresComponent) {
+        // โหลด user components หากยังไม่มี
+        if (!store.userComponents || store.userComponents.length === 0) {
             try {
-                const user = JSON.parse(userJson);
-                store.setUser(user);
-            } catch (e) {
-                console.error("Error parsing user data:", e);
+                await store.loadPermissionsAndComponents();
+            } catch (error) {
+                console.error("Failed to load permissions:", error);
+                next("/login");
+                return;
             }
         }
 
-        // ตั้งค่า userType ใน store
-        if (userType) {
-            store.setUserType(userType);
+        // ตรวจสอบว่าผู้ใช้มีสิทธิ์เข้าถึง component หรือไม่
+        if (!store.canViewComponent(to.meta.componentName)) {
+            next("/unauthorized");
+            return;
         }
-
-        // ตั้งค่า supplierId ใน store (กรณีเป็น farmer)
-        if (userType === "farmer" && supplierId) {
-            store.setSupplierId(supplierId);
-        }
-
-        try {
-            // โหลดสิทธิ์และ components ก่อนเข้าเพจ
-            await store.loadPermissionsAndComponents();
-            next();
-        } catch (error) {
-            console.error("Error loading permissions:", error);
-            // กรณีมีปัญหาในการโหลดสิทธิ์ ให้ logout
-            localStorage.removeItem("web_token");
-            localStorage.removeItem("web_user");
-            localStorage.removeItem("user_type");
-            localStorage.removeItem("supplier_id");
-            store.logout();
-            next({
-                path: "/login",
-                replace: true,
-            });
-        }
-    } else {
-        next({
-            path: "/login",
-            replace: true,
-        });
     }
+
+    next();
 };
 const routes = [
     {
@@ -113,6 +89,8 @@ const routes = [
         component: Taohoso,
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Quản lý hồ sơ",
         },
     },
     {
@@ -186,6 +164,8 @@ const routes = [
         component: Danhsachhoso,
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Quản lý hồ sơ",
         },
     },
     {
@@ -457,45 +437,27 @@ const router = createRouter({
     },
 });
 
-router.beforeEach((to, from, next) => {
-    const token = localStorage.getItem("web_token");
-    const userType = localStorage.getItem("user_type");
+router.beforeEach(async (to, from, next) => {
     const store = useStore();
-
-    // เส้นทางที่ไม่ต้องการการยืนยันตัวตน
     const publicRoutes = ["/login", "/register"];
 
-    // เส้นทางที่อนุญาตให้เกษตรกรเข้าถึงได้
-    const farmerAllowedRoutes = [
-        "/",
-        "/Profile",
-        "/unauthorized",
-        // เพิ่มเส้นทางอื่นๆ ที่ต้องการให้เกษตรกรเข้าถึงได้
-    ];
-
-    if (to.meta.middleware) {
-        to.meta.middleware.forEach((middleware) => middleware(to, from, next));
-    } else {
-        if (publicRoutes.includes(to.path)) {
-            if (token) {
-                next({
-                    name: "Home",
-                    replace: true,
-                });
-            } else {
-                next();
-            }
+    // Public routes
+    if (publicRoutes.includes(to.path)) {
+        if (store.isAuthenticated) {
+            next({ name: "Home", replace: true });
         } else {
-            // ตรวจสอบหากเป็น farmer และพยายามเข้าถึงหน้าที่ไม่ได้รับอนุญาต
-            if (
-                userType === "farmer" &&
-                !farmerAllowedRoutes.includes(to.path)
-            ) {
-                next("/unauthorized");
-            } else {
-                next();
-            }
+            next();
         }
+        return;
+    }
+
+    // Protected routes
+    if (to.meta.middleware) {
+        for (const middleware of to.meta.middleware) {
+            await middleware(to, from, next);
+        }
+    } else {
+        await authMiddleware(to, from, next);
     }
 });
 

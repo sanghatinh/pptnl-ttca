@@ -1015,6 +1015,14 @@ export default {
                 this.showError("Không tìm thấy mã nghiệm thu");
                 return;
             }
+            // ตรวจสอบ token ก่อนเรียก API
+            const token =
+                localStorage.getItem("web_token") || this.store.getToken;
+            if (!token) {
+                // ถ้าไม่มี token ให้ไปหน้า login ทันที
+                this.$router.replace("/login");
+                return;
+            }
 
             this.isLoading = true;
             axios
@@ -1314,8 +1322,8 @@ export default {
             });
         },
         handleAuthError() {
-            localStorage.removeItem("web_token");
-            localStorage.removeItem("web_user");
+            localStorage.clear();
+
             this.store.logout();
             this.$router.push("/login");
         },

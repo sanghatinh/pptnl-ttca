@@ -284,9 +284,8 @@ export default {
                 // โหลดสิทธิ์และ components
                 this.store.loadPermissionsAndComponents().then(() => {
                     // นำทางไปยังหน้า dashboard
-                    this.$router.push("/").then(() => {
-                        this.$router.go(0);
-                    });
+
+                    this.$router.push("/");
                 });
             } else {
                 this.errorMessage =

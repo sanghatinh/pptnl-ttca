@@ -20,7 +20,7 @@
                         >
                             <div class="button-container">
                                 <button
-                                    v-if="userHasPermission('create')"
+                                    v-if="hasPermission('create')"
                                     type="button"
                                     @click="Adduser"
                                     class="button-30-save d-flex align-items-center"
@@ -102,7 +102,7 @@
                 </div>
                 <div class="mobile-action-section">
                     <button
-                        v-if="userHasPermission('create')"
+                        v-if="hasPermission('create')"
                         type="button"
                         @click="Adduser"
                         class="btn-mobile-add"
@@ -1064,13 +1064,17 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
+import { usePermissions } from "../../Composables/usePermissions";
 
 export default {
     setup() {
         const store = useStore();
+        const { hasPermission, canViewComponent } = usePermissions();
         return {
             store,
             exportModal: null,
+            hasPermission,
+            canViewComponent,
         };
     },
     components: {
@@ -1271,7 +1275,6 @@ export default {
         this.fetchPositions();
         this.fetchStations();
         this.fetchRoles();
-        this.fetchUserPermissions(); // เรียกอ่าน permission เมื่อสร้าง component
     },
     beforeUnmount() {
         window.removeEventListener("resize", this.handleResize);
@@ -1319,23 +1322,6 @@ export default {
                 (p) => p.id_position === positionId
             );
             return position ? position.position : positionId;
-        },
-
-        // ฟังก์ชันสำหรับ fetch data permissionName ของผู้ใช้
-        fetchUserPermissions() {
-            axios
-                .get("/api/user/permissions", {
-                    headers: { Authorization: "Bearer " + this.store.getToken },
-                })
-                .then((response) => {
-                    this.userPermissions = response.data;
-                })
-                .catch((error) => {
-                    console.error("Error fetching user permissions:", error);
-                });
-        },
-        userHasPermission(permissionName) {
-            return this.userPermissions.includes(permissionName);
         },
 
         //add user

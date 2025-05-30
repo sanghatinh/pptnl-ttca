@@ -137,26 +137,48 @@ export default {
         return { store };
     },
     methods: {
-        Logout() {
-            axios
-                .get("api/logout", {
-                    headers: { Authorization: "Bearer " + this.store.getToken },
-                })
-                .then((res) => {
-                    if (res.data.success) {
-                        this.clearAllLocalStorage();
-                        this.store.logout();
-                        this.$router.push("/login");
-                    }
-                })
-                .catch((err) => {
-                    console.log(err);
-                    if (err.response && err.response.status === 401) {
-                        this.clearAllLocalStorage();
-                        this.store.logout();
-                        this.$router.push("/login");
-                    }
-                });
+        async Logout() {
+            try {
+                // Clear localStorage และ store ก่อนเรียก API
+                this.clearAllLocalStorage();
+                this.store.logout();
+
+                // เพิ่มการ emit event เพื่อแจ้ง sidebar ให้ reset
+                this.$eventBus?.emit("user-logged-out");
+
+                // เรียก API logout (ไม่จำเป็นต้องรอผลลัพธ์)
+                axios
+                    .get("api/logout", {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    })
+                    .catch((err) => {
+                        // แม้ API logout จะ error ก็ไม่เป็นไร เพราะเราได้ clear data แล้ว
+                        console.log("Logout API error (ignored):", err);
+                    });
+
+                // Force navigate to login โดยไม่รอ API response
+                await this.$router.replace("/login");
+
+                // Force reload page เพื่อให้แน่ใจว่า state ถูก reset
+                window.location.reload();
+            } catch (error) {
+                console.error("Logout error:", error);
+
+                // กรณีที่เกิดข้อผิดพลาดใดๆ ให้ force logout
+                this.forceLogout();
+            }
+        },
+
+        forceLogout() {
+            // Force logout method สำหรับกรณีฉุกเฉิน
+            this.clearAllLocalStorage();
+            this.store.logout();
+            this.$eventBus?.emit("user-logged-out");
+
+            // ใช้ window.location แทน router เพื่อ force navigation
+            window.location.href = "/login";
         },
 
         clearAllLocalStorage() {
@@ -172,13 +194,18 @@ export default {
                 "bienban_filter_state",
                 "payment_request_filter_state",
                 "congno_filter_state",
+                "phieuDichvu_filterState", // เพิ่ม filter state ของ Details
             ];
 
             projectKeys.forEach((key) => localStorage.removeItem(key));
 
             // ลบ keys ที่มี pattern เฉพาะ
             Object.keys(localStorage).forEach((key) => {
-                if (key.startsWith("import_congno_dichvu_khautru_")) {
+                if (
+                    key.startsWith("import_congno_dichvu_khautru_") ||
+                    key.includes("filter_state") ||
+                    key.includes("filterState")
+                ) {
                     localStorage.removeItem(key);
                 }
             });
