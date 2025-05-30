@@ -27,7 +27,7 @@ import Role from "../Pages/Admin/Role.vue";
 import Profile from "../Pages/Admin/UserProfile.vue";
 import Unauthorized from "../Pages/Unauthorized.vue";
 
-const authMiddleware = (to, from, next) => {
+const authMiddleware = async (to, from, next) => {
     const token = localStorage.getItem("web_token");
     const userJson = localStorage.getItem("web_user");
     const userType = localStorage.getItem("user_type");
@@ -58,24 +58,23 @@ const authMiddleware = (to, from, next) => {
             store.setSupplierId(supplierId);
         }
 
-        // โหลดสิทธิ์และ components ก่อนเข้าเพจ
-        store
-            .loadPermissionsAndComponents()
-            .then(() => {
-                next();
-            })
-            .catch(() => {
-                // กรณีมีปัญหาในการโหลดสิทธิ์ ให้ logout
-                localStorage.removeItem("web_token");
-                localStorage.removeItem("web_user");
-                localStorage.removeItem("user_type");
-                localStorage.removeItem("supplier_id");
-                store.logout();
-                next({
-                    path: "/login",
-                    replace: true,
-                });
+        try {
+            // โหลดสิทธิ์และ components ก่อนเข้าเพจ
+            await store.loadPermissionsAndComponents();
+            next();
+        } catch (error) {
+            console.error("Error loading permissions:", error);
+            // กรณีมีปัญหาในการโหลดสิทธิ์ ให้ logout
+            localStorage.removeItem("web_token");
+            localStorage.removeItem("web_user");
+            localStorage.removeItem("user_type");
+            localStorage.removeItem("supplier_id");
+            store.logout();
+            next({
+                path: "/login",
+                replace: true,
             });
+        }
     } else {
         next({
             path: "/login",
@@ -120,14 +119,29 @@ const routes = [
         path: "/Danhsachhoso/:id",
         name: "EditGiaoNhanhoso",
         component: EditGiaoNhanhoso,
-        meta: { requiresAuth: true },
+        meta: {
+            middleware: [authMiddleware],
+            requiresAccess: true,
+        },
         beforeEnter: async (to, from, next) => {
             // ดึงค่า id จาก route parameters
             const id = to.params.id;
 
             // ดึง token จาก localStorage
-            const token = localStorage.getItem("web_token");
+            let token = localStorage.getItem("web_token");
             const store = useStore();
+
+            // ถ้าไม่มี token ใน localStorage ให้ลองดึงจาก store
+            if (!token && store.getToken) {
+                token = store.getToken;
+            }
+
+            // ถ้ายังไม่มี token ให้รอสักครู่เผื่อ store กำลังโหลด
+            if (!token) {
+                // รอ 100ms เผื่อ store กำลังโหลดข้อมูล
+                await new Promise((resolve) => setTimeout(resolve, 100));
+                token = localStorage.getItem("web_token") || store.getToken;
+            }
 
             if (!token) {
                 next("/login");
@@ -135,6 +149,7 @@ const routes = [
             }
 
             try {
+                // ตรวจสอบสิทธิ์การเข้าถึง
                 const response = await axios.get(
                     `/api/document-deliveries/${id}/check-access`,
                     {
@@ -145,19 +160,21 @@ const routes = [
                 );
 
                 if (response.data.hasAccess) {
-                    next();
+                    next(); // มีสิทธิ์เข้าถึง - อนุญาตให้เข้าถึงหน้านี้
                 } else {
-                    next("/unauthorized");
+                    next("/unauthorized"); // ไม่มีสิทธิ์เข้าถึง - นำทางไปยังหน้า Unauthorized
                 }
             } catch (error) {
                 console.error("Error checking access:", error);
 
                 if (error.response?.status === 401) {
+                    // Token หมดอายุหรือไม่ถูกต้อง - logout และนำทางไปยังหน้า login
                     localStorage.removeItem("web_token");
                     localStorage.removeItem("web_user");
                     store.logout();
                     next("/login");
                 } else {
+                    // ข้อผิดพลาดอื่นๆ - นำทางไปยังหน้า Unauthorized
                     next("/unauthorized");
                 }
             }
@@ -183,14 +200,29 @@ const routes = [
         name: "Details_NghiemthuDV",
         path: "/Details_NghiemthuDV/:id",
         component: Details_NghiemthuDV,
-        meta: { requiresAuth: true },
+        meta: {
+            middleware: [authMiddleware],
+            requiresAccess: true, // เพิ่ม flag นี้เพื่อบอกว่าต้องตรวจสอบสิทธิ์
+        },
         beforeEnter: async (to, from, next) => {
             // ดึงค่า id จาก route parameters
             const id = to.params.id;
 
             // ดึง token จาก localStorage
-            const token = localStorage.getItem("web_token");
+            let token = localStorage.getItem("web_token");
             const store = useStore();
+
+            // ถ้าไม่มี token ใน localStorage ให้ลองดึงจาก store
+            if (!token && store.getToken) {
+                token = store.getToken;
+            }
+
+            // ถ้ายังไม่มี token ให้รอสักครู่เผื่อ store กำลังโหลด
+            if (!token) {
+                // รอ 100ms เผื่อ store กำลังโหลดข้อมูล
+                await new Promise((resolve) => setTimeout(resolve, 100));
+                token = localStorage.getItem("web_token") || store.getToken;
+            }
 
             if (!token) {
                 next("/login");
@@ -241,14 +273,29 @@ const routes = [
         name: "Details_Phieugiaonhanhomgiong",
         path: "/Details_Phieugiaonhanhomgiong/:id",
         component: Details_Phieugiaonhanhomgiong,
-        meta: { requiresAuth: true },
+        meta: {
+            middleware: [authMiddleware],
+            requiresAccess: true,
+        },
         beforeEnter: async (to, from, next) => {
             // ดึงค่า id จาก route parameters
             const id = to.params.id;
 
             // ดึง token จาก localStorage
-            const token = localStorage.getItem("web_token");
+            let token = localStorage.getItem("web_token");
             const store = useStore();
+
+            // ถ้าไม่มี token ใน localStorage ให้ลองดึงจาก store
+            if (!token && store.getToken) {
+                token = store.getToken;
+            }
+
+            // ถ้ายังไม่มี token ให้รอสักครู่เผื่อ store กำลังโหลด
+            if (!token) {
+                // รอ 100ms เผื่อ store กำลังโหลดข้อมูล
+                await new Promise((resolve) => setTimeout(resolve, 100));
+                token = localStorage.getItem("web_token") || store.getToken;
+            }
 
             if (!token) {
                 next("/login");

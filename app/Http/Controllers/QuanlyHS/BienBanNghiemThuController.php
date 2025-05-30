@@ -635,6 +635,8 @@ public function show($id)
                 'receiver.full_name as nguoi_nhan',
                 'dd.received_date as ngay_nhan',
                 'dd.status as trang_thai_nhan_hs',
+                 'dd.id as document_delivery_id', // Add this line to get document_delivery ID
+                'dm.document_code', // Add document_code directly from mapping
                 'logs.ma_trinh_thanh_toan',
                 'logs.ma_de_nghi_giai_ngan',
                 'pttt.trang_thai_thanh_toan',
@@ -649,6 +651,8 @@ public function show($id)
                 'message' => 'Không tìm thấy thông tin biên bản nghiệm thu'
             ], 404);
         }
+
+
 
         // Determine processing status based on payment status
         if ($document->trang_thai_thanh_toan === 'paid') {

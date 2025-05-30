@@ -635,7 +635,12 @@
                                             >
                                                 Tình trạng giao nhận hồ sơ
                                             </label>
-                                            <div class="input-group">
+                                            <div
+                                                class="input-group"
+                                                style="cursor: pointer"
+                                                @click="navigateToHosoList"
+                                                title="Click để xem danh sách hồ sơ"
+                                            >
                                                 <span class="input-group-text">
                                                     <i
                                                         :class="[
@@ -662,7 +667,8 @@
                                                             document.trang_thai_nhan_hs
                                                         )
                                                     "
-                                                    disabled
+                                                    readonly
+                                                    style="cursor: pointer"
                                                 />
                                             </div>
                                         </div>
@@ -948,6 +954,8 @@ export default {
                 tong_tien_dich_vu: 0,
                 tong_tien_tam_giu: 0,
                 tong_tien_thanh_toan: 0,
+                document_code: "", // Add this line
+                document_delivery_id: null, // Add this line
                 ma_giai_ngan: "",
                 nguoi_giao: "",
                 nguoi_nhan: "",
@@ -1019,6 +1027,11 @@ export default {
                     if (response.data.success) {
                         this.document = {
                             ...response.data.document,
+                            document_code:
+                                response.data.document.document_code || "",
+                            document_delivery_id:
+                                response.data.document.document_delivery_id ||
+                                null,
                             processing_status:
                                 response.data.document.processing_status ||
                                 "received",
@@ -1305,6 +1318,62 @@ export default {
             localStorage.removeItem("web_user");
             this.store.logout();
             this.$router.push("/login");
+        },
+        //Go to page danh sách hồ sơ Details
+
+        navigateToHosoList() {
+            // ตรวจสอบว่ามี document_delivery_id หรือไม่
+            const documentDeliveryId = this.document.document_delivery_id;
+
+            if (!documentDeliveryId) {
+                this.showError("Không tìm thấy ID hồ sơ giao nhận");
+                return;
+            }
+
+            // ตรวจสอบสิทธิ์การเข้าถึงก่อนนำทาง
+            this.isLoading = true;
+
+            axios
+                .get(
+                    `/api/document-deliveries/${documentDeliveryId}/check-access`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${this.store.getToken}`,
+                        },
+                    }
+                )
+                .then((response) => {
+                    this.isLoading = false;
+
+                    if (response.data.hasAccess) {
+                        // นำทางไปยัง document-deliveries page โดยใช้ document_delivery_id
+                        this.$router.push(
+                            `/Danhsachhoso/${documentDeliveryId}`
+                        );
+                    } else {
+                        // ไม่มีสิทธิ์เข้าถึง - แสดงข้อความและนำทางไปหน้า Unauthorized
+                        this.showError(
+                            "Bạn không có quyền truy cập tài liệu này"
+                        );
+                        this.$router.push("/unauthorized");
+                    }
+                })
+                .catch((error) => {
+                    this.isLoading = false;
+                    console.error("Error checking access:", error);
+
+                    if (error.response?.status === 401) {
+                        this.handleAuthError();
+                    } else if (error.response?.status === 404) {
+                        this.showError(
+                            "Không tìm thấy thông tin hồ sơ giao nhận"
+                        );
+                    } else {
+                        this.showError(
+                            "Không thể kiểm tra quyền truy cập. Vui lòng thử lại sau."
+                        );
+                    }
+                });
         },
     },
 };

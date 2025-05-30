@@ -76,12 +76,13 @@
                 </div>
                 <!-- Add this button next to actions-menu in the toolbar -->
                 <button
-                    class="btn btn-success d-flex align-items-center gap-2"
+                    class="modern-create-payment-btn"
                     @click="showCreatePaymentRequestModal"
                     :disabled="selectedItems.length === 0"
                     title="Tạo phiếu trình thanh toán"
                 >
-                    <i class="fas fa-file-invoice"></i>
+                    <i class="fa-solid fa-folder-plus"></i>
+                    <span class="btn-label">Add PTTT</span>
                 </button>
                 <div
                     class="col d-flex justify-content-end gap-3 align-items-center"
@@ -97,114 +98,346 @@
         </div>
 
         <!-- Mobile Controls -->
-        <div
-            class="mobile-controls p-3 bg-white rounded-lg shadow-sm mb-3"
-            v-if="isMobile"
-        >
-            <!-- Search and Create Button Row -->
-            <div class="flex gap-2 mb-3">
-                <div class="flex-1 relative">
-                    <span
-                        class="absolute inset-y-0 left-0 flex items-center pl-3"
-                    >
-                        <i class="fas fa-search text-gray-400"></i>
-                    </span>
-                    <input
-                        v-model="search"
-                        type="text"
-                        placeholder="Tìm kiếm hồ sơ..."
-                        class="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                    />
+        <div class="mobile-controls-container" v-if="isMobile">
+            <!-- Search and Actions Row -->
+            <div class="mobile-header-row">
+                <div class="mobile-search-section">
+                    <div class="modern-search-wrapper">
+                        <div class="search-input-container">
+                            <div class="search-icon-wrapper">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <input
+                                v-model="search"
+                                type="text"
+                                placeholder="Tìm kiếm hồ sơ..."
+                                class="modern-search-input"
+                                aria-label="Search"
+                            />
+                            <button
+                                v-if="search"
+                                @click="search = ''"
+                                class="clear-search-btn"
+                                type="button"
+                                aria-label="Clear search"
+                            >
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <!-- Search results indicator -->
+                        <div
+                            v-if="search && filteredItems.length === 0"
+                            class="search-no-results"
+                        >
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Không tìm thấy kết quả nào
+                        </div>
+                        <div
+                            v-else-if="search && filteredItems.length > 0"
+                            class="search-results-count"
+                        >
+                            <i class="fas fa-check-circle me-2"></i>
+                            Tìm thấy {{ filteredItems.length }} kết quả
+                        </div>
+                    </div>
+                </div>
+                <div class="mobile-action-section">
+                    <div class="actions-menu">
+                        <div class="dropdown">
+                            <button
+                                class="btn-mobile-menu"
+                                type="button"
+                                id="mobileActionMenuButton"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                            >
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul
+                                class="dropdown-menu shadow-sm"
+                                aria-labelledby="mobileActionMenuButton"
+                            >
+                                <li>
+                                    <a
+                                        class="dropdown-item"
+                                        href="#"
+                                        @click.prevent="showExportModal"
+                                    >
+                                        <i
+                                            class="fas fa-file-excel text-success me-2"
+                                        ></i>
+                                        Export to Excel
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        class="dropdown-item"
+                                        href="#"
+                                        @click.prevent="importData"
+                                    >
+                                        <i
+                                            class="fas fa-upload text-primary me-2"
+                                        ></i>
+                                        Import Data
+                                    </a>
+                                </li>
+                                <li v-if="selectedItems.length > 0">
+                                    <a
+                                        class="dropdown-item"
+                                        href="#"
+                                        @click.prevent="
+                                            showCreatePaymentRequestModal
+                                        "
+                                    >
+                                        <i
+                                            class="fas fa-file-invoice-dollar text-warning me-2"
+                                        ></i>
+                                        Tạo phiếu trình
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Filters Section -->
-            <div class="filter-section">
-                <!-- Status Filter -->
-                <div class="mb-2.5">
-                    <label class="text-sm font-medium text-gray-700 mb-1 block"
-                        >Tình trạng thanh toán</label
+            <!-- Filters Row -->
+            <div class="mobile-filter-row">
+                <div class="mobile-filter-left">
+                    <select v-model="statusFilter" class="mobile-status-select">
+                        <option value="all">
+                            Tất cả trạng thái thanh toán
+                        </option>
+                        <option value="null">Chưa thanh toán</option>
+                        <option value="processing">Đang xử lý</option>
+                        <option value="submitted">Đã nộp kế toán</option>
+                        <option value="paid">Đã thanh toán</option>
+                        <option value="cancelled">Đã hủy</option>
+                        <option value="rejected">Từ chối</option>
+                    </select>
+                </div>
+                <div class="mobile-filter-right">
+                    <button
+                        @click="showMobileFilterModal = true"
+                        class="mobile-filter-btn"
                     >
-                    <div class="relative">
-                        <select
-                            v-model="statusFilter"
-                            class="w-full py-2.5 pl-3 pr-10 border rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        >
-                            <option
-                                v-for="option in statusOptions"
-                                :key="option.code"
-                                :value="option.code"
+                        <i class="fas fa-filter"></i>
+                    </button>
+                    <button @click="resetAllFilters" class="mobile-filter-btn">
+                        <i class="fas fa-redo-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Filter Modal -->
+        <div
+            v-if="showMobileFilterModal"
+            class="mobile-filter-modal-overlay"
+            @click="showMobileFilterModal = false"
+        >
+            <div class="mobile-filter-modal" @click.stop>
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-filter me-2"></i>
+                        Bộ lọc nâng cao
+                    </h5>
+                    <button
+                        @click="showMobileFilterModal = false"
+                        class="btn-close"
+                    >
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Trạm Filter -->
+                    <div class="filter-section">
+                        <label class="filter-label">
+                            <i class="fas fa-building me-2"></i>
+                            Trạm
+                        </label>
+                        <div class="checkbox-container">
+                            <div
+                                v-for="tram in uniqueValues.tram"
+                                :key="tram"
+                                class="form-check"
                             >
-                                <span v-if="option.code !== 'all'">
-                                    <i :class="statusIcon(option.code)"></i>
-                                </span>
-                                {{ option.name }} ({{
-                                    statusCounts[option.code] || 0
-                                }})
-                            </option>
-                        </select>
-                        <div
-                            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
-                        >
-                            <i class="fas fa-chevron-down text-gray-400"></i>
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    :id="'mobile-tram-' + tram"
+                                    :value="tram"
+                                    v-model="selectedFilterValues.tram"
+                                />
+                                <label
+                                    class="form-check-label"
+                                    :for="'mobile-tram-' + tram"
+                                >
+                                    {{ tram }}
+                                </label>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <!-- Status Filter -->
-                <div class="mb-2.5">
-                    <label class="text-sm font-medium text-gray-700 mb-1 block"
-                        >Tình trạng giao nhận hồ sơ</label
-                    >
-                    <div class="status-filter delivery-status-filter">
-                        <select
-                            v-model="deliveryStatusFilter"
-                            class="form-select status-select"
-                        >
-                            <option
-                                v-for="option in deliveryStatusOptions"
-                                :key="option.code"
-                                :value="option.code"
-                                class="status-option"
+
+                    <!-- Tình trạng giao nhận hồ sơ Filter -->
+                    <div class="filter-section">
+                        <label class="filter-label">
+                            <i class="fas fa-exchange-alt me-2"></i>
+                            Tình trạng giao nhận hồ sơ
+                        </label>
+                        <div class="checkbox-container">
+                            <div
+                                v-for="status in uniqueValues.trang_thai_nhan_hs"
+                                :key="status"
+                                class="form-check"
                             >
-                                <span
-                                    v-if="option.code !== 'all'"
-                                    class="status-icon"
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    :id="'mobile-delivery-' + status"
+                                    :value="status"
+                                    v-model="
+                                        selectedFilterValues.trang_thai_nhan_hs
+                                    "
+                                />
+                                <label
+                                    class="form-check-label"
+                                    :for="'mobile-delivery-' + status"
                                 >
-                                    <i :class="statusIcons(option.code)"></i>
-                                </span>
-                                {{ option.name }} ({{
-                                    deliveryStatusCounts[option.code] || 0
-                                }})
-                            </option>
-                        </select>
+                                    {{ formatStatus(status) }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vụ đầu tư Filter -->
+                    <div class="filter-section">
+                        <label class="filter-label">
+                            <i class="fas fa-seedling me-2"></i>
+                            Vụ đầu tư
+                        </label>
+                        <div class="checkbox-container">
+                            <div
+                                v-for="vuDauTu in uniqueValues.vu_dau_tu"
+                                :key="vuDauTu"
+                                class="form-check"
+                            >
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    :id="'mobile-vu-' + vuDauTu"
+                                    :value="vuDauTu"
+                                    v-model="selectedFilterValues.vu_dau_tu"
+                                />
+                                <label
+                                    class="form-check-label"
+                                    :for="'mobile-vu-' + vuDauTu"
+                                >
+                                    {{ vuDauTu }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hình thức thực hiện DV Filter -->
+                    <div class="filter-section">
+                        <label class="filter-label">
+                            <i class="fas fa-cogs me-2"></i>
+                            Hình thức thực hiện DV
+                        </label>
+                        <div class="checkbox-container">
+                            <div
+                                v-for="hinhThuc in uniqueValues.hinh_thuc_thuc_hien_dv"
+                                :key="hinhThuc"
+                                class="form-check"
+                            >
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    :id="'mobile-hinh-thuc-' + hinhThuc"
+                                    :value="hinhThuc"
+                                    v-model="
+                                        selectedFilterValues.hinh_thuc_thuc_hien_dv
+                                    "
+                                />
+                                <label
+                                    class="form-check-label"
+                                    :for="'mobile-hinh-thuc-' + hinhThuc"
+                                >
+                                    {{ hinhThuc }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trạng thái thanh toán Filter -->
+                    <div class="filter-section">
+                        <label class="filter-label">
+                            <i class="fas fa-credit-card me-2"></i>
+                            Trạng thái thanh toán
+                        </label>
+                        <div class="checkbox-container">
+                            <div class="form-check">
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    id="mobile-payment-null"
+                                    value="null"
+                                    v-model="
+                                        selectedFilterValues.trang_thai_thanh_toan
+                                    "
+                                />
+                                <label
+                                    class="form-check-label"
+                                    for="mobile-payment-null"
+                                >
+                                    Chưa thanh toán
+                                </label>
+                            </div>
+                            <div
+                                v-for="status in [
+                                    'processing',
+                                    'submitted',
+                                    'paid',
+                                    'cancelled',
+                                    'rejected',
+                                ]"
+                                :key="status"
+                                class="form-check"
+                            >
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    :id="'mobile-payment-' + status"
+                                    :value="status"
+                                    v-model="
+                                        selectedFilterValues.trang_thai_thanh_toan
+                                    "
+                                />
+                                <label
+                                    class="form-check-label"
+                                    :for="'mobile-payment-' + status"
+                                >
+                                    {{ formatPaymentStatus(status) }}
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Investment Filter -->
-                <div>
-                    <label class="text-sm font-medium text-gray-700 mb-1 block"
-                        >Vụ đầu tư</label
+                <div class="modal-footer">
+                    <button
+                        @click="resetMobileFilters"
+                        class="btn btn-outline-secondary"
                     >
-                    <div class="relative">
-                        <select
-                            v-model="investmentFilter"
-                            class="w-full py-2.5 pl-3 pr-10 border rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                        >
-                            <option value="all">Chọn tất cả</option>
-                            <option
-                                v-for="project in investmentProjects"
-                                :key="project"
-                                :value="project"
-                            >
-                                {{ project }}
-                            </option>
-                        </select>
-                        <div
-                            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
-                        >
-                            <i class="fas fa-chevron-down text-gray-400"></i>
-                        </div>
-                    </div>
+                        <i class="fas fa-undo me-1"></i>
+                        Reset
+                    </button>
+                    <button @click="applyMobileFilters" class="btn btn-primary">
+                        <i class="fas fa-check me-1"></i>
+                        Áp dụng
+                    </button>
                 </div>
             </div>
         </div>
@@ -1269,10 +1502,7 @@
                                         class="desktop-row"
                                         @dblclick="viewDetails(item)"
                                     >
-                                        <td
-                                            class="border px-4 py-2"
-                                            @click.stop
-                                        >
+                                        <td class="px-4 py-2" @click.stop>
                                             <input
                                                 type="checkbox"
                                                 :value="item.ma_nghiem_thu"
@@ -1282,13 +1512,13 @@
                                                 @click.stop
                                             />
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{ item.ma_nghiem_thu }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{ item.tram }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             <template
                                                 v-if="item.can_bo_nong_vu"
                                             >
@@ -1298,7 +1528,7 @@
                                                 {{ item.can_bo_nong_vu }}
                                             </template>
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             <span
                                                 v-if="
                                                     item.trang_thai_thanh_toan
@@ -1331,51 +1561,51 @@
                                                 Chưa thanh toán
                                             </span>
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{ item.vu_dau_tu }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{ item.tieu_de }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{ item.khach_hang_ca_nhan_dt_mia }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{
                                                 item.khach_hang_doanh_nghiep_dt_mia
                                             }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{ item.hop_dong_dau_tu_mia }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{ item.hinh_thuc_thuc_hien_dv }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{ item.hop_dong_cung_ung_dich_vu }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{
                                                 formatCurrency(
                                                     item.tong_tien_dich_vu
                                                 )
                                             }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{
                                                 formatCurrency(
                                                     item.tong_tien_tam_giu
                                                 )
                                             }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{
                                                 formatCurrency(
                                                     item.tong_tien_thanh_toan
                                                 )
                                             }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             <template v-if="item.nguoi_giao">
                                                 <i
                                                     class="fas fa-user text-blue-500"
@@ -1383,7 +1613,7 @@
                                                 {{ item.nguoi_giao }}
                                             </template>
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             <template v-if="item.nguoi_nhan">
                                                 <i
                                                     class="fas fa-user text-green-500"
@@ -1391,10 +1621,10 @@
                                                 {{ item.nguoi_nhan }}
                                             </template>
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2">
                                             {{ formatDate(item.ngay_nhan) }}
                                         </td>
-                                        <td class="border px-4 py-2">
+                                        <td class="px-4 py-2p">
                                             <span
                                                 v-if="item.trang_thai_nhan_hs"
                                                 :class="
@@ -1730,169 +1960,341 @@
         aria-hidden="true"
     >
         <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="paymentRequestModalLabel">
-                        <i class="fas fa-file-invoice me-2"></i>
-                        Tạo phiếu trình thanh toán
-                    </h5>
+            <div class="modal-content modern-modal">
+                <!-- Enhanced Header -->
+                <div class="modal-header modern-header">
+                    <div class="header-content">
+                        <div class="header-icon">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                        <div class="header-text">
+                            <h5
+                                class="modal-title"
+                                id="paymentRequestModalLabel"
+                            >
+                                Tạo phiếu trình thanh toán
+                            </h5>
+                            <p class="modal-subtitle">
+                                Tạo phiếu trình thanh toán cho các biên bản
+                                nghiệm thu đã chọn
+                            </p>
+                        </div>
+                    </div>
                     <button
                         type="button"
-                        class="btn-close"
+                        class="btn-close modern-close"
                         data-bs-dismiss="modal"
                         aria-label="Close"
                         @click="closePaymentRequestModal"
                     ></button>
                 </div>
-                <div class="modal-body">
-                    <form @submit.prevent="submitPaymentRequest">
-                        <div class="mb-3">
-                            <label for="requestTitle" class="form-label"
-                                >Tiêu đề</label
-                            >
-                            <input
-                                type="text"
-                                class="form-control"
-                                id="requestTitle"
-                                v-model="paymentRequest.title"
-                                readonly
-                            />
+
+                <div class="modal-body modern-body">
+                    <!-- Progress Steps -->
+                    <div class="progress-steps mb-4">
+                        <div class="step active">
+                            <div class="step-circle">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <span class="step-label">Thông tin cơ bản</span>
                         </div>
-                        <div class="row mb-3">
+                        <div class="step-connector"></div>
+                        <div class="step">
+                            <div class="step-circle">
+                                <i class="fas fa-list-check"></i>
+                            </div>
+                            <span class="step-label">Xác nhận</span>
+                        </div>
+                    </div>
+
+                    <!-- Selected Items Summary Card -->
+                    <div class="summary-card mb-4">
+                        <div class="summary-header">
+                            <div class="summary-icon">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <div class="summary-info">
+                                <h6 class="summary-title">Biên bản đã chọn</h6>
+                                <p class="summary-count">
+                                    <span class="count-badge">{{
+                                        selectedItems.length
+                                    }}</span>
+                                    biên bản nghiệm thu
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Duplicate Warning (if any) -->
+                        <div
+                            v-if="duplicateRecords.length > 0"
+                            class="alert alert-warning modern-alert"
+                        >
+                            <div class="alert-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="alert-content">
+                                <strong>Cảnh báo:</strong> Một số biên bản đã
+                                được sử dụng
+                                <div class="mt-2">
+                                    <div
+                                        v-for="(
+                                            item, index
+                                        ) in duplicateRecords.slice(0, 3)"
+                                        :key="index"
+                                        class="duplicate-item"
+                                    >
+                                        <i class="fas fa-file-alt"></i>
+                                        {{ item.ma_nghiem_thu }} →
+                                        {{ item.ma_trinh_thanh_toan }}
+                                    </div>
+                                    <div
+                                        v-if="duplicateRecords.length > 3"
+                                        class="more-items"
+                                    >
+                                        +{{ duplicateRecords.length - 3 }} mục
+                                        khác...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Content -->
+                    <form
+                        @submit.prevent="submitPaymentRequest"
+                        class="modern-form"
+                    >
+                        <!-- Auto-generated Title Display -->
+                        <div class="form-group mb-4">
+                            <label class="form-label modern-label">
+                                <i class="fas fa-tag me-2"></i>
+                                Tiêu đề phiếu trình
+                            </label>
+                            <div class="auto-title-display">
+                                <i class="fas fa-magic me-2"></i>
+                                <span class="auto-text">Tự động tạo:</span>
+                                <span class="title-preview">{{
+                                    paymentRequest.title ||
+                                    "TIEUDE-MTTT-TTCA-[VỤ ĐẦU TƯ]-[ID]"
+                                }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Date and Investment Project Row -->
+                        <div class="row g-3 mb-4">
                             <div class="col-md-6">
-                                <label for="requestDate" class="form-label"
-                                    >Ngày tạo</label
+                                <label
+                                    for="requestDate"
+                                    class="form-label modern-label"
                                 >
-                                <input
-                                    type="date"
-                                    class="form-control"
-                                    id="requestDate"
-                                    v-model="paymentRequest.created_date"
-                                    required
-                                />
+                                    <i class="fas fa-calendar-alt me-2"></i>
+                                    Ngày tạo
+                                </label>
+                                <div class="input-wrapper">
+                                    <input
+                                        type="date"
+                                        class="form-control modern-input"
+                                        id="requestDate"
+                                        v-model="paymentRequest.created_date"
+                                        required
+                                    />
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label
                                     for="investmentProject"
-                                    class="form-label"
-                                    >Vụ đầu tư</label
+                                    class="form-label modern-label"
                                 >
-                                <select
-                                    class="form-select"
-                                    id="investmentProject"
-                                    v-model="paymentRequest.investment_project"
-                                    required
-                                >
-                                    <option value="" disabled selected>
-                                        Chọn vụ đầu tư
-                                    </option>
-                                    <option
-                                        v-for="project in investmentProjectsList"
-                                        :key="project.Ma_Vudautu"
-                                        :value="project.Ma_Vudautu"
+                                    <i class="fas fa-seedling me-2"></i>
+                                    Vụ đầu tư
+                                </label>
+                                <div class="input-wrapper">
+                                    <select
+                                        class="form-select modern-select"
+                                        id="investmentProject"
+                                        v-model="
+                                            paymentRequest.investment_project
+                                        "
+                                        required
                                     >
-                                        {{ project.Ten_Vudautu }}
-                                    </option>
-                                </select>
+                                        <option value="" disabled>
+                                            Chọn vụ đầu tư...
+                                        </option>
+                                        <option
+                                            v-for="project in investmentProjectsList"
+                                            :key="project.Ma_Vudautu"
+                                            :value="project.Ma_Vudautu"
+                                        >
+                                            {{ project.Ten_Vudautu }}
+                                        </option>
+                                    </select>
+                                    <i
+                                        class="fas fa-chevron-down select-arrow"
+                                    ></i>
+                                </div>
                             </div>
                         </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="paymentType" class="form-label"
-                                    >Loại thanh toán</label
+
+                        <!-- Payment Type and Installment Row -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-8">
+                                <label
+                                    for="paymentType"
+                                    class="form-label modern-label"
                                 >
-                                <select
-                                    class="form-select"
-                                    id="paymentType"
-                                    v-model="paymentRequest.payment_type"
-                                    required
-                                >
-                                    <option value="" disabled selected>
-                                        Chọn loại thanh toán
-                                    </option>
-                                    <option value="Nghiệm thu dịch vụ">
-                                        Nghiệm thu dịch vụ
-                                    </option>
-                                    <option value="Phiếu giao nhận hom giống">
-                                        Phiếu giao nhận hom giống
-                                    </option>
-                                </select>
+                                    <i class="fas fa-money-check-alt me-2"></i>
+                                    Loại thanh toán
+                                </label>
+                                <div class="input-wrapper">
+                                    <select
+                                        class="form-select modern-select"
+                                        id="paymentType"
+                                        v-model="paymentRequest.payment_type"
+                                        required
+                                    >
+                                        <option value="" disabled>
+                                            Chọn loại thanh toán...
+                                        </option>
+                                        <option value="Nghiệm thu dịch vụ">
+                                            <i
+                                                class="fas fa-clipboard-check me-2"
+                                            ></i>
+                                            Nghiệm thu dịch vụ
+                                        </option>
+                                        <option
+                                            value="Phiếu giao nhận hom giống"
+                                        >
+                                            <i
+                                                class="fas fa-exchange-alt me-2"
+                                            ></i>
+                                            Phiếu giao nhận hom giống
+                                        </option>
+                                    </select>
+                                    <i
+                                        class="fas fa-chevron-down select-arrow"
+                                    ></i>
+                                </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label
                                     for="paymentInstallment"
-                                    class="form-label"
-                                    >Số đợt thanh toán</label
+                                    class="form-label modern-label"
                                 >
-                                <input
-                                    type="number"
-                                    class="form-control"
-                                    id="paymentInstallment"
-                                    v-model="paymentRequest.payment_installment"
-                                    min="1"
-                                    required
-                                />
+                                    <i class="fas fa-sort-numeric-up me-2"></i>
+                                    Số đợt
+                                </label>
+                                <div class="input-wrapper installment-wrapper">
+                                    <input
+                                        type="number"
+                                        class="form-control modern-input"
+                                        id="paymentInstallment"
+                                        v-model="
+                                            paymentRequest.payment_installment
+                                        "
+                                        min="1"
+                                        max="99"
+                                        required
+                                    />
+                                    <div class="installment-controls">
+                                        <button
+                                            type="button"
+                                            class="installment-btn"
+                                            @click="
+                                                paymentRequest.payment_installment =
+                                                    Math.min(
+                                                        99,
+                                                        parseInt(
+                                                            paymentRequest.payment_installment ||
+                                                                1
+                                                        ) + 1
+                                                    )
+                                            "
+                                        >
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="installment-btn"
+                                            @click="
+                                                paymentRequest.payment_installment =
+                                                    Math.max(
+                                                        1,
+                                                        parseInt(
+                                                            paymentRequest.payment_installment ||
+                                                                1
+                                                        ) - 1
+                                                    )
+                                            "
+                                        >
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="proposalNumber" class="form-label"
-                                >Số tờ trình</label
+
+                        <!-- Proposal Number -->
+                        <div class="form-group mb-4">
+                            <label
+                                for="proposalNumber"
+                                class="form-label modern-label"
                             >
-                            <input
-                                type="text"
-                                class="form-control"
-                                id="proposalNumber"
-                                v-model="paymentRequest.proposal_number"
-                                maxlength="50"
-                                required
-                            />
-                        </div>
-
-                        <div class="alert alert-info text-white mb-3">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Đã chọn
-                            <strong>{{ selectedItems.length }}</strong> biên bản
-                            nghiệm thu để tạo phiếu trình thanh toán
-                        </div>
-
-                        <div
-                            v-if="duplicateRecords.length > 0"
-                            class="alert alert-warning"
-                        >
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Lưu ý:</strong> Một số biên bản nghiệm thu
-                            đã được sử dụng trong phiếu trình thanh toán khác:
-                            <ul class="mb-0 mt-2">
-                                <li
-                                    v-for="(item, index) in duplicateRecords"
-                                    :key="index"
-                                >
-                                    {{ item.ma_nghiem_thu }} - Đã được sử dụng
-                                    trong phiếu {{ item.ma_trinh_thanh_toan }}
-                                </li>
-                            </ul>
+                                <i class="fas fa-file-signature me-2"></i>
+                                Số tờ trình
+                            </label>
+                            <div class="input-wrapper">
+                                <input
+                                    type="text"
+                                    class="form-control modern-input"
+                                    id="proposalNumber"
+                                    v-model="paymentRequest.proposal_number"
+                                    placeholder="Nhập số tờ trình..."
+                                    maxlength="50"
+                                    required
+                                />
+                                <div class="input-feedback">
+                                    <span class="char-count"
+                                        >{{
+                                            paymentRequest.proposal_number
+                                                ?.length || 0
+                                        }}/50</span
+                                    >
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
-                    <button
-                        type="button"
-                        class="btn btn-secondary"
-                        data-bs-dismiss="modal"
-                        @click="closePaymentRequestModal"
-                    >
-                        Hủy
-                    </button>
-                    <button
-                        type="button"
-                        class="btn btn-success"
-                        @click="submitPaymentRequest"
-                        :disabled="isSubmitting || duplicateRecords.length > 0"
-                    >
-                        <i class="fas fa-save me-1"></i>
-                        <span v-if="isSubmitting">Đang lưu...</span>
-                        <span v-else>Lưu phiếu trình</span>
-                    </button>
+
+                <!-- Enhanced Footer -->
+                <div class="modal-footer modern-footer">
+                    <div class="footer-actions">
+                        <button
+                            type="button"
+                            class="btn btn-secondary modern-btn-secondary"
+                            data-bs-dismiss="modal"
+                            @click="closePaymentRequestModal"
+                        >
+                            <i class="fas fa-times me-2"></i>
+                            Hủy bỏ
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-success modern-btn-primary"
+                            @click="submitPaymentRequest"
+                            :disabled="
+                                isSubmitting || duplicateRecords.length > 0
+                            "
+                        >
+                            <div v-if="isSubmitting" class="btn-loading">
+                                <div class="spinner"></div>
+                                <span>Đang xử lý...</span>
+                            </div>
+                            <div v-else class="btn-content">
+                                <i class="fas fa-save me-2"></i>
+                                <span>Tạo phiếu trình</span>
+                            </div>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1923,6 +2325,7 @@ export default {
     },
     data() {
         return {
+            showMobileFilterModal: false,
             ps: null, // Add this for PerfectScrollbar instance
             isLoading: false,
             bienBanList: [],
@@ -2687,6 +3090,26 @@ export default {
             // Just close the filter dropdown as the filter is applied automatically
             this.activeFilter = null;
             this.currentPage = 1;
+        },
+
+        // Mobile filter methods
+        applyMobileFilters() {
+            this.showMobileFilterModal = false;
+            this.currentPage = 1;
+            this.saveFilterState();
+        },
+
+        resetMobileFilters() {
+            // Reset dropdown filters for mobile
+            Object.keys(this.selectedFilterValues).forEach((key) => {
+                this.selectedFilterValues[key] = [];
+            });
+            this.statusFilter = "all";
+            this.deliveryStatusFilter = "all";
+            this.investmentFilter = "all";
+            this.currentPage = 1;
+            // Clear from localStorage
+            localStorage.removeItem("bienban_filter_state");
         },
 
         //export to excel functions
@@ -4482,8 +4905,9 @@ input[type="checkbox"] {
 
 .table-auto td {
     padding: 0.75rem;
-    border: 1px solid #e5e7eb;
+    border: none;
     vertical-align: middle;
+    border-bottom: 1px solid #e5e7eb;
 }
 
 /* Ensure filter icons look professional */
@@ -4801,6 +5225,1110 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         right: 0;
         margin-left: auto;
         margin-right: auto;
+    }
+}
+
+/* Modern Payment Request Modal Styles */
+.modern-modal {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+/* Enhanced Header */
+.modern-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 1.5rem;
+    border-bottom: none;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.header-text .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.modal-subtitle {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+.modern-close {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    opacity: 1;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.modern-close::before {
+    content: "×";
+    font-size: 26px;
+    font-weight: 300;
+    line-height: 1;
+}
+.modern-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Progress Steps */
+.progress-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 0;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-circle {
+    background: #10b981;
+    color: white;
+}
+
+.step-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+    text-align: center;
+}
+
+.step.active .step-label {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.step-connector {
+    width: 60px;
+    height: 2px;
+    background: #e5e7eb;
+    margin: 0 1rem;
+}
+
+/* Summary Card */
+.summary-card {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 15px;
+    padding: 1.25rem;
+}
+
+.summary-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.summary-icon {
+    width: 45px;
+    height: 45px;
+    background: #0ea5e9;
+    color: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+}
+
+.summary-title {
+    margin: 0;
+    color: #0c4a6e;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.summary-count {
+    margin: 0;
+    color: #075985;
+    font-size: 0.875rem;
+}
+
+.count-badge {
+    background: #0ea5e9;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+/* Modern Alert */
+.modern-alert {
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-left: 4px solid #f59e0b;
+    margin-top: 1rem;
+    padding: 1rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.alert-icon {
+    color: #d97706;
+    font-size: 1.125rem;
+    margin-top: 0.125rem;
+}
+
+.alert-content {
+    flex: 1;
+}
+
+.duplicate-item {
+    background: rgba(251, 191, 36, 0.2);
+    padding: 0.5rem;
+    border-radius: 8px;
+    margin: 0.25rem 0;
+    font-family: "Monaco", "Menlo", monospace;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.more-items {
+    font-style: italic;
+    color: #92400e;
+    margin-top: 0.5rem;
+}
+
+/* Modern Form */
+.modern-body {
+    padding: 1.5rem;
+}
+
+.modern-label {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.modern-input,
+.modern-select {
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    font-size: 0.925rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.modern-input:focus,
+.modern-select:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    outline: none;
+}
+
+.select-arrow {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    pointer-events: none;
+    font-size: 0.75rem;
+}
+
+/* Auto Title Display */
+.auto-title-display {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: "Monaco", "Menlo", monospace;
+}
+
+.auto-text {
+    color: #6b7280;
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+.title-preview {
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Installment Controls */
+.installment-wrapper {
+    position: relative;
+}
+
+.installment-controls {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.installment-btn {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    width: 20px;
+    height: 16px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.installment-btn:hover {
+    background: #10b981;
+    color: white;
+    border-color: #10b981;
+}
+
+/* Input Feedback */
+.input-feedback {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.char-count {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    background: #f9fafb;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+}
+
+/* Enhanced Footer */
+.modern-footer {
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    padding: 1.25rem 1.5rem;
+}
+
+.footer-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.modern-btn-secondary {
+    background: white;
+    border: 2px solid #e5e7eb;
+    color: #6b7280;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.modern-btn-secondary:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #374151;
+}
+
+.modern-btn-primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none;
+    color: white;
+    padding: 0.75rem 2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+.modern-btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+}
+
+.modern-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Loading Button */
+.btn-loading,
+.btn-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .modern-header {
+        padding: 1rem;
+    }
+
+    .header-content {
+        gap: 0.75rem;
+    }
+
+    .header-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .modal-title {
+        font-size: 1.125rem;
+    }
+
+    .progress-steps {
+        padding: 0.75rem 0;
+    }
+
+    .step-circle {
+        width: 35px;
+        height: 35px;
+        font-size: 0.8rem;
+    }
+
+    .step-connector {
+        width: 40px;
+        margin: 0 0.5rem;
+    }
+
+    .modern-body {
+        padding: 1rem;
+    }
+
+    .summary-card {
+        padding: 1rem;
+    }
+
+    .footer-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .modern-btn-secondary,
+    .modern-btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+/* ปุ่มสร้าง phiếu trình thanh toán แบบทันสมัย */
+.modern-create-payment-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    cursor: pointer;
+    outline: none;
+}
+
+.modern-create-payment-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.modern-create-payment-btn:hover:not(:disabled) {
+    background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+    box-shadow: 0 6px 24px rgba(16, 185, 129, 0.25);
+    transform: translateY(-2px) scale(1.03);
+}
+
+.modern-create-payment-btn i {
+    font-size: 1.25rem;
+}
+
+.btn-label {
+    display: inline-block;
+}
+
+/* ==================== Mobile Controls Styling ==================== */
+/* Responsive */
+@media (max-width: 768px) {
+    .mobile-controls-container {
+        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 1rem;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+            0 2px 4px -1px rgba(0, 0, 0, 0.06),
+            0 0 0 1px rgba(226, 232, 240, 0.7);
+        border: 1px solid rgba(226, 232, 240, 0.7);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .mobile-controls-container::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(
+            90deg,
+            #10b981 0%,
+            #059669 50%,
+            #10b981 100%
+        );
+    }
+
+    .mobile-header-row {
+        display: flex;
+
+        margin-bottom: 1rem;
+        align-items: center;
+    }
+
+    .mobile-search-section {
+        flex: 0 0 80%;
+    }
+
+    /* Modern Search Wrapper */
+    .modern-search-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    .search-input-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%);
+        border: 2px solid #e5e7eb;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .search-input-container:focus-within {
+        border-color: #10b981;
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1),
+            0 4px 8px rgba(0, 0, 0, 0.1);
+        background: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .search-icon-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 1rem;
+        color: #9ca3af;
+        font-size: 1rem;
+        transition: color 0.3s ease;
+    }
+
+    .search-input-container:focus-within .search-icon-wrapper {
+        color: #10b981;
+    }
+
+    .modern-search-input {
+        flex: 1;
+        height: 48px;
+        border: none;
+        background: transparent;
+        padding: 0 1rem 0 0;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #374151;
+        outline: none;
+        transition: all 0.3s ease;
+    }
+
+    .modern-search-input::placeholder {
+        color: #9ca3af;
+        font-weight: 400;
+        transition: color 0.3s ease;
+    }
+
+    .modern-search-input:focus::placeholder {
+        color: #d1d5db;
+    }
+
+    .clear-search-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        margin-right: 0.5rem;
+        background: rgba(156, 163, 175, 0.1);
+        border-radius: 50%;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.875rem;
+    }
+
+    .clear-search-btn:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        transform: scale(1.1);
+    }
+
+    .search-no-results {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        border: 1px solid #fecaca;
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        color: #dc2626;
+        font-size: 0.875rem;
+        font-weight: 500;
+        z-index: 10;
+        box-shadow: 0 4px 6px rgba(220, 38, 38, 0.1);
+        animation: slideInDown 0.3s ease-out;
+    }
+
+    .search-results-count {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 1px solid #bae6fd;
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        color: #0369a1;
+        font-size: 0.875rem;
+        font-weight: 500;
+        z-index: 10;
+        box-shadow: 0 4px 6px rgba(3, 105, 161, 0.1);
+        animation: slideInDown 0.3s ease-out;
+    }
+
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .mobile-action-section {
+        flex: 0 0 15%;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .btn-mobile-menu {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        border: 2px solid #d1d5db;
+        border-radius: 0.75rem;
+        color: #6b7280;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-mobile-menu::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(16, 185, 129, 0.2);
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        transform: translate(-50%, -50%);
+    }
+
+    .btn-mobile-menu:hover::before {
+        width: 100px;
+        height: 100px;
+    }
+
+    .btn-mobile-menu:hover {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-color: #10b981;
+        color: white;
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 8px 12px rgba(16, 185, 129, 0.25);
+    }
+
+    .mobile-filter-row {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .mobile-filter-left {
+        flex: 0 0 60%;
+    }
+
+    .mobile-filter-right {
+        flex: 0 0 40%;
+        display: flex;
+        justify-content: flex-start;
+        gap: 0.5rem;
+    }
+
+    .mobile-status-select {
+        width: 100%;
+        height: 48px;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 0 1rem;
+        background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%);
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        transition: all 0.3s ease;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.75rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 3rem;
+    }
+
+    .mobile-status-select:focus {
+        outline: none;
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        background: #ffffff;
+    }
+
+    .mobile-filter-btn {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        border: 2px solid #d1d5db;
+        border-radius: 0.75rem;
+        color: #6b7280;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .mobile-filter-btn::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(16, 185, 129, 0.2);
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        transform: translate(-50%, -50%);
+    }
+
+    .mobile-filter-btn:hover::before {
+        width: 100px;
+        height: 100px;
+    }
+
+    .mobile-filter-btn:hover {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-color: #10b981;
+        color: white;
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 8px 12px rgba(16, 185, 129, 0.25);
+    }
+
+    /* Mobile Filter Modal */
+    .mobile-filter-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 1050;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .mobile-filter-modal {
+        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 1rem;
+        width: 100%;
+        max-width: 400px;
+        max-height: 85vh;
+        overflow: hidden;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+            0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9) translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .modal-header {
+        padding: 1.5rem 1.5rem 1rem;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+
+    .modal-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0;
+        flex: 1;
+        display: flex;
+        align-items: center;
+    }
+
+    .btn-close {
+        background: transparent;
+        border: none;
+        color: #6b7280;
+        font-size: 1.25rem;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        transition: all 0.2s ease;
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-close:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        transform: scale(1.1);
+    }
+
+    .modal-body {
+        padding: 1rem 1.5rem;
+        max-height: 55vh;
+        overflow-y: auto;
+    }
+
+    .filter-section {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        border-radius: 0.75rem;
+        border: 1px solid rgba(226, 232, 240, 0.5);
+    }
+
+    .filter-label {
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .checkbox-container {
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 0.25rem;
+    }
+
+    .form-check {
+        margin-bottom: 0.75rem;
+        /* padding: 0.5rem; */
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+
+    .form-check:hover {
+        background: rgba(16, 185, 129, 0.05);
+        border-color: rgba(16, 185, 129, 0.2);
+    }
+
+    .form-check-input {
+        width: 18px;
+        height: 18px;
+        margin-top: 0.125rem;
+        margin-right: 0.75rem;
+        border: 2px solid #d1d5db;
+        border-radius: 0.375rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-check-input:checked {
+        background-color: #10b981;
+        border-color: #10b981;
+    }
+
+    .form-check-input:focus {
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+
+    .form-check-label {
+        font-size: 0.875rem;
+        color: #4b5563;
+        font-weight: 500;
+        cursor: pointer;
+        flex: 1;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem 1.5rem;
+        border-top: 1px solid rgba(226, 232, 240, 0.7);
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        transform: translate(-50%, -50%);
+    }
+
+    .btn:hover::before {
+        width: 100px;
+        height: 100px;
+    }
+
+    .btn-outline-secondary {
+        color: #6b7280;
+        border-color: #d1d5db;
+        background: transparent;
+    }
+
+    .btn-outline-secondary:hover {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+        color: #4b5563;
+        transform: translateY(-1px);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25);
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 12px rgba(16, 185, 129, 0.3),
+            0 3px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-primary:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+    }
+
+    /* Enhanced dropdown menu for mobile */
+    .dropdown-menu {
+        min-width: 200px;
+        padding: 0.5rem 0;
+        margin: 0.125rem 0 0;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+            0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    .dropdown-item {
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        color: #374151;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border-radius: 0.5rem;
+        margin: 0.125rem 0.5rem;
+    }
+
+    .dropdown-item:hover {
+        background: linear-gradient(
+            135deg,
+            rgba(16, 185, 129, 0.1) 0%,
+            rgba(16, 185, 129, 0.05) 100%
+        );
+        color: #059669;
+        transform: translateX(4px);
+    }
+
+    .dropdown-item i {
+        font-size: 1rem;
+        width: 20px;
+        text-align: center;
+    }
+}
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .mobile-controls-container {
+        padding: 1rem;
+        margin: 0.5rem;
+    }
+
+    .search-input-container {
+        width: 13rem;
+    }
+
+    .mobile-header-row {
+        gap: 0.5rem;
+    }
+
+    .mobile-filter-row {
+        gap: 0.5rem;
+    }
+
+    .mobile-filter-modal {
+        margin: 0.5rem;
+        width: calc(100% - 1rem);
+    }
+
+    .btn-mobile-menu,
+    .mobile-filter-btn {
+        width: 42px;
+        height: 42px;
+        font-size: 1rem;
+    }
+
+    .mobile-status-select {
+        height: 42px;
+        font-size: 0.8rem;
     }
 }
 </style>
