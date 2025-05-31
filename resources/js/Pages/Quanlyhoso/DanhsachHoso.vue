@@ -14,6 +14,7 @@
                     </button>
                 </router-link>
                 <button
+                    v-if="hasPermission('delete')"
                     type="button"
                     class="button-30-text-red"
                     @click="deleteSelected"
@@ -1182,6 +1183,7 @@
 import axios from "axios";
 import { Bootstrap5Pagination } from "laravel-vue-pagination";
 import { useStore } from "../../Store/Auth";
+import { usePermissions } from "../../Composables/usePermissions";
 import Swal from "sweetalert2";
 import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
@@ -1189,8 +1191,10 @@ import "perfect-scrollbar/css/perfect-scrollbar.css";
 export default {
     setup() {
         const store = useStore();
+        const { hasPermission } = usePermissions();
         return {
             store,
+            hasPermission,
         };
     },
     name: "DanhsachHoso",

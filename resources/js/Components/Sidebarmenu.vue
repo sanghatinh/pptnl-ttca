@@ -127,8 +127,23 @@
                                         @click="closeSidebar"
                                     >
                                         <span class="menu-text"
-                                            >Phiếu trình thanh toán dịch
-                                            vụ</span
+                                            >Phiếu trình TT dịch vụ</span
+                                        >
+                                    </router-link>
+                                </li>
+                                <li>
+                                    <router-link
+                                        to="/PhieutrinhthanhtoanHomgiong"
+                                        :class="
+                                            $route.path ===
+                                            '/PhieutrinhthanhtoanHomgiong'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                        @click="closeSidebar"
+                                    >
+                                        <span class="menu-text"
+                                            >Phiếu trình TT hom giống</span
                                         >
                                     </router-link>
                                 </li>

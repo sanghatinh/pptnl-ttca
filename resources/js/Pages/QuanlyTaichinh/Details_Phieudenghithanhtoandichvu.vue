@@ -1574,6 +1574,12 @@ export default {
                 this.showError("Không tìm thấy mã phiếu đề nghị thanh toán");
                 return;
             }
+             // ตรวจสอบ token ก่อนเรียก API
+        const token = localStorage.getItem("web_token") || this.store.getToken;
+        if (!token) {
+            this.$router.replace("/login");
+            return;
+        }
 
             axios
                 .get(`/api/payment-requests-dichvu/${id}/phieu-thu-no`, {
@@ -1607,6 +1613,13 @@ export default {
             const id = this.$route.params.id;
             if (!id) {
                 this.showError("Không tìm thấy mã phiếu đề nghị thanh toán");
+                return;
+            }
+            // ตรวจสอบ token ก่อนเรียก API
+            const token =
+                localStorage.getItem("web_token") || this.store.getToken;
+            if (!token) {
+                this.$router.replace("/login");
                 return;
             }
 
@@ -1646,6 +1659,14 @@ export default {
             const id = this.$route.params.id;
             if (!id) {
                 this.showError("Không tìm thấy mã phiếu đề nghị thanh toán");
+                return;
+            }
+
+            // ตรวจสอบ token ก่อนเรียก API
+            const token =
+                localStorage.getItem("web_token") || this.store.getToken;
+            if (!token) {
+                this.$router.replace("/login");
                 return;
             }
 
@@ -1693,7 +1714,14 @@ export default {
                 return;
             }
 
-        
+            // ตรวจสอบ token ก่อนเรียก API
+            const token =
+                localStorage.getItem("web_token") || this.store.getToken;
+            if (!token) {
+                // ถ้าไม่มี token ให้ไปหน้า login ทันที
+                this.$router.replace("/login");
+                return;
+            }
 
             this.isLoading = true;
 
@@ -1852,6 +1880,13 @@ export default {
             const id = this.$route.params.id;
             if (!id) {
                 this.showError("Không tìm thấy mã phiếu đề nghị thanh toán");
+                return;
+            }
+            // ตรวจสอบ token ก่อนเรียก API
+            const token =
+                localStorage.getItem("web_token") || this.store.getToken;
+            if (!token) {
+                this.$router.replace("/login");
                 return;
             }
 
@@ -2174,6 +2209,13 @@ export default {
                 this.showError("Không tìm thấy mã phiếu đề nghị thanh toán");
                 return;
             }
+            // ตรวจสอบ token ก่อนเรียก API
+            const token =
+                localStorage.getItem("web_token") || this.store.getToken;
+            if (!token) {
+                this.$router.replace("/login");
+                return;
+            }
 
             // Prepare data for update
             const updateData = {
@@ -2247,10 +2289,14 @@ export default {
 
         handleAuthError() {
             // Handle authentication error
-            this.showError("Phiên làm việc đã hết hạn, vui lòng đăng nhập lại");
-            localStorage.removeItem("access_token");
-            localStorage.removeItem("web_user");
-            this.$router.push("/login");
+            // Clear authentication data
+            localStorage.clear();
+            this.store.logout();
+             // Force navigate to login
+        this.$router.replace("/login").catch(() => {
+            // ถ้า router ไม่ทำงาน ใช้ window.location
+            window.location.href = "/login";
+        });
         },
         openAttachment() {
             // This function will open the attachment URL

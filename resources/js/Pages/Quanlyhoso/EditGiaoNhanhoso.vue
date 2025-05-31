@@ -36,7 +36,7 @@
                             </button>
 
                             <button
-                                v-if="showSubmitButton"
+                                v-if="showSubmitButton && hasPermission('send')"
                                 class="button-30-text-green"
                                 @click="sendDocument"
                             >
@@ -45,7 +45,9 @@
                             </button>
 
                             <button
-                                v-if="showRejectButton"
+                                v-if="
+                                    showRejectButton && hasPermission('cancel')
+                                "
                                 type="button"
                                 class="button-30"
                                 @click="rejectDocument"
@@ -55,7 +57,10 @@
                             </button>
 
                             <button
-                                v-if="showApproveButton"
+                                v-if="
+                                    showApproveButton &&
+                                    hasPermission('receive')
+                                "
                                 type="button"
                                 class="button-30-text-green"
                                 @click="receiveDocument"
@@ -65,7 +70,9 @@
                             </button>
 
                             <button
-                                v-if="showCancelButton"
+                                v-if="
+                                    showCancelButton && hasPermission('cancel')
+                                "
                                 type="button"
                                 class="button-30"
                                 @click="cancelDocument"
@@ -525,7 +532,7 @@
                                     <h5>BIÊN BẢN NGHIỆM THU DỊCH VỤ</h5>
                                 </div>
                                 <button
-                                    v-if="canModifyMappings"
+                                    v-if="canAddMappings"
                                     type="button"
                                     class="btn btn-add"
                                     data-bs-toggle="modal"
@@ -576,7 +583,7 @@
                                                         </p>
                                                         <button
                                                             v-if="
-                                                                canModifyMappings
+                                                                canAddMappings
                                                             "
                                                             class="btn btn-sm btn-success"
                                                             data-bs-toggle="modal"
@@ -597,7 +604,7 @@
                                             >
                                                 <td>
                                                     <button
-                                                        v-if="canModifyMappings"
+                                                        v-if="canDeleteMappings"
                                                         @click="
                                                             deleteMapping(
                                                                 item.mapping_id
@@ -667,7 +674,7 @@
                                     <h5>BIÊN BẢN HOM GIỐNG</h5>
                                 </div>
                                 <button
-                                    v-if="canModifyMappings"
+                                    v-if="canAddMappings"
                                     type="button"
                                     class="btn btn-add"
                                     data-bs-toggle="modal"
@@ -720,7 +727,7 @@
                                                         </p>
                                                         <button
                                                             v-if="
-                                                                canModifyMappings
+                                                                canAddMappings
                                                             "
                                                             class="btn btn-sm btn-success"
                                                             data-bs-toggle="modal"
@@ -741,7 +748,7 @@
                                             >
                                                 <td>
                                                     <button
-                                                        v-if="canModifyMappings"
+                                                        v-if="canDeleteMappings"
                                                         @click="
                                                             deleteHomGiongMapping(
                                                                 item.mapping_id
@@ -1104,11 +1111,15 @@
 import Swal from "sweetalert2";
 import axios from "axios";
 import { useStore } from "../../Store/Auth";
+import { usePermissions } from "../../Composables/usePermissions";
 export default {
     setup() {
         const store = useStore();
+        const { hasPermission, canViewComponent } = usePermissions();
         return {
             store,
+            hasPermission,
+            canViewComponent,
         };
     },
     data() {
@@ -1231,7 +1242,10 @@ export default {
             return this.document.status === "received";
         },
         showDeleteButton() {
-            return this.document.id; // Show when document exists
+            if (this.document.status === "creating") {
+                return true;
+            }
+            return this.hasPermission("delete");
         },
         showCancelledStep() {
             return this.document.status === "cancelled";
@@ -1267,9 +1281,29 @@ export default {
                 this.document.status
             );
         },
-        canModifyMappings() {
-            return !["sending", "received", "cancelled"].includes(
-                this.document.status
+        // canModifyMappings() {
+        //     return !["sending", "received", "cancelled"].includes(
+        //         this.document.status
+        //     );
+        // },
+        canAddMappings() {
+            if (this.document.status === "creating") {
+                return true;
+            }
+            return (
+                ["sending", "received", "cancelled"].includes(
+                    this.document.status
+                ) && this.hasPermission("add_detail")
+            );
+        },
+        canDeleteMappings() {
+            if (this.document.status === "creating") {
+                return true;
+            }
+            return (
+                ["sending", "received", "cancelled"].includes(
+                    this.document.status
+                ) && this.hasPermission("del_detail")
             );
         },
         documentCount() {

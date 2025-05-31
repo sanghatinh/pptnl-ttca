@@ -4268,6 +4268,10 @@ export default {
         }
     },
     methods: {
+        // เพิ่ม helper method สำหรับตรวจสอบ authentication
+        isAuthenticated() {
+            return this.store.getToken && this.store.getToken.length > 0;
+        },
         // Add this method in the methods section
         confirmPaymentStatus() {
             // Check if payment date is selected
@@ -4309,6 +4313,7 @@ export default {
         // Add this method to fetch the processing history
 
         async fetchProcessingHistory() {
+            if (!this.isAuthenticated()) return;
             try {
                 const response = await axios.get(
                     `/api/payment-requests/${this.document.payment_code}/history`,
@@ -4395,6 +4400,7 @@ export default {
         },
         // Load user data for timeline
         async loadUsers() {
+            if (!this.isAuthenticated()) return;
             const userIds = this.processingHistory
                 .map((item) => item.action_by)
                 .filter((id) => id && !this.users[id]);
@@ -4440,6 +4446,7 @@ export default {
         // ... existing methods
         // Add this to your Vue component's methods section
         async deleteDocument() {
+            if (!this.isAuthenticated()) return;
             // Confirm deletion with the user
             const result = await Swal.fire({
                 title: "Xác nhận xóa",
@@ -4550,6 +4557,7 @@ export default {
          * Update payment request status
          */
         async updateStatus(status, note = "") {
+            if (!this.isAuthenticated()) return;
             try {
                 // Optional: Show loading indicator
                 Swal.fire({
@@ -4633,6 +4641,7 @@ export default {
             }
         },
         async saveBasicInfo() {
+            if (!this.isAuthenticated()) return;
             try {
                 const response = await axios.put(
                     `/api/payment-requests/${this.document.payment_code}/basic-info`,
@@ -4702,6 +4711,7 @@ export default {
             }
         },
         async fetchInvestmentProjects() {
+            if (!this.isAuthenticated()) return;
             try {
                 const response = await axios.get("/api/investment-projects", {
                     headers: {
@@ -4780,6 +4790,7 @@ export default {
         },
 
         async addPaymentRequest() {
+            if (!this.isAuthenticated()) return;
             // Validate required fields
             if (
                 !this.newPaymentRequest.ma_giai_ngan ||
@@ -4913,6 +4924,7 @@ export default {
          * Update payment records
          */
         async updatePaymentRecords() {
+            if (!this.isAuthenticated()) return;
             if (this.selectedPaymentRequests.length === 0) return;
 
             // Check if at least one field is filled
@@ -4992,6 +5004,7 @@ export default {
          * Delete selected payment records
          */
         async deleteSelectedPaymentRecords() {
+            if (!this.isAuthenticated()) return;
             if (this.selectedPaymentRequests.length === 0) {
                 this.showError(
                     "Vui lòng chọn ít nhất một phiếu đề nghị để xóa"
@@ -5132,6 +5145,7 @@ export default {
          * Start the payment import process
          */
         async startPaymentImport() {
+            if (!this.isAuthenticated()) return;
             if (!this.selectedPaymentFile) {
                 this.showError("Please select a file to upload");
                 return;
@@ -5301,6 +5315,7 @@ export default {
             }
         },
         fetchDocument() {
+            if (!this.isAuthenticated()) return;
             const id = this.$route.params.id;
             if (!id) {
                 this.showError("Không tìm thấy mã phiếu trình");
@@ -5543,6 +5558,7 @@ export default {
         },
 
         saveNote() {
+            if (!this.isAuthenticated()) return;
             axios
                 .post(
                     `/api/payment-requests/${this.$route.params.id}/notes`,
@@ -5558,7 +5574,8 @@ export default {
                         this.document.notes = this.noteText;
                         this.isEditingNote = false;
                         this.showSuccess("Ghi chú đã được cập nhật");
-                        this.fetchDocument(); // Refresh data to get updated history
+                        // ลบบรรทัดนี้ออก - ไม่ต้อง refresh data เพื่อดึง history
+                        // this.fetchDocument(); // Refresh data to get updated history
                     } else {
                         this.showError(
                             response.data.message || "Không thể lưu ghi chú"
@@ -5719,6 +5736,7 @@ export default {
         },
 
         async updateRecords() {
+            if (!this.isAuthenticated()) return;
             if (this.selectedRecords.length === 0) return;
 
             this.isUpdating = true;
@@ -5773,6 +5791,7 @@ export default {
         },
 
         async deleteSelectedRecords() {
+            if (!this.isAuthenticated()) return;
             if (this.selectedRecords.length === 0) {
                 this.showError("Vui lòng chọn ít nhất một bản ghi để xóa");
                 return;
@@ -5866,6 +5885,7 @@ export default {
         },
 
         async searchReceipts() {
+            if (!this.isAuthenticated()) return;
             if (!this.searchQuery || this.searchQuery.length < 2) {
                 this.receiptResults = [];
                 return;
@@ -5945,6 +5965,7 @@ export default {
         },
 
         async addSelectedReceipts() {
+            if (!this.isAuthenticated()) return;
             if (this.selectedReceipts.length === 0) return;
 
             this.isAdding = true;
@@ -6186,6 +6207,7 @@ export default {
         },
 
         async startImport() {
+            if (!this.isAuthenticated()) return;
             if (!this.selectedFile) {
                 this.showError("Please select a file to upload");
                 return;

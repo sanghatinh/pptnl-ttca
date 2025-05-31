@@ -1732,11 +1732,14 @@ export default {
             this.error = null;
 
             try {
-                const response = await axios.get("/api/payment-requests", {
-                    headers: {
-                        Authorization: "Bearer " + this.store.getToken,
-                    },
-                });
+                const response = await axios.get(
+                    "/api/payment-requests-homgiong",
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
 
                 if (response.data.success) {
                     // Map backend data fields to frontend format
@@ -1863,7 +1866,7 @@ export default {
             this.saveFilterState();
             // Navigate to details page
             this.$router.push(
-                `/Details_Phieutrinhthanhtoan/${item.maTrinhThanhToan}`
+                `/Details_PhieutrinhthanhtoanHomgiong/${item.maTrinhThanhToan}`
             );
         },
 
@@ -1891,7 +1894,7 @@ export default {
         async performDelete(id) {
             try {
                 const response = await axios.delete(
-                    `/api/payment-requests/${id}`,
+                    `/api/payment-requests-homgiong/${id}`,
                     {
                         headers: {
                             Authorization: "Bearer " + this.store.getToken,
@@ -2103,7 +2106,7 @@ export default {
                                 });
                                 FileSaver.saveAs(
                                     blob,
-                                    `phieu_trinh_thanh_toan_current_page_${
+                                    `phieu_trinh_thanh_toan_homgiong_current_page_${
                                         new Date().toISOString().split("T")[0]
                                     }.xlsx`
                                 );

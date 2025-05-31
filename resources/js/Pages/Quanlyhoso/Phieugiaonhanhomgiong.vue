@@ -65,6 +65,16 @@
                         </ul>
                     </div>
                 </div>
+                <!-- Add this button next to actions-menu in the toolbar -->
+                <button
+                    class="modern-create-payment-btn"
+                    @click="showCreatePaymentRequestModal"
+                    :disabled="selectedItems.length === 0"
+                    title="Tạo phiếu trình thanh toán"
+                >
+                    <i class="fa-solid fa-folder-plus"></i>
+                    <span class="btn-label">Add PTTT</span>
+                </button>
                 <div
                     class="col d-flex justify-content-end gap-3 align-items-center"
                 >
@@ -115,6 +125,18 @@
                         <table class="table-auto w-full">
                             <thead>
                                 <tr>
+                                    <!-- เพิ่ม Header Checkbox -->
+                                    <th class="text-center checkbox-column">
+                                        <input
+                                            type="checkbox"
+                                            class="form-checkbox"
+                                            :checked="isAllSelected"
+                                            @change="toggleSelectAll"
+                                            :disabled="
+                                                paginatedItems.data.length === 0
+                                            "
+                                        />
+                                    </th>
                                     <th>
                                         Mã số phiếu
                                         <button
@@ -763,6 +785,18 @@
                                     @click="viewDetails(item)"
                                     class="cursor-pointer"
                                 >
+                                    <td
+                                        class="text-center checkbox-column"
+                                        @click.stop
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            class="form-checkbox"
+                                            :value="item.ma_so_phieu"
+                                            v-model="selectedItems"
+                                            :disabled="!canBeSelected(item)"
+                                        />
+                                    </td>
                                     <td>{{ item.ma_so_phieu }}</td>
                                     <td>{{ item.tram }}</td>
                                     <td>
@@ -1109,6 +1143,313 @@
             </div>
         </div>
     </div>
+
+    <!-- Payment Request Modal -->
+    <div
+        class="modal fade"
+        id="paymentRequestModal"
+        tabindex="-1"
+        aria-labelledby="paymentRequestModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content modern-modal">
+                <!-- Enhanced Header -->
+                <div class="modal-header modern-header">
+                    <div class="header-content">
+                        <div class="header-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="header-text">
+                            <h4
+                                class="modal-title"
+                                id="paymentRequestModalLabel"
+                            >
+                                Tạo phiếu trình thanh toán hom giống
+                            </h4>
+                            <p class="modal-subtitle">
+                                Tạo phiếu trình thanh toán từ các phiếu giao
+                                nhận đã chọn
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        class="modern-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        @click="closePaymentRequestModal"
+                    ></button>
+                </div>
+
+                <!-- Progress Steps -->
+                <div class="progress-steps">
+                    <div class="step active">
+                        <div class="step-circle">1</div>
+                        <div class="step-label">Chọn phiếu</div>
+                    </div>
+                    <div class="step-connector"></div>
+                    <div class="step">
+                        <div class="step-circle">2</div>
+                        <div class="step-label">Thông tin phiếu trình</div>
+                    </div>
+                </div>
+
+                <div class="modal-body modern-body">
+                    <!-- Summary Card -->
+                    <div class="summary-card">
+                        <div class="summary-header">
+                            <div class="summary-icon">
+                                <i class="fas fa-list-ul"></i>
+                            </div>
+                            <div class="summary-title">
+                                Danh sách phiếu đã chọn
+                            </div>
+                            <div class="summary-count">
+                                <span class="count-badge">{{
+                                    selectedReceipts.length
+                                }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Duplicate Alert -->
+                    <div
+                        v-if="duplicateReceipts.length > 0"
+                        class="modern-alert alert-warning"
+                    >
+                        <div class="alert-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="alert-content">
+                            <strong>Phát hiện phiếu trùng lặp!</strong>
+                            <p>
+                                Các phiếu sau đã được sử dụng trong phiếu trình
+                                thanh toán khác:
+                            </p>
+                            <div class="duplicate-items">
+                                <div
+                                    v-for="(
+                                        item, index
+                                    ) in duplicateReceipts.slice(0, 3)"
+                                    :key="index"
+                                    class="duplicate-item-detailed"
+                                >
+                                    <div class="duplicate-receipt">
+                                        <strong>Mã số phiếu:</strong>
+                                        {{
+                                            typeof item === "object"
+                                                ? item.ma_so_phieu
+                                                : item
+                                        }}
+                                    </div>
+                                    <div
+                                        v-if="
+                                            typeof item === 'object' &&
+                                            item.ma_trinh_thanh_toan
+                                        "
+                                        class="duplicate-payment"
+                                    >
+                                        <strong>Mã trình thanh toán:</strong>
+                                        {{ item.ma_trinh_thanh_toan }}
+                                    </div>
+                                </div>
+                                <span
+                                    v-if="duplicateReceipts.length > 3"
+                                    class="more-items"
+                                >
+                                    +{{ duplicateReceipts.length - 3 }} khác
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Fields -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="modern-label">
+                                    <i class="fas fa-project-diagram me-2"></i>
+                                    Vụ đầu tư *
+                                </label>
+                                <div class="input-wrapper">
+                                    <select
+                                        v-model="
+                                            paymentRequestForm.investment_project
+                                        "
+                                        class="modern-select"
+                                        required
+                                    >
+                                        <option value="">Chọn vụ đầu tư</option>
+                                        <option
+                                            v-for="project in investmentProjects"
+                                            :key="project.Ma_Vudautu"
+                                            :value="project.Ma_Vudautu"
+                                        >
+                                            {{ project.Ten_Vudautu }}
+                                        </option>
+                                    </select>
+                                    <i
+                                        class="select-arrow fas fa-chevron-down"
+                                    ></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="modern-label">
+                                    <i class="fas fa-credit-card me-2"></i>
+                                    Loại thanh toán *
+                                </label>
+                                <div class="input-wrapper">
+                                    <select
+                                        v-model="
+                                            paymentRequestForm.payment_type
+                                        "
+                                        class="modern-select"
+                                        required
+                                    >
+                                        <option value="">
+                                            Chọn loại thanh toán
+                                        </option>
+                                        <option value="Hom giốnggiống">
+                                            Hom giống
+                                        </option>
+                                    </select>
+                                    <i
+                                        class="select-arrow fas fa-chevron-down"
+                                    ></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="modern-label">
+                                    <i class="fas fa-sort-numeric-up me-2"></i>
+                                    Số đợt thanh toán *
+                                </label>
+                                <div class="installment-wrapper">
+                                    <div class="installment-controls">
+                                        <button
+                                            type="button"
+                                            @click="decrementInstallment"
+                                            class="installment-btn"
+                                            :disabled="
+                                                paymentRequestForm.payment_installment <=
+                                                1
+                                            "
+                                        >
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <input
+                                            v-model.number="
+                                                paymentRequestForm.payment_installment
+                                            "
+                                            type="number"
+                                            class="modern-input text-center"
+                                            min="1"
+                                            readonly
+                                        />
+                                        <button
+                                            type="button"
+                                            @click="incrementInstallment"
+                                            class="installment-btn"
+                                        >
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="modern-label">
+                                    <i class="fas fa-file-alt me-2"></i>
+                                    Số tờ trình *
+                                </label>
+                                <input
+                                    v-model="paymentRequestForm.proposal_number"
+                                    type="text"
+                                    class="modern-input"
+                                    placeholder="Nhập số tờ trình"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="modern-label">
+                                    <i class="fas fa-calendar-alt me-2"></i>
+                                    Ngày tạo *
+                                </label>
+                                <input
+                                    v-model="paymentRequestForm.created_date"
+                                    type="date"
+                                    class="modern-input"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="modern-label">
+                                    <i class="fas fa-magic me-2"></i>
+                                    Tiêu đề tự động
+                                </label>
+                                <div class="auto-title-display">
+                                    <div class="auto-text">Tự động</div>
+                                    <div class="title-preview">
+                                        {{ generateAutoTitle() }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Footer -->
+                <div class="modal-footer modern-footer">
+                    <div class="footer-actions">
+                        <button
+                            type="button"
+                            class="modern-btn-secondary"
+                            data-bs-dismiss="modal"
+                            @click="closePaymentRequestModal"
+                        >
+                            <i class="fas fa-times me-2"></i>
+                            Hủy
+                        </button>
+                        <button
+                            type="button"
+                            @click="createPaymentRequest"
+                            class="modern-btn-primary"
+                            :disabled="!isFormValid || isCreatingPayment"
+                        >
+                            <div v-if="isCreatingPayment" class="btn-loading">
+                                <div class="spinner"></div>
+                            </div>
+                            <div class="btn-content">
+                                <i
+                                    v-if="!isCreatingPayment"
+                                    class="fas fa-plus me-2"
+                                ></i>
+                                {{
+                                    isCreatingPayment
+                                        ? "Đang tạo..."
+                                        : "Tạo phiếu trình"
+                                }}
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -1137,7 +1478,7 @@ export default {
             statusFilter: "all",
             isMobile: window.innerWidth < 768,
             currentPage: 1,
-            perPage: 10,
+            perPage: 15,
             statusOptions: [
                 { code: "all", name: "Tất cả" },
                 { code: "approved", name: "Đã duyệt" },
@@ -1163,6 +1504,19 @@ export default {
                 ngay_nhan_ho_so: "",
                 tinh_trang_giao_nhan_ho_so: "",
             },
+            // Payment Request Modal data
+            selectedItems: [],
+            selectedReceipts: [],
+            duplicateReceipts: [],
+            investmentProjects: [],
+            isCreatingPayment: false,
+            paymentRequestForm: {
+                investment_project: "",
+                payment_type: "",
+                payment_installment: 1,
+                proposal_number: "",
+                created_date: new Date().toISOString().split("T")[0], // Default to today
+            },
             activeFilter: null,
             selectedFile: null,
             uploadProgress: 0,
@@ -1185,6 +1539,29 @@ export default {
         };
     },
     computed: {
+        isFormValid() {
+            return (
+                this.paymentRequestForm.investment_project &&
+                this.paymentRequestForm.payment_type &&
+                this.paymentRequestForm.payment_installment >= 1 &&
+                this.paymentRequestForm.proposal_number &&
+                this.paymentRequestForm.created_date &&
+                this.selectedReceipts.length > 0
+            );
+        },
+        // เพิ่ม computed property สำหรับ Select All
+        isAllSelected() {
+            if (this.paginatedItems.data.length === 0) return false;
+
+            const selectableItems = this.paginatedItems.data.filter((item) =>
+                this.canBeSelected(item)
+            );
+            if (selectableItems.length === 0) return false;
+
+            return selectableItems.every((item) =>
+                this.selectedItems.includes(item.ma_so_phieu)
+            );
+        },
         filteredItems() {
             return this.phieuList.filter((item) => {
                 // Apply global search
@@ -1229,7 +1606,7 @@ export default {
                                 .includes(
                                     this.columnFilters.can_bo_nong_vu.toLowerCase()
                                 ))) &&
-                    // Vụ đầu tư (Unique dropdown filter)
+                    // Vụ đầu tư
                     (this.selectedFilterValues.vu_dau_tu.length === 0 ||
                         (item.vu_dau_tu &&
                             this.selectedFilterValues.vu_dau_tu.includes(
@@ -1291,7 +1668,7 @@ export default {
                             this.selectedFilterValues.tinh_trang_giao_nhan_ho_so.includes(
                                 item.tinh_trang_giao_nhan_ho_so
                             ))) &&
-                    // Tram (Unique dropdown filter)
+                    // Tram
                     (this.selectedFilterValues.tram.length === 0 ||
                         (item.tram &&
                             this.selectedFilterValues.tram.includes(
@@ -1303,7 +1680,7 @@ export default {
         },
         paginatedItems() {
             const page = this.currentPage || 1;
-            const perPage = this.perPage || 10;
+            const perPage = this.perPage || 15;
             const total = this.filteredItems.length;
             const lastPage = Math.ceil(total / perPage);
             const from = (page - 1) * perPage + 1;
@@ -1433,7 +1810,12 @@ export default {
 
             // Reset to first page
             this.currentPage = 1;
+
+            // เคลียร์การเลือกรายการ
+            this.selectedItems = [];
+            this.duplicateReceipts = [];
         },
+
         async viewDetails(item) {
             try {
                 // แสดง loading indicator
@@ -1489,6 +1871,228 @@ export default {
                 this.isLoading = false;
             }
         },
+        // เพิ่ม methods สำหรับ checkbox
+        toggleSelectAll() {
+            const selectableItems = this.paginatedItems.data.filter((item) =>
+                this.canBeSelected(item)
+            );
+
+            if (this.isAllSelected) {
+                // ถ้าเลือกทั้งหมดแล้ว ให้ยกเลิกการเลือก
+                selectableItems.forEach((item) => {
+                    const index = this.selectedItems.indexOf(item.ma_so_phieu);
+                    if (index > -1) {
+                        this.selectedItems.splice(index, 1);
+                    }
+                });
+            } else {
+                // ถ้ายังไม่ได้เลือกทั้งหมด ให้เลือกทั้งหมด
+                selectableItems.forEach((item) => {
+                    if (!this.selectedItems.includes(item.ma_so_phieu)) {
+                        this.selectedItems.push(item.ma_so_phieu);
+                    }
+                });
+            }
+
+            // ตรวจสอบ duplicates หลังจากเปลี่ยนแปลงการเลือก
+            this.checkForDuplicates();
+        },
+
+        canBeSelected(item) {
+            // กำหนดเงื่อนไขว่ารายการไหนสามารถเลือกได้
+            // ตัวอย่าง: เลือกได้เฉพาะที่สถานะเป็น "received" หรือ 1
+            return (
+                item.tinh_trang_giao_nhan_ho_so === 1 ||
+                item.tinh_trang_giao_nhan_ho_so === "received"
+            );
+        },
+
+        async checkForDuplicates() {
+            if (this.selectedItems.length === 0) {
+                this.duplicateReceipts = [];
+                return;
+            }
+
+            try {
+                const response = await axios.post(
+                    "/api/check-payment-request-homgiong-duplicates",
+                    {
+                        receipt_ids: this.selectedItems,
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                this.duplicateReceipts = response.data.duplicates || [];
+            } catch (error) {
+                console.error("Error checking duplicates:", error);
+                this.duplicateReceipts = [];
+            }
+        },
+        async showCreatePaymentRequestModal() {
+            try {
+                // ตรวจสอบว่ามีรายการที่เลือกหรือไม่
+                if (this.selectedItems.length === 0) {
+                    Swal.fire({
+                        title: "แจ้งเตือน",
+                        text: "กรุณาเลือกรายการที่ต้องการสร้างphiếu trình thanh toán",
+                        icon: "warning",
+                        confirmButtonText: "OK",
+                    });
+                    return;
+                }
+
+                // Load investment projects
+                await this.loadInvestmentProjects();
+
+                // ใช้รายการที่เลือกแทนการเอาทั้งหน้า
+                this.selectedReceipts = [...this.selectedItems];
+
+                // Check for duplicates
+                await this.checkForDuplicates();
+
+                // Show modal
+                const modalElement = document.getElementById(
+                    "paymentRequestModal"
+                );
+                if (modalElement) {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                }
+            } catch (error) {
+                console.error("Error showing payment request modal:", error);
+                Swal.fire({
+                    title: "Lỗi",
+                    text: "Không thể mở modal tạo phiếu trình thanh toán",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                });
+            }
+        },
+
+        async loadInvestmentProjects() {
+            try {
+                const response = await axios.get("/api/investment-projects", {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                });
+                this.investmentProjects = response.data.data;
+            } catch (error) {
+                console.error("Error loading investment projects:", error);
+            }
+        },
+
+        async createPaymentRequest() {
+            if (!this.isFormValid) return;
+
+            this.isCreatingPayment = true;
+
+            try {
+                const response = await axios.post(
+                    "/api/create-payment-request-homgiong",
+                    {
+                        ...this.paymentRequestForm,
+                        receipt_ids: this.selectedReceipts,
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    this.closePaymentRequestModal();
+
+                    Swal.fire({
+                        title: "Thành công!",
+                        text: `Đã tạo phiếu trình thanh toán: ${response.data.payment_request_id}`,
+                        icon: "success",
+                        confirmButtonText: "OK",
+                    });
+
+                    // Refresh data
+                    this.fetchPhieuData();
+                }
+            } catch (error) {
+                console.error("Error creating payment request:", error);
+                Swal.fire({
+                    title: "Lỗi",
+                    text:
+                        error.response?.data?.message ||
+                        "Có lỗi xảy ra khi tạo phiếu trình thanh toán",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                });
+            } finally {
+                this.isCreatingPayment = false;
+            }
+        },
+
+        closePaymentRequestModal() {
+            // วิธีง่ายๆ - ใช้ jQuery ถ้ามี หรือ vanilla JavaScript
+            const modalElement = document.getElementById("paymentRequestModal");
+            if (modalElement) {
+                // ลองวิธีที่ 1: ใช้ Bootstrap modal instance
+                try {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    } else {
+                        // ถ้าไม่มี instance ให้สร้างใหม่แล้วปิด
+                        const newModal = new bootstrap.Modal(modalElement);
+                        newModal.hide();
+                    }
+                } catch (error) {
+                    // ถ้า Bootstrap ไม่ทำงาน ใช้วิธีง่ายๆ
+                    modalElement.style.display = "none";
+                    modalElement.classList.remove("show");
+                    document.body.classList.remove("modal-open");
+
+                    // ลบ backdrop
+                    const backdrop = document.querySelector(".modal-backdrop");
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }
+            }
+
+            // Reset form
+            this.paymentRequestForm = {
+                investment_project: "",
+                payment_type: "",
+                payment_installment: 1,
+                proposal_number: "",
+                created_date: new Date().toISOString().split("T")[0],
+            };
+            this.selectedReceipts = [];
+            this.duplicateReceipts = [];
+        },
+
+        incrementInstallment() {
+            this.paymentRequestForm.payment_installment++;
+        },
+
+        decrementInstallment() {
+            if (this.paymentRequestForm.payment_installment > 1) {
+                this.paymentRequestForm.payment_installment--;
+            }
+        },
+
+        generateAutoTitle() {
+            if (
+                !this.paymentRequestForm.payment_type ||
+                !this.paymentRequestForm.investment_project
+            ) {
+                return "PTTTHG-[Loại thanh toán]-[Vụ đầu tư]-[Mã tự động]";
+            }
+            return `PTTTHG-${this.paymentRequestForm.payment_type}-${this.paymentRequestForm.investment_project}-[Mã tự động]`;
+        },
+
         handleAuthError() {
             localStorage.removeItem("web_token");
             localStorage.removeItem("web_user");
@@ -2170,6 +2774,19 @@ export default {
         statusFilter() {
             this.currentPage = 1;
         },
+        // เพิ่ม watch สำหรับ selectedItems
+        selectedItems: {
+            handler(newVal) {
+                // ตรวจสอบ duplicates เมื่อมีการเปลี่ยนแปลงการเลือก
+                this.checkForDuplicates();
+            },
+            deep: true,
+        },
+        // เคลียร์การเลือกเมื่อเปลี่ยนหน้า
+        currentPage() {
+            // อาจจะต้องการเคลียร์การเลือกเมื่อเปลี่ยนหน้าหรือไม่ ขึ้นอยู่กับ requirement
+            // this.selectedItems = [];
+        },
     },
     mounted() {
         this.fetchPhieuData();
@@ -2227,10 +2844,12 @@ export default {
     text-overflow: clip;
     word-wrap: break-word;
     font-size: 0.875rem;
+
+    border-bottom: 1px solid #e5e7eb;
 }
 .table-auto th {
     background-color: #e7e7e7;
-    border: 1px solid #e5e7eb;
+    border: none;
     padding: 0.75rem;
     vertical-align: top;
 }
@@ -2729,12 +3348,6 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     background-color: rgba(16, 185, 129, 0.05);
 }
 
-.table-auto td {
-    padding: 0.75rem;
-    border: 1px solid #e5e7eb;
-    vertical-align: middle;
-}
-
 /* Loading indicator */
 #loading-wrapper {
     position: fixed;
@@ -2765,5 +3378,980 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     background-color: rgba(16, 185, 129, 0.05);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+/* ปุ่มสร้าง phiếu trình thanh toán แบบทันสมัย */
+.modern-create-payment-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    cursor: pointer;
+    outline: none;
+}
+
+.modern-create-payment-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.modern-create-payment-btn:hover:not(:disabled) {
+    background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+    box-shadow: 0 6px 24px rgba(16, 185, 129, 0.25);
+    transform: translateY(-2px) scale(1.03);
+}
+
+.modern-create-payment-btn i {
+    font-size: 1.25rem;
+}
+
+.btn-label {
+    display: inline-block;
+}
+/* Modern Payment Request Modal Styles - Updated to match BienBanNTDV.vue */
+.modern-modal {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+/* Enhanced Header */
+.modern-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    border-bottom: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3e%3cg fill='none' fill-rule='evenodd'%3e%3cg fill='%23ffffff' fill-opacity='0.05'%3e%3cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3e%3c/g%3e%3c/g%3e%3c/svg%3e")
+        repeat;
+    z-index: 1;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    position: relative;
+    z-index: 2;
+    width: 100%;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex: 1;
+}
+
+.header-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.header-icon:hover {
+    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.header-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.header-text .modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: white;
+    line-height: 1.2;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.modal-subtitle {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.4;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.modern-close {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    opacity: 1;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    position: relative;
+    z-index: 3;
+    flex-shrink: 0;
+}
+
+.modern-close::before {
+    content: "×";
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.modern-close:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.modern-close:active {
+    transform: scale(0.95);
+}
+/* Progress Steps */
+.progress-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 0;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.step.active .step-circle {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.step-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.step.active .step-label {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.step-connector {
+    width: 80px;
+    height: 2px;
+    background: #e5e7eb;
+    margin: 0 1rem;
+    position: relative;
+}
+
+.step-connector::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    transition: width 0.5s ease;
+}
+
+.step.active + .step-connector::after {
+    width: 100%;
+}
+
+/* Summary Card */
+.summary-card {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 15px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.summary-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 100%);
+}
+
+.summary-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.summary-icon {
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    color: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+    box-shadow: 0 4px 8px rgba(14, 165, 233, 0.3);
+}
+
+.summary-info {
+    flex: 1;
+}
+
+.summary-title {
+    margin: 0;
+    color: #0c4a6e;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.summary-count {
+    margin: 0;
+    color: #075985;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.count-badge {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);
+}
+
+/* Modern Alert */
+.modern-alert {
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-left: 4px solid #f59e0b;
+    margin-top: 1rem;
+    padding: 1rem;
+    display: flex;
+    gap: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-alert::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.alert-icon {
+    color: #d97706;
+    font-size: 1.125rem;
+    margin-top: 0.125rem;
+    width: 24px;
+    text-align: center;
+}
+
+.alert-content {
+    flex: 1;
+}
+
+.alert-content strong {
+    color: #92400e;
+    font-weight: 600;
+}
+
+.alert-content p {
+    margin: 0.5rem 0;
+    color: #92400e;
+}
+
+.duplicate-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.duplicate-item-detailed {
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #92400e;
+}
+
+.duplicate-receipt {
+    margin-bottom: 0.5rem;
+    font-family: "Monaco", "Menlo", monospace;
+}
+
+.duplicate-payment {
+    font-family: "Monaco", "Menlo", monospace;
+    color: #7c2d12;
+}
+
+.duplicate-receipt strong,
+.duplicate-payment strong {
+    color: #92400e;
+    font-weight: 600;
+    font-family: inherit;
+}
+
+.duplicate-item {
+    background: rgba(251, 191, 36, 0.2);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    padding: 0.375rem 0.75rem;
+    border-radius: 8px;
+    font-family: "Monaco", "Menlo", monospace;
+    font-size: 0.8rem;
+    color: #92400e;
+    font-weight: 500;
+}
+
+.more-items {
+    background: #9ca3af;
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    align-self: flex-start;
+    margin-top: 0.5rem;
+}
+
+/* Modern Form Body */
+.modern-body {
+    padding: 2rem;
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.modern-form {
+    width: 100%;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.modern-label {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.modern-label i {
+    margin-right: 0.5rem;
+    color: #10b981;
+    width: 16px;
+    text-align: center;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.modern-input,
+.modern-select {
+    width: 100%;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    font-size: 0.925rem;
+    transition: all 0.3s ease;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.modern-input:focus,
+.modern-select:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1), 0 2px 8px rgba(0, 0, 0, 0.1);
+    outline: none;
+    background: white;
+    transform: translateY(-1px);
+}
+
+.select-arrow {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    pointer-events: none;
+    font-size: 0.75rem;
+    transition: color 0.3s ease;
+}
+
+.input-wrapper:focus-within .select-arrow {
+    color: #10b981;
+}
+
+/* Auto Title Display */
+.auto-title-display {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: "Monaco", "Menlo", monospace;
+    transition: all 0.3s ease;
+}
+
+.auto-title-display:hover {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+
+.auto-text {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.title-preview {
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex: 1;
+}
+
+/* Installment Controls */
+.installment-wrapper {
+    position: relative;
+}
+
+.installment-controls {
+    display: flex;
+    align-items: center;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.installment-controls:focus-within {
+    border-color: #10b981;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.installment-btn {
+    background: #f9fafb;
+    border: none;
+    padding: 0.75rem;
+    color: #374151;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    width: 48px;
+    height: 48px;
+}
+
+.installment-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.installment-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.installment-controls input {
+    border: none;
+    padding: 0.75rem 1rem;
+    min-width: 80px;
+    text-align: center;
+    font-weight: 600;
+    background: transparent;
+    font-size: 0.925rem;
+}
+
+.installment-controls input:focus {
+    outline: none;
+}
+
+/* Enhanced Footer */
+.modern-footer {
+    background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
+    border-top: 1px solid #e2e8f0;
+    padding: 1.5rem 2rem;
+    position: relative;
+}
+
+.modern-footer::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        #10b981 50%,
+        transparent 100%
+    );
+}
+
+.footer-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.modern-btn-secondary,
+.modern-btn-primary {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-btn-secondary {
+    background: white;
+    color: #6b7280;
+    border: 2px solid #e5e7eb;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.modern-btn-secondary:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #374151;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.modern-btn-primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    position: relative;
+}
+
+.modern-btn-primary::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    transition: left 0.5s ease;
+}
+
+.modern-btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+}
+
+.modern-btn-primary:hover:not(:disabled)::before {
+    left: 100%;
+}
+
+.modern-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.modern-btn-primary:disabled::before {
+    display: none;
+}
+
+/* Loading States */
+.btn-loading {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.btn-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: opacity 0.3s ease;
+}
+
+.modern-btn-primary:disabled .btn-content {
+    margin-left: 1.5rem;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Row and Grid Layouts */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -0.5rem;
+}
+
+.col-md-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+    padding: 0 0.5rem;
+}
+
+.g-3 {
+    gap: 1rem;
+}
+
+.mb-4 {
+    margin-bottom: 1.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modern-header {
+        padding: 1rem;
+    }
+
+    .header-content {
+        gap: 0.75rem;
+    }
+
+    .header-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .modal-title {
+        font-size: 1.125rem;
+    }
+
+    .progress-steps {
+        padding: 1rem 0;
+    }
+
+    .step-circle {
+        width: 35px;
+        height: 35px;
+        font-size: 0.8rem;
+    }
+
+    .step-connector {
+        width: 50px;
+        margin: 0 0.5rem;
+    }
+
+    .modern-body {
+        padding: 1.5rem;
+    }
+
+    .summary-card {
+        padding: 1rem;
+    }
+
+    .footer-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .modern-btn-secondary,
+    .modern-btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .col-md-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .row {
+        margin: 0;
+    }
+
+    .step-label {
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .modern-header {
+        padding: 0.75rem;
+    }
+
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+
+    .progress-steps {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .step-connector {
+        width: 2px;
+        height: 40px;
+        margin: 0.5rem 0;
+    }
+
+    .modern-body {
+        padding: 1rem;
+    }
+
+    .summary-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+
+    .modern-footer {
+        padding: 1rem;
+    }
+}
+
+/* Additional Utility Classes */
+.text-center {
+    text-align: center;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.align-items-center {
+    align-items: center;
+}
+
+.justify-content-center {
+    justify-content: center;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+.gap-3 {
+    gap: 1rem;
+}
+
+.me-2 {
+    margin-right: 0.5rem;
+}
+
+.me-3 {
+    margin-right: 1rem;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.mb-3 {
+    margin-bottom: 1rem;
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Enhanced form validation styles */
+.modern-input.is-valid,
+.modern-select.is-valid {
+    border-color: #10b981;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.modern-input.is-invalid,
+.modern-select.is-invalid {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
+
+.invalid-feedback {
+    color: #ef4444;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+.valid-feedback {
+    color: #10b981;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+/* Checkbox column specific styling */
+.checkbox-column {
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+    padding: 0.5rem !important;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Form checkbox styling */
+.form-checkbox {
+    cursor: pointer;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid #d1d5db;
+    transition: all 0.2s ease;
+    margin: 0 auto;
+}
+
+.form-checkbox:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+
+.form-checkbox:hover {
+    border-color: #10b981;
+}
+
+/* Override general table header min-width for checkbox column */
+.table-auto th.checkbox-column {
+    min-width: 50px !important;
+    white-space: nowrap;
 }
 </style>

@@ -18,15 +18,16 @@ use App\Http\Controllers\QuanlyHS\PaymentRequestController;
 use App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers;
 use App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController;
 use App\Http\Controllers\QuanlyCongno\DeductibleServiceDebtController;
+use App\Http\Controllers\QuanlyTaichinh\PhieutrinhthanhtoanHomgiongControllers;
 
-
-// Route::apiResource('roles', RoleController::class);
-// Route::apiResource('permissions', PermissionController::class);
 
 
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 Route::get('/logout', [UserController::class, 'logout']);
+
+// Get investment projects Table vụ đầu tư
+Route::get('/investment-projects', [PaymentRequestController::class, 'getInvestmentProjects']);
 // Add route for farmer login
 Route::post('/farmer-login', [UserController::class, 'farmerLogin']);
 Route::get('/farmer/permissions', [UserController::class, 'getFarmerPermissions']);
@@ -154,6 +155,8 @@ Route::post('/payment-requests/{id}/import-data', [PaymentRequestController::cla
  // Update basic info for payment request
  Route::put('/payment-requests/{id}/basic-info', [PaymentRequestController::class, 'updateBasicInfo']);
  Route::put('payment-requests/{id}/status', [PaymentRequestController::class, 'updateStatus']);
+ // Add note saving route for payment requests
+    Route::post('/payment-requests/{id}/notes', [PaymentRequestController::class, 'saveNote']);
 
  //Delete phiếu trình thanh toán dịch vụ
  Route::delete('/payment-requests/{id}', [PaymentRequestController::class, 'destroy']);
@@ -188,9 +191,22 @@ Route::get('/payment-requests-dichvu/{id}/phieu-thu-no', [Phieudenghithanhtoandv
 Route::get('/payment-requests-dichvu/{id}/processing-history', [PaymentRequestController::class, 'getDisbursementProcessingHistory']);
 Route::put('/payment-requests-dichvu/{id}/update', [PhieudenghithanhtoandvControllers::class, 'updateDocument']);
 
+ // Routes for Phieu trinh thanh toan hom giong (new)
+    Route::get('/payment-requests-homgiong', [PhieutrinhthanhtoanHomgiongControllers::class, 'index']);
+    Route::post('/check-payment-request-homgiong-duplicates', [PhieutrinhthanhtoanHomgiongControllers::class, 'checkDuplicates']);
+    Route::post('/create-payment-request-homgiong', [PhieutrinhthanhtoanHomgiongControllers::class, 'createPaymentRequest']);
+    Route::get('/payment-requests-homgiong/{id}', [PhieutrinhthanhtoanHomgiongControllers::class, 'show']);
+    Route::put('/payment-requests-homgiong/{id}/status', [PhieutrinhthanhtoanHomgiongControllers::class, 'updateStatus']);
+    Route::delete('/payment-requests-homgiong/{id}', [PhieutrinhthanhtoanHomgiongControllers::class, 'destroy']);
+    Route::get('/payment-requests-homgiong/{id}/processing-history', [PhieutrinhthanhtoanHomgiongControllers::class, 'getProcessingHistory']);
+    Route::post('/payment-requests-homgiong/{id}/note', [PhieutrinhthanhtoanHomgiongControllers::class, 'saveNote']);
+    Route::put('/payment-requests-homgiong/{id}/records', [PhieutrinhthanhtoanHomgiongControllers::class, 'updateRecords']);
+    Route::delete('/payment-requests-homgiong/{id}/records', [PhieutrinhthanhtoanHomgiongControllers::class, 'deleteRecords']);
+    Route::post('/payment-requests-homgiong/{id}/receipts', [PhieutrinhthanhtoanHomgiongControllers::class, 'addReceipts']);
+    Route::post('/payment-requests-homgiong/{id}/import', [PhieutrinhthanhtoanHomgiongControllers::class, 'importData']);
+    Route::put('/payment-requests-homgiong/{id}/basic-info', [PhieutrinhthanhtoanHomgiongControllers::class, 'updateBasicInfo']);
 
 //Công nợ dịch vụ khấu trừ
- // QuanlyCongno routes
 
 Route::get('/import-congno-dichvu-khautru-progress/{importId}', [DeductibleServiceDebtController::class, 'checkImportProgress']);
 Route::post('/import-congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'startImport']);
@@ -199,7 +215,7 @@ Route::get('/congno-dichvu-khautru/{invoicenumber}', [DeductibleServiceDebtContr
 });
 
 
-
+// Middleware for JWT authentication เพื่อป้องกันการเข้าถึง API ที่ต้องการการยืนยันตัวตน ให้ใช้ได้ ทั้ง ผู้ดูแลระบบและเกษตรกร
 Route::middleware([\App\Http\Middleware\JwtMiddleware::class])->group(function () {
 Route::get('/congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'index']);
 //Load ข้อมูลตาลาง tb_bien_ban_nghiemthu_dv
@@ -217,10 +233,5 @@ Route::get('/user-info', [UserController::class, 'getUserInfo']);
 
 
 
-Route::get('/investment-projects', [PaymentRequestController::class, 'getInvestmentProjects']);
-// เพิ่ม route สำหรับดึงข้อมูลผู้ใช้งาน
-//   Route::get('/user-info', function(Request $request) {
-//     return $request->user();
-// });
 
 

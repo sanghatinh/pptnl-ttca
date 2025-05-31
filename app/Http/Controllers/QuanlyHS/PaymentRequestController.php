@@ -156,14 +156,15 @@ public function createPaymentRequest(Request $request)
         // Query payment requests with their latest action data
         $paymentRequests = DB::table('tb_phieu_trinh_thanh_toan as pr')
             ->leftJoin(DB::raw('(
-                SELECT ma_trinh_thanh_toan, action_by, MAX(created_at) as latest_action_date 
-                FROM Action_phieu_trinh_thanh_toan 
-                GROUP BY ma_trinh_thanh_toan, action_by
-            ) as act'), 'act.ma_trinh_thanh_toan', '=', 'pr.ma_trinh_thanh_toan')
-            ->leftJoin('users', 'act.action_by', '=', 'users.id')
+                SELECT DISTINCT
+                    ma_trinh_thanh_toan,
+                    FIRST_VALUE(action_by) OVER (PARTITION BY ma_trinh_thanh_toan ORDER BY created_at DESC) as latest_action_by
+                FROM Action_phieu_trinh_thanh_toan
+            ) as latest_actions'), 'latest_actions.ma_trinh_thanh_toan', '=', 'pr.ma_trinh_thanh_toan')
+            ->leftJoin('users', 'latest_actions.latest_action_by', '=', 'users.id')
             ->select(
                 'pr.*', 
-                'act.action_by',
+                'latest_actions.latest_action_by as action_by',
                 'users.full_name as action_by_name'
             )
             ->orderBy('pr.id', 'desc')
@@ -182,6 +183,7 @@ public function createPaymentRequest(Request $request)
         ], 500);
     }
 }
+
     /**
      * ดึงรายละเอียดของเอกสารขอเบิกเงิน
      */
@@ -274,6 +276,7 @@ public function createPaymentRequest(Request $request)
                     'payment_date' => $document->ngay_thanh_toan, // Add this line
                     'total_amount' => $document->tong_tien_thanh_toan,
                     'creator_name' => $creatorInfo ? $creatorInfo->full_name : 'Unknown',
+                    'notes' => $document->note, // Add notes field
                     // Add new financial fields
     'total_hold_amount' => $document->tong_tien_tam_giu,
     'total_deduction' => $document->tong_tien_khau_tru,
@@ -1089,6 +1092,71 @@ public function getDisbursementProcessingHistory($id)
             'success' => false,
             'message' => 'Error fetching processing history',
             'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+// ...existing code...
+
+/**
+ * Save note for payment request
+ * 
+ * @param Request $request
+ * @param string $id Payment request code
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function saveNote(Request $request, $id)
+{
+    try {
+        // Validate the request
+        $validated = $request->validate([
+            'note' => 'nullable|string|max:1000' // Allow up to 1000 characters for note
+        ]);
+
+        // Find the payment request
+        $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->first();
+
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy phiếu trình thanh toán'
+            ], 404);
+        }
+
+        // Update the note field
+        $affected = DB::table('tb_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->update([
+                'note' => $validated['note']
+            ]);
+
+        if ($affected) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Ghi chú đã được cập nhật thành công',
+                'note' => $validated['note']
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể cập nhật ghi chú'
+            ], 500);
+        }
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Dữ liệu không hợp lệ',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Error saving payment request note: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi lưu ghi chú: ' . $e->getMessage()
         ], 500);
     }
 }

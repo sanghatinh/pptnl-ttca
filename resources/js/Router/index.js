@@ -26,6 +26,7 @@ import Permission from "../Pages/Admin/Permission.vue";
 import Role from "../Pages/Admin/Role.vue";
 import Profile from "../Pages/Admin/UserProfile.vue";
 import Unauthorized from "../Pages/Unauthorized.vue";
+import PhieutrinhthanhtoanHomgiong from "../Pages/QuanlyTaichinh/PhieutrinhthanhtoanHomgiong.vue";
 
 const authMiddleware = async (to, from, next) => {
     const store = useStore();
@@ -326,6 +327,15 @@ const routes = [
         name: "Details_Phieutrinhthanhtoan",
         path: "/Details_Phieutrinhthanhtoan/:id",
         component: Details_Phieutrinhthanhtoan,
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
+        name: "PhieutrinhthanhtoanHomgiong",
+        path: "/PhieutrinhthanhtoanHomgiong",
+        component: () =>
+            import("../Pages/QuanlyTaichinh/PhieutrinhthanhtoanHomgiong.vue"),
         meta: {
             middleware: [authMiddleware],
         },
