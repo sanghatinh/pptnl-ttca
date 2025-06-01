@@ -37,19 +37,25 @@ const authMiddleware = async (to, from, next) => {
         return;
     }
 
-    // เพิ่มการตรวจสอบ component permissions
-    if (to.meta.requiresComponent) {
-        // โหลด user components หากยังไม่มี
-        if (!store.userComponents || store.userComponents.length === 0) {
+    // รอให้ permissions โหลดเสร็จก่อน (สำหรับกรณีรีเฟรช)
+    if (!store.permissionsLoaded) {
+        try {
+            await store.waitForPermissions();
+        } catch (error) {
+            console.error("Failed to load permissions:", error);
+            // ถ้าโหลด permissions ไม่สำเร็จ ให้ลองโหลดใหม่
             try {
                 await store.loadPermissionsAndComponents();
-            } catch (error) {
-                console.error("Failed to load permissions:", error);
+            } catch (retryError) {
+                console.error("Retry loading permissions failed:", retryError);
                 next("/login");
                 return;
             }
         }
+    }
 
+    // เพิ่มการตรวจสอบ component permissions
+    if (to.meta.requiresComponent) {
         // ตรวจสอบว่าผู้ใช้มีสิทธิ์เข้าถึง component หรือไม่
         if (!store.canViewComponent(to.meta.componentName)) {
             next("/unauthorized");

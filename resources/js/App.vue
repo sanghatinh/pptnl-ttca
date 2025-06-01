@@ -1,8 +1,8 @@
 <template lang="">
     <!-- Loading starts -->
-    <div id="loading-wrapper">
-        <div class="spinner-border" role="status">
-            <span class="sr-only">Loading...</span>
+    <div v-if="store.isLoading" class="loading-overlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
         </div>
     </div>
     <!-- Loading ends -->
@@ -38,18 +38,22 @@
 <script>
 import { useStore } from "./Store/Auth";
 export default {
+    name: "App",
     setup() {
         const store = useStore();
-        return {
-            store,
-        };
+        return { store };
     },
-    data() {
-        return {
-            url: window.location.href,
-        };
+
+    async created() {
+        // เรียก initializeAuth เมื่อ app เริ่มต้น
+        if (this.store.token) {
+            try {
+                await this.store.initializeAuth();
+            } catch (error) {
+                console.error("Failed to initialize auth:", error);
+            }
+        }
     },
-    name: "Sidebarmenu",
 };
 </script>
 <style>
@@ -58,5 +62,18 @@ export default {
     width: 100%;
     overflow-x: hidden;
     position: relative;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
 }
 </style>

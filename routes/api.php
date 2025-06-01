@@ -120,11 +120,10 @@ Route::post('/import-bienban-nghiemthu', [BienBanNghiemThuController::class, 'im
 Route::get('/import-progress/{importId}', [BienBanNghiemThuController::class, 'importProgress']);
 
 // Routes for Phieu Giao Nhan Hom Giong
-Route::get('/phieu-giao-nhan-hom-giong', [PhieuGiaoNhanHomGiongController::class, 'index']);
+
 Route::post('/import-phieu-giao-nhan', [PhieuGiaoNhanHomGiongController::class, 'importData']);
 Route::get('/import-homgiong-progress/{importId}', [PhieuGiaoNhanHomGiongController::class, 'importProgress']);
-Route::get('/bienban-nghiemthu-homgiong/{id}', [PhieuGiaoNhanHomGiongController::class, 'show']);
-Route::get('/bienban-nghiemthu-homgiong/{id}/check-access', [PhieuGiaoNhanHomGiongController::class, 'checkAccess']);
+
 
 // ตรวจสอบรายการซ้ำซ้อน
 Route::post('/check-payment-request-duplicates', [PaymentRequestController::class, 'checkDuplicates']);
@@ -134,8 +133,6 @@ Route::post('/create-payment-request', [PaymentRequestController::class, 'create
 
 // ดึงรายการเอกสารขอเบิกเงินทั้งหมด
 Route::get('/payment-requests', [PaymentRequestController::class, 'index']);
-
-// ดึงข้อมูลโครงการลงทุน
 
 
 // ดึงรายละเอียดเอกสารขอเบิกเงิน
@@ -228,6 +225,10 @@ Route::get('/bien-ban-nghiemthu/{id}/check-access', [BienBanNghiemThuController:
 Route::get('/bienban-nghiemthu/{id}/history', [BienBanNghiemThuController::class, 'processingHistoryNghiemthuDV']);
 //สำหรับดึงข้อมูลผู้ใช้งาน
 Route::get('/user-info', [UserController::class, 'getUserInfo']);
+//Phiếu giao nhận hom giống
+Route::get('/phieu-giao-nhan-hom-giong', [PhieuGiaoNhanHomGiongController::class, 'index']);
+Route::get('/bienban-nghiemthu-homgiong/{id}', [PhieuGiaoNhanHomGiongController::class, 'show']);
+Route::get('/bienban-nghiemthu-homgiong/{id}/check-access', [PhieuGiaoNhanHomGiongController::class, 'checkAccess']);
 
 });
 

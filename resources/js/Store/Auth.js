@@ -11,6 +11,8 @@ export const useStore = defineStore("auth", {
         userComponents: [],
         isLoading: false,
         isInitialized: false,
+        // เพิ่ม flag สำหรับติดตามการโหลด permissions/components
+        permissionsLoaded: false,
     }),
 
     getters: {
@@ -36,7 +38,11 @@ export const useStore = defineStore("auth", {
             return !!state.token && Object.keys(state.user).length > 0;
         },
 
-        // เพิ่ม getAuthHeaders method
+        // เพิ่ม getter สำหรับการเช็คว่าพร้อมใช้งานหรือไม่
+        isReady: (state) => {
+            return state.isAuthenticated && state.permissionsLoaded;
+        },
+
         getAuthHeaders: (state) => () => {
             const headers = {
                 Authorization: `Bearer ${state.token}`,
@@ -89,6 +95,10 @@ export const useStore = defineStore("auth", {
             this.isInitialized = status;
         },
 
+        setPermissionsLoaded(status) {
+            this.permissionsLoaded = status;
+        },
+
         logout() {
             this.token = "";
             this.user = {};
@@ -97,6 +107,7 @@ export const useStore = defineStore("auth", {
             this.userPermissions = [];
             this.userComponents = [];
             this.isInitialized = false;
+            this.permissionsLoaded = false;
 
             // Clear localStorage
             const keysToRemove = [
@@ -113,6 +124,10 @@ export const useStore = defineStore("auth", {
         },
 
         setupAxiosInterceptors() {
+            // Clear existing interceptors to avoid duplicates
+            axios.interceptors.request.clear();
+            axios.interceptors.response.clear();
+
             // Set default authorization header
             axios.defaults.headers.common[
                 "Authorization"
@@ -142,8 +157,9 @@ export const useStore = defineStore("auth", {
             );
         },
 
+        // ปรับปรุง initializeAuth ให้โหลด permissions/components อัตโนมัติ
         async initializeAuth() {
-            if (this.isInitialized) {
+            if (this.isInitialized && this.permissionsLoaded) {
                 return true;
             }
 
@@ -155,8 +171,13 @@ export const useStore = defineStore("auth", {
 
             try {
                 this.setupAxiosInterceptors();
+
+                // โหลด permissions และ components อัตโนมัติ
                 await this.loadPermissionsAndComponents();
+
                 this.isInitialized = true;
+                this.permissionsLoaded = true;
+
                 return true;
             } catch (error) {
                 console.error("Error initializing auth:", error);
@@ -195,6 +216,7 @@ export const useStore = defineStore("auth", {
 
                 this.setUserPermissions(permissionsResponse.data);
                 this.setUserComponents(componentsResponse.data);
+                this.setPermissionsLoaded(true);
 
                 return true;
             } catch (error) {
@@ -202,6 +224,7 @@ export const useStore = defineStore("auth", {
                     "Error loading permissions and components:",
                     error
                 );
+                this.setPermissionsLoaded(false);
                 throw error;
             }
         },
@@ -218,7 +241,31 @@ export const useStore = defineStore("auth", {
             }
         },
 
-        // เพิ่ม method สำหรับสร้าง headers (alternative approach)
+        // เพิ่ม method สำหรับรอจนกว่า permissions จะโหลดเสร็จ
+        async waitForPermissions(timeout = 5000) {
+            if (this.permissionsLoaded) {
+                return true;
+            }
+
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = timeout / 100;
+
+                const check = () => {
+                    if (this.permissionsLoaded) {
+                        resolve(true);
+                    } else if (attempts >= maxAttempts) {
+                        reject(new Error("Timeout waiting for permissions"));
+                    } else {
+                        attempts++;
+                        setTimeout(check, 100);
+                    }
+                };
+
+                check();
+            });
+        },
+
         getHeaders() {
             const headers = {
                 Authorization: `Bearer ${this.token}`,
