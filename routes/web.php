@@ -23,3 +23,4 @@ Route::get('/unauthorized', function () {
 
 Route::get('/print/giaonhan-hoso/{document_code}', [PrintGiaoNhanHSController::class, 'print'])
     ->name('print.giaonhan-hoso');
+

@@ -173,6 +173,7 @@ Route::put('/disbursements/bulk', [PhieudenghithanhtoandvControllers::class, 'bu
 Route::post('/disbursements/with-receipts', [PhieudenghithanhtoandvControllers::class, 'addWithReceipts']);
 Route::post('/disbursements/export', [PhieudenghithanhtoandvControllers::class, 'export']);
 Route::post('/disbursements/import', [PhieudenghithanhtoandvControllers::class, 'import']);
+// Route::post('/print-preview-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'getPrintPreview']);
 
 // เพิ่มเส้นทาง API สำหรับอัปเดตข้อมูลทางการเงินของพิศูเญเงี้ยม
 Route::post('/disbursements/update-financial', [PhieudenghithanhtoandvControllers::class, 'updateFinancialData']);
@@ -237,7 +238,10 @@ Route::get('/bienban-nghiemthu-homgiong/{id}/check-access', [PhieuGiaoNhanHomGio
 
 });
 
-
+// เพิ่มนอก middleware เพื่อให้เข้าถึง print page ได้
+Route::get('/print-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'printGet']);
+Route::post('/print-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'print']);
+Route::post('/print-preview-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'getPrintPreview']);
 
 
 

@@ -1231,6 +1231,19 @@
                                         <i class="fas fa-redo-alt me-1"></i>
                                         Reset
                                     </button>
+                                    <button
+                                        class="btn btn-info btn-sm"
+                                        title="In phiếu đã chọn"
+                                        @click="openPrintModal"
+                                        :disabled="
+                                            selectedPaymentRequests.length === 0
+                                        "
+                                    >
+                                        <i class="fas fa-print me-1"></i>
+                                        In ({{
+                                            selectedPaymentRequests.length
+                                        }})
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -3399,6 +3412,145 @@
             </div>
         </div>
     </div>
+    <!-- Print Modal -->
+    <div
+        class="modal fade"
+        id="printModal"
+        tabindex="-1"
+        aria-labelledby="printModalLabel"
+        aria-hidden="true"
+        data-bs-backdrop="static"
+        data-bs-keyboard="false"
+    >
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="printModalLabel">
+                        <i class="fas fa-print me-2"></i>
+                        Xác nhận in phiếu đề nghị thanh toán
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close btn-close-white"
+                        @click="closePrintModal"
+                        aria-label="Close"
+                    ></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Bạn đã chọn
+                        <strong>{{ selectedPaymentRequests.length }}</strong>
+                        phiếu để in
+                    </div>
+
+                    <!-- Loading State -->
+                    <div v-if="printPreviewLoading" class="text-center py-4">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="visually-hidden">Đang tải...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Đang tải danh sách in...</p>
+                    </div>
+
+                    <!-- Print Preview List -->
+                    <div
+                        v-else-if="printPreviewData.length > 0"
+                        class="table-responsive"
+                    >
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px">#</th>
+                                    <th>Mã giải ngân</th>
+                                    <th>Khách hàng</th>
+                                    <th>Vụ đầu tư</th>
+                                    <th>Loại thanh toán</th>
+                                    <th>Tổng tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="(item, index) in printPreviewData"
+                                    :key="index"
+                                >
+                                    <td class="text-center">{{ index + 1 }}</td>
+                                    <td>
+                                        <span class="fw-medium text-primary">{{
+                                            item.ma_giai_ngan
+                                        }}</span>
+                                    </td>
+                                    <td>{{ item.customer_name }}</td>
+                                    <td>{{ item.investment_project }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{
+                                            item.payment_type
+                                        }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="fw-bold text-success">
+                                            {{
+                                                formatCurrency(
+                                                    item.total_amount
+                                                )
+                                            }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="5" class="text-end fw-bold">
+                                        Tổng cộng:
+                                    </td>
+                                    <td class="text-end fw-bold text-success">
+                                        {{ formatCurrency(printPreviewTotal) }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Error State -->
+                    <div
+                        v-else-if="printPreviewError"
+                        class="alert alert-danger"
+                    >
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {{ printPreviewError }}
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        @click="closePrintModal"
+                    >
+                        <i class="fas fa-times me-1"></i>
+                        Hủy
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-info"
+                        @click="executePrint"
+                        :disabled="
+                            printPreviewLoading ||
+                            printPreviewData.length === 0 ||
+                            printExecuting
+                        "
+                    >
+                        <i
+                            class="fas fa-spinner fa-spin me-1"
+                            v-if="printExecuting"
+                        ></i>
+                        <i class="fas fa-print me-1" v-else></i>
+                        {{ printExecuting ? "Đang in..." : "In ngay" }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -3461,6 +3613,12 @@ export default {
                 notes: "",
                 payment_date: null,
             },
+            // Print related data
+            printModal: null,
+            printPreviewLoading: false,
+            printPreviewData: [],
+            printPreviewError: null,
+            printExecuting: false,
             // Timeline related properties
             processingHistory: [], // Add this property to store timeline events
             showTimeline: false,
@@ -3607,6 +3765,12 @@ export default {
         };
     },
     computed: {
+        printPreviewTotal() {
+            return this.printPreviewData.reduce(
+                (sum, item) => sum + (parseFloat(item.total_amount) || 0),
+                0
+            );
+        },
         // เพิ่ม property นี้เพื่อให้สามารถอัปเดต UI ทันทีเมื่อมีการเปลี่ยนแปลงสถานะ
         // Add this new computed property to track the payment date field reference
         paymentDateRef() {
@@ -4177,6 +4341,107 @@ export default {
     },
 
     methods: {
+        async openPrintModal() {
+            if (this.selectedPaymentRequests.length === 0) {
+                Swal.fire({
+                    title: "Thông báo",
+                    text: "Vui lòng chọn ít nhất một phiếu để in",
+                    icon: "warning",
+                    confirmButtonText: "Đồng ý",
+                });
+                return;
+            }
+
+            // Show modal
+            const modalElement = document.getElementById("printModal");
+            if (modalElement) {
+                this.printModal = new bootstrap.Modal(modalElement);
+                this.printModal.show();
+            }
+
+            // Load preview data
+            await this.loadPrintPreview();
+        },
+
+        closePrintModal() {
+            if (this.printModal) {
+                this.printModal.hide();
+            }
+
+            // Reset data
+            this.printPreviewData = [];
+            this.printPreviewError = null;
+            this.printExecuting = false;
+        },
+
+        async loadPrintPreview() {
+            this.printPreviewLoading = true;
+            this.printPreviewError = null;
+
+            try {
+                const response = await axios.post(
+                    "/api/print-preview-phieu-dntt",
+                    {
+                        disbursement_codes: this.selectedPaymentRequests,
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${this.store.getToken}`,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    this.printPreviewData = response.data.data || [];
+                } else {
+                    throw new Error(response.data.message || "Unknown error");
+                }
+            } catch (error) {
+                console.error("Error loading print preview:", error);
+                this.printPreviewError =
+                    error.response?.data?.message ||
+                    "Đã xảy ra lỗi khi tải danh sách in";
+            } finally {
+                this.printPreviewLoading = false;
+            }
+        },
+
+        async executePrint() {
+            this.printExecuting = true;
+
+            try {
+                // สร้าง URL สำหรับ API route
+                const codes = this.selectedPaymentRequests.join(",");
+                const printUrl = `/api/print-phieu-dntt?codes=${encodeURIComponent(
+                    codes
+                )}`;
+
+                // เปิดหน้าใหม่
+                window.open(printUrl, "_blank");
+
+                // Show success message
+                Swal.fire({
+                    title: "Thành công!",
+                    text: "Đã mở trang in trong tab mới",
+                    icon: "success",
+                    timer: 2000,
+                    showConfirmButton: false,
+                });
+
+                // Close modal
+                this.closePrintModal();
+            } catch (error) {
+                console.error("Error executing print:", error);
+                Swal.fire({
+                    title: "Lỗi!",
+                    text: "Đã xảy ra lỗi khi in",
+                    icon: "error",
+                    confirmButtonText: "Đồng ý",
+                });
+            } finally {
+                this.printExecuting = false;
+            }
+        },
         /**
          * Search individual customers
          */
