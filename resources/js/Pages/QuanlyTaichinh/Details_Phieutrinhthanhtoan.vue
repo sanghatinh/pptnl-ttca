@@ -294,6 +294,7 @@
                                     type="button"
                                     class="button-30"
                                     @click="saveBasicInfo"
+                                    v-if="hasPermission('save')"
                                 >
                                     <i class="bx bxs-save"></i>
                                     <span>Lưu</span>
@@ -301,7 +302,10 @@
 
                                 <!-- ปุ่มนำส่งฝ่ายบัญชี (แสดงเฉพาะเมื่อสถานะเป็น 'processing') -->
                                 <button
-                                    v-if="document.status === 'processing'"
+                                    v-if="
+                                        document.status === 'processing' &&
+                                        hasPermission('submit_to_accounting')
+                                    "
                                     class="button-30-blue"
                                     @click="
                                         confirmUpdateStatus(
@@ -317,7 +321,10 @@
 
                                 <!-- ปุ่มส่งคืน (แสดงเฉพาะเมื่อสถานะเป็น 'processing') -->
                                 <button
-                                    v-if="document.status === 'submitted'"
+                                    v-if="
+                                        document.status === 'submitted' &&
+                                        hasPermission('submit_to_accounting')
+                                    "
                                     type="button"
                                     class="button-30-yellow"
                                     @click="
@@ -334,7 +341,10 @@
 
                                 <!-- ปุ่มสถานะจ่ายเงินแล้ว (แสดงเฉพาะเมื่อสถานะเป็น 'submitted') -->
                                 <button
-                                    v-if="document.status === 'submitted'"
+                                    v-if="
+                                        document.status === 'submitted' &&
+                                        hasPermission('đã thanh toán')
+                                    "
                                     type="button"
                                     class="button-30-save"
                                     @click="confirmPaymentStatus"
@@ -345,7 +355,10 @@
 
                                 <!-- ปุ่มยกเลิก (แสดงเฉพาะเมื่อสถานะเป็น 'submitted') -->
                                 <button
-                                    v-if="document.status === 'paid'"
+                                    v-if="
+                                        document.status === 'paid' &&
+                                        hasPermission('cancel')
+                                    "
                                     type="button"
                                     class="button-30"
                                     @click="
@@ -362,7 +375,12 @@
 
                                 <!-- ปุ่มลบ (แสดงเฉพาะเมื่อไม่ได้อยู่ในสถานะ paid) -->
                                 <button
-                                    v-if="document.status !== 'paid'"
+                                    v-if="
+                                        document.status !== 'paid' &&
+                                        hasPermission(
+                                            'delete_phieu_trinh_thanhtoan_dv'
+                                        )
+                                    "
                                     type="button"
                                     class="button-30-del"
                                     @click="deleteDocument"
@@ -847,1962 +865,119 @@
                     </div>
 
                     <!-- Bảng chi tiết -->
-                    <div class="card mt-3">
+                    <div class="card mt-3 payment-details-summary-card">
                         <div
-                            class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center"
+                            class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center"
                         >
-                            <h5 class="card-title mb-0">
-                                <span
-                                    @click="togglePaymentDetails"
-                                    class="toggle-section cursor-pointer"
-                                >
-                                    <i
-                                        :class="
-                                            showPaymentDetails
-                                                ? 'fas fa-angle-down'
-                                                : 'fas fa-angle-right'
-                                        "
-                                        class="me-2 toggle-icon"
-                                    ></i>
-                                    Chi tiết hồ sơ thanh toán
-                                </span>
+                            <h5 class="card-title mb-0 text-white">
+                                <i class="fas fa-file-invoice-dollar me-2"></i>
+                                Chi tiết hồ sơ thanh toán
                             </h5>
-                            <div class="card-actions" v-if="showPaymentDetails">
-                                <span
-                                    class="import-data-btn"
-                                    title="Import data"
-                                    @click="openImportModal"
-                                >
-                                    <i class="fas fa-file-import"></i>
-                                </span>
-                                <span
-                                    class="export-excel-btn"
-                                    title="Export to Excel"
-                                    @click="exportToExcel"
-                                >
-                                    <i class="fas fa-file-excel"></i>
-                                </span>
-                                <span
-                                    class="reset-all-filters-btn"
-                                    title="Reset all filters"
-                                    @click="resetAllFilters"
-                                >
-                                    <i class="fas fa-redo-alt"></i>
-                                </span>
-                                <span
-                                    class="edit-records-btn"
-                                    title="Edit selected records"
-                                    @click="editSelectedRecords"
-                                    :class="{
-                                        disabled: selectedRecords.length === 0,
-                                    }"
-                                >
-                                    <i class="fas fa-edit"></i>
-                                </span>
-                                <span
-                                    class="delete-records-btn"
-                                    title="Delete selected records"
-                                    @click="deleteSelectedRecords"
-                                    :class="{
-                                        disabled: selectedRecords.length === 0,
-                                    }"
-                                >
-                                    <i class="fas fa-trash"></i>
-                                </span>
-                                <span
-                                    class="add-records-btn"
-                                    title="Add new receipt"
-                                    @click="openAddReceiptModal"
-                                >
-                                    <i class="fas fa-plus"></i>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="card-body" v-if="showPaymentDetails">
-                            <div class="table-container">
-                                <div class="table-responsive mt-2">
-                                    <table
-                                        class="table table-bordered table-hover align-middle"
-                                        v-resizable-columns="{
-                                            minWidth: 80,
-                                            saveState: true,
-                                            id: 'phieutrinhthanhtoan-details-table',
-                                            adjustTableWidth: false,
-                                        }"
-                                        style="table-layout: fixed"
+                            <div class="summary-stats d-flex gap-3">
+                                <div class="stat-item">
+                                    <small class="text-white-50"
+                                        >Tổng số biên bản</small
                                     >
-                                        <thead class="table-light text-center">
-                                            <tr>
-                                                <th>
-                                                    <input
-                                                        type="checkbox"
-                                                        :checked="isAllSelected"
-                                                        @change="
-                                                            toggleSelectAll
-                                                        "
-                                                        class="form-check-input"
-                                                    />
-                                                </th>
-                                                <th>
-                                                    Mã nghiệm thu
-                                                    <button
-                                                        @click="
-                                                            toggleFilter(
-                                                                'document_code'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    columnFilters.document_code,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activeFilter ===
-                                                            'document_code'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                columnFilters.document_code
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo mã..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetFilter(
-                                                                        'document_code'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyFilter(
-                                                                        'document_code'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-
-                                                <th style="width: 120px">
-                                                    Trạm
-                                                    <button
-                                                        @click="
-                                                            toggleFilter('tram')
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    selectedFilterValues.tram &&
-                                                                    selectedFilterValues
-                                                                        .tram
-                                                                        .length >
-                                                                        0,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activeFilter ===
-                                                            'tram'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <div
-                                                            class="max-h-40 overflow-y-auto mb-2"
-                                                        >
-                                                            <div
-                                                                v-for="option in uniqueValues.tram"
-                                                                :key="option"
-                                                                class="flex items-center mb-2"
-                                                            >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    :id="`tram-${option}`"
-                                                                    :value="
-                                                                        option
-                                                                    "
-                                                                    v-model="
-                                                                        selectedFilterValues.tram
-                                                                    "
-                                                                    class="mr-2 rounded text-green-500 focus:ring-green-500"
-                                                                />
-                                                                <label
-                                                                    :for="`tram-${option}`"
-                                                                    class="select-none"
-                                                                    >{{
-                                                                        option
-                                                                    }}</label
-                                                                >
-                                                            </div>
-                                                        </div>
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetFilter(
-                                                                        'tram'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyFilter(
-                                                                        'tram'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-
-                                                <th>
-                                                    Tiêu đề
-                                                    <button
-                                                        @click="
-                                                            toggleFilter(
-                                                                'title'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    columnFilters.title,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activeFilter ===
-                                                            'title'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                columnFilters.title
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo tiêu đề..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetFilter(
-                                                                        'title'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyFilter(
-                                                                        'title'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-
-                                                <th style="width: 130px">
-                                                    Vụ đầu tư
-                                                    <button
-                                                        @click="
-                                                            toggleFilter(
-                                                                'investment_project'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    selectedFilterValues.investment_project &&
-                                                                    selectedFilterValues
-                                                                        .investment_project
-                                                                        .length >
-                                                                        0,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activeFilter ===
-                                                            'investment_project'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <div
-                                                            class="max-h-40 overflow-y-auto mb-2"
-                                                        >
-                                                            <div
-                                                                v-for="option in uniqueValues.investment_project"
-                                                                :key="option"
-                                                                class="flex items-center mb-2"
-                                                            >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    :id="`investment_project-${option}`"
-                                                                    :value="
-                                                                        option
-                                                                    "
-                                                                    v-model="
-                                                                        selectedFilterValues.investment_project
-                                                                    "
-                                                                    class="mr-2 rounded text-green-500 focus:ring-green-500"
-                                                                />
-                                                                <label
-                                                                    :for="`investment_project-${option}`"
-                                                                    class="select-none"
-                                                                    >{{
-                                                                        option
-                                                                    }}</label
-                                                                >
-                                                            </div>
-                                                        </div>
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetFilter(
-                                                                        'investment_project'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyFilter(
-                                                                        'investment_project'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-
-                                                <th style="width: 170px">
-                                                    KH Cá nhân
-                                                    <button
-                                                        @click="
-                                                            toggleFilter(
-                                                                'khach_hang_ca_nhan_dt_mia'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    columnFilters.khach_hang_ca_nhan_dt_mia,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activeFilter ===
-                                                            'khach_hang_ca_nhan_dt_mia'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                columnFilters.khach_hang_ca_nhan_dt_mia
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo khách hàng..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetFilter(
-                                                                        'khach_hang_ca_nhan_dt_mia'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyFilter(
-                                                                        'khach_hang_ca_nhan_dt_mia'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-
-                                                <th style="width: 170px">
-                                                    KH Doanh nghiệp
-                                                    <button
-                                                        @click="
-                                                            toggleFilter(
-                                                                'khach_hang_doanh_nghiep_dt_mia'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    columnFilters.khach_hang_doanh_nghiep_dt_mia,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activeFilter ===
-                                                            'khach_hang_doanh_nghiep_dt_mia'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                columnFilters.khach_hang_doanh_nghiep_dt_mia
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo doanh nghiệp..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetFilter(
-                                                                        'khach_hang_doanh_nghiep_dt_mia'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyFilter(
-                                                                        'khach_hang_doanh_nghiep_dt_mia'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-
-                                                <th style="width: 160px">
-                                                    Hợp đồng đầu tư
-                                                    <button
-                                                        @click="
-                                                            toggleFilter(
-                                                                'contract_number'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    columnFilters.contract_number,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activeFilter ===
-                                                            'contract_number'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                columnFilters.contract_number
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo hợp đồng..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetFilter(
-                                                                        'contract_number'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyFilter(
-                                                                        'contract_number'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-
-                                                <th style="width: 140px">
-                                                    Hình thức DV
-                                                    <button
-                                                        @click="
-                                                            toggleFilter(
-                                                                'service_type'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    selectedFilterValues.service_type &&
-                                                                    selectedFilterValues
-                                                                        .service_type
-                                                                        .length >
-                                                                        0,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activeFilter ===
-                                                            'service_type'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <div
-                                                            class="max-h-40 overflow-y-auto mb-2"
-                                                        >
-                                                            <div
-                                                                v-for="option in uniqueValues.service_type"
-                                                                :key="option"
-                                                                class="flex items-center mb-2"
-                                                            >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    :id="`service_type-${option}`"
-                                                                    :value="
-                                                                        option
-                                                                    "
-                                                                    v-model="
-                                                                        selectedFilterValues.service_type
-                                                                    "
-                                                                    class="mr-2 rounded text-green-500 focus:ring-green-500"
-                                                                />
-                                                                <label
-                                                                    :for="`service_type-${option}`"
-                                                                    class="select-none"
-                                                                    >{{
-                                                                        option
-                                                                    }}</label
-                                                                >
-                                                            </div>
-                                                        </div>
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetFilter(
-                                                                        'service_type'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyFilter(
-                                                                        'service_type'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-
-                                                <th style="width: 160px">
-                                                    Hợp đồng cung ứng DV
-                                                    <button
-                                                        @click="
-                                                            toggleFilter(
-                                                                'hop_dong_cung_ung_dich_vu'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    columnFilters.hop_dong_cung_ung_dich_vu,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activeFilter ===
-                                                            'hop_dong_cung_ung_dich_vu'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                columnFilters.hop_dong_cung_ung_dich_vu
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo hợp đồng..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetFilter(
-                                                                        'hop_dong_cung_ung_dich_vu'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyFilter(
-                                                                        'hop_dong_cung_ung_dich_vu'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-
-                                                <th style="width: 140px">
-                                                    Mã giải ngân
-                                                    <button
-                                                        @click="
-                                                            toggleFilter(
-                                                                'disbursement_code'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    columnFilters.disbursement_code,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activeFilter ===
-                                                            'disbursement_code'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                columnFilters.disbursement_code
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo mã giải ngân..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetFilter(
-                                                                        'disbursement_code'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyFilter(
-                                                                        'disbursement_code'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-
-                                                <th>
-                                                    Đợt TT
-                                                    <button
-                                                        @click="
-                                                            toggleFilter(
-                                                                'installment'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    columnFilters.installment,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activeFilter ===
-                                                            'installment'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                columnFilters.installment
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo đợt..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetFilter(
-                                                                        'installment'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyFilter(
-                                                                        'installment'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-
-                                                <th style="width: 130px">
-                                                    Số tiền
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr
-                                                v-if="
-                                                    paginatedPaymentDetails.data
-                                                        .length === 0
-                                                "
-                                            >
-                                                <td
-                                                    colspan="13"
-                                                    class="text-center py-4"
-                                                >
-                                                    <div class="empty-state">
-                                                        <i
-                                                            class="fas fa-file-invoice empty-icon"
-                                                        ></i>
-                                                        <p>
-                                                            Chưa có dữ liệu chi
-                                                            tiết
-                                                        </p>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            <tr
-                                                v-for="(
-                                                    item, index
-                                                ) in paginatedPaymentDetails.data"
-                                                :key="index"
-                                            >
-                                                <td class="text-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        :value="
-                                                            item.document_code
-                                                        "
-                                                        v-model="
-                                                            selectedRecords
-                                                        "
-                                                        class="form-check-input"
-                                                    />
-                                                </td>
-                                                <td>
-                                                    {{ item.document_code }}
-                                                </td>
-                                                <td>
-                                                    {{ item.tram || "N/A" }}
-                                                </td>
-                                                <td>{{ item.title }}</td>
-                                                <td>
-                                                    {{
-                                                        item.investment_project
-                                                    }}
-                                                </td>
-                                                <td>
-                                                    {{
-                                                        item.khach_hang_ca_nhan_dt_mia ||
-                                                        "N/A"
-                                                    }}
-                                                </td>
-                                                <td>
-                                                    {{
-                                                        item.khach_hang_doanh_nghiep_dt_mia ||
-                                                        "N/A"
-                                                    }}
-                                                </td>
-                                                <td>
-                                                    {{ item.contract_number }}
-                                                </td>
-                                                <td>{{ item.service_type }}</td>
-                                                <td>
-                                                    {{
-                                                        item.hop_dong_cung_ung_dich_vu ||
-                                                        "N/A"
-                                                    }}
-                                                </td>
-                                                <td>
-                                                    {{
-                                                        item.disbursement_code ||
-                                                        "N/A"
-                                                    }}
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ item.installment }}
-                                                </td>
-                                                <td class="text-end fw-medium">
-                                                    {{
-                                                        formatCurrency(
-                                                            item.amount
-                                                        )
-                                                    }}
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                        <tfoot v-if="paymentDetails.length > 0">
-                                            <tr>
-                                                <td
-                                                    colspan="12"
-                                                    class="text-end fw-bold"
-                                                >
-                                                    Tổng tiền:
-                                                </td>
-                                                <td class="text-end fw-bold">
-                                                    {{
-                                                        formatCurrency(
-                                                            totalAmount
-                                                        )
-                                                    }}
-                                                </td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                    <!-- Pagination -->
-                                    <div
-                                        class="pagination-wrapper mt-4 d-flex justify-content-between align-items-center"
+                                    <div class="fw-bold">
+                                        {{ paymentDetails.length }}
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <small class="text-white-50"
+                                        >Tổng tiền</small
                                     >
-                                        <div class="pagination-info text-muted">
-                                            <small
-                                                >Hiển thị
-                                                {{
-                                                    paginatedPaymentDetails.from
-                                                }}-{{
-                                                    paginatedPaymentDetails.to
-                                                }}
-                                                trên tổng số
-                                                {{
-                                                    filteredPaymentDetails.length
-                                                }}
-                                                bản ghi</small
-                                            >
-                                        </div>
-                                        <Bootstrap5Pagination
-                                            :data="paginatedPaymentDetails"
-                                            @pagination-change-page="
-                                                pageChanged
-                                            "
-                                            :limit="3"
-                                            :classes="paginationClasses"
-                                        />
+                                    <div class="fw-bold">
+                                        {{ formatCurrency(totalAmount) }}
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body text-center py-4" v-else>
-                            <button
-                                class="btn btn-outline-secondary"
-                                @click="togglePaymentDetails"
-                            >
-                                <i class="fas fa-eye me-1"></i> Hiển thị chi
-                                tiết hồ sơ thanh toán
-                            </button>
+                        <div class="card-body text-center py-5">
+                            <div class="payment-summary-content">
+                                <div class="summary-icon mb-3">
+                                    <i
+                                        class="fas fa-table fa-3x text-primary opacity-75"
+                                    ></i>
+                                </div>
+                                <h6 class="mb-3">
+                                    Quản lý chi tiết hồ sơ thanh toán
+                                </h6>
+                                <p class="text-muted mb-4">
+                                    Xem và quản lý danh sách biên bản nghiệm thu
+                                    dịch vụ trong phiếu trình thanh toán này
+                                </p>
+                                <button
+                                    class="btn btn-primary btn-lg px-4 py-2"
+                                    @click="openPaymentDetailsModal"
+                                >
+                                    <i class="fas fa-eye me-2"></i>
+                                    Hiển thị chi tiết hồ sơ thanh toán
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Phiếu đề nghị thanh toán table -->
-                    <div class="card mt-3">
+                    <!-- Phiếu đề nghị thanh toán - Summary Card -->
+                    <div class="card mt-3 payment-requests-summary-card">
                         <div
-                            class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center"
+                            class="card-header bg-gradient-success text-white d-flex justify-content-between align-items-center"
                         >
-                            <h5 class="card-title mb-0">
-                                <span
-                                    @click="togglePaymentRequests"
-                                    class="toggle-section cursor-pointer"
-                                >
-                                    <i
-                                        :class="
-                                            showPaymentRequests
-                                                ? 'fas fa-angle-down'
-                                                : 'fas fa-angle-right'
-                                        "
-                                        class="me-2 toggle-icon"
-                                    ></i>
-                                    Phiếu đề nghị thanh toán
-                                </span>
+                            <h5 class="card-title mb-0 text-white">
+                                <i class="fas fa-file-contract me-2"></i>
+                                Phiếu đề nghị thanh toán
                             </h5>
-                            <div
-                                class="card-actions"
-                                v-if="showPaymentRequests"
-                            >
-                                <span
-                                    class="import-data-btn"
-                                    title="Import data"
-                                    @click="openPaymentImportModal"
-                                >
-                                    <i class="fas fa-file-import"></i>
-                                </span>
-                                <span
-                                    class="export-excel-btn"
-                                    title="Export to Excel"
-                                    @click="exportPaymentRequestsToExcel"
-                                >
-                                    <i class="fas fa-file-excel"></i>
-                                </span>
-                                <span
-                                    class="reset-all-filters-btn"
-                                    title="Reset all filters"
-                                    @click="resetPaymentRequestFilters"
-                                >
-                                    <i class="fas fa-redo-alt"></i>
-                                </span>
-                                <span
-                                    class="edit-records-btn"
-                                    title="Edit selected records"
-                                    @click="editSelectedPaymentRecords"
-                                    :class="{
-                                        disabled:
-                                            selectedPaymentRequests.length ===
-                                            0,
-                                    }"
-                                >
-                                    <i class="fas fa-edit"></i>
-                                </span>
-                                <span
-                                    class="delete-records-btn"
-                                    title="Delete selected records"
-                                    @click="deleteSelectedPaymentRecords"
-                                    :class="{
-                                        disabled:
-                                            selectedPaymentRequests.length ===
-                                            0,
-                                    }"
-                                >
-                                    <i class="fas fa-trash"></i>
-                                </span>
-                                <span
-                                    class="add-records-btn"
-                                    title="Add new payment request"
-                                    @click="openAddPaymentRequestModal"
-                                >
-                                    <i class="fas fa-plus"></i>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="card-body" v-if="showPaymentRequests">
-                            <div class="table-container">
-                                <div class="table-responsive mt-2">
-                                    <table
-                                        class="table table-bordered table-hover align-middle"
-                                        v-resizable-columns="{
-                                            minWidth: 80,
-                                            saveState: true,
-                                            id: 'phieutrinhthanhtoan-details-PaymentRequests',
-                                            adjustTableWidth: false,
-                                        }"
+                            <div class="summary-stats d-flex gap-3">
+                                <div class="stat-item">
+                                    <small class="text-white-50"
+                                        >Tổng số phiếu</small
                                     >
-                                        <thead class="table-light text-center">
-                                            <tr>
-                                                <th>
-                                                    <input
-                                                        type="checkbox"
-                                                        :checked="
-                                                            isAllPaymentRequestsSelected
-                                                        "
-                                                        @change="
-                                                            toggleSelectAllPaymentRequests
-                                                        "
-                                                        class="form-check-input"
-                                                    />
-                                                </th>
-                                                <th style="width: 140px">
-                                                    Mã giải ngân
-                                                    <button
-                                                        @click="
-                                                            togglePaymentFilter(
-                                                                'disbursement_code'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    paymentFilters.disbursement_code,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activePaymentFilter ===
-                                                            'disbursement_code'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                paymentFilters.disbursement_code
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo mã..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetPaymentFilter(
-                                                                        'disbursement_code'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyPaymentFilter(
-                                                                        'disbursement_code'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-
-                                                <th style="width: 120px">
-                                                    Vụ đầu tư
-                                                    <button
-                                                        @click="
-                                                            togglePaymentFilter(
-                                                                'investment_project'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    selectedPaymentFilterValues.investment_project &&
-                                                                    selectedPaymentFilterValues
-                                                                        .investment_project
-                                                                        .length >
-                                                                        0,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activePaymentFilter ===
-                                                            'investment_project'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <div
-                                                            class="max-h-40 overflow-y-auto mb-2"
-                                                        >
-                                                            <div
-                                                                v-for="option in uniquePaymentValues.investment_project"
-                                                                :key="option"
-                                                                class="flex items-center mb-2"
-                                                            >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    :id="`payment-investment-${option}`"
-                                                                    :value="
-                                                                        option
-                                                                    "
-                                                                    v-model="
-                                                                        selectedPaymentFilterValues.investment_project
-                                                                    "
-                                                                    class="mr-2 rounded text-green-500 focus:ring-green-500"
-                                                                />
-                                                                <label
-                                                                    :for="`payment-investment-${option}`"
-                                                                    class="select-none"
-                                                                    >{{
-                                                                        option
-                                                                    }}</label
-                                                                >
-                                                            </div>
-                                                        </div>
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetPaymentFilter(
-                                                                        'investment_project'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyPaymentFilter(
-                                                                        'investment_project'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-                                                <th style="width: 150px">
-                                                    Loại thanh toán
-                                                    <button
-                                                        @click="
-                                                            togglePaymentFilter(
-                                                                'payment_type'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    selectedPaymentFilterValues.payment_type &&
-                                                                    selectedPaymentFilterValues
-                                                                        .payment_type
-                                                                        .length >
-                                                                        0,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activePaymentFilter ===
-                                                            'payment_type'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <div
-                                                            class="max-h-40 overflow-y-auto mb-2"
-                                                        >
-                                                            <div
-                                                                v-for="option in uniquePaymentValues.payment_type"
-                                                                :key="option"
-                                                                class="flex items-center mb-2"
-                                                            >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    :id="`payment-type-${option}`"
-                                                                    :value="
-                                                                        option
-                                                                    "
-                                                                    v-model="
-                                                                        selectedPaymentFilterValues.payment_type
-                                                                    "
-                                                                    class="mr-2 rounded text-green-500 focus:ring-green-500"
-                                                                />
-                                                                <label
-                                                                    :for="`payment-type-${option}`"
-                                                                    class="select-none"
-                                                                    >{{
-                                                                        option
-                                                                    }}</label
-                                                                >
-                                                            </div>
-                                                        </div>
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetPaymentFilter(
-                                                                        'payment_type'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyPaymentFilter(
-                                                                        'payment_type'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-                                                <th style="width: 170px">
-                                                    Khách hàng cá nhân
-                                                    <button
-                                                        @click="
-                                                            togglePaymentFilter(
-                                                                'individual_customer'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    paymentFilters.individual_customer,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activePaymentFilter ===
-                                                            'individual_customer'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                paymentFilters.individual_customer
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo khách hàng..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetPaymentFilter(
-                                                                        'individual_customer'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyPaymentFilter(
-                                                                        'individual_customer'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-                                                <th style="width: 120px">
-                                                    Mã KH cá nhân
-                                                    <button
-                                                        @click="
-                                                            togglePaymentFilter(
-                                                                'individual_customer_code'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    paymentFilters.individual_customer_code,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activePaymentFilter ===
-                                                            'individual_customer_code'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                paymentFilters.individual_customer_code
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo mã khách hàng..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetPaymentFilter(
-                                                                        'individual_customer_code'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyPaymentFilter(
-                                                                        'individual_customer_code'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-                                                <th style="width: 180px">
-                                                    Khách hàng doanh nghiệp
-                                                    <button
-                                                        @click="
-                                                            togglePaymentFilter(
-                                                                'corporate_customer'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    paymentFilters.corporate_customer,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activePaymentFilter ===
-                                                            'corporate_customer'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                paymentFilters.corporate_customer
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo doanh nghiệp..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetPaymentFilter(
-                                                                        'corporate_customer'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyPaymentFilter(
-                                                                        'corporate_customer'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-                                                <th style="width: 120px">
-                                                    Mã KH doanh nghiệp
-                                                    <button
-                                                        @click="
-                                                            togglePaymentFilter(
-                                                                'corporate_customer_code'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    paymentFilters.corporate_customer_code,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activePaymentFilter ===
-                                                            'corporate_customer_code'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                paymentFilters.corporate_customer_code
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo mã doanh nghiệp..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetPaymentFilter(
-                                                                        'corporate_customer_code'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyPaymentFilter(
-                                                                        'corporate_customer_code'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-                                                <th style="width: 140px">
-                                                    Tổng tiền
-                                                </th>
-                                                <th style="width: 140px">
-                                                    Tổng tiền tạm giữ
-                                                </th>
-                                                <th style="width: 140px">
-                                                    Tổng tiền khấu trừ
-                                                </th>
-                                                <th style="width: 140px">
-                                                    Tổng tiền lãi suất
-                                                </th>
-                                                <th style="width: 140px">
-                                                    Tổng tiền thanh toán còn lại
-                                                </th>
-                                                <th style="width: 120px">
-                                                    Ngày thanh toán
-                                                    <button
-                                                        @click="
-                                                            togglePaymentFilter(
-                                                                'payment_date'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    paymentFilters.payment_date,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activePaymentFilter ===
-                                                            'payment_date'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="date"
-                                                            v-model="
-                                                                paymentFilters.payment_date
-                                                            "
-                                                            class="form-control mb-2"
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetPaymentFilter(
-                                                                        'payment_date'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyPaymentFilter(
-                                                                        'payment_date'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-                                                <th style="width: 120px">
-                                                    Số tờ trình
-                                                    <button
-                                                        @click="
-                                                            togglePaymentFilter(
-                                                                'proposal_number'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    paymentFilters.proposal_number,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activePaymentFilter ===
-                                                            'proposal_number'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                paymentFilters.proposal_number
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo số tờ trình..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetPaymentFilter(
-                                                                        'proposal_number'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyPaymentFilter(
-                                                                        'proposal_number'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-                                                <th style="width: 80px">
-                                                    Đợt thanh toán
-                                                    <button
-                                                        @click="
-                                                            togglePaymentFilter(
-                                                                'installment'
-                                                            )
-                                                        "
-                                                        class="filter-btn"
-                                                    >
-                                                        <i
-                                                            class="fas fa-filter"
-                                                            :class="{
-                                                                'text-green-500':
-                                                                    paymentFilters.installment,
-                                                            }"
-                                                        ></i>
-                                                    </button>
-                                                    <div
-                                                        v-if="
-                                                            activePaymentFilter ===
-                                                            'installment'
-                                                        "
-                                                        class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            v-model="
-                                                                paymentFilters.installment
-                                                            "
-                                                            class="form-control mb-2"
-                                                            placeholder="Lọc theo đợt..."
-                                                        />
-                                                        <div
-                                                            class="flex justify-between"
-                                                        >
-                                                            <button
-                                                                @click="
-                                                                    resetPaymentFilter(
-                                                                        'installment'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-light"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    applyPaymentFilter(
-                                                                        'installment'
-                                                                    )
-                                                                "
-                                                                class="btn btn-sm btn-success"
-                                                            >
-                                                                Apply
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr
-                                                v-if="
-                                                    paginatedPaymentRequests
-                                                        .data.length === 0
-                                                "
-                                            >
-                                                <td
-                                                    colspan="16"
-                                                    class="text-center py-4"
-                                                >
-                                                    <div class="empty-state">
-                                                        <i
-                                                            class="fas fa-file-invoice empty-icon"
-                                                        ></i>
-                                                        <p>
-                                                            Chưa có dữ liệu
-                                                            phiếu đề nghị thanh
-                                                            toán
-                                                        </p>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            <tr
-                                                v-for="(
-                                                    item, index
-                                                ) in paginatedPaymentRequests.data"
-                                                :key="index"
-                                            >
-                                                <td class="text-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        :value="
-                                                            item.disbursement_code
-                                                        "
-                                                        v-model="
-                                                            selectedPaymentRequests
-                                                        "
-                                                        class="form-check-input"
-                                                    />
-                                                </td>
-                                                <td>
-                                                    {{ item.disbursement_code }}
-                                                </td>
-
-                                                <td>
-                                                    {{
-                                                        item.investment_project
-                                                    }}
-                                                </td>
-                                                <td>{{ item.payment_type }}</td>
-                                                <td>
-                                                    {{
-                                                        item.individual_customer ||
-                                                        "N/A"
-                                                    }}
-                                                </td>
-                                                <td>
-                                                    {{
-                                                        item.individual_customer_code ||
-                                                        "N/A"
-                                                    }}
-                                                </td>
-                                                <td>
-                                                    {{
-                                                        item.corporate_customer ||
-                                                        "N/A"
-                                                    }}
-                                                </td>
-                                                <td>
-                                                    {{
-                                                        item.corporate_customer_code ||
-                                                        "N/A"
-                                                    }}
-                                                </td>
-                                                <td class="text-end fw-medium">
-                                                    {{
-                                                        formatCurrency(
-                                                            item.total_amount
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td class="text-end fw-medium">
-                                                    {{
-                                                        formatCurrency(
-                                                            item.total_hold_amount
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td class="text-end fw-medium">
-                                                    {{
-                                                        formatCurrency(
-                                                            item.total_deduction
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td class="text-end fw-medium">
-                                                    {{
-                                                        formatCurrency(
-                                                            item.total_interest
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td class="text-end fw-medium">
-                                                    {{
-                                                        formatCurrency(
-                                                            item.total_remaining
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td>
-                                                    {{
-                                                        formatDate(
-                                                            item.payment_date
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td>
-                                                    {{ item.proposal_number }}
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ item.installment }}
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                        <tfoot
-                                            v-if="paymentRequests.length > 0"
-                                        >
-                                            <tr>
-                                                <td
-                                                    colspan="8"
-                                                    class="text-end fw-bold"
-                                                >
-                                                    Tổng cộng:
-                                                </td>
-                                                <td class="text-end fw-bold">
-                                                    {{
-                                                        formatCurrency(
-                                                            totalPaymentAmount
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td class="text-end fw-bold">
-                                                    {{
-                                                        formatCurrency(
-                                                            totalHoldAmount
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td class="text-end fw-bold">
-                                                    {{
-                                                        formatCurrency(
-                                                            totalDeductionAmount
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td class="text-end fw-bold">
-                                                    {{
-                                                        formatCurrency(
-                                                            totalInterestAmount
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td class="text-end fw-bold">
-                                                    {{
-                                                        formatCurrency(
-                                                            totalRemainingAmount
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td colspan="3"></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                    <!-- Pagination for payment requests -->
-                                    <div
-                                        class="pagination-wrapper mt-4 d-flex justify-content-between align-items-center"
+                                    <div class="fw-bold">
+                                        {{ paymentRequests.length }}
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <small class="text-white-50"
+                                        >Tổng tiền thanh toán</small
                                     >
-                                        <div class="pagination-info text-muted">
-                                            <small
-                                                >Hiển thị
-                                                {{
-                                                    paginatedPaymentRequests.from
-                                                }}-{{
-                                                    paginatedPaymentRequests.to
-                                                }}
-                                                trên tổng số
-                                                {{
-                                                    filteredPaymentRequests.length
-                                                }}
-                                                bản ghi</small
-                                            >
-                                        </div>
-                                        <Bootstrap5Pagination
-                                            :data="paginatedPaymentRequests"
-                                            @pagination-change-page="
-                                                paymentPageChanged
-                                            "
-                                            :limit="3"
-                                            :classes="paginationClasses"
-                                        />
+                                    <div class="fw-bold">
+                                        {{ formatCurrency(totalPaymentAmount) }}
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <small class="text-white-50"
+                                        >Tổng tiền còn lại</small
+                                    >
+                                    <div class="fw-bold">
+                                        {{
+                                            formatCurrency(totalRemainingAmount)
+                                        }}
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body text-center py-4" v-else>
-                            <button
-                                class="btn btn-outline-secondary"
-                                @click="togglePaymentRequests"
-                            >
-                                <i class="fas fa-eye me-1"></i> Hiển thị phiếu
-                                đề nghị thanh toán
-                            </button>
+                        <div class="card-body text-center py-5">
+                            <div class="payment-summary-content">
+                                <div class="summary-icon mb-3">
+                                    <i
+                                        class="fas fa-file-contract fa-3x text-success opacity-75"
+                                    ></i>
+                                </div>
+                                <h6 class="mb-3">
+                                    Quản lý phiếu đề nghị thanh toán
+                                </h6>
+                                <p class="text-muted mb-4">
+                                    Xem và quản lý danh sách phiếu đề nghị thanh
+                                    toán trong phiếu trình này
+                                </p>
+                                <button
+                                    class="btn btn-success btn-lg px-4 py-2"
+                                    @click="openPaymentRequestsModal"
+                                >
+                                    <i class="fas fa-eye me-2"></i>
+                                    Hiển thị phiếu đề nghị thanh toán
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -2866,7 +1041,1201 @@
             </PerfectScrollbar>
         </div>
     </div>
+    <!-- Payment Requests Modal -->
+    <div
+        class="modal fade"
+        id="paymentRequestsModal"
+        tabindex="-1"
+        aria-labelledby="paymentRequestsModalLabel"
+        aria-hidden="true"
+        data-bs-backdrop="static"
+        data-bs-keyboard="false"
+    >
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5
+                        class="modal-title text-white"
+                        id="paymentRequestsModalLabel"
+                    >
+                        <i class="fas fa-file-contract me-2"></i>
+                        Phiếu đề nghị thanh toán - {{ document.payment_code }}
+                    </h5>
+                    <div class="modal-header-stats d-flex gap-4 me-3">
+                        <div class="stat-badge">
+                            <i class="fas fa-list-ol me-1"></i>
+                            <span
+                                >{{
+                                    filteredPaymentRequests.length
+                                }}
+                                phiếu</span
+                            >
+                        </div>
+                        <div class="stat-badge">
+                            <i class="fas fa-money-bill-wave me-1"></i>
+                            <span>{{
+                                formatCurrency(totalPaymentAmount)
+                            }}</span>
+                        </div>
+                        <div class="stat-badge">
+                            <i class="fas fa-calculator me-1"></i>
+                            <span>{{
+                                formatCurrency(totalRemainingAmount)
+                            }}</span>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        class="btn-close btn-close-white"
+                        @click="closePaymentRequestsModal"
+                        aria-label="Close"
+                    ></button>
+                </div>
 
+                <div class="modal-body p-0">
+                    <!-- Enhanced Action Toolbar with Search -->
+                    <div class="action-toolbar bg-light border-bottom p-3">
+                        <div class="row align-items-center">
+                            <!-- Search Section -->
+                            <div class="col-md-4 mb-2 mb-md-0">
+                                <div class="search-container">
+                                    <div
+                                        class="search-input-wrapper position-relative"
+                                    >
+                                        <input
+                                            type="text"
+                                            class="form-control search-input"
+                                            v-model="paymentSearchQuery"
+                                            @input="performPaymentSearch"
+                                            placeholder="Tìm kiếm mã giải ngân, khách hàng..."
+                                            autocomplete="off"
+                                        />
+                                        <i
+                                            class="fas fa-search search-icon"
+                                        ></i>
+                                        <button
+                                            v-if="paymentSearchQuery"
+                                            @click="clearPaymentSearch"
+                                            class="btn btn-sm btn-link search-clear"
+                                            type="button"
+                                        >
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div
+                                        v-if="paymentSearchQuery"
+                                        class="search-info mt-1"
+                                    >
+                                        <small class="text-muted">
+                                            Tìm thấy
+                                            {{ filteredPaymentRequests.length }}
+                                            kết quả cho "{{
+                                                paymentSearchQuery
+                                            }}"
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="col-md-4 mb-2 mb-md-0">
+                                <div
+                                    class="d-flex gap-2 justify-content-center"
+                                >
+                                    <button
+                                        v-if="
+                                            hasPermission(
+                                                'add_phieu_trinh_thanhtoan_dv'
+                                            )
+                                        "
+                                        class="btn btn-success btn-sm"
+                                        title="Thêm phiếu đề nghị"
+                                        @click="openAddPaymentRequestModal"
+                                    >
+                                        <i class="fas fa-plus me-1"></i>
+                                        Thêm
+                                    </button>
+                                    <button
+                                        v-if="
+                                            hasPermission(
+                                                'import_phieu_trinh_thanhtoan_dv'
+                                            )
+                                        "
+                                        class="btn btn-primary btn-sm"
+                                        title="Import dữ liệu"
+                                        @click="openPaymentImportModal"
+                                    >
+                                        <i class="fas fa-file-import me-1"></i>
+                                        Import
+                                    </button>
+                                    <button
+                                        v-if="
+                                            hasPermission(
+                                                'export_phieu_trinh_thanhtoan_dv'
+                                            )
+                                        "
+                                        class="btn btn-success btn-sm"
+                                        title="Export Excel"
+                                        @click="exportPaymentRequestsToExcel"
+                                    >
+                                        <i class="fas fa-file-excel me-1"></i>
+                                        Excel
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Selection Actions -->
+                            <div class="col-md-4">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <button
+                                        v-if="
+                                            hasPermission(
+                                                'edit_phieu_trinh_thanhtoan_dv'
+                                            )
+                                        "
+                                        class="btn btn-warning btn-sm"
+                                        title="Chỉnh sửa phiếu đã chọn"
+                                        @click="editSelectedPaymentRecords"
+                                        :disabled="
+                                            selectedPaymentRequests.length === 0
+                                        "
+                                    >
+                                        <i class="fas fa-edit me-1"></i>
+                                        Sửa ({{
+                                            selectedPaymentRequests.length
+                                        }})
+                                    </button>
+                                    <button
+                                        v-if="
+                                            hasPermission(
+                                                'delete_phieu_trinh_thanhtoan_dv'
+                                            )
+                                        "
+                                        class="btn btn-danger btn-sm"
+                                        title="Xóa phiếu đã chọn"
+                                        @click="deleteSelectedPaymentRecords"
+                                        :disabled="
+                                            selectedPaymentRequests.length === 0
+                                        "
+                                    >
+                                        <i class="fas fa-trash me-1"></i>
+                                        Xóa ({{
+                                            selectedPaymentRequests.length
+                                        }})
+                                    </button>
+                                    <button
+                                        class="btn btn-secondary btn-sm"
+                                        title="Reset tất cả"
+                                        @click="resetAllPaymentFiltersAndSearch"
+                                    >
+                                        <i class="fas fa-redo-alt me-1"></i>
+                                        Reset
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Filters Row -->
+                        <div class="row mt-2" v-if="showPaymentAdvancedFilters">
+                            <div class="col-12">
+                                <div
+                                    class="advanced-filters d-flex gap-2 flex-wrap"
+                                >
+                                    <!-- Quick Filter Buttons -->
+                                    <button
+                                        class="btn btn-outline-primary btn-sm"
+                                        :class="{
+                                            active:
+                                                paymentQuickFilter ===
+                                                'individual_customers',
+                                        }"
+                                        @click="
+                                            applyPaymentQuickFilter(
+                                                'individual_customers'
+                                            )
+                                        "
+                                    >
+                                        <i class="fas fa-user me-1"></i>
+                                        Khách hàng cá nhân
+                                    </button>
+                                    <button
+                                        class="btn btn-outline-warning btn-sm"
+                                        :class="{
+                                            active:
+                                                paymentQuickFilter ===
+                                                'corporate_customers',
+                                        }"
+                                        @click="
+                                            applyPaymentQuickFilter(
+                                                'corporate_customers'
+                                            )
+                                        "
+                                    >
+                                        <i class="fas fa-building me-1"></i>
+                                        Khách hàng doanh nghiệp
+                                    </button>
+                                    <button
+                                        class="btn btn-outline-info btn-sm"
+                                        :class="{
+                                            active:
+                                                paymentQuickFilter ===
+                                                'high_value',
+                                        }"
+                                        @click="
+                                            applyPaymentQuickFilter(
+                                                'high_value'
+                                            )
+                                        "
+                                    >
+                                        <i class="fas fa-dollar-sign me-1"></i>
+                                        Giá trị cao (&gt; 1 tỷ)
+                                    </button>
+                                    <button
+                                        class="btn btn-outline-secondary btn-sm"
+                                        @click="clearPaymentQuickFilters"
+                                    >
+                                        <i class="fas fa-times me-1"></i>
+                                        Xóa bộ lọc
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Toggle Advanced Filters -->
+                        <div class="row mt-2">
+                            <div class="col-12 text-center">
+                                <button
+                                    class="btn btn-link btn-sm text-muted"
+                                    @click="
+                                        showPaymentAdvancedFilters =
+                                            !showPaymentAdvancedFilters
+                                    "
+                                >
+                                    <i
+                                        class="fas"
+                                        :class="
+                                            showPaymentAdvancedFilters
+                                                ? 'fa-chevron-up'
+                                                : 'fa-chevron-down'
+                                        "
+                                    ></i>
+                                    {{
+                                        showPaymentAdvancedFilters
+                                            ? "Ẩn"
+                                            : "Hiện"
+                                    }}
+                                    bộ lọc nâng cao
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table Container -->
+                    <div class="table-container-modal">
+                        <div class="table-responsive">
+                            <table
+                                class="table table-bordered table-hover align-middle mb-0"
+                                v-resizable-columns="{
+                                    minWidth: 80,
+                                    saveState: true,
+                                    id: 'payment-requests-table-modal',
+                                    adjustTableWidth: false,
+                                }"
+                                style="table-layout: fixed"
+                            >
+                                <thead
+                                    class="table-dark text-center sticky-top"
+                                >
+                                    <tr>
+                                        <th style="width: 50px">
+                                            <div class="form-check">
+                                                <input
+                                                    type="checkbox"
+                                                    class="form-check-input"
+                                                    :checked="
+                                                        isAllPaymentRequestsSelected
+                                                    "
+                                                    @change="
+                                                        toggleSelectAllPaymentRequests
+                                                    "
+                                                />
+                                            </div>
+                                        </th>
+                                        <th style="width: 170px">
+                                            Mã giải ngân
+                                        </th>
+                                        <th style="width: 140px">Vụ đầu tư</th>
+                                        <th style="width: 150px">
+                                            Loại thanh toán
+                                        </th>
+                                        <th style="width: 180px">KH Cá nhân</th>
+                                        <th style="width: 140px">
+                                            Mã KH cá nhân
+                                        </th>
+                                        <th style="width: 180px">
+                                            KH Doanh nghiệp
+                                        </th>
+                                        <th style="width: 140px">
+                                            Mã KH doanh nghiệp
+                                        </th>
+                                        <th style="width: 140px">Tổng tiền</th>
+                                        <th style="width: 140px">
+                                            Tổng tiền tạm giữ
+                                        </th>
+                                        <th style="width: 140px">
+                                            Tổng tiền khấu trừ
+                                        </th>
+                                        <th style="width: 140px">
+                                            Tổng tiền lãi suất
+                                        </th>
+                                        <th style="width: 140px">
+                                            Tổng tiền còn lại
+                                        </th>
+                                        <th style="width: 120px">
+                                            Ngày thanh toán
+                                        </th>
+                                        <th style="width: 120px">
+                                            Số tờ trình
+                                        </th>
+                                        <th style="width: 80px">Đợt TT</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-if="
+                                            paginatedPaymentRequests.data
+                                                .length === 0
+                                        "
+                                    >
+                                        <td
+                                            colspan="16"
+                                            class="text-center py-5"
+                                        >
+                                            <div class="empty-state">
+                                                <i
+                                                    class="fas fa-search fa-3x text-muted mb-3"
+                                                    v-if="paymentSearchQuery"
+                                                ></i>
+                                                <i
+                                                    class="fas fa-file-contract fa-3x text-muted mb-3"
+                                                    v-else
+                                                ></i>
+                                                <h6 class="text-muted">
+                                                    {{
+                                                        paymentSearchQuery
+                                                            ? "Không tìm thấy kết quả"
+                                                            : "Không có dữ liệu"
+                                                    }}
+                                                </h6>
+                                                <p class="text-muted mb-0">
+                                                    {{
+                                                        paymentSearchQuery
+                                                            ? `Không có kết quả nào khớp với "${paymentSearchQuery}"`
+                                                            : "Chưa có phiếu đề nghị thanh toán nào trong phiếu trình này"
+                                                    }}
+                                                </p>
+                                                <button
+                                                    v-if="paymentSearchQuery"
+                                                    @click="clearPaymentSearch"
+                                                    class="btn btn-outline-success mt-2"
+                                                >
+                                                    <i
+                                                        class="fas fa-times me-1"
+                                                    ></i>
+                                                    Xóa tìm kiếm
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr
+                                        v-for="(
+                                            item, index
+                                        ) in paginatedPaymentRequests.data"
+                                        :key="index"
+                                        :class="{
+                                            'table-warning':
+                                                selectedPaymentRequests.includes(
+                                                    item.disbursement_code
+                                                ),
+                                            'search-highlight':
+                                                isPaymentHighlighted(item),
+                                        }"
+                                    >
+                                        <td class="text-center">
+                                            <div class="form-check">
+                                                <input
+                                                    type="checkbox"
+                                                    :value="
+                                                        item.disbursement_code
+                                                    "
+                                                    v-model="
+                                                        selectedPaymentRequests
+                                                    "
+                                                    class="form-check-input"
+                                                />
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <a
+                                                :href="`/Details_Phieudenghithanhtoandichvu/${item.disbursement_code}`"
+                                                target="_blank"
+                                                class="fw-medium text-primary text-decoration-none"
+                                                style="cursor: pointer"
+                                                :title="`Xem chi tiết ${item.disbursement_code}`"
+                                                v-html="
+                                                    highlightPaymentSearchTerm(
+                                                        item.disbursement_code
+                                                    )
+                                                "
+                                            ></a>
+                                        </td>
+                                        <td
+                                            v-html="
+                                                highlightPaymentSearchTerm(
+                                                    item.investment_project
+                                                )
+                                            "
+                                        ></td>
+                                        <td>
+                                            <span class="badge bg-info">{{
+                                                item.payment_type
+                                            }}</span>
+                                        </td>
+                                        <td
+                                            v-html="
+                                                highlightPaymentSearchTerm(
+                                                    item.individual_customer ||
+                                                        'N/A'
+                                                )
+                                            "
+                                        ></td>
+                                        <td>
+                                            {{
+                                                item.individual_customer_code ||
+                                                "N/A"
+                                            }}
+                                        </td>
+                                        <td
+                                            v-html="
+                                                highlightPaymentSearchTerm(
+                                                    item.corporate_customer ||
+                                                        'N/A'
+                                                )
+                                            "
+                                        ></td>
+                                        <td>
+                                            {{
+                                                item.corporate_customer_code ||
+                                                "N/A"
+                                            }}
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="fw-bold text-success">
+                                                {{
+                                                    formatCurrency(
+                                                        item.total_amount
+                                                    )
+                                                }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span
+                                                class="fw-medium text-warning"
+                                            >
+                                                {{
+                                                    formatCurrency(
+                                                        item.total_hold_amount
+                                                    )
+                                                }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="fw-medium text-danger">
+                                                {{
+                                                    formatCurrency(
+                                                        item.total_deduction
+                                                    )
+                                                }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="fw-medium text-info">
+                                                {{
+                                                    formatCurrency(
+                                                        item.total_interest
+                                                    )
+                                                }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="fw-bold text-primary">
+                                                {{
+                                                    formatCurrency(
+                                                        item.total_remaining
+                                                    )
+                                                }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary">
+                                                {{
+                                                    formatDate(
+                                                        item.payment_date
+                                                    )
+                                                }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            {{ item.proposal_number }}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary">{{
+                                                item.installment
+                                            }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot
+                                    v-if="paymentRequests.length > 0"
+                                    class="table-light"
+                                >
+                                    <tr>
+                                        <td
+                                            colspan="8"
+                                            class="text-end fw-bold"
+                                        >
+                                            Tổng cộng ({{
+                                                filteredPaymentRequests.length
+                                            }}
+                                            phiếu):
+                                        </td>
+                                        <td
+                                            class="text-end fw-bold text-success"
+                                        >
+                                            {{
+                                                formatCurrency(
+                                                    totalPaymentAmount
+                                                )
+                                            }}
+                                        </td>
+                                        <td
+                                            class="text-end fw-bold text-warning"
+                                        >
+                                            {{
+                                                formatCurrency(totalHoldAmount)
+                                            }}
+                                        </td>
+                                        <td
+                                            class="text-end fw-bold text-danger"
+                                        >
+                                            {{
+                                                formatCurrency(
+                                                    totalDeductionAmount
+                                                )
+                                            }}
+                                        </td>
+                                        <td class="text-end fw-bold text-info">
+                                            {{
+                                                formatCurrency(
+                                                    totalInterestAmount
+                                                )
+                                            }}
+                                        </td>
+                                        <td
+                                            class="text-end fw-bold text-primary"
+                                        >
+                                            {{
+                                                formatCurrency(
+                                                    totalRemainingAmount
+                                                )
+                                            }}
+                                        </td>
+                                        <td colspan="3"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer with Pagination -->
+                <div class="modal-footer bg-light border-top">
+                    <div class="row w-100 align-items-center">
+                        <div class="col-md-6">
+                            <div class="pagination-info text-muted">
+                                <small>
+                                    Hiển thị
+                                    {{ paginatedPaymentRequests.from }}-{{
+                                        paginatedPaymentRequests.to
+                                    }}
+                                    trên tổng số
+                                    {{ filteredPaymentRequests.length }} phiếu
+                                    {{
+                                        paymentSearchQuery
+                                            ? `(đã lọc từ ${paymentRequests.length} phiếu)`
+                                            : ""
+                                    }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex justify-content-end">
+                            <Bootstrap5Pagination
+                                :data="paginatedPaymentRequests"
+                                @pagination-change-page="paymentPageChanged"
+                                :limit="3"
+                                :classes="paginationClasses"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Details Modal -->
+
+    <div
+        class="modal fade"
+        id="paymentDetailsModal"
+        tabindex="-1"
+        aria-labelledby="paymentDetailsModalLabel"
+        aria-hidden="true"
+        data-bs-backdrop="static"
+        data-bs-keyboard="false"
+    >
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5
+                        class="modal-title text-white"
+                        id="paymentDetailsModalLabel"
+                    >
+                        <i class="fas fa-file-invoice-dollar me-2"></i>
+                        Chi tiết hồ sơ thanh toán - {{ document.payment_code }}
+                    </h5>
+                    <div class="modal-header-stats d-flex gap-4 me-3">
+                        <div class="stat-badge">
+                            <i class="fas fa-list-ol me-1"></i>
+                            <span
+                                >{{ filteredPaymentDetails.length }} bản
+                                ghi</span
+                            >
+                        </div>
+                        <div class="stat-badge">
+                            <i class="fas fa-money-bill-wave me-1"></i>
+                            <span>{{ formatCurrency(totalAmount) }}</span>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        class="btn-close btn-close-white"
+                        @click="closePaymentDetailsModal"
+                        aria-label="Close"
+                    ></button>
+                </div>
+
+                <div class="modal-body p-0">
+                    <!-- Enhanced Action Toolbar with Search -->
+                    <div class="action-toolbar bg-light border-bottom p-3">
+                        <div class="row align-items-center">
+                            <!-- Search Section -->
+                            <div class="col-md-4 mb-2 mb-md-0">
+                                <div class="search-container">
+                                    <div
+                                        class="search-input-wrapper position-relative"
+                                    >
+                                        <input
+                                            type="text"
+                                            class="form-control search-input"
+                                            v-model="modalSearchQuery"
+                                            @input="performModalSearch"
+                                            placeholder="Tìm kiếm mã nghiệm thu, tiêu đề, khách hàng..."
+                                            autocomplete="off"
+                                        />
+                                        <i
+                                            class="fas fa-search search-icon"
+                                        ></i>
+                                        <button
+                                            v-if="modalSearchQuery"
+                                            @click="clearModalSearch"
+                                            class="btn btn-sm btn-link search-clear"
+                                            type="button"
+                                        >
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div
+                                        v-if="modalSearchQuery"
+                                        class="search-info mt-1"
+                                    >
+                                        <small class="text-muted">
+                                            Tìm thấy
+                                            {{ filteredPaymentDetails.length }}
+                                            kết quả cho "{{ modalSearchQuery }}"
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="col-md-4 mb-2 mb-md-0">
+                                <div
+                                    class="d-flex gap-2 justify-content-center"
+                                >
+                                    <button
+                                        v-if="
+                                            hasPermission(
+                                                'add_phieu_trinh_thanhtoan_dv'
+                                            )
+                                        "
+                                        class="btn btn-success btn-sm"
+                                        title="Thêm biên bản mới"
+                                        @click="openAddReceiptModal"
+                                    >
+                                        <i class="fas fa-plus me-1"></i>
+                                        Thêm
+                                    </button>
+                                    <button
+                                        v-if="
+                                            hasPermission(
+                                                'import_phieu_trinh_thanhtoan_dv'
+                                            )
+                                        "
+                                        class="btn btn-primary btn-sm"
+                                        title="Import dữ liệu"
+                                        @click="openImportModal"
+                                    >
+                                        <i class="fas fa-file-import me-1"></i>
+                                        Import
+                                    </button>
+                                    <button
+                                        v-if="
+                                            hasPermission(
+                                                'export_phieu_trinh_thanhtoan_dv'
+                                            )
+                                        "
+                                        class="btn btn-success btn-sm"
+                                        title="Export Excel"
+                                        @click="exportToExcel"
+                                    >
+                                        <i class="fas fa-file-excel me-1"></i>
+                                        Excel
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Selection Actions -->
+                            <div class="col-md-4">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <button
+                                        v-if="
+                                            hasPermission(
+                                                'edit_phieu_trinh_thanhtoan_dv'
+                                            )
+                                        "
+                                        class="btn btn-warning btn-sm"
+                                        title="Chỉnh sửa bản ghi đã chọn"
+                                        @click="editSelectedRecords"
+                                        :disabled="selectedRecords.length === 0"
+                                    >
+                                        <i class="fas fa-edit me-1"></i>
+                                        Sửa ({{ selectedRecords.length }})
+                                    </button>
+                                    <button
+                                        v-if="
+                                            hasPermission(
+                                                'delete_phieu_trinh_thanhtoan_dv'
+                                            )
+                                        "
+                                        class="btn btn-danger btn-sm"
+                                        title="Xóa bản ghi đã chọn"
+                                        @click="deleteSelectedRecords"
+                                        :disabled="selectedRecords.length === 0"
+                                    >
+                                        <i class="fas fa-trash me-1"></i>
+                                        Xóa ({{ selectedRecords.length }})
+                                    </button>
+                                    <button
+                                        class="btn btn-secondary btn-sm"
+                                        title="Reset tất cả"
+                                        @click="resetAllFiltersAndSearch"
+                                    >
+                                        <i class="fas fa-redo-alt me-1"></i>
+                                        Reset
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Filters Row (optional) -->
+                        <div class="row mt-2" v-if="showAdvancedFilters">
+                            <div class="col-12">
+                                <div
+                                    class="advanced-filters d-flex gap-2 flex-wrap"
+                                >
+                                    <!-- Quick Filter Buttons -->
+                                    <button
+                                        class="btn btn-outline-primary btn-sm"
+                                        :class="{
+                                            active:
+                                                quickFilter ===
+                                                'has_disbursement',
+                                        }"
+                                        @click="
+                                            applyQuickFilter('has_disbursement')
+                                        "
+                                    >
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        Có mã giải ngân
+                                    </button>
+                                    <button
+                                        class="btn btn-outline-warning btn-sm"
+                                        :class="{
+                                            active:
+                                                quickFilter ===
+                                                'no_disbursement',
+                                        }"
+                                        @click="
+                                            applyQuickFilter('no_disbursement')
+                                        "
+                                    >
+                                        <i
+                                            class="fas fa-exclamation-circle me-1"
+                                        ></i>
+                                        Chưa có mã giải ngân
+                                    </button>
+                                    <button
+                                        class="btn btn-outline-info btn-sm"
+                                        :class="{
+                                            active:
+                                                quickFilter === 'high_amount',
+                                        }"
+                                        @click="applyQuickFilter('high_amount')"
+                                    >
+                                        <i class="fas fa-dollar-sign me-1"></i>
+                                        Giá trị cao (&gt; 1 tỷ)
+                                    </button>
+                                    <button
+                                        class="btn btn-outline-secondary btn-sm"
+                                        @click="clearQuickFilters"
+                                    >
+                                        <i class="fas fa-times me-1"></i>
+                                        Xóa bộ lọc
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Toggle Advanced Filters -->
+                        <div class="row mt-2">
+                            <div class="col-12 text-center">
+                                <button
+                                    class="btn btn-link btn-sm text-muted"
+                                    @click="
+                                        showAdvancedFilters =
+                                            !showAdvancedFilters
+                                    "
+                                >
+                                    <i
+                                        class="fas"
+                                        :class="
+                                            showAdvancedFilters
+                                                ? 'fa-chevron-up'
+                                                : 'fa-chevron-down'
+                                        "
+                                    ></i>
+                                    {{ showAdvancedFilters ? "Ẩn" : "Hiện" }} bộ
+                                    lọc nâng cao
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table Container -->
+                    <div class="table-container-modal">
+                        <div class="table-responsive">
+                            <table
+                                class="table table-bordered table-hover align-middle mb-0"
+                                v-resizable-columns="{
+                                    minWidth: 80,
+                                    saveState: true,
+                                    id: 'phieutrinhthanhtoan-details-table-modal',
+                                    adjustTableWidth: false,
+                                }"
+                                style="table-layout: fixed"
+                            >
+                                <thead
+                                    class="table-dark text-center sticky-top"
+                                >
+                                    <tr>
+                                        <th style="width: 50px">
+                                            <div class="form-check">
+                                                <input
+                                                    type="checkbox"
+                                                    class="form-check-input"
+                                                    :checked="isAllSelected"
+                                                    @change="toggleSelectAll"
+                                                />
+                                            </div>
+                                        </th>
+                                        <th style="width: 170px">
+                                            Mã nghiệm thu
+                                        </th>
+                                        <th style="width: 130px">Trạm</th>
+                                        <th style="width: 200px">Tiêu đề</th>
+                                        <th style="width: 140px">Vụ đầu tư</th>
+                                        <th style="width: 180px">KH Cá nhân</th>
+                                        <th style="width: 180px">
+                                            KH Doanh nghiệp
+                                        </th>
+                                        <th style="width: 160px">
+                                            Hợp đồng đầu tư
+                                        </th>
+                                        <th style="width: 140px">
+                                            Hình thức DV
+                                        </th>
+                                        <th style="width: 180px">
+                                            Hợp đồng cung ứng DV
+                                        </th>
+                                        <th style="width: 160px">
+                                            Mã đề nghị giải ngân
+                                        </th>
+                                        <th style="width: 80px">Đợt TT</th>
+                                        <th style="width: 140px">Số tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-if="
+                                            paginatedPaymentDetails.data
+                                                .length === 0
+                                        "
+                                    >
+                                        <td
+                                            colspan="13"
+                                            class="text-center py-5"
+                                        >
+                                            <div class="empty-state">
+                                                <i
+                                                    class="fas fa-search fa-3x text-muted mb-3"
+                                                    v-if="modalSearchQuery"
+                                                ></i>
+                                                <i
+                                                    class="fas fa-inbox fa-3x text-muted mb-3"
+                                                    v-else
+                                                ></i>
+                                                <h6 class="text-muted">
+                                                    {{
+                                                        modalSearchQuery
+                                                            ? "Không tìm thấy kết quả"
+                                                            : "Không có dữ liệu"
+                                                    }}
+                                                </h6>
+                                                <p class="text-muted mb-0">
+                                                    {{
+                                                        modalSearchQuery
+                                                            ? `Không có kết quả nào khớp với "${modalSearchQuery}"`
+                                                            : "Chưa có biên bản nghiệm thu nào trong phiếu trình này"
+                                                    }}
+                                                </p>
+                                                <button
+                                                    v-if="modalSearchQuery"
+                                                    @click="clearModalSearch"
+                                                    class="btn btn-outline-primary mt-2"
+                                                >
+                                                    <i
+                                                        class="fas fa-times me-1"
+                                                    ></i>
+                                                    Xóa tìm kiếm
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr
+                                        v-for="(
+                                            item, index
+                                        ) in paginatedPaymentDetails.data"
+                                        :key="index"
+                                        :class="{
+                                            'table-warning':
+                                                selectedRecords.includes(
+                                                    item.document_code
+                                                ),
+                                            'search-highlight':
+                                                isHighlighted(item),
+                                        }"
+                                    >
+                                        <!-- ...existing table rows... -->
+                                        <td class="text-center">
+                                            <div class="form-check">
+                                                <input
+                                                    type="checkbox"
+                                                    :value="item.document_code"
+                                                    v-model="selectedRecords"
+                                                    class="form-check-input"
+                                                />
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <a
+                                                :href="`/Details_NghiemthuDV/${item.document_code}`"
+                                                target="_blank"
+                                                class="fw-medium text-primary text-decoration-none"
+                                                style="cursor: pointer"
+                                                :title="`Xem chi tiết ${item.document_code}`"
+                                                v-html="
+                                                    highlightSearchTerm(
+                                                        item.document_code
+                                                    )
+                                                "
+                                            ></a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{
+                                                item.tram || "N/A"
+                                            }}</span>
+                                        </td>
+                                        <td>
+                                            <div
+                                                class="text-truncate"
+                                                :title="item.title"
+                                                v-html="
+                                                    highlightSearchTerm(
+                                                        item.title
+                                                    )
+                                                "
+                                            ></div>
+                                        </td>
+                                        <td
+                                            v-html="
+                                                highlightSearchTerm(
+                                                    item.investment_project
+                                                )
+                                            "
+                                        ></td>
+                                        <td
+                                            v-html="
+                                                highlightSearchTerm(
+                                                    item.khach_hang_ca_nhan_dt_mia ||
+                                                        'N/A'
+                                                )
+                                            "
+                                        ></td>
+                                        <td
+                                            v-html="
+                                                highlightSearchTerm(
+                                                    item.khach_hang_doanh_nghiep_dt_mia ||
+                                                        'N/A'
+                                                )
+                                            "
+                                        ></td>
+                                        <td>{{ item.contract_number }}</td>
+                                        <td>{{ item.service_type }}</td>
+                                        <td>
+                                            {{
+                                                item.hop_dong_cung_ung_dich_vu ||
+                                                "N/A"
+                                            }}
+                                        </td>
+                                        <td>
+                                            <span
+                                                v-if="item.disbursement_code"
+                                                class="badge bg-success"
+                                            >
+                                                <a
+                                                    :href="`/Details_Phieudenghithanhtoandichvu/${item.disbursement_code}`"
+                                                    target="_blank"
+                                                    class="text-white text-decoration-none"
+                                                    style="cursor: pointer"
+                                                    :title="`Xem chi tiết ${item.disbursement_code}`"
+                                                    v-html="
+                                                        highlightSearchTerm(
+                                                            item.disbursement_code
+                                                        )
+                                                    "
+                                                ></a>
+                                            </span>
+                                            <span v-else class="text-muted"
+                                                >Chưa có</span
+                                            >
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info">{{
+                                                item.installment
+                                            }}</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="fw-bold text-success">
+                                                {{
+                                                    formatCurrency(item.amount)
+                                                }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot
+                                    v-if="paymentDetails.length > 0"
+                                    class="table-light"
+                                >
+                                    <tr>
+                                        <td
+                                            colspan="12"
+                                            class="text-end fw-bold"
+                                        >
+                                            Tổng cộng ({{
+                                                filteredPaymentDetails.length
+                                            }}
+                                            bản ghi):
+                                        </td>
+                                        <td
+                                            class="text-end fw-bold text-success"
+                                        >
+                                            {{
+                                                formatCurrency(
+                                                    totalFilteredAmount
+                                                )
+                                            }}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer with Pagination -->
+                <div class="modal-footer bg-light border-top">
+                    <div class="row w-100 align-items-center">
+                        <div class="col-md-6">
+                            <div class="pagination-info text-muted">
+                                <small>
+                                    Hiển thị
+                                    {{ paginatedPaymentDetails.from }}-{{
+                                        paginatedPaymentDetails.to
+                                    }}
+                                    trên tổng số
+                                    {{ filteredPaymentDetails.length }} bản ghi
+                                    {{
+                                        modalSearchQuery
+                                            ? `(đã lọc từ ${paymentDetails.length} bản ghi)`
+                                            : ""
+                                    }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex justify-content-end">
+                            <Bootstrap5Pagination
+                                :data="paginatedPaymentDetails"
+                                @pagination-change-page="pageChanged"
+                                :limit="3"
+                                :classes="paginationClasses"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Add this modal at the end of the template -->
     <!-- Edit Modal -->
     <div
@@ -2943,7 +2312,7 @@
         <div class="modal-dialog modal-md">
             <div class="modal-content">
                 <div class="modal-header bg-light">
-                    <h5 class="modal-title text-primary" id="importModalLabel">
+                    <h5 class="modal-title text-white" id="importModalLabel">
                         <i class="fas fa-file-import text-primary me-2"></i>
                         Import Data
                     </h5>
@@ -2956,8 +2325,8 @@
                     ></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info mb-3">
-                        <i class="fas fa-info-circle me-2"></i>
+                    <div class="alert alert-info mb-3 text-white">
+                        <i class="fas fa-info-circle me-2 text-white"></i>
                         <small
                             >Import data to update payment details. The file
                             should contain columns for Mã nghiệm thu and Mã đề
@@ -3286,6 +2655,7 @@
                                         }"
                                     >
                                         <td>{{ item.ma_nghiem_thu }}</td>
+
                                         <td>{{ item.tram }}</td>
                                         <td>{{ item.can_bo_nong_vu }}</td>
                                         <td>{{ item.vu_dau_tu }}</td>
@@ -3434,10 +2804,10 @@
             <div class="modal-content">
                 <div class="modal-header bg-light">
                     <h5
-                        class="modal-title text-primary"
+                        class="modal-title text-white"
                         id="paymentImportModalLabel"
                     >
-                        <i class="fas fa-file-import text-primary me-2"></i>
+                        <i class="fas fa-file-import text-white me-2"></i>
                         Import Phiếu đề nghị thanh toán
                     </h5>
                     <button
@@ -3555,156 +2925,476 @@
         tabindex="-1"
         aria-labelledby="addPaymentModalLabel"
         aria-hidden="true"
+        data-bs-backdrop="static"
+        data-bs-keyboard="false"
     >
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addPaymentModalLabel">
+                <div class="modal-header bg-success text-white">
+                    <h5
+                        class="modal-title text-white"
+                        id="addPaymentModalLabel"
+                    >
                         <i class="fas fa-plus me-2"></i>
                         Thêm phiếu đề nghị thanh toán
                     </h5>
                     <button
                         type="button"
-                        class="btn-close"
+                        class="btn-close btn-close-white"
                         data-bs-dismiss="modal"
                         aria-label="Close"
                     ></button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="disbursementCode" class="form-label"
-                            >Mã giải ngân
-                            <span class="text-danger">*</span></label
-                        >
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="disbursementCode"
-                            v-model="newPaymentRequest.ma_giai_ngan"
-                            placeholder="Nhập mã giải ngân"
-                            required
-                        />
-                    </div>
 
-                    <div class="mb-3">
-                        <label for="investmentProject" class="form-label"
-                            >Vụ đầu tư <span class="text-danger">*</span></label
-                        >
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="investmentProject"
-                            v-model="newPaymentRequest.vu_dau_tu"
-                            placeholder="Nhập vụ đầu tư"
-                            required
-                        />
-                    </div>
+                <div
+                    class="modal-body"
+                    style="max-height: 70vh; overflow-y: auto"
+                >
+                    <!-- Form Container -->
+                    <form @submit.prevent="addPaymentRequest">
+                        <div class="row">
+                            <!-- Left Column -->
+                            <div class="col-md-6">
+                                <!-- Mã giải ngân -->
+                                <div class="mb-3">
+                                    <label
+                                        for="disbursementCode"
+                                        class="form-label"
+                                    >
+                                        <i
+                                            class="fas fa-barcode me-1 text-primary"
+                                        ></i>
+                                        Mã giải ngân
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="disbursementCode"
+                                        v-model="newPaymentRequest.ma_giai_ngan"
+                                        placeholder="Nhập mã giải ngân"
+                                        required
+                                    />
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Mã định danh duy nhất cho phiếu đề nghị
+                                    </div>
+                                </div>
 
-                    <div class="mb-3">
-                        <label for="paymentType" class="form-label"
-                            >Loại thanh toán
-                            <span class="text-danger">*</span></label
-                        >
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="paymentType"
-                            v-model="newPaymentRequest.loai_thanh_toan"
-                            placeholder="Nhập loại thanh toán"
-                            required
-                        />
-                    </div>
+                                <!-- Vụ đầu tư -->
+                                <div class="mb-3">
+                                    <label
+                                        for="investmentProject"
+                                        class="form-label"
+                                    >
+                                        <i
+                                            class="fas fa-project-diagram me-1 text-info"
+                                        ></i>
+                                        Vụ đầu tư
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <select
+                                        class="form-select"
+                                        id="investmentProject"
+                                        v-model="newPaymentRequest.vu_dau_tu"
+                                        required
+                                    >
+                                        <option value="" disabled>
+                                            -- Chọn vụ đầu tư --
+                                        </option>
+                                        <option
+                                            v-for="project in investmentProjects"
+                                            :key="project.Ma_Vudautu"
+                                            :value="project.Ma_Vudautu"
+                                        >
+                                            {{ project.Ten_Vudautu }}
+                                        </option>
+                                    </select>
+                                    <div class="form-text">
+                                        <i class="fas fa-lightbulb me-1"></i>
+                                        Chọn vụ đầu tư liên quan
+                                    </div>
+                                </div>
 
-                    <div class="mb-3">
-                        <label for="individualCustomer" class="form-label"
-                            >Khách hàng cá nhân</label
-                        >
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="individualCustomer"
-                            v-model="newPaymentRequest.khach_hang_ca_nhan"
-                            placeholder="Nhập tên khách hàng cá nhân"
-                        />
-                    </div>
+                                <!-- Loại thanh toán -->
+                                <div class="mb-3">
+                                    <label for="paymentType" class="form-label">
+                                        <i
+                                            class="fas fa-credit-card me-1 text-warning"
+                                        ></i>
+                                        Loại thanh toán
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <select
+                                        class="form-select"
+                                        id="paymentType"
+                                        v-model="
+                                            newPaymentRequest.loai_thanh_toan
+                                        "
+                                        required
+                                    >
+                                        <option value="" disabled>
+                                            -- Chọn loại thanh toán --
+                                        </option>
+                                        <option value="Nghiệm thu dịch vụ">
+                                            Nghiệm thu dịch vụ
+                                        </option>
+                                        <option
+                                            value="Phiếu giao nhận hom giống"
+                                        >
+                                            Phiếu giao nhận hom giống
+                                        </option>
+                                    </select>
+                                    <div class="form-text">
+                                        <i class="fas fa-tag me-1"></i>
+                                        Phân loại hình thức thanh toán
+                                    </div>
+                                </div>
+                            </div>
 
-                    <div class="mb-3">
-                        <label for="individualCustomerCode" class="form-label"
-                            >Mã khách hàng cá nhân</label
-                        >
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="individualCustomerCode"
-                            v-model="newPaymentRequest.ma_khach_hang_ca_nhan"
-                            placeholder="Nhập mã khách hàng cá nhân"
-                        />
-                    </div>
+                            <!-- Right Column -->
+                            <div class="col-md-6">
+                                <!-- Khách hàng cá nhân Section -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary border-bottom pb-2">
+                                        <i class="fas fa-user me-2"></i>
+                                        Thông tin khách hàng cá nhân
+                                    </h6>
 
-                    <div class="mb-3">
-                        <label for="corporateCustomer" class="form-label"
-                            >Khách hàng doanh nghiệp</label
-                        >
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="corporateCustomer"
-                            v-model="newPaymentRequest.khach_hang_doanh_nghiep"
-                            placeholder="Nhập tên khách hàng doanh nghiệp"
-                        />
-                    </div>
+                                    <!-- Tên khách hàng cá nhân with search -->
+                                    <div class="mb-3">
+                                        <label
+                                            for="individualCustomer"
+                                            class="form-label"
+                                        >
+                                            Tên khách hàng cá nhân
+                                        </label>
+                                        <div class="position-relative">
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="individualCustomer"
+                                                v-model="
+                                                    newPaymentRequest.khach_hang_ca_nhan
+                                                "
+                                                @input="
+                                                    searchIndividualCustomers
+                                                "
+                                                placeholder="Nhập tên khách hàng cá nhân"
+                                                autocomplete="off"
+                                            />
+                                            <!-- Individual customers dropdown -->
+                                            <div
+                                                v-if="
+                                                    individualCustomerResults.length >
+                                                        0 &&
+                                                    showIndividualDropdown
+                                                "
+                                                class="dropdown-menu show w-100 mt-1"
+                                                style="
+                                                    max-height: 200px;
+                                                    overflow-y: auto;
+                                                "
+                                            >
+                                                <button
+                                                    v-for="customer in individualCustomerResults"
+                                                    :key="customer.id"
+                                                    type="button"
+                                                    class="dropdown-item"
+                                                    @click="
+                                                        selectIndividualCustomer(
+                                                            customer
+                                                        )
+                                                    "
+                                                >
+                                                    <div
+                                                        class="d-flex justify-content-between"
+                                                    >
+                                                        <span>{{
+                                                            customer.khach_hang_ca_nhan
+                                                        }}</span>
+                                                        <small
+                                                            class="text-muted"
+                                                            >{{
+                                                                customer.ma_kh_ca_nhan
+                                                            }}</small
+                                                        >
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                    <div class="mb-3">
-                        <label for="corporateCustomerCode" class="form-label"
-                            >Mã khách hàng doanh nghiệp</label
-                        >
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="corporateCustomerCode"
-                            v-model="
-                                newPaymentRequest.ma_khach_hang_doanh_nghiep
-                            "
-                            placeholder="Nhập mã khách hàng doanh nghiệp"
-                        />
-                    </div>
+                                    <!-- Mã khách hàng cá nhân (readonly) -->
+                                    <div class="mb-3">
+                                        <label
+                                            for="individualCustomerCode"
+                                            class="form-label"
+                                        >
+                                            Mã khách hàng cá nhân
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control bg-light"
+                                            id="individualCustomerCode"
+                                            v-model="
+                                                newPaymentRequest.ma_khach_hang_ca_nhan
+                                            "
+                                            placeholder="Mã sẽ được điền tự động"
+                                            readonly
+                                        />
+                                    </div>
+                                </div>
 
-                    <div
-                        class="alert alert-info text-white"
-                        v-if="paymentReceiptIds.length > 0"
-                    >
-                        <i class="fas fa-info-circle me-2"></i>
-                        Phiếu đề nghị sẽ được liên kết với
-                        <strong>{{ paymentReceiptIds.length }}</strong> biên bản
-                        nghiệm thu đã chọn
-                    </div>
-                    <div class="alert alert-warning" v-else>
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Vui lòng chọn ít nhất một biên bản nghiệm thu trong bảng
-                        chi tiết
-                    </div>
+                                <!-- Khách hàng doanh nghiệp Section -->
+                                <div class="mb-4">
+                                    <h6 class="text-success border-bottom pb-2">
+                                        <i class="fas fa-building me-2"></i>
+                                        Thông tin khách hàng doanh nghiệp
+                                    </h6>
+
+                                    <!-- Tên khách hàng doanh nghiệp with search -->
+                                    <div class="mb-3">
+                                        <label
+                                            for="corporateCustomer"
+                                            class="form-label"
+                                        >
+                                            Tên khách hàng doanh nghiệp
+                                        </label>
+                                        <div class="position-relative">
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="corporateCustomer"
+                                                v-model="
+                                                    newPaymentRequest.khach_hang_doanh_nghiep
+                                                "
+                                                @input="
+                                                    searchCorporateCustomers
+                                                "
+                                                placeholder="Nhập tên khách hàng doanh nghiệp"
+                                                autocomplete="off"
+                                            />
+                                            <!-- Corporate customers dropdown -->
+                                            <div
+                                                v-if="
+                                                    corporateCustomerResults.length >
+                                                        0 &&
+                                                    showCorporateDropdown
+                                                "
+                                                class="dropdown-menu show w-100 mt-1"
+                                                style="
+                                                    max-height: 200px;
+                                                    overflow-y: auto;
+                                                "
+                                            >
+                                                <button
+                                                    v-for="customer in corporateCustomerResults"
+                                                    :key="customer.id"
+                                                    type="button"
+                                                    class="dropdown-item"
+                                                    @click="
+                                                        selectCorporateCustomer(
+                                                            customer
+                                                        )
+                                                    "
+                                                >
+                                                    <div
+                                                        class="d-flex justify-content-between"
+                                                    >
+                                                        <span>{{
+                                                            customer.khach_hang_doanh_nghiep
+                                                        }}</span>
+                                                        <small
+                                                            class="text-muted"
+                                                            >{{
+                                                                customer.ma_kh_doanh_nghiep
+                                                            }}</small
+                                                        >
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mã khách hàng doanh nghiệp (readonly) -->
+                                    <div class="mb-3">
+                                        <label
+                                            for="corporateCustomerCode"
+                                            class="form-label"
+                                        >
+                                            Mã khách hàng doanh nghiệp
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control bg-light"
+                                            id="corporateCustomerCode"
+                                            v-model="
+                                                newPaymentRequest.ma_khach_hang_doanh_nghiep
+                                            "
+                                            placeholder="Mã sẽ được điền tự động"
+                                            readonly
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Biên bản liên kết Section -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div
+                                    class="alert alert-info border-0"
+                                    v-if="paymentReceiptIds.length > 0"
+                                >
+                                    <div class="d-flex align-items-center">
+                                        <i
+                                            class="fas fa-link fa-2x text-info me-3"
+                                        ></i>
+                                        <div>
+                                            <h6
+                                                class="alert-heading mb-1 text-info"
+                                            >
+                                                Biên bản nghiệm thu đã chọn
+                                            </h6>
+                                            <p class="mb-0">
+                                                Phiếu đề nghị sẽ được liên kết
+                                                với
+                                                <span
+                                                    class="badge bg-info text-dark"
+                                                >
+                                                    {{
+                                                        paymentReceiptIds.length
+                                                    }}
+                                                </span>
+                                                biên bản nghiệm thu đã chọn
+                                            </p>
+                                            <div class="mt-2">
+                                                <small class="text-muted">
+                                                    <i
+                                                        class="fas fa-list me-1"
+                                                    ></i>
+                                                    Mã biên bản:
+                                                    {{
+                                                        paymentReceiptIds.join(
+                                                            ", "
+                                                        )
+                                                    }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="alert alert-warning border-0"
+                                    v-else
+                                >
+                                    <div class="d-flex align-items-center">
+                                        <i
+                                            class="fas fa-exclamation-triangle fa-2x text-warning me-3"
+                                        ></i>
+                                        <div>
+                                            <h6
+                                                class="alert-heading mb-1 text-warning"
+                                            >
+                                                Chưa chọn biên bản nghiệm thu
+                                            </h6>
+                                            <p class="mb-0">
+                                                Vui lòng chọn ít nhất một biên
+                                                bản nghiệm thu trong bảng "Chi
+                                                tiết hồ sơ thanh toán" trước khi
+                                                tạo phiếu đề nghị
+                                            </p>
+                                            <div class="mt-2">
+                                                <small class="text-muted">
+                                                    <i
+                                                        class="fas fa-info-circle me-1"
+                                                    ></i>
+                                                    Bạn có thể chọn nhiều biên
+                                                    bản cùng lúc bằng cách tick
+                                                    vào checkbox
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Validation Summary -->
+                        <div class="row mt-3" v-if="showValidationSummary">
+                            <div class="col-12">
+                                <div class="card border-danger">
+                                    <div class="card-body text-center py-3">
+                                        <h6 class="text-danger mb-2">
+                                            <i
+                                                class="fas fa-exclamation-circle me-2"
+                                            ></i>
+                                            Vui lòng kiểm tra lại thông tin
+                                        </h6>
+                                        <div class="text-muted small">
+                                            Các trường có dấu
+                                            <span class="text-danger">*</span>
+                                            là bắt buộc
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                <div class="modal-footer">
-                    <button
-                        type="button"
-                        class="btn btn-secondary"
-                        data-bs-dismiss="modal"
+
+                <!-- Modal Footer với thiết kế mới -->
+                <div class="modal-footer bg-light border-top-0">
+                    <div
+                        class="d-flex justify-content-between align-items-center w-100"
                     >
-                        Hủy
-                    </button>
-                    <button
-                        type="button"
-                        class="btn btn-success"
-                        @click="addPaymentRequest"
-                        :disabled="
-                            isAddingPaymentRequest ||
-                            paymentReceiptIds.length === 0
-                        "
-                    >
-                        <i class="fas fa-save me-1"></i>
-                        <span v-if="isAddingPaymentRequest">Đang lưu...</span>
-                        <span v-else>Tạo phiếu đề nghị</span>
-                    </button>
+                        <!-- Left side - Status info -->
+                        <div class="text-muted small">
+                            <i class="fas fa-info-circle me-1"></i>
+                            {{
+                                paymentReceiptIds.length > 0
+                                    ? `Sẵn sàng tạo phiếu với ${paymentReceiptIds.length} biên bản`
+                                    : "Chưa chọn biên bản nghiệm thu"
+                            }}
+                        </div>
+
+                        <!-- Right side - Action buttons -->
+                        <div class="d-flex gap-2">
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal"
+                                :disabled="isAddingPaymentRequest"
+                            >
+                                <i class="fas fa-times me-1"></i>
+                                Hủy
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-success"
+                                @click="addPaymentRequest"
+                                :disabled="
+                                    isAddingPaymentRequest ||
+                                    paymentReceiptIds.length === 0
+                                "
+                            >
+                                <span v-if="isAddingPaymentRequest">
+                                    <span
+                                        class="spinner-border spinner-border-sm me-2"
+                                        role="status"
+                                        aria-hidden="true"
+                                    ></span>
+                                    Đang tạo...
+                                </span>
+                                <span v-else>
+                                    <i class="fas fa-save me-1"></i>
+                                    Tạo phiếu đề nghị
+                                </span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3718,6 +3408,7 @@ import axios from "axios";
 import { useStore } from "../../Store/Auth";
 import { Bootstrap5Pagination } from "laravel-vue-pagination";
 import { ResizableColumns } from "../../Directives/ResizableColumns";
+import { usePermissions } from "../../Composables/usePermissions";
 
 export default {
     components: {
@@ -3728,12 +3419,33 @@ export default {
     },
     setup() {
         const store = useStore();
+        const { hasPermission, canViewComponent } = usePermissions();
         return {
             store,
+            hasPermission,
+            canViewComponent,
         };
     },
     data() {
         return {
+            // Customer search related properties
+            individualCustomerResults: [],
+            corporateCustomerResults: [],
+            showIndividualDropdown: false,
+            showCorporateDropdown: false,
+            individualSearchTimeout: null,
+            corporateSearchTimeout: null,
+            // Payment Requests Modal specific data
+            paymentRequestsModal: null,
+            paymentSearchQuery: "",
+            showPaymentAdvancedFilters: false,
+            paymentQuickFilter: null,
+            paymentSearchHighlightCache: {},
+            //Modal Chi tiết NTDVNTDV
+            modalSearchQuery: "", // Search query for modal
+            showAdvancedFilters: false, // Toggle for advanced filters
+            quickFilter: null, // Current quick filter
+            searchHighlightCache: {}, // Cache for search highlights
             document: {
                 payment_code: "", // Mã trình thanh toán
                 title: "", // Tiêu đề
@@ -3769,6 +3481,7 @@ export default {
             addPaymentModal: null,
             paymentReceiptIds: [],
             investmentProjects: [],
+            paymentDetailsModal: null,
 
             // Add to data() function in your component
             paymentEditForm: {
@@ -3979,8 +3692,80 @@ export default {
             return true; // Can be modified based on user permissions or document status
         },
         filteredPaymentDetails() {
-            return this.paymentDetails.filter((item) => {
-                // Apply text search filters
+            let filtered = this.paymentDetails;
+
+            // Apply search filter first
+            if (this.modalSearchQuery && this.modalSearchQuery.trim()) {
+                const searchTerm = this.modalSearchQuery.trim().toLowerCase();
+                filtered = filtered.filter((item) => {
+                    return (
+                        (item.document_code &&
+                            item.document_code
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.title &&
+                            item.title.toLowerCase().includes(searchTerm)) ||
+                        (item.investment_project &&
+                            item.investment_project
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.khach_hang_ca_nhan_dt_mia &&
+                            item.khach_hang_ca_nhan_dt_mia
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.khach_hang_doanh_nghiep_dt_mia &&
+                            item.khach_hang_doanh_nghiep_dt_mia
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.contract_number &&
+                            item.contract_number
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.service_type &&
+                            item.service_type
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.hop_dong_cung_ung_dich_vu &&
+                            item.hop_dong_cung_ung_dich_vu
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.disbursement_code &&
+                            item.disbursement_code
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.tram &&
+                            item.tram.toLowerCase().includes(searchTerm))
+                    );
+                });
+            }
+
+            // Apply quick filters
+            if (this.quickFilter) {
+                switch (this.quickFilter) {
+                    case "has_disbursement":
+                        filtered = filtered.filter(
+                            (item) =>
+                                item.disbursement_code &&
+                                item.disbursement_code.trim()
+                        );
+                        break;
+                    case "no_disbursement":
+                        filtered = filtered.filter(
+                            (item) =>
+                                !item.disbursement_code ||
+                                !item.disbursement_code.trim()
+                        );
+                        break;
+                    case "high_amount":
+                        filtered = filtered.filter(
+                            (item) => parseFloat(item.amount || 0) > 1000000000
+                        );
+                        break;
+                }
+            }
+
+            // Apply existing column filters
+            return filtered.filter((item) => {
                 const matchesTextFilters =
                     (!this.columnFilters.document_code ||
                         (item.document_code &&
@@ -4037,7 +3822,6 @@ export default {
                                 .toString()
                                 .includes(this.columnFilters.installment)));
 
-                // Apply dropdown filters
                 const matchesDropdownFilters =
                     (this.selectedFilterValues.tram.length === 0 ||
                         (item.tram &&
@@ -4066,6 +3850,13 @@ export default {
                     this.filteredPaymentDetails.length
             );
         },
+        totalFilteredAmount() {
+            return this.filteredPaymentDetails.reduce(
+                (sum, item) => sum + (parseFloat(item.amount) || 0),
+                0
+            );
+        },
+
         // Paginated payment details
         paginatedPaymentDetails() {
             const startIndex = (this.currentPage - 1) * this.perPage;
@@ -4095,8 +3886,78 @@ export default {
         },
         // Filtered payment requests
         filteredPaymentRequests() {
-            return this.paymentRequests.filter((item) => {
-                // Apply text search filters
+            let filtered = this.paymentRequests;
+
+            // Apply search filter first
+            if (this.paymentSearchQuery && this.paymentSearchQuery.trim()) {
+                const searchTerm = this.paymentSearchQuery.trim().toLowerCase();
+                filtered = filtered.filter((item) => {
+                    return (
+                        (item.disbursement_code &&
+                            item.disbursement_code
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.investment_project &&
+                            item.investment_project
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.payment_type &&
+                            item.payment_type
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.individual_customer &&
+                            item.individual_customer
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.individual_customer_code &&
+                            item.individual_customer_code
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.corporate_customer &&
+                            item.corporate_customer
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.corporate_customer_code &&
+                            item.corporate_customer_code
+                                .toLowerCase()
+                                .includes(searchTerm)) ||
+                        (item.proposal_number &&
+                            item.proposal_number
+                                .toLowerCase()
+                                .includes(searchTerm))
+                    );
+                });
+            }
+
+            // Apply quick filters
+            if (this.paymentQuickFilter) {
+                switch (this.paymentQuickFilter) {
+                    case "individual_customers":
+                        filtered = filtered.filter(
+                            (item) =>
+                                item.individual_customer &&
+                                item.individual_customer.trim()
+                        );
+                        break;
+                    case "corporate_customers":
+                        filtered = filtered.filter(
+                            (item) =>
+                                item.corporate_customer &&
+                                item.corporate_customer.trim()
+                        );
+                        break;
+                    case "high_value":
+                        filtered = filtered.filter(
+                            (item) =>
+                                parseFloat(item.total_remaining || 0) >
+                                1000000000
+                        );
+                        break;
+                }
+            }
+
+            // Apply existing column filters
+            return filtered.filter((item) => {
                 const matchesTextFilters =
                     (!this.paymentFilters.disbursement_code ||
                         (item.disbursement_code &&
@@ -4135,17 +3996,15 @@ export default {
                                 ))) &&
                     (!this.paymentFilters.payment_date ||
                         (item.payment_date &&
-                            item.payment_date
-                                .toLowerCase()
-                                .includes(
-                                    this.paymentFilters.payment_date.toLowerCase()
-                                ))) &&
+                            item.payment_date.includes(
+                                this.paymentFilters.payment_date
+                            ))) &&
                     (!this.paymentFilters.proposal_number ||
                         (item.proposal_number &&
                             item.proposal_number
-                                .toLowerCase()
+                                .toString()
                                 .includes(
-                                    this.paymentFilters.proposal_number.toLowerCase()
+                                    this.paymentFilters.proposal_number
                                 ))) &&
                     (!this.paymentFilters.installment ||
                         (item.installment &&
@@ -4153,7 +4012,6 @@ export default {
                                 .toString()
                                 .includes(this.paymentFilters.installment)));
 
-                // Apply dropdown filters
                 const matchesDropdownFilters =
                     (this.selectedPaymentFilterValues.tram.length === 0 ||
                         (item.tram &&
@@ -4176,6 +4034,42 @@ export default {
                 return matchesTextFilters && matchesDropdownFilters;
             });
         },
+
+        totalFilteredPaymentAmount() {
+            return this.filteredPaymentRequests.reduce(
+                (sum, item) => sum + (parseFloat(item.total_amount) || 0),
+                0
+            );
+        },
+
+        totalFilteredHoldAmount() {
+            return this.filteredPaymentRequests.reduce(
+                (sum, item) => sum + (parseFloat(item.total_hold_amount) || 0),
+                0
+            );
+        },
+
+        totalFilteredDeductionAmount() {
+            return this.filteredPaymentRequests.reduce(
+                (sum, item) => sum + (parseFloat(item.total_deduction) || 0),
+                0
+            );
+        },
+
+        totalFilteredInterestAmount() {
+            return this.filteredPaymentRequests.reduce(
+                (sum, item) => sum + (parseFloat(item.total_interest) || 0),
+                0
+            );
+        },
+
+        totalFilteredRemainingAmount() {
+            return this.filteredPaymentRequests.reduce(
+                (sum, item) => sum + (parseFloat(item.total_remaining) || 0),
+                0
+            );
+        },
+
         isAllPaymentRequestsSelected() {
             return (
                 this.filteredPaymentRequests.length > 0 &&
@@ -4251,6 +4145,8 @@ export default {
         this.fetchUserData();
         this.fetchDocument();
         this.fetchInvestmentProjects(); // Add this line
+        // Add click outside listener to hide dropdowns
+        document.addEventListener("click", this.hideDropdowns);
 
         // Restore visibility state from localStorage
         const savedShowPaymentDetails =
@@ -4267,7 +4163,506 @@ export default {
             this.showPaymentRequests = savedShowPaymentRequests === "true";
         }
     },
+    beforeUnmount() {
+        // Clean up event listener and timeouts
+        document.removeEventListener("click", this.hideDropdowns);
+
+        if (this.individualSearchTimeout) {
+            clearTimeout(this.individualSearchTimeout);
+        }
+
+        if (this.corporateSearchTimeout) {
+            clearTimeout(this.corporateSearchTimeout);
+        }
+    },
+
     methods: {
+        /**
+         * Search individual customers
+         */
+        searchIndividualCustomers() {
+            // Clear previous timeout
+            if (this.individualSearchTimeout) {
+                clearTimeout(this.individualSearchTimeout);
+            }
+
+            const query = this.newPaymentRequest.khach_hang_ca_nhan;
+
+            if (!query || query.length < 2) {
+                this.individualCustomerResults = [];
+                this.showIndividualDropdown = false;
+                return;
+            }
+
+            // Debounce search
+            this.individualSearchTimeout = setTimeout(async () => {
+                try {
+                    const response = await axios.get(
+                        "/api/search-individual-customers",
+                        {
+                            params: { query },
+                            headers: {
+                                Authorization: "Bearer " + this.store.getToken,
+                            },
+                        }
+                    );
+
+                    if (response.data.success) {
+                        this.individualCustomerResults = response.data.data;
+                        this.showIndividualDropdown = true;
+                    }
+                } catch (error) {
+                    console.error(
+                        "Error searching individual customers:",
+                        error
+                    );
+                    this.individualCustomerResults = [];
+                    this.showIndividualDropdown = false;
+                }
+            }, 300);
+        },
+
+        /**
+         * Search corporate customers
+         */
+        searchCorporateCustomers() {
+            // Clear previous timeout
+            if (this.corporateSearchTimeout) {
+                clearTimeout(this.corporateSearchTimeout);
+            }
+
+            const query = this.newPaymentRequest.khach_hang_doanh_nghiep;
+
+            if (!query || query.length < 2) {
+                this.corporateCustomerResults = [];
+                this.showCorporateDropdown = false;
+                return;
+            }
+
+            // Debounce search
+            this.corporateSearchTimeout = setTimeout(async () => {
+                try {
+                    const response = await axios.get(
+                        "/api/search-corporate-customers",
+                        {
+                            params: { query },
+                            headers: {
+                                Authorization: "Bearer " + this.store.getToken,
+                            },
+                        }
+                    );
+
+                    if (response.data.success) {
+                        this.corporateCustomerResults = response.data.data;
+                        this.showCorporateDropdown = true;
+                    }
+                } catch (error) {
+                    console.error(
+                        "Error searching corporate customers:",
+                        error
+                    );
+                    this.corporateCustomerResults = [];
+                    this.showCorporateDropdown = false;
+                }
+            }, 300);
+        },
+
+        /**
+         * Select individual customer
+         */
+        selectIndividualCustomer(customer) {
+            this.newPaymentRequest.khach_hang_ca_nhan =
+                customer.khach_hang_ca_nhan;
+            this.newPaymentRequest.ma_khach_hang_ca_nhan =
+                customer.ma_kh_ca_nhan;
+            this.individualCustomerResults = [];
+            this.showIndividualDropdown = false;
+        },
+
+        /**
+         * Select corporate customer
+         */
+        selectCorporateCustomer(customer) {
+            this.newPaymentRequest.khach_hang_doanh_nghiep =
+                customer.khach_hang_doanh_nghiep;
+            this.newPaymentRequest.ma_khach_hang_doanh_nghiep =
+                customer.ma_kh_doanh_nghiep;
+            this.corporateCustomerResults = [];
+            this.showCorporateDropdown = false;
+        },
+
+        /**
+         * Hide dropdowns when clicking outside
+         */
+        hideDropdowns() {
+            this.showIndividualDropdown = false;
+            this.showCorporateDropdown = false;
+        },
+
+        /**
+         * Open Payment Requests Modal
+         */
+        openPaymentRequestsModal() {
+            if (!this.paymentRequestsModal) {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                    (bootstrap) => {
+                        const modalElement = document.getElementById(
+                            "paymentRequestsModal"
+                        );
+                        if (modalElement) {
+                            this.paymentRequestsModal = new bootstrap.Modal(
+                                modalElement,
+                                {
+                                    backdrop: "static",
+                                    keyboard: false,
+                                }
+                            );
+                            this.paymentRequestsModal.show();
+                        }
+                    }
+                );
+            } else {
+                this.paymentRequestsModal.show();
+            }
+        },
+
+        /**
+         * Close Payment Requests Modal
+         */
+        closePaymentRequestsModal() {
+            if (this.paymentRequestsModal) {
+                this.paymentRequestsModal.hide();
+            }
+        },
+
+        /**
+         * Perform search in payment requests modal
+         */
+        performPaymentSearch() {
+            // Reset to first page when searching
+            this.currentPaymentPage = 1;
+
+            // Clear search highlight cache
+            this.paymentSearchHighlightCache = {};
+
+            // Auto-clear selection when searching
+            if (this.paymentSearchQuery.trim()) {
+                this.selectedPaymentRequests = [];
+            }
+        },
+
+        /**
+         * Clear payment search
+         */
+        clearPaymentSearch() {
+            this.paymentSearchQuery = "";
+            this.currentPaymentPage = 1;
+            this.paymentSearchHighlightCache = {};
+        },
+
+        /**
+         * Apply payment quick filter
+         */
+        applyPaymentQuickFilter(filterType) {
+            if (this.paymentQuickFilter === filterType) {
+                this.paymentQuickFilter = null;
+            } else {
+                this.paymentQuickFilter = filterType;
+            }
+            this.currentPaymentPage = 1;
+            this.selectedPaymentRequests = [];
+        },
+
+        /**
+         * Clear payment quick filters
+         */
+        clearPaymentQuickFilters() {
+            this.paymentQuickFilter = null;
+            this.currentPaymentPage = 1;
+        },
+
+        /**
+         * Reset all payment filters and search
+         */
+        resetAllPaymentFiltersAndSearch() {
+            // Clear search
+            this.clearPaymentSearch();
+
+            // Clear quick filters
+            this.clearPaymentQuickFilters();
+
+            // Clear column filters
+            this.resetPaymentRequestFilters();
+
+            // Clear selection
+            this.selectedPaymentRequests = [];
+        },
+
+        /**
+         * Highlight search term in payment text
+         */
+        highlightPaymentSearchTerm(text) {
+            if (
+                !text ||
+                !this.paymentSearchQuery ||
+                !this.paymentSearchQuery.trim()
+            ) {
+                return text;
+            }
+
+            const searchTerm = this.paymentSearchQuery.trim();
+            const cacheKey = `${text}_${searchTerm}`;
+
+            if (this.paymentSearchHighlightCache[cacheKey]) {
+                return this.paymentSearchHighlightCache[cacheKey];
+            }
+
+            const regex = new RegExp(
+                `(${this.escapeRegExp(searchTerm)})`,
+                "gi"
+            );
+            const highlighted = text.replace(
+                regex,
+                '<mark class="search-highlight-text">$1</mark>'
+            );
+
+            this.paymentSearchHighlightCache[cacheKey] = highlighted;
+            return highlighted;
+        },
+
+        /**
+         * Check if payment item should be highlighted
+         */
+        isPaymentHighlighted(item) {
+            if (!this.paymentSearchQuery || !this.paymentSearchQuery.trim()) {
+                return false;
+            }
+
+            const searchTerm = this.paymentSearchQuery.trim().toLowerCase();
+            return (
+                (item.disbursement_code &&
+                    item.disbursement_code
+                        .toLowerCase()
+                        .includes(searchTerm)) ||
+                (item.individual_customer &&
+                    item.individual_customer
+                        .toLowerCase()
+                        .includes(searchTerm)) ||
+                (item.corporate_customer &&
+                    item.corporate_customer
+                        .toLowerCase()
+                        .includes(searchTerm)) ||
+                (item.investment_project &&
+                    item.investment_project.toLowerCase().includes(searchTerm))
+            );
+        },
+
+        /**
+         * Export payment requests to Excel
+         */
+        exportPaymentRequestsToExcel() {
+            // Create workbook and worksheet
+            const wb = XLSX.utils.book_new();
+
+            // Prepare data for export
+            const exportData = this.filteredPaymentRequests.map(
+                (item, index) => ({
+                    STT: index + 1,
+                    "Mã giải ngân": item.disbursement_code,
+                    "Vụ đầu tư": item.investment_project,
+                    "Loại thanh toán": item.payment_type,
+                    "Khách hàng cá nhân": item.individual_customer || "",
+                    "Mã KH cá nhân": item.individual_customer_code || "",
+                    "Khách hàng doanh nghiệp": item.corporate_customer || "",
+                    "Mã KH doanh nghiệp": item.corporate_customer_code || "",
+                    "Tổng tiền": item.total_amount,
+                    "Tổng tiền tạm giữ": item.total_hold_amount,
+                    "Tổng tiền khấu trừ": item.total_deduction,
+                    "Tổng tiền lãi suất": item.total_interest,
+                    "Tổng tiền còn lại": item.total_remaining,
+                    "Ngày thanh toán": this.formatDate(item.payment_date),
+                    "Số tờ trình": item.proposal_number,
+                    "Đợt thanh toán": item.installment,
+                })
+            );
+
+            // Create worksheet
+            const ws = XLSX.utils.json_to_sheet(exportData);
+
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Phiếu đề nghị thanh toán");
+
+            // Generate filename
+            const filename = `Phieu_de_nghi_thanh_toan_${
+                this.document.payment_code
+            }_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+            // Save file
+            XLSX.writeFile(wb, filename);
+
+            // Show success message
+            this.showSuccess("Xuất Excel thành công!");
+        },
+        /**
+         * Perform search in modal
+         */
+        performModalSearch() {
+            // Reset to first page when searching
+            this.currentPage = 1;
+
+            // Clear search highlight cache
+            this.searchHighlightCache = {};
+
+            // Auto-clear selection when searching
+            if (this.modalSearchQuery.trim()) {
+                this.selectedRecords = [];
+            }
+        },
+
+        /**
+         * Clear modal search
+         */
+        clearModalSearch() {
+            this.modalSearchQuery = "";
+            this.currentPage = 1;
+            this.searchHighlightCache = {};
+        },
+
+        /**
+         * Apply quick filter
+         */
+        applyQuickFilter(filterType) {
+            if (this.quickFilter === filterType) {
+                this.quickFilter = null;
+            } else {
+                this.quickFilter = filterType;
+            }
+            this.currentPage = 1;
+            this.selectedRecords = [];
+        },
+
+        /**
+         * Clear quick filters
+         */
+        clearQuickFilters() {
+            this.quickFilter = null;
+            this.currentPage = 1;
+        },
+
+        /**
+         * Reset all filters and search
+         */
+        resetAllFiltersAndSearch() {
+            // Clear search
+            this.clearModalSearch();
+
+            // Clear quick filters
+            this.clearQuickFilters();
+
+            // Clear column filters
+            this.resetAllFilters();
+
+            // Clear selection
+            this.selectedRecords = [];
+        },
+
+        /**
+         * Highlight search term in text
+         */
+        highlightSearchTerm(text) {
+            if (
+                !text ||
+                !this.modalSearchQuery ||
+                !this.modalSearchQuery.trim()
+            ) {
+                return text;
+            }
+
+            const searchTerm = this.modalSearchQuery.trim();
+            const cacheKey = `${text}_${searchTerm}`;
+
+            if (this.searchHighlightCache[cacheKey]) {
+                return this.searchHighlightCache[cacheKey];
+            }
+
+            const regex = new RegExp(
+                `(${this.escapeRegExp(searchTerm)})`,
+                "gi"
+            );
+            const highlighted = text.replace(
+                regex,
+                '<mark class="search-highlight-text">$1</mark>'
+            );
+
+            this.searchHighlightCache[cacheKey] = highlighted;
+            return highlighted;
+        },
+
+        /**
+         * Escape special regex characters
+         */
+        escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        },
+
+        /**
+         * Check if item should be highlighted
+         */
+        isHighlighted(item) {
+            if (!this.modalSearchQuery || !this.modalSearchQuery.trim()) {
+                return false;
+            }
+
+            const searchTerm = this.modalSearchQuery.trim().toLowerCase();
+            return (
+                (item.document_code &&
+                    item.document_code.toLowerCase().includes(searchTerm)) ||
+                (item.title && item.title.toLowerCase().includes(searchTerm)) ||
+                (item.khach_hang_ca_nhan_dt_mia &&
+                    item.khach_hang_ca_nhan_dt_mia
+                        .toLowerCase()
+                        .includes(searchTerm)) ||
+                (item.khach_hang_doanh_nghiep_dt_mia &&
+                    item.khach_hang_doanh_nghiep_dt_mia
+                        .toLowerCase()
+                        .includes(searchTerm))
+            );
+        },
+        openPaymentDetailsModal() {
+            if (!this.paymentDetailsModal) {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                    (bootstrap) => {
+                        const modalElement = document.getElementById(
+                            "paymentDetailsModal"
+                        );
+                        if (modalElement) {
+                            this.paymentDetailsModal = new bootstrap.Modal(
+                                modalElement,
+                                {
+                                    backdrop: "static",
+                                    keyboard: false,
+                                }
+                            );
+                            this.paymentDetailsModal.show();
+                        }
+                    }
+                );
+            } else {
+                this.paymentDetailsModal.show();
+            }
+        },
+
+        /**
+         * Close Payment Details Modal
+         */
+        closePaymentDetailsModal() {
+            if (this.paymentDetailsModal) {
+                this.paymentDetailsModal.hide();
+            }
+        },
+
+        // ...existing methods...
+
         // เพิ่ม helper method สำหรับตรวจสอบ authentication
         isAuthenticated() {
             return this.store.getToken && this.store.getToken.length > 0;
@@ -4758,7 +5153,7 @@ export default {
             // Reset form
             this.newPaymentRequest = {
                 ma_giai_ngan: "",
-                ma_trinh_thanh_toan: this.document.payment_code, // Set parent payment request ID
+                ma_trinh_thanh_toan: this.document.payment_code,
                 vu_dau_tu: this.document.investment_project,
                 loai_thanh_toan: this.document.payment_type,
                 khach_hang_ca_nhan: "",
@@ -4766,6 +5161,12 @@ export default {
                 khach_hang_doanh_nghiep: "",
                 ma_khach_hang_doanh_nghiep: "",
             };
+
+            // Reset customer search results
+            this.individualCustomerResults = [];
+            this.corporateCustomerResults = [];
+            this.showIndividualDropdown = false;
+            this.showCorporateDropdown = false;
 
             // Get selected receipt IDs (if any)
             this.paymentReceiptIds = this.selectedRecords;
@@ -8013,5 +8414,982 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 .status-cancelled i,
 .status-cancelled span {
     color: white !important;
+}
+
+/* Payment Details Summary Card */
+.payment-details-summary-card {
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.payment-details-summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+}
+
+.summary-stats .stat-item {
+    text-align: center;
+    min-width: 80px;
+}
+
+.summary-stats .stat-item small {
+    display: block;
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.payment-summary-content {
+    padding: 2rem 1rem;
+}
+
+.summary-icon {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Modal Enhancements */
+.modal-fullscreen {
+    margin: 0;
+    padding: 0;
+}
+
+.modal-fullscreen .modal-content {
+    height: 100vh;
+    border: none;
+    border-radius: 0;
+}
+
+.modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.modal-header-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.stat-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    color: white;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+    height: calc(100vh - 140px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Action Toolbar */
+.action-toolbar {
+    flex-shrink: 0;
+    border-bottom: 2px solid #e9ecef;
+    background: linear-gradient(to right, #f8f9fa, #ffffff);
+}
+
+.action-toolbar .btn {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.action-toolbar .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Table Container */
+.table-container-modal {
+    flex: 1;
+    overflow: auto;
+    background: white;
+}
+
+.table-container-modal .table {
+    margin-bottom: 0;
+    font-size: 0.875rem;
+}
+
+/* Enhanced Table Header */
+.table thead th {
+    border-bottom: 2px solid #e2e8f0;
+    background-color: #f8fafc;
+    color: #059669;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    padding: 1rem 0.75rem;
+    border: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.header-with-filter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    white-space: nowrap;
+}
+
+.filter-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0.25rem;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.filter-btn .text-primary {
+    color: #ffd700 !important;
+}
+
+/* Filter Dropdown */
+.filter-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 0.75rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    margin-top: 0.25rem;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Enhanced Table Rows */
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    transform: scale(1.001);
+}
+
+.table tbody tr.table-warning {
+    background-color: rgba(255, 193, 7, 0.15);
+    border-left: 4px solid #ffc107;
+}
+
+/* Enhanced Table Cells */
+.table td {
+    padding: 0.875rem 0.75rem;
+    vertical-align: middle;
+    border-color: #e9ecef;
+}
+
+.text-truncate {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Badge Enhancements */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+/* Empty State */
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.empty-state i {
+    opacity: 0.3;
+}
+
+/* Modal Footer */
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 2px solid #e9ecef;
+    background: linear-gradient(to right, #f8f9fa, #ffffff);
+}
+
+/* Pagination Enhancements */
+.pagination {
+    margin-bottom: 0;
+}
+
+.page-link {
+    border-radius: 6px;
+    color: #007bff;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+}
+
+.page-link:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+}
+
+.page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modal-fullscreen {
+        margin: 0;
+    }
+
+    .action-toolbar .row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .action-toolbar .col-md-6 {
+        text-align: center !important;
+    }
+
+    .modal-header-stats {
+        display: none;
+    }
+
+    .table {
+        font-size: 0.75rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.5rem 0.25rem;
+    }
+}
+
+/* Smooth Transitions */
+* {
+    transition: all 0.2s ease;
+}
+
+/* Custom Scrollbar for Modal */
+.table-container-modal::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-container-modal::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-container-modal::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.table-container-modal::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Loading State */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 0.25rem solid #f3f3f3;
+    border-top: 0.25rem solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+/* Enhanced Search Input Styling */
+.search-container {
+    position: relative;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input {
+    padding-right: 70px;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+}
+
+.search-input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.1);
+    background-color: #fff;
+}
+
+.search-icon {
+    position: absolute;
+    right: 35px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    font-size: 0.875rem;
+    pointer-events: none;
+}
+
+.search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    color: #6c757d;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+}
+
+.search-clear:hover {
+    background-color: #f8f9fa;
+    color: #495057;
+}
+
+.search-info {
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+/* Search Highlight Styling */
+.search-highlight {
+    background-color: rgba(255, 235, 59, 0.2);
+    animation: highlight-pulse 1s ease-in-out;
+}
+
+.search-highlight-text {
+    background-color: #ffeb3b;
+    color: #333;
+    padding: 1px 2px;
+    border-radius: 2px;
+    font-weight: 600;
+}
+
+@keyframes highlight-pulse {
+    0% {
+        background-color: rgba(255, 235, 59, 0.4);
+    }
+    50% {
+        background-color: rgba(255, 235, 59, 0.1);
+    }
+    100% {
+        background-color: rgba(255, 235, 59, 0.2);
+    }
+}
+
+/* Advanced Filters Styling */
+.advanced-filters {
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.advanced-filters .btn {
+    border-radius: 20px;
+    font-size: 0.8rem;
+    padding: 0.375rem 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.advanced-filters .btn.active {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.advanced-filters .btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Quick Filter Buttons */
+.btn-outline-primary.active {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.btn-outline-warning.active {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.btn-outline-info.active {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+}
+
+/* Enhanced Action Toolbar */
+.action-toolbar {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-bottom: 2px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.action-toolbar .btn {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.action-toolbar .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Enhanced Empty State */
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.empty-state i {
+    opacity: 0.3;
+    margin-bottom: 1rem;
+}
+
+.empty-state h6 {
+    margin-bottom: 0.5rem;
+    color: #6c757d;
+}
+
+.empty-state p {
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+/* Responsive Design for Search */
+@media (max-width: 768px) {
+    .action-toolbar .row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .action-toolbar .col-md-4,
+    .action-toolbar .col-md-8 {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .search-input {
+        font-size: 0.875rem;
+    }
+
+    .advanced-filters {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .advanced-filters .btn {
+        width: 100%;
+    }
+}
+
+/* Table Row Highlighting */
+.table tbody tr.search-highlight {
+    background-color: rgba(255, 235, 59, 0.1);
+    border-left: 3px solid #ffeb3b;
+}
+
+.table tbody tr.search-highlight:hover {
+    background-color: rgba(255, 235, 59, 0.2);
+}
+
+/* Footer Information Enhancement */
+.pagination-info {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.pagination-info small {
+    line-height: 1.3;
+}
+
+/* Search Performance Indicators */
+.search-input-wrapper::after {
+    content: "";
+    position: absolute;
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus + .search-icon + .search-clear + ::after {
+    background-color: #28a745;
+}
+
+/* Smooth Transitions */
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.search-highlight-text {
+    transition: all 0.2s ease;
+}
+
+/* Enhanced Mobile Experience */
+@media (max-width: 576px) {
+    .search-input {
+        padding: 0.5rem 0.75rem;
+        padding-right: 65px;
+        font-size: 0.875rem;
+    }
+
+    .stat-badge {
+        display: none;
+    }
+
+    .modal-header-stats {
+        display: none;
+    }
+}
+
+/* Payment Requests Summary Card */
+.payment-requests-summary-card {
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.payment-requests-summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    border: none;
+}
+
+/* Modal Header Enhancement for Payment Requests */
+.modal-header.bg-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%) !important;
+}
+
+/* Enhanced Empty State for Payment Requests */
+.empty-state .btn-outline-success {
+    border-color: #28a745;
+    color: #28a745;
+}
+
+.empty-state .btn-outline-success:hover {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+/* Success-themed highlighting */
+.table tbody tr.search-highlight {
+    background-color: rgba(40, 167, 69, 0.1);
+    border-left: 3px solid #28a745;
+}
+
+.table tbody tr.search-highlight:hover {
+    background-color: rgba(40, 167, 69, 0.2);
+}
+
+/* Enhanced badge colors for payment requests */
+.badge.bg-info {
+    background-color: #17a2b8 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+.badge.bg-primary {
+    background-color: #007bff !important;
+}
+
+/* Financial amount styling */
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.text-info {
+    color: #17a2b8 !important;
+}
+
+.text-primary {
+    color: #007bff !important;
+}
+
+/* Enhanced Quick Filter Buttons for Payment Requests */
+.btn-outline-primary.active {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.btn-outline-warning.active {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.btn-outline-info.active {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+}
+
+/* Responsive Design for Payment Requests Modal */
+@media (max-width: 768px) {
+    .payment-requests-summary-card .summary-stats {
+        display: none;
+    }
+
+    .modal-header.bg-success .modal-header-stats {
+        display: none;
+    }
+}
+
+/* Enhanced Animation for Payment Request Cards */
+.payment-requests-summary-card .summary-icon {
+    animation: float 3s ease-in-out infinite;
+}
+
+/* Custom scrollbar for payment requests table */
+.table-container-modal {
+    scrollbar-width: thin;
+    scrollbar-color: #28a745 #f1f1f1;
+}
+
+.table-container-modal::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+.table-container-modal::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-container-modal::-webkit-scrollbar-thumb {
+    background: #28a745;
+    border-radius: 4px;
+}
+
+.table-container-modal::-webkit-scrollbar-thumb:hover {
+    background: #1e7e34;
+}
+/* Enhanced Modal Styles */
+.modal-dialog.modal-lg {
+    max-width: 900px;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    background: linear-gradient(to right, #f8f9fa, #ffffff);
+}
+
+/* Form Section Headers */
+.border-bottom {
+    border-bottom: 2px solid currentColor !important;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Alert Enhancements */
+.alert {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    border-color: #bee5eb;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border-color: #ffeaa7;
+}
+
+/* Form Input Enhancements */
+.form-control:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.1);
+}
+
+.form-select:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.1);
+}
+
+/* Badge Styling */
+.badge.bg-info {
+    background-color: #17a2b8 !important;
+    color: white !important;
+}
+
+/* Loading Spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Button Enhancements */
+.btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
+}
+
+.btn-outline-secondary:hover {
+    transform: translateY(-1px);
+}
+
+/* Form Text Styling */
+.form-text {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.form-text i {
+    color: #28a745;
+}
+
+/* Validation Card */
+.card.border-danger {
+    border-width: 2px;
+    border-style: dashed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modal-dialog.modal-lg {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+
+    .modal-body {
+        padding: 1rem;
+        max-height: 60vh;
+    }
+
+    .row > .col-md-6:first-child {
+        margin-bottom: 1.5rem;
+    }
+
+    .d-flex.gap-2 {
+        flex-direction: column;
+        gap: 0.5rem !important;
+    }
+
+    .modal-footer .d-flex {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+
+    .modal-footer .text-muted {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+}
+
+/* Smooth Transitions */
+.modal-content {
+    transition: all 0.3s ease;
+}
+
+.form-control,
+.form-select,
+.btn {
+    transition: all 0.2s ease;
+}
+
+/* Icon Styling */
+.fa-2x {
+    font-size: 1.5em;
+}
+
+/* Alert Icon Animations */
+.alert .fas {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Customer search dropdown styles */
+.dropdown-menu {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    z-index: 1050;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-item:focus {
+    background-color: #e9ecef;
+    outline: none;
+}
+
+/* Readonly input styling */
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+/* Position relative for dropdown positioning */
+.position-relative {
+    position: relative;
+}
+
+/* Custom styling for better UX */
+.form-control:focus + .dropdown-menu {
+    display: block;
+}
+
+.customer-search-container {
+    position: relative;
+}
+
+.customer-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 0.375rem 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.customer-dropdown-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.customer-dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.customer-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.customer-name {
+    font-weight: 500;
+    color: #495057;
+}
+
+.customer-code {
+    font-size: 0.875rem;
+    color: #6c757d;
 }
 </style>

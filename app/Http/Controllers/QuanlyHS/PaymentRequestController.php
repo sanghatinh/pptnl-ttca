@@ -1161,6 +1161,124 @@ public function saveNote(Request $request, $id)
     }
 }
 
+/**
+ * Search individual customers (farmers)
+ */
+public function searchIndividualCustomers(Request $request)
+{
+    try {
+        $query = $request->get('query', '');
+        
+        if (strlen($query) < 2) {
+            return response()->json([
+                'success' => true,
+                'data' => []
+            ]);
+        }
+        
+        $customers = DB::table('user_farmer')
+            ->where('khach_hang_ca_nhan', 'LIKE', '%' . $query . '%')
+            ->whereNotNull('khach_hang_ca_nhan')
+            ->where('khach_hang_ca_nhan', '!=', '')
+            ->select('id', 'khach_hang_ca_nhan', 'ma_kh_ca_nhan')
+            ->distinct()
+            ->limit(5)
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $customers
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error searching individual customers: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error searching customers: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Search corporate customers (farmers)
+ */
+public function searchCorporateCustomers(Request $request)
+{
+    try {
+        $query = $request->get('query', '');
+        
+        if (strlen($query) < 2) {
+            return response()->json([
+                'success' => true,
+                'data' => []
+            ]);
+        }
+        
+        $customers = DB::table('user_farmer')
+            ->where('khach_hang_doanh_nghiep', 'LIKE', '%' . $query . '%')
+            ->whereNotNull('khach_hang_doanh_nghiep')
+            ->where('khach_hang_doanh_nghiep', '!=', '')
+            ->select('id', 'khach_hang_doanh_nghiep', 'ma_kh_doanh_nghiep')
+            ->distinct()
+            ->limit(5)
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $customers
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error searching corporate customers: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error searching customers: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Get customer details by name
+ */
+public function getCustomerByName(Request $request)
+{
+    try {
+        $request->validate([
+            'name' => 'required|string',
+            'type' => 'required|string|in:individual,corporate'
+        ]);
+        
+        $name = $request->get('name');
+        $type = $request->get('type');
+        
+        if ($type === 'individual') {
+            $customer = DB::table('user_farmer')
+                ->where('khach_hang_ca_nhan', $name)
+                ->select('id', 'khach_hang_ca_nhan', 'ma_kh_ca_nhan')
+                ->first();
+        } else {
+            $customer = DB::table('user_farmer')
+                ->where('khach_hang_doanh_nghiep', $name)
+                ->select('id', 'khach_hang_doanh_nghiep', 'ma_kh_doanh_nghiep')
+                ->first();
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => $customer
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error getting customer by name: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error getting customer: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
 
 }

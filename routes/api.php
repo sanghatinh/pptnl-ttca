@@ -154,6 +154,10 @@ Route::post('/payment-requests/{id}/import-data', [PaymentRequestController::cla
  Route::put('payment-requests/{id}/status', [PaymentRequestController::class, 'updateStatus']);
  // Add note saving route for payment requests
     Route::post('/payment-requests/{id}/notes', [PaymentRequestController::class, 'saveNote']);
+    // Customer search routes for payment requests
+Route::get('/search-individual-customers', [PaymentRequestController::class, 'searchIndividualCustomers']);
+Route::get('/search-corporate-customers', [PaymentRequestController::class, 'searchCorporateCustomers']);
+Route::get('/get-customer-by-name', [PaymentRequestController::class, 'getCustomerByName']);
 
  //Delete phiếu trình thanh toán dịch vụ
  Route::delete('/payment-requests/{id}', [PaymentRequestController::class, 'destroy']);
@@ -169,6 +173,7 @@ Route::put('/disbursements/bulk', [PhieudenghithanhtoandvControllers::class, 'bu
 Route::post('/disbursements/with-receipts', [PhieudenghithanhtoandvControllers::class, 'addWithReceipts']);
 Route::post('/disbursements/export', [PhieudenghithanhtoandvControllers::class, 'export']);
 Route::post('/disbursements/import', [PhieudenghithanhtoandvControllers::class, 'import']);
+
 // เพิ่มเส้นทาง API สำหรับอัปเดตข้อมูลทางการเงินของพิศูเญเงี้ยม
 Route::post('/disbursements/update-financial', [PhieudenghithanhtoandvControllers::class, 'updateFinancialData']);
 //Phiếu thu nợ dịch vụ
