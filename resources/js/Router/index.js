@@ -75,6 +75,14 @@ const routes = [
         },
     },
     {
+        name: "UserFarmer",
+        path: "/UserFarmer",
+        component: () => import("../Pages/Farmer/UserFarmer.vue"),
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
         name: "AddUser",
         path: "/AddUser",
         component: AddUser,

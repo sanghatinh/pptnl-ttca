@@ -301,7 +301,7 @@
             <div class="checkbox-row">
                 <span>Số tài khoản:</span>
                 <span style="margin-left: 20px; font-weight: bold;">{{ $data['so_tai_khoan'] }}</span>
-                <span style="margin-left: 20px;"> tại NH: </span>
+                <span style="margin-left: 220px;"> tại NH: </span>
                 <span style="margin-left: 20px; font-weight: bold;">{{ $data['ten_ngan_hang'] }}</span>
             </div>
             <div class="checkbox-row">

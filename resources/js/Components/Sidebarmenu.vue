@@ -257,6 +257,19 @@
                                         <span>Danh sách User</span>
                                     </router-link>
                                 </li>
+                                <li v-if="canViewComponent('Danh sách User')">
+                                    <router-link
+                                        to="/UserFarmer"
+                                        :class="
+                                            $route.path === '/UserFarmer'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                        @click="closeSidebar"
+                                    >
+                                        <span>Danh sách Khách Hàng</span>
+                                    </router-link>
+                                </li>
                                 <li v-if="canViewComponent('Cấp quyền')">
                                     <router-link
                                         to="/permission"

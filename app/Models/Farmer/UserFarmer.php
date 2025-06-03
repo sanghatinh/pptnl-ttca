@@ -161,6 +161,13 @@ class UserFarmer extends Authenticatable implements JWTSubject
         return 'remember_token';
     }
 
+    // Relationships
+   
+
+    public function bank()
+    {
+        return $this->belongsTo(\App\Models\Quanlytaichinh\Banking::class, 'ngan_hang', 'code_banking');
+    }
 
 
 }

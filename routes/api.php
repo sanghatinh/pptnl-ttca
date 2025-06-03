@@ -236,6 +236,14 @@ Route::get('/phieu-giao-nhan-hom-giong', [PhieuGiaoNhanHomGiongController::class
 Route::get('/bienban-nghiemthu-homgiong/{id}', [PhieuGiaoNhanHomGiongController::class, 'show']);
 Route::get('/bienban-nghiemthu-homgiong/{id}/check-access', [PhieuGiaoNhanHomGiongController::class, 'checkAccess']);
 
+// Farmer Users Management
+    Route::get('/farmer-users', [App\Http\Controllers\Farmer\UserFarmerController::class, 'index']);
+    Route::get('/farmer-users/filter-options', [App\Http\Controllers\Farmer\UserFarmerController::class, 'getFilterOptions']);
+    Route::get('/farmer-users/{id}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'show']);
+    Route::post('/farmer-users', [App\Http\Controllers\Farmer\UserFarmerController::class, 'store']);
+    Route::put('/farmer-users/{id}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'update']);
+    Route::delete('/farmer-users/{id}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'destroy']);
+
 });
 
 // เพิ่มนอก middleware เพื่อให้เข้าถึง print page ได้
