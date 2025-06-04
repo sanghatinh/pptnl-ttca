@@ -6,878 +6,69 @@
         </div>
     </div>
 
-    <div>
-        <!-- Desktop Controls -->
-        <div class="desktop-controls-container mt-3" v-if="!isMobile">
-            <div class="card shadow">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-users-cog me-2"></i>
-                        Quản lý người dùng hệ thống
-                        <span class="badge bg-primary ms-2"
-                            >{{ filteredUsers.length }} users</span
-                        >
-                    </h5>
-                </div>
-                <div class="row align-items-center mt-2">
-                    <!-- Show "Tạo mới" button only when user has 'create' permission -->
-                    <div class="row mb-3 align-items-center">
-                        <div class="col-md-6">
-                            <div class="d-flex gap-2 mx-3">
-                                <button
-                                    v-if="hasPermission('create')"
-                                    type="button"
-                                    @click="Adduser"
-                                    class="button-30-save d-flex align-items-center"
-                                >
-                                    <i class="bx bxs-user-plus me-1"></i>
-                                    <span>Tạo mới</span>
-                                </button>
+    <!-- Desktop Controls -->
+    <div class="desktop-controls-container mt-3" v-if="!isMobile">
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users-cog me-2"></i>
+                    Quản lý người dùng hệ thống
+                    <span class="badge bg-primary ms-2"
+                        >{{ filteredUsers.length }} users</span
+                    >
+                </h5>
+            </div>
+            <div class="row align-items-center mt-2">
+                <!-- Show "Tạo mới" button only when user has 'create' permission -->
+                <div class="row mb-3 align-items-center">
+                    <div class="col-md-6">
+                        <div class="d-flex gap-2 mx-3">
+                            <button
+                                v-if="hasPermission('create')"
+                                type="button"
+                                @click="Adduser"
+                                class="button-30-save d-flex align-items-center"
+                            >
+                                <i class="bx bxs-user-plus me-1"></i>
+                                <span>Tạo mới</span>
+                            </button>
 
-                                <!-- Add Export/Import buttons to the dropdown menu -->
-                                <div class="actions-menu">
-                                    <div class="dropdown">
-                                        <button
-                                            class="btn btn-light btn-icon"
-                                            type="button"
-                                            id="actionMenuButton"
-                                            data-bs-toggle="dropdown"
-                                            aria-expanded="false"
-                                        >
-                                            <i class="fas fa-ellipsis-v"></i>
-                                        </button>
-                                        <ul
-                                            class="dropdown-menu shadow-sm"
-                                            aria-labelledby="actionMenuButton"
-                                        >
-                                            <li>
-                                                <a
-                                                    class="dropdown-item"
-                                                    href="#"
-                                                    @click.prevent="
-                                                        showExportModal
-                                                    "
-                                                >
-                                                    <i
-                                                        class="fas fa-file-excel text-success me-2"
-                                                    ></i>
-                                                    Export to Excel
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 d-flex justify-content-end">
-                            <div class="search-container">
-                                <div class="input-group">
-                                    <span
-                                        class="input-group-text bg-white border-end-0"
+                            <!-- Add Export/Import buttons to the dropdown menu -->
+                            <div class="actions-menu">
+                                <div class="dropdown">
+                                    <button
+                                        class="btn btn-light btn-icon"
+                                        type="button"
+                                        id="actionMenuButton"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
                                     >
-                                        <i class="fas fa-search text-muted"></i>
-                                    </span>
-                                    <input
-                                        v-model="search"
-                                        type="text"
-                                        placeholder="Search users..."
-                                        class="form-control border-start-0 search-input"
-                                        aria-label="Search"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-                        <!-- For Desktop: Table View -->
-                        <div v-if="!isMobile" class="table-container">
-                            <!-- Add reset filters button -->
-                            <span
-                                class="reset-all-filters-btn"
-                                title="Reset all filters"
-                                @click="resetAllFilters"
-                            >
-                                <i class="fas fa-redo-alt"></i>
-                            </span>
-                            <div
-                                class="table-scroll-container"
-                                ref="tableScrollContainer"
-                            >
-                                <table class="table table-hover table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <!-- Keep your existing table headers here -->
-                                            <th>#</th>
-                                            <th>
-                                                Username
-                                                <button
-                                                    @click="
-                                                        toggleFilter('username')
-                                                    "
-                                                    class="filter-btn"
-                                                >
-                                                    <i
-                                                        class="fas fa-filter"
-                                                        :class="{
-                                                            'text-green-500':
-                                                                columnFilters.username,
-                                                        }"
-                                                    ></i>
-                                                </button>
-                                                <!-- เพิ่มส่วน filter dropdown สำหรับ username -->
-                                                <div
-                                                    v-if="
-                                                        activeFilter ===
-                                                        'username'
-                                                    "
-                                                    class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                >
-                                                    <input
-                                                        type="text"
-                                                        v-model="
-                                                            columnFilters.username
-                                                        "
-                                                        class="form-control form-control-sm mb-2"
-                                                        placeholder="Filter by username..."
-                                                    />
-                                                    <div
-                                                        class="d-flex justify-content-between mt-2"
-                                                    >
-                                                        <button
-                                                            @click="
-                                                                resetFilter(
-                                                                    'username'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-outline-secondary"
-                                                        >
-                                                            Clear
-                                                        </button>
-                                                        <button
-                                                            @click="
-                                                                applyFilter(
-                                                                    'username'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-success"
-                                                        >
-                                                            Apply
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </th>
-                                            <th>
-                                                Full Name
-                                                <button
-                                                    @click="
-                                                        toggleFilter(
-                                                            'full_name'
-                                                        )
-                                                    "
-                                                    class="filter-btn"
-                                                >
-                                                    <i
-                                                        class="fas fa-filter"
-                                                        :class="{
-                                                            'text-green-500':
-                                                                columnFilters.full_name,
-                                                        }"
-                                                    ></i>
-                                                </button>
-                                                <div
-                                                    v-if="
-                                                        activeFilter ===
-                                                        'full_name'
-                                                    "
-                                                    class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                >
-                                                    <input
-                                                        type="text"
-                                                        v-model="
-                                                            columnFilters.full_name
-                                                        "
-                                                        class="form-control form-control-sm mb-2"
-                                                        placeholder="Filter by name..."
-                                                    />
-                                                    <div
-                                                        class="d-flex justify-content-between mt-2"
-                                                    >
-                                                        <button
-                                                            @click="
-                                                                resetFilter(
-                                                                    'full_name'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-outline-secondary"
-                                                        >
-                                                            Clear
-                                                        </button>
-                                                        <button
-                                                            @click="
-                                                                applyFilter(
-                                                                    'full_name'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-success"
-                                                        >
-                                                            Apply
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </th>
-                                            <th>
-                                                Mã NV
-                                                <button
-                                                    @click="
-                                                        toggleFilter(
-                                                            'ma_nhan_vien'
-                                                        )
-                                                    "
-                                                    class="filter-btn"
-                                                >
-                                                    <i
-                                                        class="fas fa-filter"
-                                                        :class="{
-                                                            'text-green-500':
-                                                                columnFilters.ma_nhan_vien,
-                                                        }"
-                                                    ></i>
-                                                </button>
-                                                <div
-                                                    v-if="
-                                                        activeFilter ===
-                                                        'ma_nhan_vien'
-                                                    "
-                                                    class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                >
-                                                    <input
-                                                        type="text"
-                                                        v-model="
-                                                            columnFilters.ma_nhan_vien
-                                                        "
-                                                        class="form-control form-control-sm mb-2"
-                                                        placeholder="Filter by employee ID..."
-                                                    />
-                                                    <div
-                                                        class="d-flex justify-content-between mt-2"
-                                                    >
-                                                        <button
-                                                            @click="
-                                                                resetFilter(
-                                                                    'ma_nhan_vien'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-outline-secondary"
-                                                        >
-                                                            Clear
-                                                        </button>
-                                                        <button
-                                                            @click="
-                                                                applyFilter(
-                                                                    'ma_nhan_vien'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-success"
-                                                        >
-                                                            Apply
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </th>
-                                            <th>
-                                                Chức vụ
-                                                <button
-                                                    @click="
-                                                        toggleFilter('position')
-                                                    "
-                                                    class="filter-btn"
-                                                >
-                                                    <i
-                                                        class="fas fa-filter"
-                                                        :class="{
-                                                            'text-green-500':
-                                                                selectedFilterValues
-                                                                    .position
-                                                                    .length > 0,
-                                                        }"
-                                                    ></i>
-                                                </button>
-                                                <div
-                                                    v-if="
-                                                        activeFilter ===
-                                                        'position'
-                                                    "
-                                                    class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                >
-                                                    <div
-                                                        class="max-h-40 overflow-y-auto"
-                                                    >
-                                                        <div
-                                                            v-for="position in positions"
-                                                            :key="
-                                                                position.id_position
-                                                            "
-                                                            class="form-check"
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                class="form-check-input"
-                                                                :id="
-                                                                    'pos-' +
-                                                                    position.id_position
-                                                                "
-                                                                :value="
-                                                                    position.id_position
-                                                                "
-                                                                v-model="
-                                                                    selectedFilterValues.position
-                                                                "
-                                                            />
-                                                            <label
-                                                                class="form-check-label"
-                                                                :for="
-                                                                    'pos-' +
-                                                                    position.id_position
-                                                                "
-                                                            >
-                                                                {{
-                                                                    position.position
-                                                                }}
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        class="d-flex justify-content-between mt-2"
-                                                    >
-                                                        <button
-                                                            @click="
-                                                                resetFilter(
-                                                                    'position'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-outline-secondary"
-                                                        >
-                                                            Clear
-                                                        </button>
-                                                        <button
-                                                            @click="
-                                                                applyFilter(
-                                                                    'position'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-success"
-                                                        >
-                                                            Apply
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </th>
-                                            <th>
-                                                Trạm
-                                                <button
-                                                    @click="
-                                                        toggleFilter('station')
-                                                    "
-                                                    class="filter-btn"
-                                                >
-                                                    <i
-                                                        class="fas fa-filter"
-                                                        :class="{
-                                                            'text-green-500':
-                                                                selectedFilterValues
-                                                                    .station
-                                                                    .length > 0,
-                                                        }"
-                                                    ></i>
-                                                </button>
-                                                <div
-                                                    v-if="
-                                                        activeFilter ===
-                                                        'station'
-                                                    "
-                                                    class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                >
-                                                    <div
-                                                        class="max-h-40 overflow-y-auto"
-                                                    >
-                                                        <div
-                                                            v-for="station in stations"
-                                                            :key="
-                                                                station.ma_don_vi
-                                                            "
-                                                            class="form-check"
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                class="form-check-input"
-                                                                :id="
-                                                                    'station-' +
-                                                                    station.ma_don_vi
-                                                                "
-                                                                :value="
-                                                                    station.ma_don_vi
-                                                                "
-                                                                v-model="
-                                                                    selectedFilterValues.station
-                                                                "
-                                                            />
-                                                            <label
-                                                                class="form-check-label"
-                                                                :for="
-                                                                    'station-' +
-                                                                    station.ma_don_vi
-                                                                "
-                                                            >
-                                                                {{
-                                                                    station.Name
-                                                                }}
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        class="d-flex justify-content-between mt-2"
-                                                    >
-                                                        <button
-                                                            @click="
-                                                                resetFilter(
-                                                                    'station'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-outline-secondary"
-                                                        >
-                                                            Clear
-                                                        </button>
-                                                        <button
-                                                            @click="
-                                                                applyFilter(
-                                                                    'station'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-success"
-                                                        >
-                                                            Apply
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </th>
-                                            <th>
-                                                Email
-                                                <button
-                                                    @click="
-                                                        toggleFilter('email')
-                                                    "
-                                                    class="filter-btn"
-                                                >
-                                                    <i
-                                                        class="fas fa-filter"
-                                                        :class="{
-                                                            'text-green-500':
-                                                                columnFilters.email,
-                                                        }"
-                                                    ></i>
-                                                </button>
-                                                <div
-                                                    v-if="
-                                                        activeFilter === 'email'
-                                                    "
-                                                    class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                >
-                                                    <input
-                                                        type="text"
-                                                        v-model="
-                                                            columnFilters.email
-                                                        "
-                                                        class="form-control form-control-sm mb-2"
-                                                        placeholder="Filter by email..."
-                                                    />
-                                                    <div
-                                                        class="d-flex justify-content-between mt-2"
-                                                    >
-                                                        <button
-                                                            @click="
-                                                                resetFilter(
-                                                                    'email'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-outline-secondary"
-                                                        >
-                                                            Clear
-                                                        </button>
-                                                        <button
-                                                            @click="
-                                                                applyFilter(
-                                                                    'email'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-success"
-                                                        >
-                                                            Apply
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </th>
-                                            <th>
-                                                Phone
-                                                <button
-                                                    @click="
-                                                        toggleFilter('phone')
-                                                    "
-                                                    class="filter-btn"
-                                                >
-                                                    <i
-                                                        class="fas fa-filter"
-                                                        :class="{
-                                                            'text-green-500':
-                                                                columnFilters.phone,
-                                                        }"
-                                                    ></i>
-                                                </button>
-                                                <div
-                                                    v-if="
-                                                        activeFilter === 'phone'
-                                                    "
-                                                    class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                >
-                                                    <input
-                                                        type="text"
-                                                        v-model="
-                                                            columnFilters.phone
-                                                        "
-                                                        class="form-control form-control-sm mb-2"
-                                                        placeholder="Filter by phone..."
-                                                    />
-                                                    <div
-                                                        class="d-flex justify-content-between mt-2"
-                                                    >
-                                                        <button
-                                                            @click="
-                                                                resetFilter(
-                                                                    'phone'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-outline-secondary"
-                                                        >
-                                                            Clear
-                                                        </button>
-                                                        <button
-                                                            @click="
-                                                                applyFilter(
-                                                                    'phone'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-success"
-                                                        >
-                                                            Apply
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </th>
-                                            <th>
-                                                Role
-                                                <button
-                                                    @click="
-                                                        toggleFilter('role_id')
-                                                    "
-                                                    class="filter-btn"
-                                                >
-                                                    <i
-                                                        class="fas fa-filter"
-                                                        :class="{
-                                                            'text-green-500':
-                                                                selectedFilterValues
-                                                                    .role_id
-                                                                    .length > 0,
-                                                        }"
-                                                    ></i>
-                                                </button>
-                                                <div
-                                                    v-if="
-                                                        activeFilter ===
-                                                        'role_id'
-                                                    "
-                                                    class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                >
-                                                    <div
-                                                        class="max-h-40 overflow-y-auto"
-                                                    >
-                                                        <div
-                                                            v-for="role in roles"
-                                                            :key="role.id"
-                                                            class="form-check"
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                class="form-check-input"
-                                                                :id="
-                                                                    'role-' +
-                                                                    role.id
-                                                                "
-                                                                :value="role.id"
-                                                                v-model="
-                                                                    selectedFilterValues.role_id
-                                                                "
-                                                            />
-                                                            <label
-                                                                class="form-check-label"
-                                                                :for="
-                                                                    'role-' +
-                                                                    role.id
-                                                                "
-                                                            >
-                                                                {{ role.name }}
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        class="d-flex justify-content-between mt-2"
-                                                    >
-                                                        <button
-                                                            @click="
-                                                                resetFilter(
-                                                                    'role_id'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-outline-secondary"
-                                                        >
-                                                            Clear
-                                                        </button>
-                                                        <button
-                                                            @click="
-                                                                applyFilter(
-                                                                    'role_id'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-success"
-                                                        >
-                                                            Apply
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </th>
-                                            <th>
-                                                Status
-                                                <button
-                                                    @click="
-                                                        toggleFilter('status')
-                                                    "
-                                                    class="filter-btn"
-                                                >
-                                                    <i
-                                                        class="fas fa-filter"
-                                                        :class="{
-                                                            'text-green-500':
-                                                                selectedFilterValues
-                                                                    .status
-                                                                    .length > 0,
-                                                        }"
-                                                    ></i>
-                                                </button>
-                                                <div
-                                                    v-if="
-                                                        activeFilter ===
-                                                        'status'
-                                                    "
-                                                    class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
-                                                >
-                                                    <div
-                                                        class="max-h-40 overflow-y-auto"
-                                                    >
-                                                        <div
-                                                            v-for="status in uniqueValues.status"
-                                                            :key="status"
-                                                            class="form-check"
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                class="form-check-input"
-                                                                :id="
-                                                                    'status-' +
-                                                                    status
-                                                                "
-                                                                :value="status"
-                                                                v-model="
-                                                                    selectedFilterValues.status
-                                                                "
-                                                            />
-                                                            <label
-                                                                class="form-check-label"
-                                                                :for="
-                                                                    'status-' +
-                                                                    status
-                                                                "
-                                                            >
-                                                                {{ status }}
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        class="d-flex justify-content-between mt-2"
-                                                    >
-                                                        <button
-                                                            @click="
-                                                                resetFilter(
-                                                                    'status'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-outline-secondary"
-                                                        >
-                                                            Clear
-                                                        </button>
-                                                        <button
-                                                            @click="
-                                                                applyFilter(
-                                                                    'status'
-                                                                )
-                                                            "
-                                                            class="btn btn-sm btn-success"
-                                                        >
-                                                            Apply
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr
-                                            v-for="(
-                                                user, index
-                                            ) in paginatedUsers.data"
-                                            :key="user.id"
-                                            class="desktop-row clickable-row"
-                                            @click="navigateToEditUser(user.id)"
-                                        >
-                                            <td>
-                                                {{
-                                                    (currentPage - 1) *
-                                                        perPage +
-                                                    index +
-                                                    1
-                                                }}
-                                            </td>
-                                            <td>{{ user.username }}</td>
-                                            <td>{{ user.full_name }}</td>
-                                            <td>
-                                                {{
-                                                    formatEmployeeId(
-                                                        user.ma_nhan_vien
-                                                    )
-                                                }}
-                                            </td>
-                                            <td>
-                                                <span
-                                                    :class="
-                                                        getPositionBadgeClass(
-                                                            user.position
-                                                        )
-                                                    "
-                                                >
-                                                    <i
-                                                        :class="
-                                                            getPositionIcon(
-                                                                user.position
-                                                            )
-                                                        "
-                                                    ></i>
-                                                    {{
-                                                        getPositionName(
-                                                            user.position
-                                                        )
-                                                    }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span
-                                                    :class="
-                                                        getStationBadgeClass(
-                                                            user.station
-                                                        )
-                                                    "
-                                                >
-                                                    <i
-                                                        :class="
-                                                            getStationIcon(
-                                                                user.station
-                                                            )
-                                                        "
-                                                    ></i>
-                                                    {{
-                                                        getStationName(
-                                                            user.station
-                                                        )
-                                                    }}
-                                                </span>
-                                            </td>
-                                            <td>{{ user.email }}</td>
-                                            <td>{{ user.phone }}</td>
-                                            <td
-                                                :class="[
-                                                    roleClasses(
-                                                        getRoleName(
-                                                            user.role_id
-                                                        )
-                                                    ),
-                                                    'text-center',
-                                                ]"
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul
+                                        class="dropdown-menu shadow-sm"
+                                        aria-labelledby="actionMenuButton"
+                                    >
+                                        <li>
+                                            <a
+                                                class="dropdown-item"
+                                                href="#"
+                                                @click.prevent="showExportModal"
                                             >
                                                 <i
-                                                    :class="{
-                                                        'bx bx-user':
-                                                            getRoleName(
-                                                                user.role_id
-                                                            ) === 'User',
-                                                        'bx bx-shield-quarter':
-                                                            getRoleName(
-                                                                user.role_id
-                                                            ) === 'Admin',
-                                                        'bx bx-briefcase-alt':
-                                                            getRoleName(
-                                                                user.role_id
-                                                            ) === 'Manager',
-                                                        'bx bx-crown':
-                                                            getRoleName(
-                                                                user.role_id
-                                                            ) === 'Super Admin',
-                                                    }"
+                                                    class="fas fa-file-excel text-success me-2"
                                                 ></i>
-                                                {{ getRoleName(user.role_id) }}
-                                            </td>
-                                            <td
-                                                :class="{
-                                                    'text-success':
-                                                        user.status ===
-                                                        'active',
-                                                    'text-danger':
-                                                        user.status ===
-                                                        'inactive',
-                                                }"
-                                            >
-                                                {{ user.status }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div class="pagination-card">
-                                <pagination
-                                    :data="paginatedUsers"
-                                    @pagination-change-page="pageChanged"
-                                    :limit="5"
-                                    :classes="paginationClasses"
-                                />
+                                                Export to Excel
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Mobile Controls -->
-                <div class="mobile-controls-container mt-3" v-if="isMobile">
-                    <div class="mobile-header-row">
-                        <div class="mobile-search-section">
+                    <div class="col-md-6 d-flex justify-content-end">
+                        <div class="search-container">
                             <div class="input-group">
                                 <span
                                     class="input-group-text bg-white border-end-0"
@@ -893,311 +84,1025 @@
                                 />
                             </div>
                         </div>
-                        <div class="mobile-action-section">
-                            <button
-                                v-if="hasPermission('create')"
-                                type="button"
-                                @click="Adduser"
-                                class="btn-mobile-add"
-                            >
-                                <i class="bx bxs-user-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Mobile Filter Section -->
-                    <div class="mobile-filter-row">
-                        <div class="mobile-filter-left">
-                            <div class="filter-dropdown-container">
-                                <select
-                                    v-model="selectedMobileRole"
-                                    class="mobile-role-select"
-                                    @change="applyMobileRoleFilter"
-                                >
-                                    <option value="">All Roles</option>
-                                    <option
-                                        v-for="role in roles"
-                                        :key="role.id"
-                                        :value="role.id"
-                                    >
-                                        {{ role.name }}
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mobile-filter-right">
-                            <button
-                                @click="showMobileFilterModal = true"
-                                class="mobile-filter-btn"
-                            >
-                                <i class="fas fa-filter"></i>
-                            </button>
-                            <button
-                                @click="resetAllFilters"
-                                class="mobile-filter-btn"
-                            >
-                                <i class="fas fa-redo-alt me-1"></i>
-                            </button>
-                        </div>
                     </div>
                 </div>
-
-                <!-- Mobile Filter Modal -->
-                <div
-                    v-if="showMobileFilterModal"
-                    class="mobile-filter-modal-overlay"
-                    @click="showMobileFilterModal = false"
-                >
-                    <div class="mobile-filter-modal" @click.stop>
-                        <div class="modal-header">
-                            <h5 class="modal-title">Filter Options</h5>
-                            <button
-                                @click="showMobileFilterModal = false"
-                                class="btn-close"
-                            >
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-
-                        <div class="modal-body">
-                            <!-- Station Filter -->
-                            <div class="filter-section">
-                                <label class="filter-label">Trạm</label>
-                                <div class="checkbox-container">
-                                    <div
-                                        v-for="station in stations"
-                                        :key="station.ma_don_vi"
-                                        class="form-check"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            class="form-check-input"
-                                            :id="
-                                                'mobile-station-' +
-                                                station.ma_don_vi
-                                            "
-                                            :value="station.ma_don_vi"
-                                            v-model="
-                                                selectedFilterValues.station
-                                            "
-                                        />
-                                        <label
-                                            class="form-check-label"
-                                            :for="
-                                                'mobile-station-' +
-                                                station.ma_don_vi
-                                            "
-                                        >
-                                            {{ station.Name }}
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Position Filter -->
-                            <div class="filter-section">
-                                <label class="filter-label">Chức vụ</label>
-                                <div class="checkbox-container">
-                                    <div
-                                        v-for="position in positions"
-                                        :key="position.id_position"
-                                        class="form-check"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            class="form-check-input"
-                                            :id="
-                                                'mobile-pos-' +
-                                                position.id_position
-                                            "
-                                            :value="position.id_position"
-                                            v-model="
-                                                selectedFilterValues.position
-                                            "
-                                        />
-                                        <label
-                                            class="form-check-label"
-                                            :for="
-                                                'mobile-pos-' +
-                                                position.id_position
-                                            "
-                                        >
-                                            {{ position.position }}
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Status Filter -->
-                            <div class="filter-section">
-                                <label class="filter-label">Status</label>
-                                <div class="checkbox-container">
-                                    <div
-                                        v-for="status in uniqueValues.status"
-                                        :key="status"
-                                        class="form-check"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            class="form-check-input"
-                                            :id="'mobile-status-' + status"
-                                            :value="status"
-                                            v-model="
-                                                selectedFilterValues.status
-                                            "
-                                        />
-                                        <label
-                                            class="form-check-label"
-                                            :for="'mobile-status-' + status"
-                                        >
-                                            {{ status }}
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="modal-footer">
-                            <button
-                                @click="showMobileFilterModal = false"
-                                class="btn btn-primary"
-                            >
-                                <i class="fas fa-check me-1"></i>
-                                Apply Filters
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- For Mobile: Card View -->
-                <div v-if="isMobile" class="card-container">
-                    <div
-                        v-for="(user, index) in paginatedUsers.data"
-                        :key="user.id"
-                        class="user-card mb-3 p-3 rounded border-0 clickable-card"
-                        @click="navigateToEditUser(user.id)"
-                    >
-                        <div
-                            class="card-header d-flex justify-content-between align-items-center mb-2"
+            </div>
+            <div class="row">
+                <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+                    <!-- For Desktop: Table View -->
+                    <div v-if="!isMobile" class="table-container">
+                        <!-- Add reset filters button -->
+                        <span
+                            class="reset-all-filters-btn"
+                            title="Reset all filters"
+                            @click="resetAllFilters"
                         >
-                            <div class="user-index fw-bold">
-                                <span
-                                    class="badge bg-label-primary rounded-pill"
-                                    >#{{
-                                        (currentPage - 1) * perPage + index + 1
-                                    }}</span
-                                >
-                            </div>
-                            <div
-                                :class="{
-                                    'text-success': user.status === 'active',
-                                    'text-danger': user.status === 'inactive',
-                                }"
-                            >
-                                <i
-                                    :class="{
-                                        'fas fa-circle': true,
-                                        'text-success':
-                                            user.status === 'active',
-                                        'text-danger':
-                                            user.status === 'inactive',
-                                    }"
-                                ></i>
-                                {{ user.status }}
-                            </div>
+                            <i class="fas fa-redo-alt"></i>
+                        </span>
+                        <div
+                            class="table-scroll-container"
+                            ref="tableScrollContainer"
+                        >
+                            <table class="table table-hover table-bordered">
+                                <thead>
+                                    <tr>
+                                        <!-- Keep your existing table headers here -->
+                                        <th>#</th>
+                                        <th>
+                                            Username
+                                            <button
+                                                @click="
+                                                    toggleFilter('username')
+                                                "
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.username,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <!-- เพิ่มส่วน filter dropdown สำหรับ username -->
+                                            <div
+                                                v-if="
+                                                    activeFilter === 'username'
+                                                "
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    v-model="
+                                                        columnFilters.username
+                                                    "
+                                                    class="form-control form-control-sm mb-2"
+                                                    placeholder="Filter by username..."
+                                                />
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'username'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'username'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            Full Name
+                                            <button
+                                                @click="
+                                                    toggleFilter('full_name')
+                                                "
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.full_name,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    activeFilter === 'full_name'
+                                                "
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    v-model="
+                                                        columnFilters.full_name
+                                                    "
+                                                    class="form-control form-control-sm mb-2"
+                                                    placeholder="Filter by name..."
+                                                />
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'full_name'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'full_name'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            Mã NV
+                                            <button
+                                                @click="
+                                                    toggleFilter('ma_nhan_vien')
+                                                "
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.ma_nhan_vien,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    activeFilter ===
+                                                    'ma_nhan_vien'
+                                                "
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    v-model="
+                                                        columnFilters.ma_nhan_vien
+                                                    "
+                                                    class="form-control form-control-sm mb-2"
+                                                    placeholder="Filter by employee ID..."
+                                                />
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'ma_nhan_vien'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'ma_nhan_vien'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            Chức vụ
+                                            <button
+                                                @click="
+                                                    toggleFilter('position')
+                                                "
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            selectedFilterValues
+                                                                .position
+                                                                .length > 0,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    activeFilter === 'position'
+                                                "
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <div
+                                                    class="max-h-40 overflow-y-auto"
+                                                >
+                                                    <div
+                                                        v-for="position in positions"
+                                                        :key="
+                                                            position.id_position
+                                                        "
+                                                        class="form-check"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            class="form-check-input"
+                                                            :id="
+                                                                'pos-' +
+                                                                position.id_position
+                                                            "
+                                                            :value="
+                                                                position.id_position
+                                                            "
+                                                            v-model="
+                                                                selectedFilterValues.position
+                                                            "
+                                                        />
+                                                        <label
+                                                            class="form-check-label"
+                                                            :for="
+                                                                'pos-' +
+                                                                position.id_position
+                                                            "
+                                                        >
+                                                            {{
+                                                                position.position
+                                                            }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'position'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'position'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            Trạm
+                                            <button
+                                                @click="toggleFilter('station')"
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            selectedFilterValues
+                                                                .station
+                                                                .length > 0,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    activeFilter === 'station'
+                                                "
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <div
+                                                    class="max-h-40 overflow-y-auto"
+                                                >
+                                                    <div
+                                                        v-for="station in stations"
+                                                        :key="station.ma_don_vi"
+                                                        class="form-check"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            class="form-check-input"
+                                                            :id="
+                                                                'station-' +
+                                                                station.ma_don_vi
+                                                            "
+                                                            :value="
+                                                                station.ma_don_vi
+                                                            "
+                                                            v-model="
+                                                                selectedFilterValues.station
+                                                            "
+                                                        />
+                                                        <label
+                                                            class="form-check-label"
+                                                            :for="
+                                                                'station-' +
+                                                                station.ma_don_vi
+                                                            "
+                                                        >
+                                                            {{ station.Name }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'station'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'station'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            Email
+                                            <button
+                                                @click="toggleFilter('email')"
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.email,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="activeFilter === 'email'"
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    v-model="
+                                                        columnFilters.email
+                                                    "
+                                                    class="form-control form-control-sm mb-2"
+                                                    placeholder="Filter by email..."
+                                                />
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter('email')
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter('email')
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            Phone
+                                            <button
+                                                @click="toggleFilter('phone')"
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.phone,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="activeFilter === 'phone'"
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    v-model="
+                                                        columnFilters.phone
+                                                    "
+                                                    class="form-control form-control-sm mb-2"
+                                                    placeholder="Filter by phone..."
+                                                />
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter('phone')
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter('phone')
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            Role
+                                            <button
+                                                @click="toggleFilter('role_id')"
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            selectedFilterValues
+                                                                .role_id
+                                                                .length > 0,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    activeFilter === 'role_id'
+                                                "
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <div
+                                                    class="max-h-40 overflow-y-auto"
+                                                >
+                                                    <div
+                                                        v-for="role in roles"
+                                                        :key="role.id"
+                                                        class="form-check"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            class="form-check-input"
+                                                            :id="
+                                                                'role-' +
+                                                                role.id
+                                                            "
+                                                            :value="role.id"
+                                                            v-model="
+                                                                selectedFilterValues.role_id
+                                                            "
+                                                        />
+                                                        <label
+                                                            class="form-check-label"
+                                                            :for="
+                                                                'role-' +
+                                                                role.id
+                                                            "
+                                                        >
+                                                            {{ role.name }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'role_id'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'role_id'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            Status
+                                            <button
+                                                @click="toggleFilter('status')"
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            selectedFilterValues
+                                                                .status.length >
+                                                            0,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="activeFilter === 'status'"
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <div
+                                                    class="max-h-40 overflow-y-auto"
+                                                >
+                                                    <div
+                                                        v-for="status in uniqueValues.status"
+                                                        :key="status"
+                                                        class="form-check"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            class="form-check-input"
+                                                            :id="
+                                                                'status-' +
+                                                                status
+                                                            "
+                                                            :value="status"
+                                                            v-model="
+                                                                selectedFilterValues.status
+                                                            "
+                                                        />
+                                                        <label
+                                                            class="form-check-label"
+                                                            :for="
+                                                                'status-' +
+                                                                status
+                                                            "
+                                                        >
+                                                            {{ status }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'status'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'status'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="(
+                                            user, index
+                                        ) in paginatedUsers.data"
+                                        :key="user.id"
+                                        class="desktop-row clickable-row"
+                                        @click="navigateToEditUser(user.id)"
+                                    >
+                                        <td>
+                                            {{
+                                                (currentPage - 1) * perPage +
+                                                index +
+                                                1
+                                            }}
+                                        </td>
+                                        <td>{{ user.username }}</td>
+                                        <td>{{ user.full_name }}</td>
+                                        <td>
+                                            {{
+                                                formatEmployeeId(
+                                                    user.ma_nhan_vien
+                                                )
+                                            }}
+                                        </td>
+                                        <td>
+                                            <span
+                                                :class="
+                                                    getPositionBadgeClass(
+                                                        user.position
+                                                    )
+                                                "
+                                            >
+                                                <i
+                                                    :class="
+                                                        getPositionIcon(
+                                                            user.position
+                                                        )
+                                                    "
+                                                ></i>
+                                                {{
+                                                    getPositionName(
+                                                        user.position
+                                                    )
+                                                }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span
+                                                :class="
+                                                    getStationBadgeClass(
+                                                        user.station
+                                                    )
+                                                "
+                                            >
+                                                <i
+                                                    :class="
+                                                        getStationIcon(
+                                                            user.station
+                                                        )
+                                                    "
+                                                ></i>
+                                                {{
+                                                    getStationName(user.station)
+                                                }}
+                                            </span>
+                                        </td>
+                                        <td>{{ user.email }}</td>
+                                        <td>{{ user.phone }}</td>
+                                        <td
+                                            :class="[
+                                                roleClasses(
+                                                    getRoleName(user.role_id)
+                                                ),
+                                                'text-center',
+                                            ]"
+                                        >
+                                            <i
+                                                :class="{
+                                                    'bx bx-user':
+                                                        getRoleName(
+                                                            user.role_id
+                                                        ) === 'User',
+                                                    'bx bx-shield-quarter':
+                                                        getRoleName(
+                                                            user.role_id
+                                                        ) === 'Admin',
+                                                    'bx bx-briefcase-alt':
+                                                        getRoleName(
+                                                            user.role_id
+                                                        ) === 'Manager',
+                                                    'bx bx-crown':
+                                                        getRoleName(
+                                                            user.role_id
+                                                        ) === 'Super Admin',
+                                                }"
+                                            ></i>
+                                            {{ getRoleName(user.role_id) }}
+                                        </td>
+                                        <td
+                                            :class="{
+                                                'text-success':
+                                                    user.status === 'active',
+                                                'text-danger':
+                                                    user.status === 'inactive',
+                                            }"
+                                        >
+                                            {{ user.status }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
 
-                        <div class="user-info">
-                            <div class="info-item">
-                                <strong>Username:</strong>
-                                {{ user.username }}
-                            </div>
-                            <div class="info-item">
-                                <strong>Name:</strong>
-                                {{ user.full_name }}
-                            </div>
-                            <div class="info-item">
-                                <strong>ID:</strong>
-                                {{ formatEmployeeId(user.ma_nhan_vien) }}
-                            </div>
-                            <div class="info-item">
-                                <strong>Position:</strong>
-                                <span
-                                    :class="
-                                        getPositionBadgeClass(user.position)
-                                    "
-                                >
-                                    <i
-                                        :class="getPositionIcon(user.position)"
-                                    ></i>
-                                    {{ getPositionName(user.position) }}
-                                </span>
-                            </div>
-                            <div class="info-item">
-                                <strong>Station:</strong>
-                                <span
-                                    :class="getStationBadgeClass(user.station)"
-                                >
-                                    <i
-                                        :class="getStationIcon(user.station)"
-                                    ></i>
-                                    {{ getStationName(user.station) }}
-                                </span>
-                            </div>
-                            <div class="info-item">
-                                <strong>Email:</strong>
-                                <span
-                                    class="text-truncate d-inline-block"
-                                    style="max-width: 140px"
-                                    >{{ user.email || "N/A" }}</span
-                                >
-                            </div>
-                            <div class="info-item">
-                                <strong>Phone:</strong>
-                                {{ user.phone || "N/A" }}
-                            </div>
-                            <div class="info-item">
-                                <strong>Role:</strong>
-                                <span
-                                    :class="
-                                        roleClasses(getRoleName(user.role_id))
-                                    "
-                                >
-                                    <i
-                                        :class="{
-                                            'bx bx-user':
-                                                getRoleName(user.role_id) ===
-                                                'User',
-                                            'bx bx-shield-quarter':
-                                                getRoleName(user.role_id) ===
-                                                'Admin',
-                                            'bx bx-briefcase-alt':
-                                                getRoleName(user.role_id) ===
-                                                'Manager',
-                                            'bx bx-crown':
-                                                getRoleName(user.role_id) ===
-                                                'Super Admin',
-                                        }"
-                                    ></i>
-                                    {{ getRoleName(user.role_id) }}
-                                </span>
-                            </div>
+                        <div class="pagination-card">
+                            <pagination
+                                :data="paginatedUsers"
+                                @pagination-change-page="pageChanged"
+                                :limit="5"
+                                :classes="paginationClasses"
+                            />
                         </div>
-                    </div>
-
-                    <!-- Keep pagination section -->
-                    <div class="flex justify-center mt-4">
-                        <pagination
-                            :data="paginatedUsers"
-                            @pagination-change-page="pageChanged"
-                            :limit="5"
-                            :classes="paginationClasses"
-                        />
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    <!-- Mobile Controls -->
+    <div class="mobile-controls-container mt-3" v-if="isMobile">
+        <div class="mobile-header-row">
+            <div class="mobile-search-section">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Search users..."
+                        class="form-control border-start-0 search-input"
+                        aria-label="Search"
+                    />
+                </div>
+            </div>
+            <div class="mobile-action-section">
+                <button
+                    v-if="hasPermission('create')"
+                    type="button"
+                    @click="Adduser"
+                    class="btn-mobile-add"
+                >
+                    <i class="bx bxs-user-plus"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Filter Section -->
+        <div class="mobile-filter-row">
+            <div class="mobile-filter-left">
+                <div class="filter-dropdown-container">
+                    <select
+                        v-model="selectedMobileRole"
+                        class="mobile-role-select"
+                        @change="applyMobileRoleFilter"
+                    >
+                        <option value="">All Roles</option>
+                        <option
+                            v-for="role in roles"
+                            :key="role.id"
+                            :value="role.id"
+                        >
+                            {{ role.name }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+            <div class="mobile-filter-right">
+                <button
+                    @click="showMobileFilterModal = true"
+                    class="mobile-filter-btn"
+                >
+                    <i class="fas fa-filter"></i>
+                </button>
+                <button @click="resetAllFilters" class="mobile-filter-btn">
+                    <i class="fas fa-redo-alt me-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Filter Modal -->
+    <div
+        v-if="showMobileFilterModal"
+        class="mobile-filter-modal-overlay"
+        @click="showMobileFilterModal = false"
+    >
+        <div class="mobile-filter-modal" @click.stop>
+            <div class="modal-header">
+                <h5 class="modal-title">Filter Options</h5>
+                <button
+                    @click="showMobileFilterModal = false"
+                    class="btn-close"
+                >
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Station Filter -->
+                <div class="filter-section">
+                    <label class="filter-label">Trạm</label>
+                    <div class="checkbox-container">
+                        <div
+                            v-for="station in stations"
+                            :key="station.ma_don_vi"
+                            class="form-check"
+                        >
+                            <input
+                                type="checkbox"
+                                class="form-check-input"
+                                :id="'mobile-station-' + station.ma_don_vi"
+                                :value="station.ma_don_vi"
+                                v-model="selectedFilterValues.station"
+                            />
+                            <label
+                                class="form-check-label"
+                                :for="'mobile-station-' + station.ma_don_vi"
+                            >
+                                {{ station.Name }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Position Filter -->
+                <div class="filter-section">
+                    <label class="filter-label">Chức vụ</label>
+                    <div class="checkbox-container">
+                        <div
+                            v-for="position in positions"
+                            :key="position.id_position"
+                            class="form-check"
+                        >
+                            <input
+                                type="checkbox"
+                                class="form-check-input"
+                                :id="'mobile-pos-' + position.id_position"
+                                :value="position.id_position"
+                                v-model="selectedFilterValues.position"
+                            />
+                            <label
+                                class="form-check-label"
+                                :for="'mobile-pos-' + position.id_position"
+                            >
+                                {{ position.position }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="filter-section">
+                    <label class="filter-label">Status</label>
+                    <div class="checkbox-container">
+                        <div
+                            v-for="status in uniqueValues.status"
+                            :key="status"
+                            class="form-check"
+                        >
+                            <input
+                                type="checkbox"
+                                class="form-check-input"
+                                :id="'mobile-status-' + status"
+                                :value="status"
+                                v-model="selectedFilterValues.status"
+                            />
+                            <label
+                                class="form-check-label"
+                                :for="'mobile-status-' + status"
+                            >
+                                {{ status }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button
+                    @click="showMobileFilterModal = false"
+                    class="btn btn-primary"
+                >
+                    <i class="fas fa-check me-1"></i>
+                    Apply Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- For Mobile: Card View -->
+    <div v-if="isMobile" class="card-container">
+        <div
+            v-for="(user, index) in paginatedUsers.data"
+            :key="user.id"
+            class="user-card mb-3 p-3 rounded border-0 clickable-card"
+            @click="navigateToEditUser(user.id)"
+        >
+            <div
+                class="card-header d-flex justify-content-between align-items-center mb-2"
+            >
+                <div class="user-index fw-bold">
+                    <span class="badge bg-label-primary rounded-pill"
+                        >#{{ (currentPage - 1) * perPage + index + 1 }}</span
+                    >
+                </div>
+                <div
+                    :class="{
+                        'text-success': user.status === 'active',
+                        'text-danger': user.status === 'inactive',
+                    }"
+                >
+                    <i
+                        :class="{
+                            'fas fa-circle': true,
+                            'text-success': user.status === 'active',
+                            'text-danger': user.status === 'inactive',
+                        }"
+                    ></i>
+                    {{ user.status }}
+                </div>
+            </div>
+
+            <div class="user-info">
+                <div class="info-item">
+                    <strong>Username:</strong>
+                    {{ user.username }}
+                </div>
+                <div class="info-item">
+                    <strong>Name:</strong>
+                    {{ user.full_name }}
+                </div>
+                <div class="info-item">
+                    <strong>ID:</strong>
+                    {{ formatEmployeeId(user.ma_nhan_vien) }}
+                </div>
+                <div class="info-item">
+                    <strong>Position:</strong>
+                    <span :class="getPositionBadgeClass(user.position)">
+                        <i :class="getPositionIcon(user.position)"></i>
+                        {{ getPositionName(user.position) }}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <strong>Station:</strong>
+                    <span :class="getStationBadgeClass(user.station)">
+                        <i :class="getStationIcon(user.station)"></i>
+                        {{ getStationName(user.station) }}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <strong>Email:</strong>
+                    <span
+                        class="text-truncate d-inline-block"
+                        style="max-width: 140px"
+                        >{{ user.email || "N/A" }}</span
+                    >
+                </div>
+                <div class="info-item">
+                    <strong>Phone:</strong>
+                    {{ user.phone || "N/A" }}
+                </div>
+                <div class="info-item">
+                    <strong>Role:</strong>
+                    <span :class="roleClasses(getRoleName(user.role_id))">
+                        <i
+                            :class="{
+                                'bx bx-user':
+                                    getRoleName(user.role_id) === 'User',
+                                'bx bx-shield-quarter':
+                                    getRoleName(user.role_id) === 'Admin',
+                                'bx bx-briefcase-alt':
+                                    getRoleName(user.role_id) === 'Manager',
+                                'bx bx-crown':
+                                    getRoleName(user.role_id) === 'Super Admin',
+                            }"
+                        ></i>
+                        {{ getRoleName(user.role_id) }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Keep pagination section -->
+        <div class="flex justify-center mt-4">
+            <pagination
+                :data="paginatedUsers"
+                @pagination-change-page="pageChanged"
+                :limit="5"
+                :classes="paginationClasses"
+            />
+        </div>
+    </div>
+
     <!-- Add Export Modal -->
     <div
         class="modal fade"

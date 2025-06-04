@@ -243,6 +243,13 @@ Route::get('/bienban-nghiemthu-homgiong/{id}/check-access', [PhieuGiaoNhanHomGio
     Route::post('/farmer-users', [App\Http\Controllers\Farmer\UserFarmerController::class, 'store']);
     Route::put('/farmer-users/{id}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'update']);
     Route::delete('/farmer-users/{id}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'destroy']);
+    // Farmer Users Import Routes
+Route::post('/import-farmer-users', [App\Http\Controllers\Farmer\UserFarmerController::class, 'importData']);
+Route::get('/import-farmer-users-progress/{importId}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'importProgress']);
+Route::get('/farmer-users-template', [App\Http\Controllers\Farmer\UserFarmerController::class, 'downloadTemplate']);
+  // Sync selected farmer users to userfarmer_role
+    Route::post('/farmer-users/sync-roles', [App\Http\Controllers\Farmer\UserFarmerController::class, 'syncToUserFarmerRoles']);
+        Route::post('/farmer-users/delete-multiple', [App\Http\Controllers\Farmer\UserFarmerController::class, 'deleteMultiple']);
 
 });
 

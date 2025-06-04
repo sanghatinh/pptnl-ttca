@@ -25,19 +25,101 @@
                         <div class="col-md-6">
                             <div class="d-flex gap-2">
                                 <button
-                                    @click="showExportModal"
-                                    class="btn btn-outline-success"
+                                    v-if="hasPermission('create')"
+                                    type="button"
+                                    @click="Adduser"
+                                    class="button-30-save d-flex align-items-center"
                                 >
-                                    <i class="fas fa-file-export me-2"></i>Xuất
-                                    Excel
+                                    <i class="bx bxs-user-plus me-1"></i>
+                                    <span>Tạo mới</span>
                                 </button>
                                 <button
-                                    @click="Adduser"
-                                    class="btn btn-success"
+                                    type="button"
+                                    class="button-30"
+                                    @click="syncSelectedUsers"
+                                    :disabled="
+                                        selectedRows.length === 0 || isSyncing
+                                    "
                                 >
-                                    <i class="fas fa-plus me-2"></i>Thêm người
-                                    dùng
+                                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                                    <span v-if="isSyncing">Syncing...</span>
+                                    <span v-else
+                                        >Sync ({{ selectedRows.length }})</span
+                                    >
                                 </button>
+                                <button
+                                    type="button"
+                                    class="button-30-del"
+                                    @click="deleteSelectedUsers"
+                                    :disabled="
+                                        selectedRows.length === 0 || isDeleting
+                                    "
+                                >
+                                    <i class="fa-solid fa-trash-can"></i>
+                                    <span v-if="isDeleting">Đang xóa...</span>
+                                    <span v-else
+                                        >Xóa ({{ selectedRows.length }})</span
+                                    >
+                                </button>
+                                <!-- Add Export/Import buttons to the dropdown menu -->
+                                <div class="actions-menu">
+                                    <div class="dropdown">
+                                        <button
+                                            class="btn btn-light btn-icon"
+                                            type="button"
+                                            id="actionMenuButton"
+                                            data-bs-toggle="dropdown"
+                                            aria-expanded="false"
+                                        >
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul
+                                            class="dropdown-menu shadow-sm"
+                                            aria-labelledby="actionMenuButton"
+                                        >
+                                            <li>
+                                                <a
+                                                    class="dropdown-item"
+                                                    href="#"
+                                                    @click.prevent="
+                                                        showExportModal
+                                                    "
+                                                >
+                                                    <i
+                                                        class="fas fa-file-excel text-success me-2"
+                                                    ></i>
+                                                    Export to Excel
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a
+                                                    class="dropdown-item"
+                                                    href="#"
+                                                    @click.prevent="importData"
+                                                >
+                                                    <i
+                                                        class="fas fa-upload text-primary me-2"
+                                                    ></i>
+                                                    Import data
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a
+                                                    class="dropdown-item"
+                                                    href="#"
+                                                    @click.prevent="
+                                                        downloadTemplate
+                                                    "
+                                                >
+                                                    <i
+                                                        class="fas fa-download text-info me-2"
+                                                    ></i>
+                                                    Download Template
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-6 d-flex justify-content-end">
@@ -82,7 +164,15 @@
                             <table class="table table-hover">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>#</th>
+                                        <th class="checkbox-column">
+                                            <input
+                                                type="checkbox"
+                                                class="form-check-input select-all-checkbox"
+                                                :checked="isAllSelected"
+                                                :indeterminate="isIndeterminate"
+                                                @change="toggleSelectAll"
+                                            />
+                                        </th>
                                         <th>
                                             Trạm
                                             <button
@@ -93,7 +183,9 @@
                                                     class="fas fa-filter"
                                                     :class="{
                                                         'text-green-500':
-                                                            columnFilters.tram,
+                                                            selectedFilterValues
+                                                                .tram.length >
+                                                            0,
                                                     }"
                                                 ></i>
                                             </button>
@@ -101,12 +193,33 @@
                                                 v-if="activeFilter === 'tram'"
                                                 class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
                                             >
-                                                <input
-                                                    type="text"
-                                                    v-model="columnFilters.tram"
-                                                    class="form-control form-control-sm mb-2"
-                                                    placeholder="Filter by trạm..."
-                                                />
+                                                <div
+                                                    class="max-h-40 overflow-y-auto"
+                                                >
+                                                    <div
+                                                        v-for="tram in uniqueValues.tram"
+                                                        :key="tram"
+                                                        class="form-check"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            class="form-check-input"
+                                                            :id="'tram-' + tram"
+                                                            :value="tram"
+                                                            v-model="
+                                                                selectedFilterValues.tram
+                                                            "
+                                                        />
+                                                        <label
+                                                            class="form-check-label"
+                                                            :for="
+                                                                'tram-' + tram
+                                                            "
+                                                        >
+                                                            {{ tram }}
+                                                        </label>
+                                                    </div>
+                                                </div>
                                                 <div
                                                     class="d-flex justify-content-between mt-2"
                                                 >
@@ -247,7 +360,65 @@
                                                 </div>
                                             </div>
                                         </th>
-                                        <th>Khách hàng cá nhân</th>
+                                        <th>
+                                            Khách hàng cá nhân
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'khach_hang_ca_nhan'
+                                                    )
+                                                "
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.khach_hang_ca_nhan,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    activeFilter ===
+                                                    'khach_hang_ca_nhan'
+                                                "
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    v-model="
+                                                        columnFilters.khach_hang_ca_nhan
+                                                    "
+                                                    class="form-control form-control-sm mb-2"
+                                                    placeholder="Tìm theo khách hàng cá nhân..."
+                                                />
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'khach_hang_ca_nhan'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'khach_hang_ca_nhan'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
                                         <th>
                                             Mã KH doanh nghiệp
                                             <button
@@ -307,7 +478,65 @@
                                                 </div>
                                             </div>
                                         </th>
-                                        <th>Khách hàng doanh nghiệp</th>
+                                        <th>
+                                            Khách hàng doanh nghiệp
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'khach_hang_doanh_nghiep'
+                                                    )
+                                                "
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.khach_hang_doanh_nghiep,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    activeFilter ===
+                                                    'khach_hang_doanh_nghiep'
+                                                "
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    v-model="
+                                                        columnFilters.khach_hang_doanh_nghiep
+                                                    "
+                                                    class="form-control form-control-sm mb-2"
+                                                    placeholder="Tìm theo khách hàng doanh nghiệp..."
+                                                />
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'khach_hang_doanh_nghiep'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'khach_hang_doanh_nghiep'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
                                         <th>
                                             Số điện thoại
                                             <button
@@ -356,12 +585,173 @@
                                                 </div>
                                             </div>
                                         </th>
-                                        <th>Địa chỉ thường trú</th>
-                                        <th>Chủ tài khoản</th>
-                                        <th>Ngân hàng</th>
+                                        <th>
+                                            Địa chỉ thường trú
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'dia_chi_thuong_tru'
+                                                    )
+                                                "
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.dia_chi_thuong_tru,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    activeFilter ===
+                                                    'dia_chi_thuong_tru'
+                                                "
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    v-model="
+                                                        columnFilters.dia_chi_thuong_tru
+                                                    "
+                                                    class="form-control form-control-sm mb-2"
+                                                    placeholder="Tìm theo địa chỉ thường trú..."
+                                                />
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'dia_chi_thuong_tru'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'dia_chi_thuong_tru'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            Chủ tài khoản
+                                            <button
+                                                @click="
+                                                    toggleFilter(
+                                                        'chu_tai_khoan'
+                                                    )
+                                                "
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.chu_tai_khoan,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    activeFilter ===
+                                                    'chu_tai_khoan'
+                                                "
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    v-model="
+                                                        columnFilters.chu_tai_khoan
+                                                    "
+                                                    class="form-control form-control-sm mb-2"
+                                                    placeholder="Tìm theo chủ tài khoản..."
+                                                />
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter(
+                                                                'chu_tai_khoan'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter(
+                                                                'chu_tai_khoan'
+                                                            )
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            Ngân hàng
+                                            <button
+                                                @click="toggleFilter('bank')"
+                                                class="filter-btn"
+                                            >
+                                                <i
+                                                    class="fas fa-filter"
+                                                    :class="{
+                                                        'text-green-500':
+                                                            columnFilters.bank,
+                                                    }"
+                                                ></i>
+                                            </button>
+                                            <div
+                                                v-if="activeFilter === 'bank'"
+                                                class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                            >
+                                                <input
+                                                    type="text"
+                                                    v-model="columnFilters.bank"
+                                                    class="form-control form-control-sm mb-2"
+                                                    placeholder="Tìm theo ngân hàng..."
+                                                />
+                                                <div
+                                                    class="d-flex justify-content-between mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            resetFilter('bank')
+                                                        "
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            applyFilter('bank')
+                                                        "
+                                                        class="btn btn-sm btn-success"
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </th>
                                         <th>Số tài khoản</th>
                                         <th>
-                                            Vai trò
+                                            Roles
                                             <button
                                                 @click="toggleFilter('role_id')"
                                                 class="filter-btn"
@@ -525,16 +915,35 @@
                                         ) in paginatedUsers.data"
                                         :key="user.id"
                                         class="clickable-row"
+                                        :class="{
+                                            'selected-row':
+                                                selectedRows.includes(user.id),
+                                        }"
                                         @click="navigateToEditUser(user.id)"
                                     >
-                                        <td>
-                                            {{
-                                                (currentPage - 1) * perPage +
-                                                index +
-                                                1
-                                            }}
+                                        <td class="checkbox-column" @click.stop>
+                                            <input
+                                                type="checkbox"
+                                                class="form-check-input row-checkbox"
+                                                :value="user.id"
+                                                v-model="selectedRows"
+                                            />
                                         </td>
-                                        <td>{{ user.tram }}</td>
+                                        <td>
+                                            <span
+                                                :class="
+                                                    getTramBadgeClass(user.tram)
+                                                "
+                                                class="station-badge"
+                                            >
+                                                <i
+                                                    :class="
+                                                        getTramIcon(user.tram)
+                                                    "
+                                                ></i>
+                                                {{ user.tram }}
+                                            </span>
+                                        </td>
                                         <td>{{ user.supplier_number }}</td>
                                         <td>{{ user.ma_kh_ca_nhan }}</td>
                                         <td>{{ user.khach_hang_ca_nhan }}</td>
@@ -609,202 +1018,154 @@
         </div>
 
         <!-- Mobile Controls -->
-        <div v-else class="mobile-controls-container">
-            <div class="card-container">
-                <div
-                    v-for="user in paginatedUsers.data"
-                    :key="user.id"
-                    class="user-card card mb-3 clickable-card"
-                    @click="navigateToEditUser(user.id)"
-                >
-                    <div class="card-body">
-                        <div class="card-header">
-                            <div
-                                class="d-flex justify-content-between align-items-start"
-                            >
-                                <h6 class="mb-1 fw-bold">
-                                    {{
-                                        user.khach_hang_ca_nhan ||
-                                        user.khach_hang_doanh_nghiep ||
-                                        "N/A"
-                                    }}
-                                </h6>
-                                <span
-                                    :class="{
-                                        'badge bg-success':
-                                            user.status === 'active',
-                                        'badge bg-danger':
-                                            user.status === 'inactive',
-                                    }"
-                                >
-                                    {{
-                                        user.status === "active"
-                                            ? "Hoạt động"
-                                            : "Không hoạt động"
-                                    }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="user-info">
-                            <div class="info-item">
-                                <strong>Trạm:</strong> {{ user.tram }}
-                            </div>
-                            <div class="info-item">
-                                <strong>Supplier:</strong>
-                                {{ user.supplier_number }}
-                            </div>
-                            <div class="info-item">
-                                <strong>KH cá nhân:</strong>
-                                {{ user.ma_kh_ca_nhan }}
-                            </div>
-                            <div class="info-item">
-                                <strong>KH doanh nghiệp:</strong>
-                                {{ user.ma_kh_doanh_nghiep }}
-                            </div>
-                            <div class="info-item">
-                                <strong>Phone:</strong> {{ user.phone }}
-                            </div>
-                            <div class="info-item">
-                                <strong>Địa chỉ:</strong>
-                                {{ user.dia_chi_thuong_tru }}
-                            </div>
-                            <div class="info-item">
-                                <strong>Chủ TK:</strong>
-                                {{ user.chu_tai_khoan }}
-                            </div>
-                            <div class="info-item">
-                                <strong>Ngân hàng:</strong> {{ user.bank_name }}
-                            </div>
-                        </div>
-
-                        <div class="status-section">
-                            <div
-                                class="d-flex justify-content-between align-items-center"
-                            >
-                                <span
-                                    class="role-badge"
-                                    :class="getRoleBadgeClass(user.role_id)"
-                                >
-                                    <i :class="getRoleIcon(user.role_id)"></i>
-                                    {{ user.role_name || "Chưa phân quyền" }}
-                                </span>
-                                <small class="text-muted">{{
-                                    user.so_tai_khoan
-                                }}</small>
-                            </div>
-                        </div>
+        <div v-if="isMobile" class="mobile-controls-container mt-2">
+            <div class="mobile-header-row">
+                <div class="mobile-search-section">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input
+                            v-model="search"
+                            type="text"
+                            placeholder="Tìm kiếm theo tên khách hàng, mã KH, số điện thoại..."
+                            class="form-control border-start-0 search-input"
+                            aria-label="Search"
+                        />
                     </div>
+                </div>
+                <div class="mobile-action-section">
+                    <button
+                        v-if="hasPermission('create')"
+                        type="button"
+                        @click="Adduser"
+                        class="btn-mobile-add"
+                    >
+                        <i class="bx bxs-user-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Filter Section -->
+            <div class="mobile-filter-row">
+                <div class="mobile-filter-left">
+                    <div class="filter-dropdown-container">
+                        <select
+                            v-model="selectedMobileStatus"
+                            class="mobile-status-select"
+                            @change="applyMobileStatusFilter"
+                        >
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="active">Hoạt động</option>
+                            <option value="inactive">Không hoạt động</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mobile-filter-right">
+                    <button @click="resetAllFilters" class="mobile-filter-btn">
+                        <i class="fas fa-redo-alt me-1"></i>
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Mobile Filter Modal -->
-        <div
-            v-if="showMobileFilterModal"
-            class="mobile-filter-modal-overlay"
-            @click="showMobileFilterModal = false"
-        >
-            <div class="mobile-filter-modal" @click.stop>
-                <div class="modal-header">
-                    <h5 class="modal-title">Filter Options</h5>
-                    <button
-                        @click="showMobileFilterModal = false"
-                        class="btn-close"
+        <!-- For Mobile: Card View -->
+        <div v-if="isMobile" class="card-container">
+            <div
+                v-for="(user, index) in paginatedUsers.data"
+                :key="user.id"
+                class="user-card mb-3 p-3 rounded border-0 clickable-card"
+                @click="navigateToEditUser(user.id)"
+            >
+                <div
+                    class="card-header d-flex justify-content-between align-items-center mb-2"
+                >
+                    <div class="user-index fw-bold">
+                        <span class="badge bg-label-primary rounded-pill"
+                            >#{{
+                                (currentPage - 1) * perPage + index + 1
+                            }}</span
+                        >
+                    </div>
+                    <div
+                        :class="{
+                            'text-success': user.status === 'active',
+                            'text-danger': user.status === 'inactive',
+                        }"
                     >
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-
-                <div class="modal-body">
-                    <!-- Station Filter -->
-                    <div class="filter-section">
-                        <label class="filter-label">Trạm</label>
-                        <div class="checkbox-container">
-                            <div
-                                v-for="station in stations"
-                                :key="station.ma_don_vi"
-                                class="form-check"
-                            >
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input"
-                                    :id="'mobile-station-' + station.ma_don_vi"
-                                    :value="station.ma_don_vi"
-                                    v-model="selectedFilterValues.station"
-                                />
-                                <label
-                                    class="form-check-label"
-                                    :for="'mobile-station-' + station.ma_don_vi"
-                                >
-                                    {{ station.Name }}
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Position Filter -->
-                    <div class="filter-section">
-                        <label class="filter-label">Chức vụ</label>
-                        <div class="checkbox-container">
-                            <div
-                                v-for="position in positions"
-                                :key="position.id_position"
-                                class="form-check"
-                            >
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input"
-                                    :id="'mobile-pos-' + position.id_position"
-                                    :value="position.id_position"
-                                    v-model="selectedFilterValues.position"
-                                />
-                                <label
-                                    class="form-check-label"
-                                    :for="'mobile-pos-' + position.id_position"
-                                >
-                                    {{ position.position }}
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Status Filter -->
-                    <div class="filter-section">
-                        <label class="filter-label">Status</label>
-                        <div class="checkbox-container">
-                            <div
-                                v-for="status in uniqueValues.status"
-                                :key="status"
-                                class="form-check"
-                            >
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input"
-                                    :id="'mobile-status-' + status"
-                                    :value="status"
-                                    v-model="selectedFilterValues.status"
-                                />
-                                <label
-                                    class="form-check-label"
-                                    :for="'mobile-status-' + status"
-                                >
-                                    {{ status }}
-                                </label>
-                            </div>
-                        </div>
+                        <i
+                            :class="{
+                                'fas fa-circle': true,
+                                'text-success': user.status === 'active',
+                                'text-danger': user.status === 'inactive',
+                            }"
+                        ></i>
+                        {{
+                            user.status === "active"
+                                ? "Hoạt động"
+                                : "Không hoạt động"
+                        }}
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button
-                        @click="showMobileFilterModal = false"
-                        class="btn btn-primary"
+                <div class="user-info">
+                    <div class="info-item">
+                        <strong>Trạm:</strong> {{ user.tram }}
+                    </div>
+                    <div class="info-item">
+                        <strong>Supplier:</strong>
+                        {{ user.supplier_number }}
+                    </div>
+                    <div class="info-item">
+                        <strong>KH cá nhân:</strong>
+                        {{ user.ma_kh_ca_nhan }}
+                    </div>
+                    <div class="info-item">
+                        <strong>KH doanh nghiệp:</strong>
+                        {{ user.ma_kh_doanh_nghiep }}
+                    </div>
+                    <div class="info-item">
+                        <strong>Phone:</strong> {{ user.phone }}
+                    </div>
+                    <div class="info-item">
+                        <strong>Địa chỉ:</strong>
+                        {{ user.dia_chi_thuong_tru }}
+                    </div>
+                    <div class="info-item">
+                        <strong>Chủ TK:</strong>
+                        {{ user.chu_tai_khoan }}
+                    </div>
+                    <div class="info-item">
+                        <strong>Ngân hàng:</strong> {{ user.bank_name }}
+                    </div>
+                </div>
+
+                <div class="status-section">
+                    <div
+                        class="d-flex justify-content-between align-items-center"
                     >
-                        <i class="fas fa-check me-1"></i>
-                        Apply Filters
-                    </button>
+                        <span
+                            class="role-badge"
+                            :class="getRoleBadgeClass(user.role_id)"
+                        >
+                            <i :class="getRoleIcon(user.role_id)"></i>
+                            {{ user.role_name || "Chưa phân quyền" }}
+                        </span>
+                        <small class="text-muted">{{
+                            user.so_tai_khoan
+                        }}</small>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Keep pagination section -->
+            <div class="flex justify-center mt-4">
+                <pagination
+                    :data="paginatedUsers"
+                    @pagination-change-page="pageChanged"
+                    :limit="5"
+                    :classes="paginationClasses"
+                />
             </div>
         </div>
 
@@ -863,6 +1224,126 @@
             </div>
         </div>
     </div>
+    <!-- Add Import Modal after Export Modal -->
+    <div
+        class="modal fade"
+        id="importModal"
+        tabindex="-1"
+        aria-labelledby="importModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title text-primary" id="importModalLabel">
+                        <i class="fas fa-upload text-primary me-2"></i>
+                        Import dữ liệu người dùng nông dân
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        @click="closeImportModal"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning mb-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <small>
+                            Cảnh báo: Việc nhập dữ liệu sẽ cập nhật thông tin
+                            người dùng nông dân theo mã định danh. Vui lòng đảm
+                            bảo dữ liệu chính xác trước khi tiếp tục.
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="importFile" class="form-label">
+                            Chọn tệp dữ liệu
+                        </label>
+                        <input
+                            type="file"
+                            class="form-control"
+                            id="importFile"
+                            @change="handleFileSelected"
+                            accept=".csv,.xlsx"
+                        />
+                        <div class="form-text">
+                            Hỗ trợ các loại tệp: .csv, .xlsx
+                        </div>
+                    </div>
+
+                    <div v-if="uploadProgress > 0" class="mb-3">
+                        <label class="form-label">Tiến trình tải lên</label>
+                        <div class="progress">
+                            <div
+                                class="progress-bar progress-bar-striped progress-bar-animated"
+                                role="progressbar"
+                                :style="{ width: uploadProgress + '%' }"
+                                :aria-valuenow="uploadProgress"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                {{ uploadProgress }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="processingRecords" class="mb-3">
+                        <label class="form-label">Xử lý dữ liệu</label>
+                        <div class="progress">
+                            <div
+                                class="progress-bar bg-success progress-bar-striped progress-bar-animated"
+                                role="progressbar"
+                                :style="{ width: processingProgress + '%' }"
+                                :aria-valuenow="processingProgress"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                {{ processedRecords }}/{{ totalRecords }} ({{
+                                    processingProgress
+                                }}%)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="importErrors.length > 0" class="mt-3">
+                        <div class="alert alert-danger">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                Lỗi khi nhập dữ liệu:
+                            </h6>
+                            <ul class="mb-0">
+                                <li v-for="error in importErrors" :key="error">
+                                    {{ error }}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                        @click="closeImportModal"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        @click="startImport"
+                        :disabled="!selectedFile || isImporting"
+                    >
+                        <i class="fas fa-upload me-2"></i>
+                        <span v-if="isImporting">Đang nhập...</span>
+                        <span v-else>Nhập dữ liệu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -896,9 +1377,12 @@ export default {
 
     data() {
         return {
+            isDeleting: false,
+            isSyncing: false,
+            selectedRows: [],
             search: "",
             currentPage: 1,
-            perPage: 10,
+            perPage: 15,
             users: [],
             roles: [],
             userPermissions: [],
@@ -909,6 +1393,16 @@ export default {
                 active: "active modern-active",
                 disabled: "disabled modern-disabled",
             },
+            // Add import related data
+            selectedFile: null,
+            uploadProgress: 0,
+            importErrors: [],
+            isImporting: false,
+            processingRecords: false,
+            processingProgress: 0,
+            processedRecords: 0,
+            totalRecords: 0,
+            importModal: null,
             ps: null,
             isLoading: false,
             // Filter properties updated for new columns
@@ -917,9 +1411,15 @@ export default {
                 tram: "",
                 supplier_number: "",
                 ma_kh_ca_nhan: "",
+                khach_hang_ca_nhan: "",
                 ma_kh_doanh_nghiep: "",
+                khach_hang_doanh_nghiep: "",
                 phone: "",
+                dia_chi_thuong_tru: "",
+                chu_tai_khoan: "",
+                bank: "",
             },
+            selectedMobileStatus: "",
             uniqueValues: {
                 tram: [],
                 role_id: [],
@@ -936,6 +1436,27 @@ export default {
     },
 
     computed: {
+        // Update the computed property for button state
+        syncButtonDisabled() {
+            return this.selectedRows.length === 0 || this.isSyncing;
+        },
+        isAllSelected() {
+            return (
+                this.paginatedUsers.data.length > 0 &&
+                this.selectedRows.length === this.paginatedUsers.data.length &&
+                this.paginatedUsers.data.every((user) =>
+                    this.selectedRows.includes(user.id)
+                )
+            );
+        },
+
+        isIndeterminate() {
+            return (
+                this.selectedRows.length > 0 &&
+                this.selectedRows.length < this.paginatedUsers.data.length
+            );
+        },
+
         filteredUsers() {
             return this.users.filter((user) => {
                 // Text search
@@ -965,13 +1486,7 @@ export default {
                     (user.phone &&
                         user.phone.toLowerCase().includes(searchLower));
 
-                // Column filters
-                const matchesTram =
-                    !this.columnFilters.tram ||
-                    (user.tram &&
-                        user.tram
-                            .toLowerCase()
-                            .includes(this.columnFilters.tram.toLowerCase()));
+                // Column filters - text search
                 const matchesSupplier =
                     !this.columnFilters.supplier_number ||
                     (user.supplier_number &&
@@ -988,6 +1503,14 @@ export default {
                             .includes(
                                 this.columnFilters.ma_kh_ca_nhan.toLowerCase()
                             ));
+                const matchesKhachHangCaNhan =
+                    !this.columnFilters.khach_hang_ca_nhan ||
+                    (user.khach_hang_ca_nhan &&
+                        user.khach_hang_ca_nhan
+                            .toLowerCase()
+                            .includes(
+                                this.columnFilters.khach_hang_ca_nhan.toLowerCase()
+                            ));
                 const matchesMaKhDoanhNghiep =
                     !this.columnFilters.ma_kh_doanh_nghiep ||
                     (user.ma_kh_doanh_nghiep &&
@@ -996,30 +1519,77 @@ export default {
                             .includes(
                                 this.columnFilters.ma_kh_doanh_nghiep.toLowerCase()
                             ));
+                const matchesKhachHangDoanhNghiep =
+                    !this.columnFilters.khach_hang_doanh_nghiep ||
+                    (user.khach_hang_doanh_nghiep &&
+                        user.khach_hang_doanh_nghiep
+                            .toLowerCase()
+                            .includes(
+                                this.columnFilters.khach_hang_doanh_nghiep.toLowerCase()
+                            ));
                 const matchesPhone =
                     !this.columnFilters.phone ||
                     (user.phone &&
                         user.phone
                             .toLowerCase()
                             .includes(this.columnFilters.phone.toLowerCase()));
+                const matchesDiaChiThuongTru =
+                    !this.columnFilters.dia_chi_thuong_tru ||
+                    (user.dia_chi_thuong_tru &&
+                        user.dia_chi_thuong_tru
+                            .toLowerCase()
+                            .includes(
+                                this.columnFilters.dia_chi_thuong_tru.toLowerCase()
+                            ));
+                const matchesChuTaiKhoan =
+                    !this.columnFilters.chu_tai_khoan ||
+                    (user.chu_tai_khoan &&
+                        user.chu_tai_khoan
+                            .toLowerCase()
+                            .includes(
+                                this.columnFilters.chu_tai_khoan.toLowerCase()
+                            ));
+                const matchesBank =
+                    !this.columnFilters.bank ||
+                    (user.bank_name &&
+                        user.bank_name
+                            .toLowerCase()
+                            .includes(this.columnFilters.bank.toLowerCase())) ||
+                    (user.bank_code &&
+                        user.bank_code
+                            .toLowerCase()
+                            .includes(this.columnFilters.bank.toLowerCase()));
 
                 // Dropdown filters
+                const matchesTram =
+                    this.selectedFilterValues.tram.length === 0 ||
+                    this.selectedFilterValues.tram.includes(user.tram);
                 const matchesRole =
                     this.selectedFilterValues.role_id.length === 0 ||
                     this.selectedFilterValues.role_id.includes(user.role_id);
                 const matchesStatus =
                     this.selectedFilterValues.status.length === 0 ||
                     this.selectedFilterValues.status.includes(user.status);
+                // Mobile status filter
+                const matchesMobileStatus =
+                    !this.selectedMobileStatus ||
+                    user.status === this.selectedMobileStatus;
 
                 return (
                     matchesSearch &&
                     matchesTram &&
                     matchesSupplier &&
                     matchesMaKhCaNhan &&
+                    matchesKhachHangCaNhan &&
                     matchesMaKhDoanhNghiep &&
+                    matchesKhachHangDoanhNghiep &&
                     matchesPhone &&
+                    matchesDiaChiThuongTru &&
+                    matchesChuTaiKhoan &&
+                    matchesBank &&
                     matchesRole &&
-                    matchesStatus
+                    matchesStatus &&
+                    matchesMobileStatus
                 );
             });
         },
@@ -1052,11 +1622,16 @@ export default {
         hasActiveFilters() {
             return (
                 this.search ||
-                this.columnFilters.tram ||
                 this.columnFilters.supplier_number ||
                 this.columnFilters.ma_kh_ca_nhan ||
+                this.columnFilters.khach_hang_ca_nhan ||
                 this.columnFilters.ma_kh_doanh_nghiep ||
+                this.columnFilters.khach_hang_doanh_nghiep ||
                 this.columnFilters.phone ||
+                this.columnFilters.dia_chi_thuong_tru ||
+                this.columnFilters.chu_tai_khoan ||
+                this.columnFilters.bank ||
+                this.selectedFilterValues.tram.length > 0 ||
                 this.selectedFilterValues.role_id.length > 0 ||
                 this.selectedFilterValues.status.length > 0
             );
@@ -1083,6 +1658,69 @@ export default {
     },
 
     methods: {
+        // Mobile filter methods
+        applyMobileStatusFilter() {
+            this.currentPage = 1;
+        },
+        toggleSelectAll() {
+            if (this.isAllSelected) {
+                // Deselect all visible rows
+                this.paginatedUsers.data.forEach((user) => {
+                    const index = this.selectedRows.indexOf(user.id);
+                    if (index > -1) {
+                        this.selectedRows.splice(index, 1);
+                    }
+                });
+            } else {
+                // Select all visible rows
+                this.paginatedUsers.data.forEach((user) => {
+                    if (!this.selectedRows.includes(user.id)) {
+                        this.selectedRows.push(user.id);
+                    }
+                });
+            }
+        },
+        getTramBadgeClass(tram) {
+            if (!tram) return "badge bg-label-secondary";
+
+            switch (tram) {
+                case "TTCA-TRAM01":
+                    return "badge bg-label-primary station-badge";
+                case "TTCA-TRAM02":
+                    return "badge bg-label-success station-badge";
+                case "TTCA-TRAM03":
+                    return "badge bg-label-warning station-badge";
+                case "TTCA-TRAM04":
+                    return "badge bg-label-danger station-badge";
+                case "TTCA-TRAM05":
+                    return "badge bg-label-info station-badge";
+                case "TTCA-TRAM06":
+                    return "badge bg-label-light station-badge";
+                default:
+                    return "badge bg-label-secondary station-badge";
+            }
+        },
+
+        getTramIcon(tram) {
+            if (!tram) return "fas fa-question-circle";
+
+            switch (tram) {
+                case "TTCA-TRAM01":
+                    return "fa-solid fa-building";
+                case "TTCA-TRAM02":
+                    return "fa-solid fa-building";
+                case "TTCA-TRAM03":
+                    return "fa-solid fa-building";
+                case "TTCA-TRAM04":
+                    return "fa-solid fa-building";
+                case "TTCA-TRAM05":
+                    return "fa-solid fa-building";
+                case "TTCA-TRAM06":
+                    return "fa-solid fa-building";
+                default:
+                    return "fa-solid fa-building";
+            }
+        },
         getRoleBadgeClass(roleId) {
             const role = this.roles.find((r) => r.id === roleId);
             if (!role) return "badge bg-label-secondary";
@@ -1148,6 +1786,143 @@ export default {
             this.$router.push(`/EditUser/${userId}`);
         },
 
+        async syncSelectedUsers() {
+            if (this.selectedRows.length === 0) {
+                Swal.fire({
+                    title: "Thông báo",
+                    text: "Vui lòng chọn ít nhất một người dùng để đồng bộ.",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+                return;
+            }
+
+            // Confirm sync action
+            const result = await Swal.fire({
+                title: "Xác nhận đồng bộ",
+                text: `Bạn có chắc chắn muốn đồng bộ ${this.selectedRows.length} người dùng được chọn vào bảng phân quyền không?`,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Đồng bộ",
+                cancelButtonText: "Hủy",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-success",
+                },
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            this.isSyncing = true;
+
+            try {
+                const response = await axios.post(
+                    "/api/farmer-users/sync-roles",
+                    {
+                        user_ids: this.selectedRows,
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    const data = response.data.data;
+
+                    // Show detailed result
+                    let resultMessage = `Đồng bộ hoàn thành!\n\n`;
+                    resultMessage += `• Đã đồng bộ: ${data.synced_count} người dùng\n`;
+
+                    if (data.duplicate_count > 0) {
+                        resultMessage += `• Đã tồn tại: ${data.duplicate_count} người dùng\n`;
+                    }
+
+                    if (data.error_count > 0) {
+                        resultMessage += `• Lỗi: ${data.error_count} người dùng\n`;
+                    }
+
+                    // Show success message
+                    await Swal.fire({
+                        title: "Thành công!",
+                        text: resultMessage,
+                        icon: "success",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
+
+                    // Show errors if any
+                    if (data.errors && data.errors.length > 0) {
+                        await Swal.fire({
+                            title: "Chi tiết lỗi",
+                            html: `<div class="text-start"><ul>${data.errors
+                                .map((error) => `<li>${error}</li>`)
+                                .join("")}</ul></div>`,
+                            icon: "warning",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        });
+                    }
+
+                    // Clear selected rows
+                    this.selectedRows = [];
+
+                    // Optionally refresh data
+                    // this.fetchUsers();
+                } else {
+                    throw new Error(response.data.message || "Sync failed");
+                }
+            } catch (error) {
+                console.error("Sync error:", error);
+
+                let errorMessage = "Đã xảy ra lỗi trong quá trình đồng bộ.";
+
+                if (error.response) {
+                    if (error.response.status === 401) {
+                        this.handleAuthError();
+                        return;
+                    } else if (
+                        error.response.data &&
+                        error.response.data.message
+                    ) {
+                        errorMessage = error.response.data.message;
+                    }
+                } else if (error.request) {
+                    errorMessage =
+                        "Không thể kết nối với máy chủ. Vui lòng kiểm tra kết nối mạng.";
+                } else {
+                    errorMessage = error.message;
+                }
+
+                Swal.fire({
+                    title: "Lỗi!",
+                    text: errorMessage,
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+            } finally {
+                this.isSyncing = false;
+            }
+        },
+
         fetchUsers() {
             this.isLoading = true;
             axios
@@ -1184,11 +1959,83 @@ export default {
                 });
         },
 
+        // Add download template method
+        async downloadTemplate() {
+            try {
+                const response = await axios.get("/api/farmer-users-template", {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                    responseType: "blob", // Important for file download
+                });
+
+                // Get filename from response headers or use default with timestamp
+                const contentDisposition =
+                    response.headers["content-disposition"];
+                let filename = "farmer_users_data.csv";
+
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(
+                        /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+                    );
+                    if (filenameMatch && filenameMatch[1]) {
+                        filename = filenameMatch[1].replace(/['"]/g, "");
+                    }
+                }
+
+                // Create blob link to download
+                const url = window.URL.createObjectURL(
+                    new Blob([response.data], { type: "text/csv" })
+                );
+                const link = document.createElement("a");
+                link.href = url;
+                link.setAttribute("download", filename);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+
+                // Show success message
+                Swal.fire({
+                    title: "Thành công!",
+                    text: "Dữ liệu người dùng nông dân đã được tải xuống thành công.",
+                    icon: "success",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+            } catch (error) {
+                console.error("Download template error:", error);
+
+                if (error.response && error.response.status === 401) {
+                    this.handleAuthError();
+                    return;
+                }
+
+                Swal.fire({
+                    title: "Lỗi",
+                    text: "Không thể tải xuống dữ liệu. Vui lòng thử lại.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+            }
+        },
+
         updateUniqueValues() {
             this.uniqueValues.role_id = [
                 ...new Set(
                     this.users.map((user) => user.role_id).filter(Boolean)
                 ),
+            ];
+            // Update tram unique values
+            this.uniqueValues.tram = [
+                ...new Set(this.users.map((user) => user.tram).filter(Boolean)),
             ];
         },
 
@@ -1219,13 +2066,20 @@ export default {
                 tram: "",
                 supplier_number: "",
                 ma_kh_ca_nhan: "",
+                khach_hang_ca_nhan: "",
                 ma_kh_doanh_nghiep: "",
+                khach_hang_doanh_nghiep: "",
                 phone: "",
+                dia_chi_thuong_tru: "",
+                chu_tai_khoan: "",
+                bank: "",
             };
             Object.keys(this.selectedFilterValues).forEach((key) => {
                 this.selectedFilterValues[key] = [];
             });
             this.activeFilter = null;
+            // Reset mobile filters
+            this.selectedMobileStatus = "";
             this.currentPage = 1;
         },
 
@@ -1299,45 +2153,496 @@ export default {
             XLSX.writeFile(workbook, `${filename}.xlsx`);
             this.closeExportModal();
         },
+        importData() {
+            // Show the import modal
+            try {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js")
+                    .then((bootstrap) => {
+                        const Modal = bootstrap.Modal;
+                        const modalElement =
+                            document.getElementById("importModal");
 
-        deleteUser(userId) {
-            Swal.fire({
-                title: "Bạn có chắc chắn?",
-                text: "Bạn sẽ không thể khôi phục lại dữ liệu này!",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#d33",
-                cancelButtonColor: "#3085d6",
-                confirmButtonText: "Có, xóa!",
-                cancelButtonText: "Hủy",
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    this.performDeleteUser(userId);
-                }
-            });
+                        if (modalElement) {
+                            this.importModal = new Modal(modalElement);
+                            this.importModal.show();
+                        } else {
+                            console.error("Import modal element not found");
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("Failed to load Bootstrap:", err);
+                        // Fallback method using direct DOM manipulation
+                        const modalElement =
+                            document.getElementById("importModal");
+                        if (modalElement) {
+                            modalElement.style.display = "block";
+                            modalElement.classList.add("show");
+                            document.body.classList.add("modal-open");
+                        }
+                    });
+            } catch (error) {
+                console.error("Error showing import modal:", error);
+            }
         },
 
-        performDeleteUser(userId) {
-            axios
-                .delete(`/api/farmer-users/${userId}`, {
-                    headers: { Authorization: "Bearer " + this.store.getToken },
-                })
-                .then(() => {
-                    Swal.fire(
-                        "Đã xóa!",
-                        "Người dùng đã được xóa thành công.",
-                        "success"
-                    );
-                    this.fetchUsers();
-                })
-                .catch((error) => {
-                    console.error("Error deleting user:", error);
-                    Swal.fire(
-                        "Lỗi!",
-                        "Có lỗi xảy ra khi xóa người dùng.",
-                        "error"
-                    );
+        handleFileSelected(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Validate file type
+                const fileType = file.name.split(".").pop().toLowerCase();
+                if (!["csv", "xlsx"].includes(fileType)) {
+                    Swal.fire({
+                        title: "Cảnh báo",
+                        text: "Vui lòng chọn đúng tập tin. (CSV hoặc Excel)",
+                        icon: "warning",
+                        confirmButtonText: "OK",
+                    });
+                    event.target.value = ""; // Clear the file input
+                    this.selectedFile = null;
+                    return;
+                }
+
+                this.selectedFile = file;
+                this.importErrors = [];
+                console.log("File selected:", file.name);
+            } else {
+                this.selectedFile = null;
+            }
+        },
+
+        closeImportModal() {
+            try {
+                const modalElement = document.getElementById("importModal");
+                if (modalElement) {
+                    if (window.bootstrap) {
+                        const modalInstance =
+                            window.bootstrap.Modal.getInstance(modalElement);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                    } else {
+                        // Fallback if bootstrap is not available
+                        modalElement.classList.remove("show");
+                        modalElement.style.display = "none";
+                        document.body.classList.remove("modal-open");
+
+                        // Remove backdrop
+                        const backdrop =
+                            document.querySelector(".modal-backdrop");
+                        if (backdrop) {
+                            backdrop.remove();
+                        }
+                    }
+                }
+
+                // Reset import state
+                this.selectedFile = null;
+                this.uploadProgress = 0;
+                this.processingRecords = false;
+                this.processingProgress = 0;
+                this.processedRecords = 0;
+                this.totalRecords = 0;
+                this.importErrors = [];
+            } catch (error) {
+                console.error("Error closing import modal:", error);
+            }
+        },
+
+        async startImport() {
+            if (!this.selectedFile) {
+                Swal.fire({
+                    title: "Cảnh báo",
+                    text: "Vui lòng chọn tệp để tải lên",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
                 });
+                return;
+            }
+
+            // Confirm before proceeding with SweetAlert2
+            const result = await Swal.fire({
+                title: "Xác nhận tải lên",
+                text: "Cảnh báo: Việc nhập dữ liệu sẽ thay đổi dữ liệu theo mã người dùng được nhập. Bạn có chắc chắn muốn tiếp tục không?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "OK",
+                cancelButtonText: "Hủy",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-success",
+                },
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            this.isImporting = true;
+            this.uploadProgress = 0;
+            this.processingRecords = false;
+            this.processingProgress = 0;
+            this.processedRecords = 0;
+            this.totalRecords = 0;
+            this.importErrors = [];
+
+            try {
+                const formData = new FormData();
+                formData.append("file", this.selectedFile);
+
+                // Start file upload with progress tracking
+                const response = await axios.post(
+                    "/api/import-farmer-users",
+                    formData,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                            "Content-Type": "multipart/form-data",
+                        },
+                        onUploadProgress: (progressEvent) => {
+                            this.uploadProgress = Math.round(
+                                (progressEvent.loaded * 100) /
+                                    progressEvent.total
+                            );
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    this.processingRecords = true;
+                    this.totalRecords = response.data.totalRecords || 0;
+
+                    // Start tracking processing status
+                    this.checkImportProgress(response.data.importId);
+                } else {
+                    this.isImporting = false;
+                    this.importErrors = response.data.errors || [
+                        "Đã xảy ra lỗi không xác định trong quá trình nhập.",
+                    ];
+                    console.error("Import failed:", response.data);
+
+                    // Use SweetAlert2 to show failure
+                    Swal.fire({
+                        title: "Thất bại",
+                        text: "Nhập dữ liệu không thành công. Vui lòng kiểm tra lỗi và thử lại.",
+                        icon: "error",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
+                }
+            } catch (error) {
+                this.isImporting = false;
+                console.error("Import error:", error);
+
+                if (error.response) {
+                    if (error.response.status === 401) {
+                        this.handleAuthError();
+                    } else {
+                        this.importErrors = error.response.data.errors ||
+                            error.response.data.message || [
+                                "Lỗi máy chủ. Vui lòng thử lại sau.",
+                            ];
+                    }
+                } else if (error.request) {
+                    // Request made but no response received
+                    this.importErrors = [
+                        "Không có phản hồi từ máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.",
+                    ];
+                } else {
+                    // Error setting up the request
+                    this.importErrors = [
+                        "Lỗi mạng. Vui lòng kiểm tra kết nối của bạn và thử lại: " +
+                            error.message,
+                    ];
+                }
+
+                // Use SweetAlert2 to show error
+                Swal.fire({
+                    title: "Lỗi",
+                    text: "Lỗi khi nhập dữ liệu. Vui lòng kiểm tra chi tiết lỗi hiển thị bên dưới.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+            }
+        },
+
+        async checkImportProgress(importId) {
+            if (!importId) {
+                this.importErrors = ["Invalid import ID. Please try again."];
+                return;
+            }
+
+            try {
+                const response = await axios.get(
+                    `/api/import-farmer-users-progress/${importId}`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                const data = response.data;
+
+                if (data.finished) {
+                    this.processedRecords = data.processed || 0;
+                    this.totalRecords = data.total || 0;
+                    this.processingProgress = 100;
+
+                    if (data.success) {
+                        // Import completed successfully
+                        this.isImporting = false;
+
+                        Swal.fire({
+                            title: "Thành công!",
+                            text: `Đã nhập thành công ${this.processedRecords} người dùng nông dân.`,
+                            icon: "success",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        }).then(() => {
+                            this.closeImportModal();
+                            // Refresh the user list
+                            this.fetchUsers();
+                        });
+                    } else {
+                        // Import failed
+                        this.isImporting = false;
+
+                        // Make sure errors are properly presented
+                        if (data.errors && data.errors.length > 0) {
+                            this.importErrors = data.errors;
+                        } else {
+                            this.importErrors = [
+                                "Nhập dữ liệu không thành công. Vui lòng kiểm tra tệp của bạn và thử lại.",
+                            ];
+                        }
+
+                        console.error("Import failed:", data);
+
+                        // Show error notification with SweetAlert2
+                        Swal.fire({
+                            title: "Thất bại",
+                            text: "Nhập dữ liệu không thành công. Vui lòng kiểm tra lỗi hiển thị bên dưới.",
+                            icon: "error",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        });
+                    }
+                } else {
+                    // Still processing, update progress
+                    this.processedRecords = data.processed || 0;
+                    this.totalRecords = data.total || this.totalRecords || 1;
+
+                    // Avoid division by zero
+                    if (this.totalRecords > 0) {
+                        this.processingProgress = Math.min(
+                            100,
+                            Math.round(
+                                (this.processedRecords / this.totalRecords) *
+                                    100
+                            )
+                        );
+                    } else {
+                        this.processingProgress = 50; // Show 50% if total is unknown
+                    }
+
+                    // Update import errors if any are available during processing
+                    if (data.errors && data.errors.length > 0) {
+                        this.importErrors = data.errors;
+                    }
+
+                    // Check again after a delay
+                    setTimeout(() => this.checkImportProgress(importId), 1000);
+                }
+            } catch (error) {
+                console.error("Error checking import progress:", error);
+
+                if (error.response && error.response.status === 401) {
+                    this.handleAuthError();
+                    return;
+                }
+
+                this.isImporting = false;
+                this.importErrors = [
+                    "Lỗi khi theo dõi tiến trình tải lên. Quá trình tải lên có thể vẫn đang được xử lý trong nền.",
+                    "Vui lòng làm mới trang sau vài phút để xem dữ liệu đã được tải lên hay chưa.",
+                ];
+
+                if (error.response && error.response.data) {
+                    if (typeof error.response.data === "string") {
+                        this.importErrors.push(error.response.data);
+                    } else if (error.response.data.message) {
+                        this.importErrors.push(error.response.data.message);
+                    }
+                }
+            }
+        },
+
+        /**
+         * Delete selected users
+         */
+        async deleteSelectedUsers() {
+            if (this.selectedRows.length === 0) {
+                Swal.fire({
+                    title: "Thông báo",
+                    text: "Vui lòng chọn ít nhất một người dùng để xóa.",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+                return;
+            }
+
+            // Confirm delete action
+            const result = await Swal.fire({
+                title: "Xác nhận xóa",
+                html: `<div class="text-start">
+                    <p>Bạn có chắc chắn muốn xóa <strong>${this.selectedRows.length}</strong> người dùng được chọn không?</p>
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Cảnh báo:</strong> Hành động này không thể hoàn tác!
+                    </div>
+                </div>`,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Xóa",
+                cancelButtonText: "Hủy",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-danger me-2",
+                    cancelButton: "btn btn-outline-secondary",
+                },
+                confirmButtonColor: "#dc3545",
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            this.isDeleting = true;
+
+            try {
+                const response = await axios.post(
+                    "/api/farmer-users/delete-multiple",
+                    {
+                        user_ids: this.selectedRows,
+                    },
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    const data = response.data.data;
+
+                    // Show detailed result
+                    let resultMessage = `Xóa hoàn thành!\n\n`;
+                    resultMessage += `• Đã xóa: ${data.deleted_count} người dùng\n`;
+
+                    if (data.error_count > 0) {
+                        resultMessage += `• Lỗi: ${data.error_count} người dùng\n`;
+                    }
+
+                    // Show success message
+                    await Swal.fire({
+                        title: "Thành công!",
+                        text: resultMessage,
+                        icon: "success",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
+
+                    // Show errors if any
+                    if (data.errors && data.errors.length > 0) {
+                        await Swal.fire({
+                            title: "Chi tiết lỗi",
+                            html: `<div class="text-start">
+                                <ul class="list-unstyled">
+                                    ${data.errors
+                                        .map(
+                                            (error) =>
+                                                `<li class="mb-1"><i class="fas fa-exclamation-circle text-danger me-2"></i>${error}</li>`
+                                        )
+                                        .join("")}
+                                </ul>
+                            </div>`,
+                            icon: "warning",
+                            confirmButtonText: "OK",
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: "btn btn-success",
+                            },
+                        });
+                    }
+
+                    // Clear selected rows
+                    this.selectedRows = [];
+
+                    // Refresh data
+                    this.fetchUsers();
+                } else {
+                    throw new Error(response.data.message || "Delete failed");
+                }
+            } catch (error) {
+                console.error("Delete error:", error);
+
+                let errorMessage = "Đã xảy ra lỗi trong quá trình xóa.";
+
+                if (error.response) {
+                    if (error.response.status === 401) {
+                        this.handleAuthError();
+                        return;
+                    } else if (
+                        error.response.data &&
+                        error.response.data.message
+                    ) {
+                        errorMessage = error.response.data.message;
+                    }
+                } else if (error.request) {
+                    errorMessage =
+                        "Không thể kết nối với máy chủ. Vui lòng kiểm tra kết nối mạng.";
+                } else {
+                    errorMessage = error.message;
+                }
+
+                Swal.fire({
+                    title: "Lỗi!",
+                    text: errorMessage,
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
+            } finally {
+                this.isDeleting = false;
+            }
         },
 
         handleAuthError() {
@@ -1349,18 +2654,25 @@ export default {
     },
 
     watch: {
+        currentPage() {
+            this.selectedRows = [];
+        },
         search() {
             this.currentPage = 1;
+            this.selectedRows = [];
         },
         selectedFilterValues: {
             handler() {
                 this.currentPage = 1;
+                this.selectedRows = [];
             },
             deep: true,
         },
+
         columnFilters: {
             handler() {
                 this.currentPage = 1;
+                this.selectedRows = [];
             },
             deep: true,
         },
@@ -1394,9 +2706,9 @@ export default {
 }
 
 .table-scroll-container {
-    min-height: 410px;
+    min-height: 330px;
     position: relative;
-    max-height: calc(100vh - 240px);
+    max-height: calc(60vh - 240px);
     overflow: auto;
     border-radius: 0.75rem;
     background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
@@ -1865,6 +3177,31 @@ export default {
         transform: translateX(-50%);
         margin-left: 0;
         margin-right: 0;
+    }
+    .mobile-status-select {
+        width: 100%;
+        height: 48px;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 0 1rem;
+        background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%);
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        transition: all 0.3s ease;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.75rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 3rem;
+    }
+
+    .mobile-status-select:focus {
+        outline: none;
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        background: #ffffff;
     }
 }
 
@@ -2627,5 +3964,61 @@ export default {
     text-align: center;
     vertical-align: middle;
     padding: 0.75rem 0.5rem;
+}
+
+/* Checkbox column styling */
+.checkbox-column {
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+    text-align: center !important;
+    padding: 0.75rem 0.5rem !important;
+    vertical-align: middle !important;
+}
+
+.select-all-checkbox,
+.row-checkbox {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #d1d5db;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    accent-color: #10b981;
+}
+
+.select-all-checkbox:hover,
+.row-checkbox:hover {
+    border-color: #10b981;
+    transform: scale(1.1);
+}
+
+.select-all-checkbox:checked,
+.row-checkbox:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+
+.select-all-checkbox:indeterminate {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+
+/* Selected row styling */
+.selected-row {
+    background: linear-gradient(
+        135deg,
+        rgba(16, 185, 129, 0.1) 0%,
+        rgba(16, 185, 129, 0.05) 100%
+    ) !important;
+    border-left: 3px solid #10b981;
+}
+
+.selected-row:hover {
+    background: linear-gradient(
+        135deg,
+        rgba(16, 185, 129, 0.15) 0%,
+        rgba(16, 185, 129, 0.08) 100%
+    ) !important;
 }
 </style>
