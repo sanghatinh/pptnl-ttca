@@ -47,7 +47,7 @@
                     <div class="bg-white rounded-lg overflow-hidden shadow-2xl">
                         <div class="relative">
                             <img
-                                :src="imagePreview || user.image"
+                                :src="imagePreview || farmer.image"
                                 alt="Profile Image"
                                 class="max-w-full max-h-[70vh] object-contain"
                                 @click.stop
@@ -56,7 +56,7 @@
 
                         <!-- Modal Footer with Delete Button -->
                         <div
-                            v-if="user.image && !uploadingImage"
+                            v-if="farmer.image && !uploadingImage"
                             class="p-4 bg-gray-50 border-t"
                         >
                             <div class="flex justify-center">
@@ -88,7 +88,7 @@
             <div class="max-w-6xl mx-auto px-2 sm:px-6 lg:px-8">
                 <!-- Profile Card -->
                 <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-                    <!-- Header Section with Avatar -->
+                    <!-- Header Section -->
                     <div
                         class="bg-gradient-to-r from-green-600 to-green-500 px-6 py-8 sm:px-8 relative"
                         style="
@@ -99,32 +99,6 @@
                             );
                         "
                     >
-                        <!-- Delete User Button - Top Right -->
-                        <button
-                            @click="confirmDeleteUser"
-                            class="absolute top-4 right-4 bg-white hover:bg-gray-50 text-green-600 hover:text-green-700 p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl group border-2 border-white hover:border-gray-100"
-                            title="Delete User"
-                        >
-                            <svg
-                                class="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                            </svg>
-                            <span
-                                class="absolute top-full right-0 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap"
-                            >
-                                Delete User
-                            </span>
-                        </button>
-
                         <div
                             class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6"
                         >
@@ -136,8 +110,8 @@
                                     title="Click to view image"
                                 >
                                     <img
-                                        v-if="imagePreview || user.image"
-                                        :src="imagePreview || user.image"
+                                        v-if="imagePreview || farmer.image"
+                                        :src="imagePreview || farmer.image"
                                         alt="Profile"
                                         class="w-full h-full rounded-full object-cover"
                                     />
@@ -195,16 +169,26 @@
                             <!-- Basic Info -->
                             <div class="text-center sm:text-left text-white">
                                 <h2 class="text-2xl font-bold">
-                                    {{ user.fullName || "Full Name" }}
+                                    {{
+                                        farmer.khach_hang_ca_nhan ||
+                                        farmer.khach_hang_doanh_nghiep ||
+                                        "Farmer User"
+                                    }}
                                 </h2>
                                 <p class="text-blue-100">
+                                    Supplier Number:
                                     {{
-                                        getPositionName(user.chucVu) ||
-                                        "Position"
+                                        farmer.supplier_number ||
+                                        "Supplier Number"
                                     }}
                                 </p>
                                 <p class="text-blue-200 text-sm">
-                                    {{ user.maNV || "Employee ID" }}
+                                    Mã KH:
+                                    {{
+                                        farmer.ma_kh_ca_nhan ||
+                                        farmer.ma_kh_doanh_nghiep ||
+                                        "Customer Code"
+                                    }}
                                 </p>
                             </div>
                         </div>
@@ -215,7 +199,97 @@
                         <form @submit.prevent="updateProfile" class="space-y-6">
                             <!-- Grid Layout for Form Fields -->
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <!-- Username -->
+                                <!-- Trạm (Read-only) -->
+                                <div class="space-y-2">
+                                    <label
+                                        class="block text-sm font-medium text-gray-700"
+                                    >
+                                        <svg
+                                            class="inline w-4 h-4 mr-2"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                                            />
+                                        </svg>
+                                        Trạm
+                                    </label>
+                                    <input
+                                        v-model="farmer.tram"
+                                        type="text"
+                                        readonly
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                                        placeholder="Station"
+                                    />
+                                </div>
+
+                                <!-- Nhân viên (Read-only) -->
+                                <div class="space-y-2">
+                                    <label
+                                        class="block text-sm font-medium text-gray-700"
+                                    >
+                                        <svg
+                                            class="inline w-4 h-4 mr-2"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                                            />
+                                        </svg>
+                                        Nhân viên phụ trách
+                                    </label>
+                                    <input
+                                        :value="
+                                            farmer.employee_name ||
+                                            'Chưa có nhân viên phụ trách'
+                                        "
+                                        type="text"
+                                        readonly
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
+                                    />
+                                    <small class="text-gray-500 text-sm">
+                                        Mã NV:
+                                        {{ farmer.ma_nhan_vien || "N/A" }}
+                                    </small>
+                                </div>
+
+                                <!-- Supplier Number (Read-only) -->
+                                <div class="space-y-2">
+                                    <label
+                                        class="block text-sm font-medium text-gray-700"
+                                    >
+                                        <svg
+                                            class="inline w-4 h-4 mr-2"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                                            />
+                                        </svg>
+                                        Supplier Number
+                                    </label>
+                                    <input
+                                        v-model="farmer.supplier_number"
+                                        type="text"
+                                        readonly
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                                        placeholder="Supplier number"
+                                    />
+                                </div>
+
+                                <!-- Mã KH cá nhân (Read-only) -->
                                 <div class="space-y-2">
                                     <label
                                         class="block text-sm font-medium text-gray-700"
@@ -233,20 +307,18 @@
                                                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                                             />
                                         </svg>
-                                        Username<span class="text-red-500"
-                                            >*</span
-                                        >
+                                        Mã KH cá nhân
                                     </label>
                                     <input
-                                        v-model="user.username"
+                                        v-model="farmer.ma_kh_ca_nhan"
                                         type="text"
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                        placeholder="Enter username"
+                                        readonly
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                                        placeholder="Individual customer code"
                                     />
                                 </div>
 
-                                <!-- Full Name -->
+                                <!-- Khách hàng cá nhân (Read-only) -->
                                 <div class="space-y-2">
                                     <label
                                         class="block text-sm font-medium text-gray-700"
@@ -261,23 +333,21 @@
                                                 stroke-linecap="round"
                                                 stroke-linejoin="round"
                                                 stroke-width="2"
-                                                d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                                             />
                                         </svg>
-                                        Full Name<span class="text-red-500"
-                                            >*</span
-                                        >
+                                        Khách hàng cá nhân
                                     </label>
                                     <input
-                                        v-model="user.fullName"
+                                        v-model="farmer.khach_hang_ca_nhan"
                                         type="text"
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                        placeholder="Enter full name"
+                                        readonly
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                                        placeholder="Individual customer name"
                                     />
                                 </div>
 
-                                <!-- Mã NV -->
+                                <!-- Mã KH doanh nghiệp (Read-only) -->
                                 <div class="space-y-2">
                                     <label
                                         class="block text-sm font-medium text-gray-700"
@@ -292,163 +362,279 @@
                                                 stroke-linecap="round"
                                                 stroke-linejoin="round"
                                                 stroke-width="2"
-                                                d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"
+                                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                                             />
                                         </svg>
-                                        Mã NV
+                                        Mã KH doanh nghiệp
                                     </label>
                                     <input
-                                        v-model="user.maNV"
+                                        v-model="farmer.ma_kh_doanh_nghiep"
                                         type="text"
-                                        maxlength="6"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                        placeholder="Enter employee ID (e.g., 000123)"
-                                    />
-                                    <small class="text-gray-500 text-sm">
-                                        Nhập mã nhân viên dạng 6 chữ số (ví dụ:
-                                        000123)
-                                    </small>
-                                </div>
-
-                                <!-- Chức vụ -->
-                                <div class="space-y-2">
-                                    <label
-                                        class="block text-sm font-medium text-gray-700"
-                                    >
-                                        Chức vụ<span class="text-red-500"
-                                            >*</span
-                                        >
-                                    </label>
-                                    <select
-                                        v-model="user.chucVu"
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                    >
-                                        <option value="">
-                                            Select position
-                                        </option>
-                                        <option
-                                            v-for="position in positions"
-                                            :key="position.id_position"
-                                            :value="position.id_position"
-                                        >
-                                            {{ position.position }}
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <!-- Trạm -->
-                                <div class="space-y-2">
-                                    <label
-                                        class="block text-sm font-medium text-gray-700"
-                                    >
-                                        Trạm<span class="text-red-500">*</span>
-                                    </label>
-                                    <select
-                                        v-model="user.tram"
-                                        required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                    >
-                                        <option value="" disabled>
-                                            Select Station
-                                        </option>
-                                        <option
-                                            v-for="station in stations"
-                                            :key="station.ma_don_vi"
-                                            :value="station.ma_don_vi"
-                                        >
-                                            {{ station.Name }}
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <!-- Email -->
-                                <div class="space-y-2">
-                                    <label
-                                        class="block text-sm font-medium text-gray-700"
-                                    >
-                                        Email
-                                    </label>
-                                    <input
-                                        v-model="user.email"
-                                        type="email"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                        placeholder="Enter email address"
+                                        readonly
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                                        placeholder="Business customer code"
                                     />
                                 </div>
 
-                                <!-- Phone -->
+                                <!-- Khách hàng doanh nghiệp (Read-only) -->
                                 <div class="space-y-2">
                                     <label
                                         class="block text-sm font-medium text-gray-700"
                                     >
-                                        Phone
+                                        <svg
+                                            class="inline w-4 h-4 mr-2"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                                            />
+                                        </svg>
+                                        Khách hàng doanh nghiệp
                                     </label>
                                     <input
-                                        v-model="user.phone"
+                                        v-model="farmer.khach_hang_doanh_nghiep"
+                                        type="text"
+                                        readonly
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                                        placeholder="Business customer name"
+                                    />
+                                </div>
+
+                                <!-- Số điện thoại (Editable) -->
+                                <div class="space-y-2">
+                                    <label
+                                        class="block text-sm font-medium text-gray-700"
+                                    >
+                                        <svg
+                                            class="inline w-4 h-4 mr-2"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                                            />
+                                        </svg>
+                                        Số điện thoại
+                                    </label>
+                                    <input
+                                        v-model="farmer.phone"
                                         type="tel"
+                                        maxlength="11"
                                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                         placeholder="Enter phone number"
                                     />
                                 </div>
 
-                                <!-- Role -->
+                                <!-- Địa chỉ thường trú (Editable) -->
                                 <div class="space-y-2">
                                     <label
                                         class="block text-sm font-medium text-gray-700"
                                     >
-                                        Role<span class="text-red-500">*</span>
+                                        <svg
+                                            class="inline w-4 h-4 mr-2"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                            />
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                            />
+                                        </svg>
+                                        Địa chỉ thường trú
                                     </label>
-                                    <select
-                                        v-model="user.role"
-                                        required
+                                    <textarea
+                                        v-model="farmer.dia_chi_thuong_tru"
+                                        rows="3"
+                                        maxlength="500"
                                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                    >
-                                        <option value="">Select role</option>
-                                        <option
-                                            v-for="role in roles"
-                                            :key="role.id"
-                                            :value="role.id"
-                                        >
-                                            {{ role.name }}
-                                        </option>
-                                    </select>
+                                        placeholder="Enter permanent address"
+                                    ></textarea>
                                 </div>
+                            </div>
 
-                                <!-- Status -->
-                                <div class="space-y-2">
-                                    <label
-                                        class="block text-sm font-medium text-gray-700"
-                                    >
-                                        Status<span class="text-red-500"
-                                            >*</span
+                            <!-- Banking Information Section (All Editable) -->
+                            <div class="border-t border-gray-200 pt-6">
+                                <h3
+                                    class="text-lg font-medium text-gray-900 mb-4"
+                                >
+                                    Thông tin tài khoản ngân hàng
+                                </h3>
+                                <div
+                                    class="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                                >
+                                    <!-- Chủ tài khoản (Editable) -->
+                                    <div class="space-y-2">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700"
                                         >
-                                    </label>
-                                    <div class="flex space-x-4">
-                                        <label class="flex items-center">
-                                            <input
-                                                v-model="user.status"
-                                                type="radio"
-                                                value="active"
-                                                class="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                                            />
-                                            <span
-                                                class="ml-2 text-sm text-gray-700"
-                                                >Active</span
+                                            <svg
+                                                class="inline w-4 h-4 mr-2"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
                                             >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                                />
+                                            </svg>
+                                            Chủ tài khoản
                                         </label>
-                                        <label class="flex items-center">
-                                            <input
-                                                v-model="user.status"
-                                                type="radio"
-                                                value="inactive"
-                                                class="w-4 h-4 text-red-600 focus:ring-red-500"
-                                            />
-                                            <span
-                                                class="ml-2 text-sm text-gray-700"
-                                                >Inactive</span
+                                        <input
+                                            v-model="farmer.chu_tai_khoan"
+                                            type="text"
+                                            maxlength="255"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                            placeholder="Enter account holder name"
+                                        />
+                                    </div>
+
+                                    <!-- Ngân hàng (Editable) -->
+                                    <div class="space-y-2">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700"
+                                        >
+                                            <svg
+                                                class="inline w-4 h-4 mr-2"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
                                             >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                                                />
+                                            </svg>
+                                            Ngân hàng
                                         </label>
+                                        <select
+                                            v-model="farmer.ngan_hang"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        >
+                                            <option value="">
+                                                Chọn ngân hàng
+                                            </option>
+                                            <option
+                                                v-for="bank in banks"
+                                                :key="bank.code_banking"
+                                                :value="bank.code_banking"
+                                            >
+                                                {{ bank.name_banking }}
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Số tài khoản (Editable) -->
+                                    <div class="space-y-2">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700"
+                                        >
+                                            <svg
+                                                class="inline w-4 h-4 mr-2"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                                                />
+                                            </svg>
+                                            Số tài khoản
+                                        </label>
+                                        <input
+                                            v-model="farmer.so_tai_khoan"
+                                            type="text"
+                                            maxlength="50"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                            placeholder="Enter account number"
+                                        />
+                                    </div>
+
+                                    <!-- Role (Read-only) -->
+                                    <div class="space-y-2">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700"
+                                        >
+                                            <svg
+                                                class="inline w-4 h-4 mr-2"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                                                />
+                                            </svg>
+                                            Role
+                                        </label>
+                                        <input
+                                            :value="getRoleName(farmer.role_id)"
+                                            type="text"
+                                            readonly
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                                            placeholder="Role"
+                                        />
+                                    </div>
+
+                                    <!-- Status (Read-only) -->
+                                    <div class="space-y-2">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700"
+                                        >
+                                            <svg
+                                                class="inline w-4 h-4 mr-2"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                />
+                                            </svg>
+                                            Trạng thái
+                                        </label>
+                                        <input
+                                            :value="
+                                                farmer.status === 'active'
+                                                    ? 'Hoạt động'
+                                                    : 'Không hoạt động'
+                                            "
+                                            type="text"
+                                            readonly
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                                            placeholder="Status"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -489,11 +675,11 @@
                                                     showNewPassword =
                                                         !showNewPassword
                                                 "
-                                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                class="absolute inset-y-0 right-0 pr-3 flex items-center"
                                             >
                                                 <svg
-                                                    v-if="showNewPassword"
-                                                    class="w-5 h-5"
+                                                    v-if="!showNewPassword"
+                                                    class="h-5 w-5 text-gray-400"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24"
@@ -513,7 +699,7 @@
                                                 </svg>
                                                 <svg
                                                     v-else
-                                                    class="w-5 h-5"
+                                                    class="h-5 w-5 text-gray-400"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24"
@@ -555,11 +741,11 @@
                                                     showConfirmPassword =
                                                         !showConfirmPassword
                                                 "
-                                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                class="absolute inset-y-0 right-0 pr-3 flex items-center"
                                             >
                                                 <svg
-                                                    v-if="showConfirmPassword"
-                                                    class="w-5 h-5"
+                                                    v-if="!showConfirmPassword"
+                                                    class="h-5 w-5 text-gray-400"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24"
@@ -579,7 +765,7 @@
                                                 </svg>
                                                 <svg
                                                     v-else
-                                                    class="w-5 h-5"
+                                                    class="h-5 w-5 text-gray-400"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24"
@@ -649,17 +835,31 @@
                                     </div>
                                     {{
                                         isLoading
-                                            ? "Updating..."
-                                            : "Update Profile"
+                                            ? loadingMessage
+                                            : "Cập nhật hồ sơ"
                                     }}
                                 </button>
+
                                 <button
                                     type="button"
                                     @click="resetForm"
                                     :disabled="isLoading"
-                                    class="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Cancel
+                                    <svg
+                                        class="inline w-5 h-5 mr-2"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12"
+                                        />
+                                    </svg>
+                                    Hủy
                                 </button>
                             </div>
                         </form>
@@ -673,6 +873,7 @@
 <script>
 import axios from "axios";
 import { useStore } from "../../Store/Auth";
+import Swal from "sweetalert2";
 
 export default {
     setup() {
@@ -684,35 +885,42 @@ export default {
         return {
             isLoading: false,
             loadingMessage: "Processing...",
+            loadingEmployees: false,
+
+            // Password visibility toggles
+            showNewPassword: false,
+            showConfirmPassword: false,
+            // Image handling
             uploadingImage: false,
             imagePreview: null,
             selectedImageFile: null,
-            showImageModal: false, // Add this new data property
-
-            // Password visibility toggles
-
-            showNewPassword: false,
-            showConfirmPassword: false,
+            showImageModal: false,
 
             // Data arrays
-            positions: [],
             stations: [],
+            employees: [],
+            banks: [],
             roles: [],
 
-            // User data
-            user: {
+            // Farmer data
+            farmer: {
                 id: null,
+                tram: "",
+                ma_nhan_vien: "",
+                supplier_number: "",
+                ma_kh_ca_nhan: "",
+                khach_hang_ca_nhan: "",
+                ma_kh_doanh_nghiep: "",
+                khach_hang_doanh_nghiep: "",
+                phone: "",
+                dia_chi_thuong_tru: "",
+                chu_tai_khoan: "",
+                ngan_hang: "",
+                so_tai_khoan: "",
+                role_id: "",
+                status: "active",
                 image: "",
                 image_public_id: "",
-                username: "",
-                fullName: "",
-                maNV: "",
-                chucVu: "",
-                tram: "",
-                email: "",
-                phone: "",
-                role: "",
-                status: "active",
             },
 
             // Password form data
@@ -720,16 +928,20 @@ export default {
                 newPassword: "",
                 confirmPassword: "",
             },
+
+            // Image upload states
+            showImageModal: false,
+            imagePreview: null,
+            uploadingImage: false,
         };
     },
 
     computed: {
-        getPositionName() {
-            return (positionId) => {
-                const position = this.positions.find(
-                    (p) => p.id_position === positionId
-                );
-                return position ? position.position : "";
+        // Helper method to get role name
+        getRoleName() {
+            return (roleId) => {
+                const role = this.roles.find((r) => r.id == roleId);
+                return role ? role.name : "N/A";
             };
         },
     },
@@ -739,31 +951,16 @@ export default {
     },
 
     methods: {
-        // Add new methods for modal handling
-        openImageModal() {
-            if (this.imagePreview || this.user.image) {
-                this.showImageModal = true;
-                // Prevent body scroll when modal is open
-                document.body.style.overflow = "hidden";
-            }
-        },
-
-        closeImageModal() {
-            this.showImageModal = false;
-            // Restore body scroll
-            document.body.style.overflow = "auto";
-        },
         async initializeComponent() {
             this.isLoading = true;
-            this.loadingMessage = "Loading user data...";
+            this.loadingMessage = "Loading profile data...";
 
             try {
                 // Load all necessary data
                 await Promise.all([
-                    this.fetchPositions(),
-                    this.fetchStations(),
+                    this.fetchBanks(),
                     this.fetchRoles(),
-                    this.loadUserData(),
+                    this.loadMyProfileData(),
                 ]);
             } catch (error) {
                 console.error("Error initializing component:", error);
@@ -773,62 +970,77 @@ export default {
             }
         },
 
-        async loadUserData() {
-            const userId = this.$route.params.id;
-            if (!userId) {
-                this.$router.push("/User");
-                return;
-            }
-
+        async loadMyProfileData() {
             try {
-                const response = await axios.get(`/api/user/edit/${userId}`, {
-                    headers: { Authorization: "Bearer " + this.store.getToken },
+                // Get farmer profile using JWT token
+                // The backend will use X-Supplier-Number header to identify the farmer
+                const response = await axios.get("/api/farmer/my-profile", {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
                 });
 
-                const userData = response.data;
+                if (response.data.success) {
+                    const farmerData = response.data.data;
 
-                // Map backend data to frontend model
-                this.user = {
-                    id: userData.id,
-                    image: userData.image,
-                    image_public_id: userData.image_public_id,
-                    username: userData.username,
-                    fullName: userData.full_name,
-                    maNV: userData.ma_nhan_vien,
-                    chucVu: userData.position,
-                    tram: userData.station,
-                    email: userData.email,
-                    phone: userData.phone,
-                    role: userData.role_id,
-                    status: userData.status,
-                };
+                    // Map backend data to frontend model
+                    this.farmer = {
+                        id: farmerData.id,
+                        image: farmerData.image_url || "",
+                        image_public_id: farmerData.url_image || "",
+                        tram: farmerData.tram || "",
+                        ma_nhan_vien: farmerData.ma_nhan_vien || "",
+                        employee_name: farmerData.employee_name || "", // เพิ่มบรรทัดนี้
+                        supplier_number: farmerData.supplier_number || "",
+                        ma_kh_ca_nhan: farmerData.ma_kh_ca_nhan || "",
+                        khach_hang_ca_nhan: farmerData.khach_hang_ca_nhan || "",
+                        ma_kh_doanh_nghiep: farmerData.ma_kh_doanh_nghiep || "",
+                        khach_hang_doanh_nghiep:
+                            farmerData.khach_hang_doanh_nghiep || "",
+                        phone: farmerData.phone || "",
+                        dia_chi_thuong_tru: farmerData.dia_chi_thuong_tru || "",
+                        chu_tai_khoan: farmerData.chu_tai_khoan || "",
+                        ngan_hang: farmerData.ngan_hang || "",
+                        so_tai_khoan: farmerData.so_tai_khoan || "",
+                        role_id: farmerData.role_id || "",
+                        status: farmerData.status || "active",
+                    };
+                } else {
+                    throw new Error(
+                        response.data.message || "Failed to load profile data"
+                    );
+                }
             } catch (error) {
-                console.error("Error loading user data:", error);
-                this.handleAuthError(error);
+                console.error("Error loading profile data:", error);
+
+                if (error.response && error.response.status === 401) {
+                    this.handleAuthError(error);
+                } else {
+                    this.$swal({
+                        icon: "error",
+                        title: "Lỗi tải dữ liệu",
+                        text: "Không thể tải thông tin hồ sơ",
+                        showConfirmButton: true,
+                    });
+                }
             }
         },
 
         // Data fetching methods
-        async fetchPositions() {
+        async fetchBanks() {
             try {
-                const response = await axios.get("/api/positions", {
+                const response = await axios.get("/api/farmer/banks", {
                     headers: { Authorization: "Bearer " + this.store.getToken },
                 });
-                this.positions = response.data;
-            } catch (error) {
-                console.error("Error fetching positions:", error);
-                this.handleAuthError(error);
-            }
-        },
 
-        async fetchStations() {
-            try {
-                const response = await axios.get("/api/stations", {
-                    headers: { Authorization: "Bearer " + this.store.getToken },
-                });
-                this.stations = response.data;
+                if (response.data.success) {
+                    this.banks = response.data.data;
+                } else {
+                    this.banks = [];
+                }
             } catch (error) {
-                console.error("Error fetching stations:", error);
+                console.error("Error fetching banks:", error);
+                this.banks = [];
                 this.handleAuthError(error);
             }
         },
@@ -841,11 +1053,111 @@ export default {
                 this.roles = response.data;
             } catch (error) {
                 console.error("Error fetching roles:", error);
+                this.roles = [];
                 this.handleAuthError(error);
             }
         },
 
+        // Validation methods
+        validateForm() {
+            // Clear previous validation errors
+            this.validationErrors = {};
+
+            // Password validation - only validate if password fields are filled
+            if (
+                this.passwordForm.newPassword ||
+                this.passwordForm.confirmPassword
+            ) {
+                if (this.passwordForm.newPassword.length < 6) {
+                    this.$swal({
+                        icon: "warning",
+                        title: "Mật khẩu quá ngắn",
+                        text: "Mật khẩu mới phải có ít nhất 6 ký tự",
+                        showConfirmButton: true,
+                    });
+                    return false;
+                }
+
+                if (
+                    this.passwordForm.newPassword !==
+                    this.passwordForm.confirmPassword
+                ) {
+                    this.$swal({
+                        icon: "warning",
+                        title: "Mật khẩu không khớp",
+                        text: "Mật khẩu mới và xác nhận mật khẩu không khớp",
+                        showConfirmButton: true,
+                    });
+                    return false;
+                }
+            }
+
+            // Validate bank code length
+            if (this.farmer.ngan_hang && this.farmer.ngan_hang.length > 50) {
+                this.$swal({
+                    icon: "warning",
+                    title: "Mã ngân hàng không hợp lệ",
+                    text: "Mã ngân hàng không được vượt quá 50 ký tự",
+                    showConfirmButton: true,
+                });
+                return false;
+            }
+
+            // Validate phone number
+            if (this.farmer.phone && this.farmer.phone.length > 20) {
+                this.$swal({
+                    icon: "warning",
+                    title: "Số điện thoại quá dài",
+                    text: "Số điện thoại không được vượt quá 20 ký tự",
+                    showConfirmButton: true,
+                });
+                return false;
+            }
+
+            // Validate account number
+            if (
+                this.farmer.so_tai_khoan &&
+                this.farmer.so_tai_khoan.length > 50
+            ) {
+                this.$swal({
+                    icon: "warning",
+                    title: "Số tài khoản quá dài",
+                    text: "Số tài khoản không được vượt quá 50 ký tự",
+                    showConfirmButton: true,
+                });
+                return false;
+            }
+
+            // Validate account holder name
+            if (
+                this.farmer.chu_tai_khoan &&
+                this.farmer.chu_tai_khoan.length > 255
+            ) {
+                this.$swal({
+                    icon: "warning",
+                    title: "Tên chủ tài khoản quá dài",
+                    text: "Tên chủ tài khoản không được vượt quá 255 ký tự",
+                    showConfirmButton: true,
+                });
+                return false;
+            }
+
+            return true;
+        },
+
         // Image handling methods
+        openImageModal() {
+            if (this.imagePreview || this.farmer.image) {
+                this.showImageModal = true;
+                document.body.style.overflow = "hidden";
+            }
+        },
+
+        closeImageModal() {
+            this.showImageModal = false;
+            document.body.style.overflow = "auto";
+        },
+
         triggerImageUpload() {
             this.$refs.imageInput.click();
         },
@@ -856,9 +1168,9 @@ export default {
                 // Validate file type
                 if (!file.type.startsWith("image/")) {
                     this.$swal({
-                        icon: "error",
-                        title: "Loại tệp không hợp lệ",
-                        text: "Vui lòng chọn tệp hình ảnh",
+                        icon: "warning",
+                        title: "Định dạng file không hợp lệ",
+                        text: "Vui lòng chọn file hình ảnh (JPG, PNG, GIF, WEBP)",
                         showConfirmButton: true,
                     });
                     return;
@@ -867,9 +1179,9 @@ export default {
                 // Validate file size (5MB max)
                 if (file.size > 5 * 1024 * 1024) {
                     this.$swal({
-                        icon: "error",
-                        title: "Tệp quá lớn",
-                        text: "Kích thước hình ảnh phải nhỏ hơn 5MB",
+                        icon: "warning",
+                        title: "File quá lớn",
+                        text: "Kích thước file không được vượt quá 5MB",
                         showConfirmButton: true,
                     });
                     return;
@@ -904,14 +1216,14 @@ export default {
 
             try {
                 const response = await axios.post(
-                    "/api/user/upload-image",
+                    "/api/farmer/upload-image",
                     formData,
                     {
                         headers: {
                             "Content-Type": "multipart/form-data",
                             Authorization: "Bearer " + this.store.getToken,
                         },
-                        timeout: 30000,
+                        timeout: 30000, // 30 seconds timeout
                     }
                 );
 
@@ -942,100 +1254,8 @@ export default {
                 this.uploadingImage = false;
             }
         },
-        // Delete methods
-        async confirmDeleteUser() {
-            try {
-                const result = await this.$swal({
-                    title: "Xóa người dùng?",
-                    text: "Bạn có chắc chắn muốn xóa người dùng này? Hành động này không thể hoàn tác.",
-                    icon: "warning",
-                    showCancelButton: true,
-                    confirmButtonColor: "#ef4444",
-                    cancelButtonColor: "#6b7280",
-                    confirmButtonText: "Có, xóa nó!",
-                    cancelButtonText: "Hủy",
-                    reverseButtons: true,
-                });
-
-                if (result.isConfirmed) {
-                    await this.deleteUser();
-                }
-            } catch (error) {
-                console.error("Error in confirmDeleteUser:", error);
-            }
-        },
-
-        async deleteUser() {
-            this.isLoading = true;
-            this.loadingMessage = "Đang xóa người dùng...";
-
-            try {
-                const response = await axios.delete(
-                    `/api/user/delete/${this.user.id}`,
-                    {
-                        headers: {
-                            Authorization: "Bearer " + this.store.getToken,
-                        },
-                        timeout: 30000,
-                    }
-                );
-
-                if (response.data.success) {
-                    this.$swal({
-                        icon: "success",
-                        title: "Đã xóa!",
-                        text: "Người dùng đã được xóa thành công.",
-                        showConfirmButton: false,
-                        timer: 2000,
-                    }).then(() => {
-                        this.$router.push("/User");
-                    });
-                } else {
-                    this.$swal({
-                        icon: "error",
-                        title: "Xóa thất bại!",
-                        text:
-                            response.data.message || "Không thể xóa người dùng",
-                        showConfirmButton: true,
-                    });
-                }
-            } catch (error) {
-                console.error("Delete user error:", error);
-
-                let errorMessage = "Đã xảy ra lỗi khi xóa người dùng";
-
-                if (error.response) {
-                    if (error.response.status === 403) {
-                        errorMessage =
-                            "Bạn không thể xóa tài khoản của chính mình";
-                    } else if (error.response.status === 404) {
-                        errorMessage = "Không tìm thấy người dùng";
-                    } else if (error.response.status === 401) {
-                        this.handleAuthError(error);
-                        return;
-                    } else {
-                        errorMessage =
-                            error.response.data.message || errorMessage;
-                    }
-                } else if (error.code === "ECONNABORTED") {
-                    errorMessage =
-                        "Hết thời gian chờ yêu cầu. Vui lòng thử lại.";
-                }
-
-                this.$swal({
-                    icon: "error",
-                    title: "Xóa thất bại!",
-                    text: errorMessage,
-                    showConfirmButton: true,
-                });
-            } finally {
-                this.isLoading = false;
-                this.loadingMessage = "Đang xử lý...";
-            }
-        },
 
         async confirmDeleteImage() {
-            // Close modal first
             this.closeImageModal();
             try {
                 const result = await this.$swal({
@@ -1051,31 +1271,30 @@ export default {
                 });
 
                 if (result.isConfirmed) {
-                    await this.deleteUserImage();
+                    await this.deleteFarmerImage();
                 }
             } catch (error) {
                 console.error("Error in confirmDeleteImage:", error);
             }
         },
 
-        async deleteUserImage() {
+        async deleteFarmerImage() {
             this.uploadingImage = true;
 
             try {
                 const response = await axios.delete(
-                    `/api/user/${this.user.id}/delete-image`,
+                    "/api/farmer/delete-image",
                     {
                         headers: {
                             Authorization: "Bearer " + this.store.getToken,
                         },
-                        timeout: 30000,
                     }
                 );
 
                 if (response.data.success) {
                     // Update local state
-                    this.user.image = "";
-                    this.user.image_public_id = "";
+                    this.farmer.image = "";
+                    this.farmer.image_public_id = "";
                     this.imagePreview = null;
                     this.selectedImageFile = null;
 
@@ -1096,36 +1315,16 @@ export default {
                     this.$swal({
                         icon: "error",
                         title: "Xóa thất bại!",
-                        text: response.data.message || "Không thể xóa hình ảnh",
+                        text: "Không thể xóa hình ảnh",
                         showConfirmButton: true,
                     });
                 }
             } catch (error) {
                 console.error("Delete image error:", error);
-
-                let errorMessage = "Đã xảy ra lỗi khi xóa hình ảnh";
-
-                if (error.response) {
-                    if (error.response.status === 400) {
-                        errorMessage = "Người dùng không có hình ảnh để xóa";
-                    } else if (error.response.status === 404) {
-                        errorMessage = "Không tìm thấy người dùng";
-                    } else if (error.response.status === 401) {
-                        this.handleAuthError(error);
-                        return;
-                    } else {
-                        errorMessage =
-                            error.response.data.message || errorMessage;
-                    }
-                } else if (error.code === "ECONNABORTED") {
-                    errorMessage =
-                        "Hết thời gian chờ yêu cầu. Vui lòng thử lại.";
-                }
-
                 this.$swal({
                     icon: "error",
                     title: "Xóa thất bại!",
-                    text: errorMessage,
+                    text: "Đã xảy ra lỗi khi xóa hình ảnh",
                     showConfirmButton: true,
                 });
             } finally {
@@ -1133,81 +1332,12 @@ export default {
             }
         },
 
-        // Validation methods
-        validateForm() {
-            // Basic validation
-            if (
-                !this.user.username ||
-                !this.user.fullName ||
-                !this.user.chucVu ||
-                !this.user.tram ||
-                !this.user.role
-            ) {
-                this.$swal({
-                    icon: "warning",
-                    title: "Thiếu trường bắt buộc",
-                    text: "Vui lòng điền vào tất cả các trường bắt buộc được đánh dấu *",
-                    showConfirmButton: true,
-                });
-                return false;
+        clearImageUploadState() {
+            this.imagePreview = null;
+            this.selectedImageFile = null;
+            if (this.$refs.imageInput) {
+                this.$refs.imageInput.value = "";
             }
-
-            // Email validation
-            if (this.user.email && !this.isValidEmail(this.user.email)) {
-                this.$swal({
-                    icon: "warning",
-                    title: "Email không hợp lệ",
-                    text: "Vui lòng nhập địa chỉ email hợp lệ",
-                    showConfirmButton: true,
-                });
-                return false;
-            }
-
-            // Password validation - ลบเงื่อนไข currentPassword
-            if (
-                this.passwordForm.newPassword ||
-                this.passwordForm.confirmPassword
-            ) {
-                if (!this.passwordForm.newPassword) {
-                    this.$swal({
-                        icon: "warning",
-                        title: "Yêu cầu mật khẩu mới",
-                        text: "Vui lòng nhập mật khẩu mới của bạn",
-                        showConfirmButton: true,
-                    });
-                    return false;
-                }
-
-                if (this.passwordForm.newPassword.length < 6) {
-                    this.$swal({
-                        icon: "warning",
-                        title: "Mật khẩu quá ngắn",
-                        text: "Mật khẩu mới phải có ít nhất 6 ký tự",
-                        showConfirmButton: true,
-                    });
-                    return false;
-                }
-
-                if (
-                    this.passwordForm.newPassword !==
-                    this.passwordForm.confirmPassword
-                ) {
-                    this.$swal({
-                        icon: "warning",
-                        title: "Mật khẩu không khớp",
-                        text: "Mật khẩu mới và xác nhận không khớp",
-                        showConfirmButton: true,
-                    });
-                    return false;
-                }
-            }
-
-            return true;
-        },
-
-        isValidEmail(email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(email);
         },
 
         // Main update method
@@ -1218,7 +1348,7 @@ export default {
             this.loadingMessage = "Đang cập nhật hồ sơ...";
 
             try {
-                let imagePublicId = this.user.image_public_id;
+                let imagePublicId = this.farmer.image_public_id;
 
                 // Upload new image if selected
                 if (this.selectedImageFile) {
@@ -1227,49 +1357,40 @@ export default {
                     if (imageResult && imageResult.success) {
                         imagePublicId = imageResult.public_id;
                     } else {
-                        this.$swal({
-                            icon: "warning",
-                            title: "Tải lên hình ảnh thất bại",
-                            text: "Hồ sơ sẽ được cập nhật mà không có hình ảnh mới. Bạn có thể thử tải lên lại sau.",
-                            showConfirmButton: true,
-                        });
+                        throw new Error("Failed to upload image");
                     }
                 }
 
-                // Prepare update data
+                // Prepare update data (only editable fields)
                 const updateData = {
-                    username: this.user.username,
-                    full_name: this.user.fullName,
-                    ma_nhan_vien: this.user.maNV || "",
-                    position: this.user.chucVu,
-                    station: this.user.tram,
-                    email: this.user.email || "",
-                    phone: this.user.phone || "",
-                    role_id: this.user.role,
-                    status: this.user.status,
+                    phone: this.farmer.phone || "",
+                    dia_chi_thuong_tru: this.farmer.dia_chi_thuong_tru || "",
+                    chu_tai_khoan: this.farmer.chu_tai_khoan || "",
+                    ngan_hang: this.farmer.ngan_hang || "",
+                    so_tai_khoan: this.farmer.so_tai_khoan || "",
                 };
+
+                // Add password only if provided
+                if (
+                    this.passwordForm.newPassword &&
+                    this.passwordForm.newPassword.trim() !== ""
+                ) {
+                    updateData.password = this.passwordForm.newPassword;
+                }
 
                 // Add image if available
                 if (imagePublicId) {
-                    updateData.image = imagePublicId;
-                }
-
-                // Add password fields if provided - ลบ current_password
-                if (this.passwordForm.newPassword) {
-                    updateData.new_password = this.passwordForm.newPassword;
-                    updateData.confirm_password =
-                        this.passwordForm.confirmPassword;
+                    updateData.url_image = imagePublicId;
                 }
 
                 this.loadingMessage = "Đang lưu thay đổi...";
 
                 // Send update request
                 const response = await axios.put(
-                    `/api/user/update/${this.user.id}`,
+                    "/api/farmer/update-profile",
                     updateData,
                     {
                         headers: {
-                            "Content-Type": "application/json",
                             Authorization: "Bearer " + this.store.getToken,
                         },
                         timeout: 30000,
@@ -1279,8 +1400,8 @@ export default {
                 if (response.data.success) {
                     this.$swal({
                         icon: "success",
-                        title: "Thành công!",
-                        text: "Hồ sơ người dùng đã được cập nhật thành công!",
+                        title: "Cập nhật thành công!",
+                        text: "Hồ sơ của bạn đã được cập nhật",
                         showConfirmButton: false,
                         timer: 2000,
                     }).then(() => {
@@ -1288,8 +1409,8 @@ export default {
                         this.clearPasswordForm();
                         // Clear image upload state
                         this.clearImageUploadState();
-                        // Optionally redirect
-                        // this.$router.push("/User");
+                        // Reload profile data
+                        this.loadMyProfileData();
                     });
                 } else {
                     this.$swal({
@@ -1297,37 +1418,69 @@ export default {
                         title: "Cập nhật thất bại!",
                         text:
                             response.data.message ||
-                            "Không thể cập nhật hồ sơ người dùng",
+                            "Đã xảy ra lỗi khi cập nhật hồ sơ",
                         showConfirmButton: true,
                     });
                 }
-            } catch (err) {
-                console.error("Update user error:", err);
+            } catch (error) {
+                console.error("Update profile error:", error);
 
                 let errorMessage = "Đã xảy ra lỗi khi cập nhật hồ sơ";
 
-                if (err.response) {
-                    if (err.response.status === 422) {
-                        const errors = err.response.data.errors;
+                if (error.response) {
+                    if (error.response.status === 401) {
+                        this.handleAuthError(error);
+                        return;
+                    } else if (error.response.status === 422) {
+                        // Handle validation errors
+                        const errors = error.response.data.errors;
                         if (errors) {
-                            errorMessage = "Lỗi xác thực:\n";
-                            Object.keys(errors).forEach((key) => {
-                                errorMessage += `• ${errors[key][0]}\n`;
-                            });
+                            this.validationErrors = errors;
+
+                            // Show specific validation error messages
+                            const errorMessages = [];
+
+                            if (errors.ngan_hang) {
+                                errorMessages.push(
+                                    "Mã ngân hàng: " + errors.ngan_hang[0]
+                                );
+                            }
+                            if (errors.phone) {
+                                errorMessages.push(
+                                    "Số điện thoại: " + errors.phone[0]
+                                );
+                            }
+                            if (errors.so_tai_khoan) {
+                                errorMessages.push(
+                                    "Số tài khoản: " + errors.so_tai_khoan[0]
+                                );
+                            }
+                            if (errors.chu_tai_khoan) {
+                                errorMessages.push(
+                                    "Chủ tài khoản: " + errors.chu_tai_khoan[0]
+                                );
+                            }
+                            if (errors.dia_chi_thuong_tru) {
+                                errorMessages.push(
+                                    "Địa chỉ: " + errors.dia_chi_thuong_tru[0]
+                                );
+                            }
+
+                            errorMessage =
+                                errorMessages.length > 0
+                                    ? errorMessages.join("\n")
+                                    : "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.";
                         } else {
                             errorMessage =
-                                err.response.data.message || errorMessage;
+                                error.response.data.message || errorMessage;
                         }
-                    } else if (err.response.status === 401) {
-                        this.handleAuthError(err);
-                        return;
                     } else {
                         errorMessage =
-                            err.response.data.message || errorMessage;
+                            error.response.data?.message || errorMessage;
                     }
-                } else if (err.code === "ECONNABORTED") {
+                } else if (error.code === "ECONNABORTED") {
                     errorMessage =
-                        "Hết thời gian chờ yêu cầu. Vui lòng thử lại.";
+                        "Kết nối bị gián đoạn. Vui lòng kiểm tra mạng và thử lại.";
                 }
 
                 this.$swal({
@@ -1352,25 +1505,25 @@ export default {
             this.showConfirmPassword = false;
         },
 
-        clearImageUploadState() {
-            this.imagePreview = null;
-            this.selectedImageFile = null;
-            if (this.$refs.imageInput) {
-                this.$refs.imageInput.value = "";
-            }
-        },
-
         resetForm() {
-            this.$router.push("/User");
+            // Go back to dashboard or main page
+            this.$router.push("/");
         },
 
         handleAuthError(error) {
             if (error.response && error.response.status === 401) {
                 localStorage.removeItem("web_token");
                 localStorage.removeItem("web_user");
+                localStorage.removeItem("user_type");
+                localStorage.removeItem("supplier_id");
                 this.store.logout();
                 this.$router.push("/login");
             }
+        },
+
+        // Add global method access for SweetAlert2
+        $swal(options) {
+            return Swal.fire(options);
         },
     },
 
@@ -1408,7 +1561,8 @@ export default {
 
 /* Form field focus states */
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
     outline: none;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
@@ -1422,15 +1576,6 @@ button[type="submit"]:hover:not(:disabled) {
 button[type="button"]:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Image upload styling */
-.relative {
-    position: relative;
-}
-
-.absolute {
-    position: absolute;
 }
 
 /* Disabled state styling */

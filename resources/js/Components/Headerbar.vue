@@ -10,17 +10,6 @@
             </a>
         </div>
         <div class="header-items">
-            <!-- Custom search start -->
-            <!-- <div class="custom-search">
-                <input
-                    type="text"
-                    class="search-query"
-                    placeholder="Search here ..."
-                />
-                <i class="icon-search1"></i>
-            </div> -->
-            <!-- Custom search end -->
-
             <!-- Header actions start -->
             <ul class="header-actions">
                 <li class="dropdown">
@@ -32,12 +21,12 @@
                         aria-haspopup="true"
                         aria-expanded="false"
                     >
-                        <span class="user-name">{{ full_name }}</span>
+                        <span class="user-name">{{ displayName }}</span>
                         <span class="avatar">
-                            <!-- <img :src="`${url}/img/user24.png`" alt="avatar"> -->
                             <img
-                                src="https://img.icons8.com/?size=100&id=z-JBA_KtSkxG&format=png&color=000000"
+                                :src="userAvatar"
                                 alt="avatar"
+                                @error="onImageError"
                             />
                             <span class="status busy"></span>
                         </span>
@@ -50,23 +39,38 @@
                             <div class="header-user-profile">
                                 <div class="header-user">
                                     <img
-                                        src="https://img.icons8.com/?size=100&id=z-JBA_KtSkxG&format=png&color=000000"
+                                        :src="userAvatar"
                                         alt="avatar"
+                                        @error="onImageError"
                                     />
                                 </div>
-                                <h5>{{ full_name }}</h5>
-                                <p>{{ role }}</p>
+                                <h6>{{ displayName }}</h6>
+                                <p>{{ roleName }}</p>
                             </div>
-                            <a href="user-profile.html"
-                                ><i class="icon-user1"></i> My Profile</a
+                            <!-- แสดงเมนูสำหรับ Employee เท่านั้น -->
+                            <a
+                                v-if="userType === 'employee'"
+                                href="#"
+                                @click.prevent="Gotopath('/Myprofile')"
+                                style="cursor: pointer"
                             >
-                            <a href="account-settings.html"
-                                ><i class="icon-settings1"></i> Account
-                                Settings</a
+                                <i class="icon-user"></i>Tài Khoản của tôi
+                            </a>
+                            <!-- แสดงเมนูสำหรับ Farmer เท่านั้น -->
+                            <a
+                                v-if="userType === 'farmer'"
+                                href="#"
+                                @click.prevent="Gotopath('/Myprofilefarmer')"
+                                style="cursor: pointer"
                             >
-                            <a href="#" @click="Logout()"
-                                ><i class="icon-log-out1"></i> Sign Out</a
-                            >
+                                <i class="icon-users"></i>Tài Khoản Nông dân
+                            </a>
+                            <a href="account-settings.html">
+                                <i class="icon-settings1"></i> Account Settings
+                            </a>
+                            <a href="#" @click="Logout()">
+                                <i class="icon-log-out1"></i> Log Out
+                            </a>
                         </div>
                     </div>
                 </li>
@@ -93,50 +97,179 @@ export default {
     data() {
         return {
             url: window.location.href,
-            full_name: "",
-            role: "",
+            userType: "employee", // default
+            displayName: "",
+            roleName: "",
+            userAvatar:
+                "https://img.icons8.com/?size=100&id=z-JBA_KtSkxG&format=png&color=000000", // default avatar
+            defaultAvatar:
+                "https://img.icons8.com/?size=100&id=z-JBA_KtSkxG&format=png&color=000000",
         };
     },
-    created() {
-        const user = localStorage.getItem("web_user");
-        if (user) {
-            try {
-                const parsedUser = JSON.parse(user);
-                this.full_name = parsedUser.full_name;
-                const roleId = parsedUser.role_id; // ได้รับ role_id จาก login
-
-                // เรียก API เพื่อนำข้อมูล Role ทั้งหมดมา แล้ว map role ที่ตรงกับ role_id
-                axios
-                    .get("/api/roles", {
-                        headers: {
-                            Authorization: "Bearer " + this.store.getToken,
-                        },
-                    })
-                    .then((response) => {
-                        const roles = response.data;
-                        const matchedRole = roles.find(
-                            (roleItem) => roleItem.id == roleId
-                        );
-                        if (matchedRole) {
-                            this.role = matchedRole.name;
-                        } else {
-                            this.role = "Unknown";
-                        }
-                    })
-                    .catch((err) => {
-                        console.error("Error fetching roles:", err);
-                        this.role = "Unknown";
-                    });
-            } catch (e) {
-                console.error("Error parsing user data", e);
-            }
-        }
+    async created() {
+        await this.initializeUserData();
     },
     setup() {
         const store = useStore();
         return { store };
     },
     methods: {
+        Gotopath(path) {
+            this.$router.push(path);
+        },
+        async initializeUserData() {
+            try {
+                // ตรวจสอบประเภทผู้ใช้จาก localStorage
+                const user = localStorage.getItem("web_user");
+                if (!user) {
+                    console.error("No user data found in localStorage");
+                    return;
+                }
+
+                const parsedUser = JSON.parse(user);
+                this.userType = parsedUser.user_type || "employee";
+
+                // โหลดข้อมูลตามประเภทผู้ใช้
+                if (this.userType === "farmer") {
+                    await this.loadFarmerProfile();
+                } else {
+                    await this.loadEmployeeProfile();
+                }
+            } catch (error) {
+                console.error("Error initializing user data:", error);
+                this.setDefaultUserData();
+            }
+        },
+
+        async loadFarmerProfile() {
+            try {
+                const response = await axios.get("/api/farmer/my-profile", {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                });
+
+                if (response.data.success) {
+                    const farmerData = response.data.data;
+
+                    // ตั้งค่าชื่อแสดง - ให้ความสำคัญกับ khach_hang_ca_nhan หรือ khach_hang_doanh_nghiep
+                    this.displayName =
+                        farmerData.khach_hang_ca_nhan ||
+                        farmerData.khach_hang_doanh_nghiep ||
+                        farmerData.supplier_number ||
+                        "Farmer User";
+
+                    this.roleName = farmerData.role_name || "Nông dân";
+
+                    // ตั้งค่ารูปภาพ
+                    if (farmerData.image_url) {
+                        this.userAvatar = farmerData.image_url;
+                    }
+                } else {
+                    throw new Error("Failed to load farmer profile");
+                }
+            } catch (error) {
+                console.error("Error loading farmer profile:", error);
+                this.setFarmerDefaultData();
+            }
+        },
+
+        async loadEmployeeProfile() {
+            try {
+                const response = await axios.get("/api/my-profile", {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                });
+
+                if (response.data.success) {
+                    const employeeData = response.data.data;
+
+                    this.displayName =
+                        employeeData.full_name ||
+                        employeeData.username ||
+                        "Employee User";
+                    this.roleName = employeeData.role_name || "Unknown Role";
+
+                    // ตั้งค่ารูปภาพ
+                    if (employeeData.image_url) {
+                        this.userAvatar = employeeData.image_url;
+                    }
+                } else {
+                    throw new Error("Failed to load employee profile");
+                }
+            } catch (error) {
+                console.error("Error loading employee profile:", error);
+                this.setEmployeeDefaultData();
+            }
+        },
+
+        setFarmerDefaultData() {
+            try {
+                const user = localStorage.getItem("web_user");
+                if (user) {
+                    const parsedUser = JSON.parse(user);
+                    this.displayName = parsedUser.name || "Farmer User";
+                } else {
+                    this.displayName = "Farmer User";
+                }
+                this.roleName = "Nông dân";
+            } catch (error) {
+                this.displayName = "Farmer User";
+                this.roleName = "Nông dân";
+            }
+        },
+
+        setEmployeeDefaultData() {
+            try {
+                const user = localStorage.getItem("web_user");
+                if (user) {
+                    const parsedUser = JSON.parse(user);
+                    this.displayName =
+                        parsedUser.full_name ||
+                        parsedUser.username ||
+                        "Employee User";
+
+                    // ดึงข้อมูล role แบบเดิม
+                    this.loadRoleFromAPI(parsedUser.role_id);
+                } else {
+                    this.displayName = "Employee User";
+                    this.roleName = "Unknown Role";
+                }
+            } catch (error) {
+                this.displayName = "Employee User";
+                this.roleName = "Unknown Role";
+            }
+        },
+
+        setDefaultUserData() {
+            this.displayName = "User";
+            this.roleName = "Unknown";
+            this.userAvatar = this.defaultAvatar;
+        },
+
+        async loadRoleFromAPI(roleId) {
+            try {
+                const response = await axios.get("/api/roles", {
+                    headers: {
+                        Authorization: "Bearer " + this.store.getToken,
+                    },
+                });
+
+                const roles = response.data;
+                const matchedRole = roles.find((role) => role.id == roleId);
+                this.roleName = matchedRole ? matchedRole.name : "Unknown Role";
+            } catch (error) {
+                console.error("Error fetching roles:", error);
+                this.roleName = "Unknown Role";
+            }
+        },
+
+        onImageError() {
+            // ถ้ารูปภาพโหลดไม่ได้ ให้ใช้รูปเริ่มต้น
+            this.userAvatar = this.defaultAvatar;
+        },
+
         async Logout() {
             try {
                 // Clear localStorage และ store ก่อนเรียก API
@@ -224,6 +357,24 @@ export default {
     right: 15px;
     left: auto !important;
 }
+
+/* Avatar styling */
+.avatar img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+}
+
+.header-user img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #fff;
+}
+
 /* เพิ่ม CSS นี้เพื่อยกเลิกการซ่อนเมนู user-settings บนมือถือ */
 @media (max-width: 576px) {
     .header-actions > li {
@@ -239,5 +390,45 @@ export default {
         width: 250px;
         max-width: 90vw;
     }
+}
+
+/* Loading state */
+.user-name {
+    transition: opacity 0.3s ease;
+}
+
+.user-name:empty {
+    opacity: 0.5;
+}
+
+/* Enhanced styling for dropdown */
+.header-profile-actions a {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    text-decoration: none;
+    color: #333;
+    transition: background-color 0.2s ease;
+    cursor: pointer; /* เพิ่มบรรทัดนี้ */
+}
+
+.header-profile-actions a:hover {
+    background-color: #22c55e;
+}
+
+.header-profile-actions a i {
+    margin-right: 8px;
+    width: 16px;
+    text-align: center;
+}
+/* Center align display name */
+.header-user-profile h6 {
+    text-align: center;
+    margin: 10px 0 5px 0;
+}
+
+.header-user-profile p {
+    text-align: center;
+    margin: 0 0 15px 0;
 }
 </style>

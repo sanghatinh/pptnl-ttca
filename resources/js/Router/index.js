@@ -83,6 +83,30 @@ const routes = [
         },
     },
     {
+        name: "UserFarmerDetails",
+        path: "/UserFarmerDetails/:id",
+        component: () => import("../Pages/Farmer/EditUserFarmer.vue"),
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
+        name: "Myprofilefarmer",
+        path: "/Myprofilefarmer",
+        component: () => import("../Pages/Farmer/MyProfileUserFarmer.vue"),
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
+        name: "Myprofile",
+        path: "/Myprofile",
+        component: () => import("../Pages/Admin/MyProfile.vue"),
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
         name: "AddUser",
         path: "/AddUser",
         component: AddUser,

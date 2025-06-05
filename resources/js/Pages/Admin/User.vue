@@ -1092,14 +1092,71 @@
             </div>
         </div>
 
-        <!-- Keep pagination section -->
-        <div class="flex justify-center mt-4">
-            <pagination
-                :data="paginatedUsers"
-                @pagination-change-page="pageChanged"
-                :limit="5"
-                :classes="paginationClasses"
-            />
+        <!-- Mobile Pagination Card - แทนที่ pagination เดิม -->
+        <div class="mobile-pagination-card" v-if="isMobile">
+            <div class="pagination-info">
+                <span class="page-info"
+                    >Trang {{ currentPage }} của
+                    {{ paginatedUsers.last_page }}</span
+                >
+                <span class="record-info"
+                    >{{ paginatedUsers.from }}-{{ paginatedUsers.to }} của
+                    {{ paginatedUsers.total }} bản ghi</span
+                >
+            </div>
+
+            <div class="pagination-controls">
+                <button
+                    class="page-btn"
+                    @click="pageChanged(1)"
+                    :disabled="currentPage === 1"
+                >
+                    <i class="fas fa-angle-double-left"></i>
+                </button>
+
+                <button
+                    class="page-btn"
+                    @click="pageChanged(currentPage - 1)"
+                    :disabled="currentPage === 1"
+                >
+                    <i class="fas fa-angle-left"></i>
+                </button>
+
+                <div class="current-page">{{ currentPage }}</div>
+
+                <button
+                    class="page-btn"
+                    @click="pageChanged(currentPage + 1)"
+                    :disabled="currentPage === paginatedUsers.last_page"
+                >
+                    <i class="fas fa-angle-right"></i>
+                </button>
+
+                <button
+                    class="page-btn"
+                    @click="pageChanged(paginatedUsers.last_page)"
+                    :disabled="currentPage === paginatedUsers.last_page"
+                >
+                    <i class="fas fa-angle-double-right"></i>
+                </button>
+            </div>
+
+            <!-- Quick jump สำหรับหน้าเยอะ -->
+            <div class="quick-jump" v-if="paginatedUsers.last_page > 5">
+                <span>Đi đến trang:</span>
+                <select
+                    :value="currentPage"
+                    @change="pageChanged(parseInt($event.target.value))"
+                >
+                    <option
+                        v-for="page in paginatedUsers.last_page"
+                        :key="page"
+                        :value="page"
+                    >
+                        {{ page }}
+                    </option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -1951,13 +2008,28 @@ export default {
 .table-container {
     position: relative;
     width: 100%;
+    height: 100%;
     background-color: #fff;
-    border-radius: 0.75rem;
+
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
         0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    padding: 1.5rem;
+    padding: 1rem;
     margin-bottom: 1rem;
     overflow: hidden;
+    /* เพิ่มความสูงให้เท่ากับ desktop-controls-container */
+    min-height: calc(100vh - 450px);
+}
+
+.desktop-controls-container {
+    /* เพิ่มความสูงเท่ากัน */
+    min-height: calc(100vh - 450px);
+    height: auto;
+}
+.desktop-controls-container .card {
+    /* ให้ card มีความสูงเต็ม */
+    height: calc(100vh - 450px);
+
+    height: auto;
 }
 
 .table-container::before {
@@ -1972,9 +2044,9 @@ export default {
 }
 
 .table-scroll-container {
-    min-height: 410px;
     position: relative;
-    max-height: calc(100vh - 240px);
+    max-height: calc(100vh - 350px);
+    height: auto;
     overflow: auto;
     border-radius: 0.75rem;
     background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
@@ -3203,5 +3275,115 @@ export default {
     text-align: center;
     vertical-align: middle;
     padding: 0.75rem 0.5rem;
+}
+/* Mobile Pagination - Simple & Clean */
+.mobile-pagination-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.pagination-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.page-info {
+    font-weight: 600;
+    color: #374151;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.page-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: white;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: #10b981;
+    color: #10b981;
+    transform: translateY(-1px);
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.current-page {
+    background: #10b981;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin: 0 8px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.quick-jump {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.quick-jump select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+}
+
+.quick-jump select:focus {
+    outline: none;
+    border-color: #10b981;
+}
+
+@media (max-width: 480px) {
+    .pagination-info {
+        flex-direction: column;
+        gap: 4px;
+        text-align: center;
+    }
+
+    .page-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .current-page {
+        padding: 6px 12px;
+        margin: 0 4px;
+    }
 }
 </style>

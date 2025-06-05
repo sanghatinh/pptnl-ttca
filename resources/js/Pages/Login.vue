@@ -60,6 +60,9 @@
                         />
                     </div>
                     <div class="form-group">
+                        <span class="input-icon">
+                            <i class="fas fa-lock"></i>
+                        </span>
                         <input
                             :type="showPassword ? 'text' : 'password'"
                             v-model="employee.password"
@@ -117,6 +120,9 @@
                         />
                     </div>
                     <div class="form-group">
+                        <span class="input-icon">
+                            <i class="fas fa-lock"></i>
+                        </span>
                         <input
                             :type="showPassword ? 'text' : 'password'"
                             v-model="farmer.password"

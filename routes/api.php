@@ -19,6 +19,7 @@ use App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers;
 use App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController;
 use App\Http\Controllers\QuanlyCongno\DeductibleServiceDebtController;
 use App\Http\Controllers\QuanlyTaichinh\PhieutrinhthanhtoanHomgiongControllers;
+use App\Http\Controllers\UserProfileController;
 
 
 
@@ -52,6 +53,11 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::delete('/user/delete/{id}', [UserController::class, 'deleteuser']);
     Route::get('/user/permissions', [UserController::class, 'getUserPermissions']);
     Route::get('/user/components', [UserController::class, 'getUserComponents']);
+
+      // My Profile Routes
+    Route::get('/my-profile', [App\Http\Controllers\UserProfileController::class, 'getMyProfile']);
+    Route::put('/my-profile', [App\Http\Controllers\UserProfileController::class, 'updateMyProfile']);
+    Route::delete('/my-profile/image', [App\Http\Controllers\UserProfileController::class, 'deleteMyImage']);
 
 
 
@@ -210,14 +216,39 @@ Route::put('/payment-requests-dichvu/{id}/update', [PhieudenghithanhtoandvContro
     Route::put('/payment-requests-homgiong/{id}/basic-info', [PhieutrinhthanhtoanHomgiongControllers::class, 'updateBasicInfo']);
 
 //Công nợ dịch vụ khấu trừ
-
 Route::get('/import-congno-dichvu-khautru-progress/{importId}', [DeductibleServiceDebtController::class, 'checkImportProgress']);
 Route::post('/import-congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'startImport']);
 Route::get('/congno-dichvu-khautru/{invoicenumber}', [DeductibleServiceDebtController::class, 'showDetails']);
+// Farmer Users Management
+    Route::get('/farmer-users', [App\Http\Controllers\Farmer\UserFarmerController::class, 'index']);
+    Route::get('/farmer-users/filter-options', [App\Http\Controllers\Farmer\UserFarmerController::class, 'getFilterOptions']);
+    Route::get('/farmer-users/{id}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'show']);
+    Route::post('/farmer-users', [App\Http\Controllers\Farmer\UserFarmerController::class, 'store']);
+    Route::put('/farmer-users/{id}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'update']);
+    Route::delete('/farmer-users/{id}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'destroy']);
+    // Farmer Users Import Routes
+Route::post('/import-farmer-users', [App\Http\Controllers\Farmer\UserFarmerController::class, 'importData']);
+Route::get('/import-farmer-users-progress/{importId}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'importProgress']);
+Route::get('/farmer-users-template', [App\Http\Controllers\Farmer\UserFarmerController::class, 'downloadTemplate']);
+  // Sync selected farmer users to userfarmer_role
+    Route::post('/farmer-users/sync-roles', [App\Http\Controllers\Farmer\UserFarmerController::class, 'syncToUserFarmerRoles']);
+        Route::post('/farmer-users/delete-multiple', [App\Http\Controllers\Farmer\UserFarmerController::class, 'deleteMultiple']);
+//Dropdown options for farmer users
+Route::get('/employees/by-station', [UserController::class, 'getEmployeesByStation']);
+
+    // เพิ่ม routes สำหรับรูปภาพ
+    Route::post('/farmer-users/upload-image', [App\Http\Controllers\Farmer\UserFarmerController::class, 'uploadFarmerImage']);
+    Route::delete('/farmer-users/{id}/delete-image', [App\Http\Controllers\Farmer\UserFarmerController::class, 'deleteFarmerImage']);
 
 });
 
+// เพิ่มนอก middleware เพื่อให้เข้าถึง print page ได้
+Route::get('/print-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'printGet']);
+Route::post('/print-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'print']);
+Route::post('/print-preview-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'getPrintPreview']);
 
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Middleware for JWT authentication เพื่อป้องกันการเข้าถึง API ที่ต้องการการยืนยันตัวตน ให้ใช้ได้ ทั้ง ผู้ดูแลระบบและเกษตรกร
 Route::middleware([\App\Http\Middleware\JwtMiddleware::class])->group(function () {
 Route::get('/congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'index']);
@@ -236,27 +267,17 @@ Route::get('/phieu-giao-nhan-hom-giong', [PhieuGiaoNhanHomGiongController::class
 Route::get('/bienban-nghiemthu-homgiong/{id}', [PhieuGiaoNhanHomGiongController::class, 'show']);
 Route::get('/bienban-nghiemthu-homgiong/{id}/check-access', [PhieuGiaoNhanHomGiongController::class, 'checkAccess']);
 
-// Farmer Users Management
-    Route::get('/farmer-users', [App\Http\Controllers\Farmer\UserFarmerController::class, 'index']);
-    Route::get('/farmer-users/filter-options', [App\Http\Controllers\Farmer\UserFarmerController::class, 'getFilterOptions']);
-    Route::get('/farmer-users/{id}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'show']);
-    Route::post('/farmer-users', [App\Http\Controllers\Farmer\UserFarmerController::class, 'store']);
-    Route::put('/farmer-users/{id}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'update']);
-    Route::delete('/farmer-users/{id}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'destroy']);
-    // Farmer Users Import Routes
-Route::post('/import-farmer-users', [App\Http\Controllers\Farmer\UserFarmerController::class, 'importData']);
-Route::get('/import-farmer-users-progress/{importId}', [App\Http\Controllers\Farmer\UserFarmerController::class, 'importProgress']);
-Route::get('/farmer-users-template', [App\Http\Controllers\Farmer\UserFarmerController::class, 'downloadTemplate']);
-  // Sync selected farmer users to userfarmer_role
-    Route::post('/farmer-users/sync-roles', [App\Http\Controllers\Farmer\UserFarmerController::class, 'syncToUserFarmerRoles']);
-        Route::post('/farmer-users/delete-multiple', [App\Http\Controllers\Farmer\UserFarmerController::class, 'deleteMultiple']);
+
+ // Farmer Profile Management Routes
+    Route::get('/farmer/my-profile', [App\Http\Controllers\Farmer\FarmerProfileController::class, 'getMyProfile']);
+    Route::put('/farmer/update-profile', [App\Http\Controllers\Farmer\FarmerProfileController::class, 'updateProfile']);
+    Route::post('/farmer/upload-image', [App\Http\Controllers\Farmer\FarmerProfileController::class, 'uploadImage']);
+    Route::delete('/farmer/delete-image', [App\Http\Controllers\Farmer\FarmerProfileController::class, 'deleteImage']);
+    // Banks API for farmer dropdown
+    Route::get('/farmer/banks', [App\Http\Controllers\Farmer\FarmerProfileController::class, 'getBanks']);
+
+
 
 });
-
-// เพิ่มนอก middleware เพื่อให้เข้าถึง print page ได้
-Route::get('/print-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'printGet']);
-Route::post('/print-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'print']);
-Route::post('/print-preview-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'getPrintPreview']);
-
 
 

@@ -18,40 +18,7 @@ use Illuminate\Support\Facades\Log;
 class UserController extends Controller
 {
 
-    // public function register(Request $request)
-    // {
-    //     // created a new user with the request data = user_name, email, password. use try catch 
-    //     try {
-    //         $user = new User();
-    //         $user->username = $request->username;
-    //         $user->password = $request->password;
-    //         $user->email = $request->email;
-           
-    //         $user->full_name = $request->full_name;
-    //         $user->phone = $request->phone;
-    //         $user->position = $request->position;
-    //         $user->department = $request->department;
-
-    //         $user->save();
-
-    //         $success = true;
-    //         $message = "ບັນທຶກຂໍ້ມູນສຳເລັດ!";
-            
-    //     } catch (\Illuminate\Database\QueryException $ex) {
-    //         $success = false;
-    //         $message = $ex->getMessage();
-            
-    //     }
-
-    //     $response = [
-    //         'success' => $success,
-    //         'message' => $message
-    //     ];
-
-    //     return response()->json($response);
-
-    // }
-
+    
     public function login(Request $request)
     {
         try {
@@ -67,7 +34,7 @@ class UserController extends Controller
             if (!$token = JWTAuth::attempt($credentials)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid credentials'
+                    'message' => 'Mất khẩu hoặc tên đăng nhập không đúng'
                 ], 401);
             }
     
@@ -115,7 +82,7 @@ public function logout(Request $request)
             }
 
             $success = true;
-            $message = "ອອກຈາກລະບົບສຳເລັດ!";
+            $message = "Logout success!";
 
         } catch (\Exception $ex) {
             $success = false;
@@ -389,8 +356,7 @@ public function updateuser(Request $request, $id)
         'role_id'    => 'required|exists:roles,id',
         'status'     => 'required|in:active,inactive',
         'ma_nhan_vien' => 'nullable|string',
-        'current_password' => 'nullable|string|min:6',
-        'new_password' => 'nullable|string|min:6|required_with:current_password',
+        'new_password' => 'nullable|string|min:6',
         'confirm_password' => 'nullable|string|same:new_password|required_with:new_password',
         'image' => 'nullable|string', // สำหรับ public_id จาก Cloudinary
     ]);
@@ -403,18 +369,9 @@ public function updateuser(Request $request, $id)
             return response()->json(['error' => 'User not found'], 404);
         }
 
-        // ตรวจสอบรหัสผ่านเก่าก่อน (ถ้ามีการส่งมา)
-        if ($request->filled('current_password')) {
-            if (!Hash::check($request->current_password, $user->password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'รหัสผ่านเก่าไม่ถูกต้อง'
-                ], 422);
-            }
-            
-            // ถ้ารหัสผ่านเก่าถูกต้อง ให้อัปเดตรหัสผ่านใหม่
+        // ตรวจสอบและอัปเดตรหัสผ่าน (ถ้ามีการส่งมา)
+        if ($request->filled('new_password')) {
             $user->password = Hash::make($request->new_password);
-            
             Log::info('Password updated for user', ['user_id' => $id]);
         }
 
@@ -1081,28 +1038,13 @@ public function farmerLogin(Request $request)
             ], 403);
         }
         
-        // Password verification
-        $passwordMatches = false;
-        
-        // Try bcrypt verification first
-        try {
-            $passwordMatches = Hash::check($password, $farmer->password);
-        } catch (\Exception $e) {
-            // If bcrypt verification fails, try direct comparison
-            $passwordMatches = ($password === $farmer->password);
-            
-            if ($passwordMatches) {
-                $farmer->password = Hash::make($password);
-                $farmer->save();
-            }
-        }
-        
-        if (!$passwordMatches) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Mật khẩu không đúng.'
-            ], 401);
-        }
+        // Password verification - เช็คแค่ plain text password
+if ($password !== $farmer->password) {
+    return response()->json([
+        'success' => false,
+        'message' => 'Mật khẩu không đúng.'
+    ], 401);
+}
         
         // Generate token directly with JWTAuth instead of using auth guard
         $token = JWTAuth::fromUser($farmer);
@@ -1145,7 +1087,48 @@ public function farmerLogin(Request $request)
 }
 
 
+public function getEmployeesByStation(Request $request)
+{
+    try {
+        $station = $request->get('station');
+        
+        if (!$station) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Station parameter is required'
+            ], 400);
+        }
 
+        // ดึงรายชื่อพนักงานที่มี position เป็น "Nhân viên nông vụ" และอยู่ในสถานีที่เลือก
+        $employees = DB::table('users as u')
+            ->join('listposition as lp', 'u.position', '=', 'lp.id_position')
+            ->where('u.station', $station)
+            ->where('u.status', 'active')
+            ->where('lp.position', 'LIKE', '%nông vụ%') // หรือใช้เงื่อนไขที่เหมาะสม
+            ->select(
+                'u.id',
+                'u.full_name',
+                'u.ma_nhan_vien',
+                'u.position',
+                'u.station',
+                'lp.position as position_name'
+            )
+            ->orderBy('u.full_name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $employees
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error fetching employees by station: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching employees: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
 
 }

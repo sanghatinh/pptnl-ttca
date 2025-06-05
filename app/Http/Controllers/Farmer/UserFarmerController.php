@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Farmer\UserFarmer;
 use App\Models\Quanlytaichinh\Banking;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use App\Services\CloudinaryService; // เพิ่มบรรทัดนี้
 
 class UserFarmerController extends Controller
 {
@@ -146,89 +147,323 @@ class UserFarmerController extends Controller
     /**
      * Show specific farmer user
      */
-    public function show($id)
-    {
-        try {
-            $farmer = DB::table('user_farmer as uf')
-                ->leftJoin('roles as r', 'uf.role_id', '=', 'r.id')
-                ->leftJoin('banking as b', 'uf.ngan_hang', '=', 'b.code_banking')
-                ->select(
-                    'uf.*',
-                    'r.name as role_name',
-                    'b.name_banking as bank_name'
-                )
-                ->where('uf.id', $id)
-                ->first();
+  public function show($id)
+{
+    try {
+        $farmer = DB::table('user_farmer as uf')
+            ->leftJoin('roles as r', 'uf.role_id', '=', 'r.id')
+            ->leftJoin('banking as b', 'uf.ngan_hang', '=', 'b.code_banking')
+            ->select(
+                'uf.*',
+                'r.name as role_name',
+                'b.name_banking as bank_name'
+            )
+            ->where('uf.id', $id)
+            ->first();
 
-            if (!$farmer) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Farmer user not found'
-                ], 404);
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $farmer
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error fetching farmer user: ' . $e->getMessage());
+        if (!$farmer) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error fetching farmer user: ' . $e->getMessage()
+                'message' => 'Farmer user not found'
+            ], 404);
+        }
+
+        // สร้าง Cloudinary URL สำหรับรูปภาพ (ถ้ามี)
+        $imageUrl = null;
+        if (property_exists($farmer, 'url_image') && $farmer->url_image) {
+            $cloudinaryService = new CloudinaryService();
+            $imageUrl = $cloudinaryService->getTransformationUrl($farmer->url_image, [
+                'width' => 200,
+                'height' => 200,
+                'crop' => 'fill',
+                'gravity' => 'face',
+                'quality' => 'auto:good'
+            ]);
+        }
+
+        $farmerData = (array) $farmer;
+        $farmerData['image_url'] = $imageUrl;
+        $farmerData['image_public_id'] = $farmer->url_image ?? null; // เก็บ public_id ไว้สำหรับการลบ
+
+        return response()->json([
+            'success' => true,
+            'data' => $farmerData
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error fetching farmer user: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching farmer user: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+     * Update farmer user with image support
+     */
+public function update(Request $request, $id)
+{
+    $request->validate([
+        'tram' => 'nullable|string|max:255',
+        'supplier_number' => 'nullable|string|max:255|unique:user_farmer,supplier_number,' . $id,
+        'ma_kh_ca_nhan' => 'nullable|string|max:255|unique:user_farmer,ma_kh_ca_nhan,' . $id,
+        'khach_hang_ca_nhan' => 'nullable|string|max:255',
+        'ma_kh_doanh_nghiep' => 'nullable|string|max:255|unique:user_farmer,ma_kh_doanh_nghiep,' . $id,
+        'khach_hang_doanh_nghiep' => 'nullable|string|max:255',
+        'phone' => 'nullable|string|max:255|unique:user_farmer,phone,' . $id,
+       
+        'dia_chi_thuong_tru' => 'nullable|string',
+        'chu_tai_khoan' => 'nullable|string|max:255',
+        'ngan_hang' => 'nullable|string|max:255',
+        'so_tai_khoan' => 'nullable|string|max:255',
+        'ma_nhan_vien' => 'nullable|string|max:255',
+        'role_id' => 'nullable|integer|exists:roles,id',
+        'status' => 'required|in:active,inactive',
+       'password' => 'nullable|string|min:6', // เปลี่ยนจาก required เป็น nullable
+        'url_image' => 'nullable|string', // ใช้ url_image ตามที่มีใน database
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        $farmer = UserFarmer::find($id);
+        if (!$farmer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Farmer user not found'
+            ], 404);
+        }
+
+          // อัปเดตรหัสผ่าน - ❌ ลบการ hash ออก
+        if ($request->filled('password')) {
+            $farmer->password = $request->password; // ✅ เก็บ password ตรงๆ ไม่ hash
+            Log::info('Farmer password updated', ['farmer_id' => $id]);
+        }
+
+        // อัปเดตข้อมูลทั่วไป
+        $farmer->tram = $request->tram;
+        $farmer->supplier_number = $request->supplier_number;
+        $farmer->ma_kh_ca_nhan = $request->ma_kh_ca_nhan;
+        $farmer->khach_hang_ca_nhan = $request->khach_hang_ca_nhan;
+        $farmer->ma_kh_doanh_nghiep = $request->ma_kh_doanh_nghiep;
+        $farmer->khach_hang_doanh_nghiep = $request->khach_hang_doanh_nghiep;
+        $farmer->phone = $request->phone;
+    
+        $farmer->dia_chi_thuong_tru = $request->dia_chi_thuong_tru;
+        $farmer->chu_tai_khoan = $request->chu_tai_khoan;
+        $farmer->ngan_hang = $request->ngan_hang;
+        $farmer->so_tai_khoan = $request->so_tai_khoan;
+        $farmer->ma_nhan_vien = $request->ma_nhan_vien;
+        $farmer->role_id = $request->role_id;
+        $farmer->status = $request->status;
+
+        // อัปเดตรูปภาพ (ถ้ามี) - เปลี่ยนจาก image เป็น url_image
+        if ($request->filled('url_image')) {
+            // ลบรูปเก่าจาก Cloudinary (ถ้ามี)
+            if ($farmer->url_image) {
+                try {
+                    $cloudinaryService = new CloudinaryService();
+                    $cloudinaryService->deleteImageEnhanced($farmer->url_image);
+                    Log::info('Old farmer image deleted from Cloudinary', ['old_image' => $farmer->url_image]);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to delete old farmer image from Cloudinary: ' . $e->getMessage());
+                }
+            }
+            
+            $farmer->url_image = $request->url_image;
+            Log::info('Farmer image updated', ['farmer_id' => $id, 'new_image' => $request->url_image]);
+        }
+
+        $farmer->save();
+    
+        
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Farmer user updated successfully',
+            'data' => [
+                'id' => $farmer->id,
+                'tram' => $farmer->tram,
+                'supplier_number' => $farmer->supplier_number,
+                'ma_kh_ca_nhan' => $farmer->ma_kh_ca_nhan,
+                'khach_hang_ca_nhan' => $farmer->khach_hang_ca_nhan,
+                'ma_kh_doanh_nghiep' => $farmer->ma_kh_doanh_nghiep,
+                'khach_hang_doanh_nghiep' => $farmer->khach_hang_doanh_nghiep,
+                'phone' => $farmer->phone,
+             
+                'dia_chi_thuong_tru' => $farmer->dia_chi_thuong_tru,
+                'chu_tai_khoan' => $farmer->chu_tai_khoan,
+                'ngan_hang' => $farmer->ngan_hang,
+                'so_tai_khoan' => $farmer->so_tai_khoan,
+                'ma_nhan_vien' => $farmer->ma_nhan_vien,
+                'role_id' => $farmer->role_id,
+                'status' => $farmer->status,
+                'url_image' => $farmer->url_image // ใช้ url_image
+            ]
+        ]);
+
+    } catch (\Illuminate\Database\QueryException $ex) {
+        DB::rollBack();
+        Log::error('Database error in farmer update: ' . $ex->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Database error occurred',
+            'error' => $ex->getMessage()
+        ], 500);
+    } catch (\Exception $ex) {
+        DB::rollBack();
+        Log::error('General error in farmer update: ' . $ex->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while updating farmer user',
+            'error' => $ex->getMessage()
+        ], 500);
+    }
+}
+
+    /**
+     * Upload farmer image
+     */
+    public function uploadFarmerImage(Request $request)
+    {
+        Log::info('Upload farmer image request received', [
+            'has_file' => $request->hasFile('image'),
+            'file_size' => $request->hasFile('image') ? $request->file('image')->getSize() : 0
+        ]);
+
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240' // 10MB max
+        ]);
+
+        try {
+            if (!$request->hasFile('image')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No image file provided'
+                ], 400);
+            }
+
+            $file = $request->file('image');
+            if (!$file->isValid()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid image file'
+                ], 400);
+            }
+
+            $cloudinaryService = new CloudinaryService();
+            
+            $result = $cloudinaryService->uploadImageOptimized($file, [
+                'upload_preset' => 'ml_default',
+                'folder' => 'farmers',
+                'quality' => 'auto:good',
+                'format' => 'auto'
+            ]);
+            
+            if ($result['success']) {
+                Log::info('Farmer image upload successful', [
+                    'public_id' => $result['public_id'],
+                    'upload_time' => $result['upload_time'] ?? 0
+                ]);
+                
+                return response()->json([
+                    'success' => true,
+                    'image_url' => $result['secure_url'],
+                    'public_id' => $result['public_id'],
+                    'upload_time' => $result['upload_time'] ?? 0
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message'] ?? 'Upload failed',
+                    'error' => $result['error'] ?? 'Unknown error'
+                ], 500);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Upload farmer image exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload image',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Update farmer user
+     * Delete farmer image
      */
-    public function update(Request $request, $id)
-    {
-        try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'tram' => 'nullable|string|max:255',
-                'supplier_number' => 'nullable|string|max:255',
-                'ma_kh_ca_nhan' => 'nullable|string|max:255',
-                'khach_hang_ca_nhan' => 'nullable|string|max:255',
-                'ma_kh_doanh_nghiep' => 'nullable|string|max:255',
-                'khach_hang_doanh_nghiep' => 'nullable|string|max:255',
-                'phone' => 'nullable|string|max:255',
-                'email' => 'nullable|email|max:255',
-                'dia_chi_thuong_tru' => 'nullable|string',
-                'chu_tai_khoan' => 'nullable|string|max:255',
-                'ngan_hang' => 'nullable|string|max:255',
-                'so_tai_khoan' => 'nullable|string|max:255',
-                'role_id' => 'nullable|integer|exists:roles,id',
-                'status' => 'required|in:active,inactive'
-            ]);
-
-            $farmer = UserFarmer::find($id);
-            if (!$farmer) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Farmer user not found'
-                ], 404);
-            }
-
-            $farmer->update($validated);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Farmer user updated successfully',
-                'data' => $farmer
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error updating farmer user: ' . $e->getMessage());
+public function deleteFarmerImage(Request $request, $id)
+{
+    DB::beginTransaction();
+    
+    try {
+        $farmer = UserFarmer::find($id);
+        if (!$farmer) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error updating farmer user: ' . $e->getMessage()
+                'message' => 'Farmer user not found'
+            ], 404);
+        }
+
+        if (!$farmer->url_image) { // เปลี่ยนจาก image เป็น url_image
+            return response()->json([
+                'success' => false,
+                'message' => 'Farmer has no image to delete'
+            ], 400);
+        }
+
+        // ลบรูปภาพจาก Cloudinary
+        $cloudinaryService = new CloudinaryService();
+        $deleteResult = $cloudinaryService->deleteImageEnhanced($farmer->url_image);
+        
+        if ($deleteResult['success']) {
+            // อัปเดต database - ลบ public_id
+            $farmer->url_image = null; // เปลี่ยนจาก image เป็น url_image
+            $farmer->save();
+            
+            DB::commit();
+            
+            Log::info('Farmer image deleted successfully', [
+                'farmer_id' => $id,
+                'public_id' => $farmer->url_image
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Image deleted successfully'
+            ]);
+        } else {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete image from Cloudinary',
+                'error' => $deleteResult['error'] ?? 'Unknown error'
             ], 500);
         }
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error deleting farmer image: ' . $e->getMessage(), [
+            'farmer_id' => $id,
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while deleting image',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Delete farmer user
