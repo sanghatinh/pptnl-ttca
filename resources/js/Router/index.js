@@ -379,6 +379,17 @@ const routes = [
         },
     },
     {
+        name: "Details_PhieutrinhthanhtoanHomgiong",
+        path: "/Details_PhieutrinhthanhtoanHomgiong/:id",
+        component: () =>
+            import(
+                "../Pages/QuanlyTaichinh/Details_PhieutrinhthanhtoanHomgiong.vue"
+            ),
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
         name: "Phieudenghithanhtoandichvu",
         path: "/Phieudenghithanhtoandichvu",
         component: Phieudenghithanhtoandichvu,

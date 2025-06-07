@@ -1391,6 +1391,12 @@
                                         <th style="width: 140px">
                                             Mã KH doanh nghiệp
                                         </th>
+                                        <th
+                                            class="text-center"
+                                            style="width: 120px"
+                                        >
+                                            Thực nhận
+                                        </th>
                                         <th style="width: 140px">Tổng tiền</th>
                                         <th style="width: 140px">
                                             Tổng tiền tạm giữ
@@ -1505,7 +1511,8 @@
                                         <td
                                             v-html="
                                                 highlightPaymentSearchTerm(
-                                                    item.investment_project
+                                                    item.investment_project_name ||
+                                                        'N/A'
                                                 )
                                             "
                                         ></td>
@@ -1541,6 +1548,12 @@
                                                 item.corporate_customer_code ||
                                                 "N/A"
                                             }}
+                                        </td>
+                                        <!-- เพิ่ม Column Thực nhận -->
+                                        <td class="text-end">
+                                            <span class="text-info fw-bold">
+                                                {{ item.actual_received }}
+                                            </span>
                                         </td>
                                         <td class="text-end">
                                             <span class="fw-bold text-success">
@@ -1603,7 +1616,7 @@
                                         </td>
                                         <td class="text-center">
                                             <span class="badge bg-primary">{{
-                                                item.installment
+                                                item.payment_installment
                                             }}</span>
                                         </td>
                                     </tr>
@@ -1762,7 +1775,7 @@
                                             class="form-control search-input"
                                             v-model="modalSearchQuery"
                                             @input="performModalSearch"
-                                            placeholder="Tìm kiếm mã nghiệm thu, tiêu đề, khách hàng..."
+                                            placeholder="Tìm kiếm mã số phiếu..."
                                             autocomplete="off"
                                         />
                                         <i
@@ -1992,24 +2005,19 @@
                                             </div>
                                         </th>
                                         <th style="width: 170px">
-                                            Mã nghiệm thu
+                                            Mã số phiếu
                                         </th>
                                         <th style="width: 130px">Trạm</th>
-                                        <th style="width: 200px">Tiêu đề</th>
+
                                         <th style="width: 140px">Vụ đầu tư</th>
-                                        <th style="width: 180px">KH Cá nhân</th>
+                                        <th style="width: 180px">Tên phiếu</th>
                                         <th style="width: 180px">
-                                            KH Doanh nghiệp
+                                            Hợp đồng đầu tư mía bên giao
                                         </th>
                                         <th style="width: 160px">
-                                            Hợp đồng đầu tư
+                                            Tổng thực nhận
                                         </th>
-                                        <th style="width: 140px">
-                                            Hình thức DV
-                                        </th>
-                                        <th style="width: 180px">
-                                            Hợp đồng cung ứng DV
-                                        </th>
+
                                         <th style="width: 160px">
                                             Mã đề nghị giải ngân
                                         </th>
@@ -2020,12 +2028,11 @@
                                 <tbody>
                                     <tr
                                         v-if="
-                                            paginatedPaymentDetails.data
-                                                .length === 0
+                                            filteredPaymentDetails.length === 0
                                         "
                                     >
                                         <td
-                                            colspan="13"
+                                            colspan="8"
                                             class="text-center py-5"
                                         >
                                             <div class="empty-state">
@@ -2048,7 +2055,7 @@
                                                     {{
                                                         modalSearchQuery
                                                             ? `Không có kết quả nào khớp với "${modalSearchQuery}"`
-                                                            : "Chưa có biên bản nghiệm thu nào trong phiếu trình này"
+                                                            : "Chưa có biên bản nghiệm thu hom giống nào trong phiếu trình này"
                                                     }}
                                                 </p>
                                                 <button
@@ -2066,121 +2073,149 @@
                                     </tr>
                                     <tr
                                         v-for="(
-                                            item, index
+                                            detail, index
                                         ) in paginatedPaymentDetails.data"
-                                        :key="index"
+                                        :key="detail.document_code"
                                         :class="{
                                             'table-warning':
                                                 selectedRecords.includes(
-                                                    item.document_code
+                                                    detail.document_code
                                                 ),
                                             'search-highlight':
-                                                isHighlighted(item),
+                                                isHighlighted(detail),
+                                            'table-success':
+                                                detail.disbursement_code,
                                         }"
                                     >
-                                        <!-- ...existing table rows... -->
                                         <td class="text-center">
                                             <div class="form-check">
                                                 <input
                                                     type="checkbox"
-                                                    :value="item.document_code"
+                                                    :value="
+                                                        detail.document_code
+                                                    "
                                                     v-model="selectedRecords"
                                                     class="form-check-input"
                                                 />
                                             </div>
                                         </td>
-                                        <td>
+                                        <td class="text-center">
                                             <a
-                                                :href="`/Details_NghiemthuDV/${item.document_code}`"
+                                                :href="`/Details_BienbanNghiemthuHomgiong/${detail.document_code}`"
                                                 target="_blank"
                                                 class="fw-medium text-primary text-decoration-none"
                                                 style="cursor: pointer"
-                                                :title="`Xem chi tiết ${item.document_code}`"
+                                                :title="`Xem chi tiết ${detail.document_code}`"
                                                 v-html="
                                                     highlightSearchTerm(
-                                                        item.document_code
+                                                        detail.document_code
                                                     )
                                                 "
                                             ></a>
                                         </td>
-                                        <td>
-                                            <span class="badge bg-secondary">{{
-                                                item.tram || "N/A"
-                                            }}</span>
+                                        <td class="text-center">
+                                            <span
+                                                class="badge bg-secondary"
+                                                :title="detail.tram"
+                                                v-html="
+                                                    highlightSearchTerm(
+                                                        detail.tram || 'N/A'
+                                                    )
+                                                "
+                                            ></span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span
+                                                class="text-truncate d-inline-block"
+                                                style="max-width: 100px"
+                                                :title="
+                                                    detail.investment_project
+                                                "
+                                                v-html="
+                                                    highlightSearchTerm(
+                                                        detail.investment_project ||
+                                                            'N/A'
+                                                    )
+                                                "
+                                            ></span>
                                         </td>
                                         <td>
                                             <div
                                                 class="text-truncate"
-                                                :title="item.title"
+                                                style="max-width: 200px"
+                                                :title="detail.title"
                                                 v-html="
                                                     highlightSearchTerm(
-                                                        item.title
+                                                        detail.title || 'N/A'
                                                     )
                                                 "
                                             ></div>
                                         </td>
-                                        <td
-                                            v-html="
-                                                highlightSearchTerm(
-                                                    item.investment_project
-                                                )
-                                            "
-                                        ></td>
-                                        <td
-                                            v-html="
-                                                highlightSearchTerm(
-                                                    item.khach_hang_ca_nhan_dt_mia ||
-                                                        'N/A'
-                                                )
-                                            "
-                                        ></td>
-                                        <td
-                                            v-html="
-                                                highlightSearchTerm(
-                                                    item.khach_hang_doanh_nghiep_dt_mia ||
-                                                        'N/A'
-                                                )
-                                            "
-                                        ></td>
-                                        <td>{{ item.contract_number }}</td>
-                                        <td>{{ item.service_type }}</td>
                                         <td>
-                                            {{
-                                                item.hop_dong_cung_ung_dich_vu ||
-                                                "N/A"
-                                            }}
-                                        </td>
-                                        <td>
-                                            <span
-                                                v-if="item.disbursement_code"
-                                                class="badge bg-success"
-                                            >
-                                                <a
-                                                    :href="`/Details_Phieudenghithanhtoandichvu/${item.disbursement_code}`"
-                                                    target="_blank"
-                                                    class="text-white text-decoration-none"
-                                                    style="cursor: pointer"
-                                                    :title="`Xem chi tiết ${item.disbursement_code}`"
-                                                    v-html="
-                                                        highlightSearchTerm(
-                                                            item.disbursement_code
-                                                        )
-                                                    "
-                                                ></a>
-                                            </span>
-                                            <span v-else class="text-muted"
-                                                >Chưa có</span
-                                            >
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-info">{{
-                                                item.installment
-                                            }}</span>
+                                            <div
+                                                class="text-truncate"
+                                                style="max-width: 200px"
+                                                :title="
+                                                    detail.hop_dong_dau_tu_mia_ben_giao_hom
+                                                "
+                                                v-html="
+                                                    highlightSearchTerm(
+                                                        detail.hop_dong_dau_tu_mia_ben_giao_hom ||
+                                                            'N/A'
+                                                    )
+                                                "
+                                            ></div>
                                         </td>
                                         <td class="text-end">
-                                            <span class="fw-bold text-success">
+                                            <span
+                                                class="text-success fw-medium"
+                                            >
+                                                {{ detail.tong_thuc_nhan || 0 }}
+                                            </span>
+                                        </td>
+                                        <!-- เพิ่ม Column: Mã đề nghị giải ngân -->
+                                        <td class="text-center">
+                                            <span
+                                                v-if="detail.disbursement_code"
+                                                class="badge bg-success"
+                                                :title="
+                                                    detail.disbursement_code
+                                                "
+                                                v-html="
+                                                    highlightSearchTerm(
+                                                        detail.disbursement_code
+                                                    )
+                                                "
+                                            ></span>
+                                            <span
+                                                v-else
+                                                class="badge bg-warning text-dark"
+                                                title="Chưa có mã giải ngân"
+                                            >
+                                                <i
+                                                    class="fas fa-exclamation-triangle me-1"
+                                                ></i>
+                                                Chưa có
+                                            </span>
+                                        </td>
+                                        <!-- เพิ่ม Column: Đợt TT -->
+                                        <td class="text-center">
+                                            <span
+                                                class="badge bg-info"
+                                                :title="`Đợt thanh toán ${detail.installment}`"
+                                            >
+                                                <i
+                                                    class="fas fa-layer-group me-1"
+                                                ></i>
+                                                {{ detail.installment || 1 }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="text-primary fw-bold">
                                                 {{
-                                                    formatCurrency(item.amount)
+                                                    formatCurrency(
+                                                        detail.amount || 0
+                                                    )
                                                 }}
                                             </span>
                                         </td>
@@ -2191,24 +2226,35 @@
                                     class="table-light"
                                 >
                                     <tr>
-                                        <td
-                                            colspan="12"
-                                            class="text-end fw-bold"
-                                        >
-                                            Tổng cộng ({{
-                                                filteredPaymentDetails.length
-                                            }}
-                                            bản ghi):
-                                        </td>
-                                        <td
-                                            class="text-end fw-bold text-success"
-                                        >
-                                            {{
-                                                formatCurrency(
-                                                    totalFilteredAmount
-                                                )
-                                            }}
-                                        </td>
+                                        <th colspan="6" class="text-end">
+                                            Tổng cộng:
+                                        </th>
+                                        <th class="text-end">
+                                            <span class="text-success fw-bold">
+                                                {{
+                                                    filteredPaymentDetails.reduce(
+                                                        (sum, item) =>
+                                                            sum +
+                                                            parseFloat(
+                                                                item.tong_thuc_nhan ||
+                                                                    0
+                                                            ),
+                                                        0
+                                                    )
+                                                }}
+                                            </span>
+                                        </th>
+                                        <th></th>
+                                        <th></th>
+                                        <th class="text-end">
+                                            <span class="text-primary fw-bold">
+                                                {{
+                                                    formatCurrency(
+                                                        totalFilteredAmount
+                                                    )
+                                                }}
+                                            </span>
+                                        </th>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -2608,8 +2654,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="addReceiptModalLabel">
-                        <i class="fas fa-plus-circle me-2"></i>
-                        Thêm biên bản nghiệm thu
+                        <i class="fas fa-plus me-2"></i>
+                        Thêm biên bản giao nhận hom giống
                     </h5>
                     <button
                         type="button"
@@ -2623,194 +2669,235 @@
                     class="modal-body"
                     style="max-height: 70vh; overflow-y: auto"
                 >
-                    <!-- Search Section -->
-                    <div class="mb-3">
-                        <label
-                            for="receiptSearch"
-                            class="form-label fw-semibold"
+                    <div class="search-container mb-4">
+                        <label for="receiptSearch" class="form-label"
+                            >Tìm kiếm mã giao nhận hom giống</label
                         >
-                            <i class="fas fa-search me-2"></i>
-                            Tìm kiếm biên bản nghiệm thu
-                        </label>
-                        <div class="input-group">
+                        <div class="search-input-wrapper">
                             <input
-                                type="text"
-                                id="receiptSearch"
+                                type="search"
                                 class="form-control"
                                 v-model="searchQuery"
                                 @input="searchReceipts"
-                                placeholder="Nhập mã nghiệm thu, tiêu đề hoặc thông tin khác..."
+                                placeholder="Nhập mã số phiếu..."
                             />
-                            <span class="input-group-text">
-                                <i class="fas fa-search"></i>
-                            </span>
-                        </div>
-                        <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Nhập ít nhất 2 ký tự để tìm kiếm
+                            <i class="search-icon bx bx-search"></i>
                         </div>
                     </div>
 
-                    <!-- Search Results -->
-                    <div v-if="receiptResults.length > 0" class="mb-4">
-                        <h6 class="fw-semibold mb-3">
-                            <i class="fas fa-list-ul me-2"></i>
-                            Kết quả tìm kiếm ({{ receiptResults.length }} biên
-                            bản)
-                        </h6>
-                        <div
-                            class="border rounded p-2"
-                            style="max-height: 300px; overflow-y: auto"
+                    <!-- Search Results Section -->
+                    <div
+                        class="search-results"
+                        v-if="receiptResults.length > 0"
+                        style="
+                            max-height: 300px;
+                            overflow-y: auto;
+                            border: 1px solid #dee2e6;
+                            border-radius: 0.375rem;
+                        "
+                    >
+                        <h6
+                            class="results-title mb-2 p-2 bg-light border-bottom"
                         >
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover mb-0">
-                                    <thead class="sticky-top bg-light">
-                                        <tr>
-                                            <th>Mã nghiệm thu</th>
-                                            <th>Tiêu đề</th>
-                                            <th>Trạm</th>
-                                            <th>Số tiền</th>
-                                            <th>Thao tác</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr
-                                            v-for="item in receiptResults"
-                                            :key="item.ma_nghiem_thu"
-                                            :class="{
-                                                'table-warning': isDuplicate(
-                                                    item.ma_nghiem_thu
-                                                ),
-                                            }"
-                                        >
-                                            <td>{{ item.ma_nghiem_thu }}</td>
-                                            <td>{{ item.tieu_de }}</td>
-                                            <td>{{ item.tram }}</td>
-                                            <td class="text-end">
-                                                {{
-                                                    formatCurrency(
-                                                        item.tong_tien
+                            Kết quả tìm kiếm
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Mã số phiếu</th>
+                                        <th>Trạm</th>
+                                        <th>Vụ đầu tư</th>
+                                        <th>Tên phiếu</th>
+                                        <th>Hợp đồng đầu tư mía bên giao</th>
+                                        <th>Tổng thực nhận</th>
+                                        <th>Tổng tiền</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="item in receiptResults"
+                                        :key="item.ma_so_phieu"
+                                        :class="{
+                                            'table-warning': isDuplicate(
+                                                item.ma_so_phieu
+                                            ),
+                                        }"
+                                    >
+                                        <td>{{ item.ma_so_phieu }}</td>
+                                        <td>{{ item.tram }}</td>
+                                        <td>{{ item.vu_dau_tu }}</td>
+                                        <td>{{ item.ten_phieu }}</td>
+                                        <td>
+                                            {{
+                                                item.hop_dong_dau_tu_mia_ben_giao_hom
+                                            }}
+                                        </td>
+                                        <td>
+                                            {{ item.tong_thuc_nhan }}
+                                        </td>
+                                        <td>
+                                            {{ formatCurrency(item.tong_tien) }}
+                                        </td>
+                                        <td>
+                                            <button
+                                                @click="selectReceipt(item)"
+                                                class="btn btn-sm btn-success"
+                                                :disabled="
+                                                    isDuplicate(
+                                                        item.ma_so_phieu
                                                     )
-                                                }}
-                                            </td>
-                                            <td>
-                                                <button
-                                                    v-if="
-                                                        !isDuplicate(
-                                                            item.ma_nghiem_thu
-                                                        )
-                                                    "
-                                                    @click="selectReceipt(item)"
-                                                    class="btn btn-sm btn-outline-success"
-                                                    type="button"
-                                                >
-                                                    <i class="fas fa-plus"></i>
-                                                    Chọn
-                                                </button>
-                                                <span
-                                                    v-else
-                                                    class="badge bg-warning text-dark"
-                                                >
-                                                    <i
-                                                        class="fas fa-exclamation-triangle me-1"
-                                                    ></i>
-                                                    Đã có
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                                                "
+                                                title="Thêm biên bản này vào phiếu trình thanh toán"
+                                            >
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
-                    <!-- Selected Receipts -->
-                    <div v-if="selectedReceipts.length > 0">
-                        <h6 class="fw-semibold mb-3">
-                            <i class="fas fa-check-square me-2"></i>
+                    <div
+                        v-else-if="searchQuery && searchQuery.length > 0"
+                        class="text-center py-4"
+                    >
+                        <i class="bx bx-search-alt empty-icon d-block mb-2"></i>
+                        <p class="text-muted">Không tìm thấy kết quả phù hợp</p>
+                    </div>
+
+                    <!-- Selected Receipts Section -->
+                    <div
+                        class="selected-receipts mt-4"
+                        v-if="selectedReceipts.length > 0"
+                    >
+                        <h6 class="mb-2">
                             Biên bản đã chọn ({{ selectedReceipts.length }})
                         </h6>
                         <div
-                            class="border rounded p-2"
-                            style="max-height: 250px; overflow-y: auto"
+                            class="table-responsive"
+                            style="
+                                max-height: 250px;
+                                overflow-y: auto;
+                                border: 1px solid #dee2e6;
+                                border-radius: 0.375rem;
+                            "
                         >
-                            <div class="table-responsive">
-                                <table class="table table-sm mb-0">
-                                    <thead class="sticky-top bg-light">
-                                        <tr>
-                                            <th>Mã nghiệm thu</th>
-                                            <th>Tiêu đề</th>
-                                            <th>Trạm</th>
-                                            <th>Số tiền</th>
-                                            <th>Thao tác</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr
-                                            v-for="(
-                                                item, index
-                                            ) in selectedReceipts"
-                                            :key="item.ma_nghiem_thu"
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 5%">#</th>
+                                        <th style="width: 15%">Mã số phiếu</th>
+                                        <th style="width: 12%">Trạm</th>
+                                        <th style="width: 15%">Vụ đầu tư</th>
+                                        <th style="width: 20%">Tên phiếu</th>
+                                        <th style="width: 18%">
+                                            Hợp đồng đầu tư mía bên giao
+                                        </th>
+                                        <th style="width: 10%">
+                                            Tổng thực nhận
+                                        </th>
+                                        <th style="width: 20%">Tổng tiền</th>
+                                        <th style="width: 5%">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="(
+                                            item, index
+                                        ) in selectedReceipts"
+                                        :key="index"
+                                        class="table-row-selected"
+                                    >
+                                        <td class="text-center fw-bold">
+                                            {{ index + 1 }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{
+                                                item.ma_so_phieu
+                                            }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted">{{
+                                                item.tram || "N/A"
+                                            }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="fw-medium">{{
+                                                item.vu_dau_tu || "N/A"
+                                            }}</span>
+                                        </td>
+                                        <td
+                                            class="text-truncate"
+                                            :title="item.ten_phieu"
                                         >
-                                            <td>{{ item.ma_nghiem_thu }}</td>
-                                            <td>{{ item.tieu_de }}</td>
-                                            <td>{{ item.tram }}</td>
-                                            <td class="text-end">
+                                            {{ item.ten_phieu || "N/A" }}
+                                        </td>
+                                        <td
+                                            class="text-truncate"
+                                            :title="
+                                                item.hop_dong_dau_tu_mia_ben_giao_hom
+                                            "
+                                        >
+                                            {{
+                                                item.hop_dong_dau_tu_mia_ben_giao_hom ||
+                                                "N/A"
+                                            }}
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="fw-bold text-success">
+                                                {{ item.tong_thuc_nhan || 0 }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="fw-bold text-success">
                                                 {{
                                                     formatCurrency(
                                                         item.tong_tien
                                                     )
                                                 }}
-                                            </td>
-                                            <td>
-                                                <button
-                                                    @click="
-                                                        removeSelectedReceipt(
-                                                            index
-                                                        )
-                                                    "
-                                                    class="btn btn-sm btn-outline-danger"
-                                                    type="button"
-                                                >
-                                                    <i class="fas fa-trash"></i>
-                                                    Xóa
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                    <tfoot class="sticky-bottom bg-light">
-                                        <tr>
-                                            <th colspan="3">Tổng cộng:</th>
-                                            <th class="text-end">
-                                                {{
-                                                    formatCurrency(
-                                                        calculateTotalSelected()
-                                                    )
-                                                }}
-                                            </th>
-                                            <th></th>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <button
+                                                @click="
+                                                    removeSelectedReceipt(index)
+                                                "
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="Xóa biên bản này khỏi danh sách chọน"
+                                            >
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="table-light sticky-bottom">
+                                    <tr>
+                                        <td
+                                            colspan="7"
+                                            class="text-end fw-bold"
+                                        >
+                                            <i
+                                                class="fas fa-calculator me-2"
+                                            ></i>
+                                            Tổng cộng:
+                                        </td>
+                                        <td
+                                            class="text-end fw-bold text-success"
+                                        >
+                                            {{
+                                                formatCurrency(
+                                                    calculateTotalSelected()
+                                                )
+                                            }}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
-                    </div>
-
-                    <!-- Empty state when no search or no results -->
-                    <div
-                        v-if="searchQuery && receiptResults.length === 0"
-                        class="text-center py-4 text-muted"
-                    >
-                        <i class="fas fa-search fa-3x mb-3"></i>
-                        <p>Không tìm thấy biên bản nghiệm thu nào</p>
-                    </div>
-
-                    <div
-                        v-if="!searchQuery"
-                        class="text-center py-4 text-muted"
-                    >
-                        <i class="fas fa-search fa-3x mb-3"></i>
-                        <p>Nhập từ khóa để tìm kiếm biên bản nghiệm thu</p>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -2819,8 +2906,7 @@
                         class="btn btn-secondary"
                         data-bs-dismiss="modal"
                     >
-                        <i class="fas fa-times me-2"></i>
-                        Đóng
+                        Hủy
                     </button>
                     <button
                         type="button"
@@ -2828,18 +2914,11 @@
                         @click="addSelectedReceipts"
                         :disabled="selectedReceipts.length === 0 || isAdding"
                     >
-                        <span
-                            v-if="isAdding"
-                            class="spinner-border spinner-border-sm me-2"
-                            role="status"
-                            aria-hidden="true"
-                        ></span>
-                        <i v-else class="fas fa-plus me-2"></i>
-                        {{
-                            isAdding
-                                ? "Đang thêm..."
-                                : `Thêm ${selectedReceipts.length} biên bản`
-                        }}
+                        <i class="fas fa-save me-1"></i>
+                        <span v-if="isAdding">Đang thêm...</span>
+                        <span v-else
+                            >Thêm {{ selectedReceipts.length }} biên bản</span
+                        >
                     </button>
                 </div>
             </div>
@@ -4623,11 +4702,14 @@ export default {
                                 }
                             );
                             this.paymentRequestsModal.show();
+                            // เพิ่มการเรียก fetchPaymentRequests ที่นี่
+                            this.fetchPaymentRequests();
                         }
                     }
                 );
             } else {
                 this.paymentRequestsModal.show();
+                this.fetchPaymentRequests();
             }
         },
 
@@ -5517,7 +5599,7 @@ export default {
 
             try {
                 const response = await axios.post(
-                    `/api/disbursements/with-receipts`,
+                    `/api/disbursements-homgiong/with-receipts`,
                     {
                         payment_request_data: this.newPaymentRequest,
                         receipt_ids: this.paymentReceiptIds,
@@ -5991,7 +6073,7 @@ export default {
         async fetchPaymentRequests() {
             try {
                 const response = await axios.get(
-                    `/api/payment-requests/${this.document.payment_code}/disbursements`,
+                    `/api/payment-requests/${this.document.payment_code}/disbursements-homgiong`,
                     {
                         headers: {
                             Authorization: "Bearer " + this.store.getToken,
@@ -6030,7 +6112,7 @@ export default {
 
             this.isLoading = true;
             axios
-                .get(`/api/payment-requests/${id}`, {
+                .get(`/api/payment-requests-homgiong/${id}`, {
                     headers: {
                         Authorization: "Bearer " + this.store.getToken,
                     },
@@ -6038,16 +6120,15 @@ export default {
                 .then((response) => {
                     if (response.data.success) {
                         // Map main document data
-                        // ดึงข้อมูล action ล่าสุดจาก processingHistory (ซึ่งมาจากตาราง Action_phieu_trinh_thanh_toan)
                         let latestAction = "";
+
                         // Store processing history if it exists in the response
                         if (response.data.processingHistory) {
                             this.processingHistory =
                                 response.data.processingHistory;
 
-                            // ดึง action ล่าสุดจากประวัติการดำเนินการ (เพิ่มโค้ดนี้)
+                            // ดึง action ล่าสุดจากประวัติการดำเนินการ
                             if (this.processingHistory.length > 0) {
-                                // จัดเรียงข้อมูลตามวันที่จากใหม่ไปเก่า
                                 const sortedHistory = [
                                     ...this.processingHistory,
                                 ].sort(
@@ -6058,9 +6139,9 @@ export default {
                                 latestAction = sortedHistory[0].action;
                             }
                         } else {
-                            // If it's not included in main response, fetch it separately
                             this.fetchProcessingHistory();
                         }
+
                         this.document = {
                             payment_code:
                                 response.data.document.payment_code || "",
@@ -6069,10 +6150,9 @@ export default {
                                 response.data.document.investment_project || "",
                             payment_type:
                                 response.data.document.payment_type || "",
-                            // ใช้ action ล่าสุดเป็น status ถ้ามี แต่ถ้าไม่มีให้ใช้ค่า trang_thai_thanh_toan เหมือนเดิม
                             status:
                                 latestAction ||
-                                response.data.document.trang_thai_thanh_toan ||
+                                response.data.document.status ||
                                 "processing",
                             payment_installment:
                                 response.data.document.payment_installment || 0,
@@ -6081,100 +6161,63 @@ export default {
                             created_at:
                                 response.data.document.created_at || null,
                             payment_date:
-                                response.data.document.payment_date || "", // Add this line
+                                response.data.document.payment_date || "",
                             total_amount:
                                 response.data.document.total_amount || 0,
                             creator_name:
                                 response.data.document.creator_name || "",
                             notes: response.data.document.notes || "",
+                            // Add financial fields
+                            total_hold_amount:
+                                response.data.document.total_hold_amount || 0,
+                            total_deduction:
+                                response.data.document.total_deduction || 0,
+                            total_interest:
+                                response.data.document.total_interest || 0,
+                            total_remaining:
+                                response.data.document.total_remaining || 0,
                         };
+
                         this.noteText = this.document.notes || "";
 
-                        // Map payment details
+                        // Map payment details สำหรับ bien_ban_nghiem_thu_hom_giong
+                        // เพิ่ม disbursement_code และ installment
                         this.paymentDetails = Array.isArray(
                             response.data.paymentDetails
                         )
                             ? response.data.paymentDetails.map((item) => ({
                                   document_code: item.document_code || "",
-                                  document_type: "Biên bản nghiệm thu DV",
+                                  document_type:
+                                      "Biên bản nghiệm thu hom giống",
                                   tram: item.tram || "",
-                                  title: item.title || "",
                                   investment_project:
                                       item.investment_project || "",
-                                  khach_hang_ca_nhan_dt_mia:
-                                      item.khach_hang_ca_nhan_dt_mia || "",
-                                  khach_hang_doanh_nghiep_dt_mia:
-                                      item.khach_hang_doanh_nghiep_dt_mia || "",
-                                  contract_number: item.contract_number || "",
-                                  service_type: item.service_type || "",
-                                  hop_dong_cung_ung_dich_vu:
-                                      item.hop_dong_cung_ung_dich_vu || "",
+                                  title: item.title || "",
+                                  hop_dong_dau_tu_mia_ben_giao_hom:
+                                      item.hop_dong_dau_tu_mia_ben_giao_hom ||
+                                      "",
+                                  tong_thuc_nhan: item.tong_thuc_nhan || 0,
+                                  amount: item.amount || 0,
                                   disbursement_code:
                                       item.disbursement_code || "",
                                   installment: item.installment || 1,
-                                  amount: item.amount || 0,
                               }))
                             : [];
 
-                        // Now fetch the payment requests (disbursements)
-                        return axios.get(
-                            `/api/payment-requests/${id}/disbursements`,
-
-                            {
-                                headers: {
-                                    Authorization:
-                                        "Bearer " + this.store.getToken,
-                                },
-                            }
-                        );
+                        // Fetch disbursements for homgiong (implement in next step)
+                        // เพิ่มการ fetch payment requests ที่นี่
+                        this.fetchPaymentRequests(); // เพิ่มบรรทัดนี้
                     } else {
                         throw new Error(
                             response.data.message ||
-                                "Không tìm thấy thông tin phiếu trình thanh toán"
+                                "Không tìm thấy thông tin phiếu trình thanh toán hom giống"
                         );
-                    }
-                })
-                .then((disbResponse) => {
-                    if (disbResponse && disbResponse.data.success) {
-                        // Map the payment requests data
-                        this.paymentRequests = Array.isArray(
-                            disbResponse.data.data
-                        )
-                            ? disbResponse.data.data.map((item) => ({
-                                  disbursement_code:
-                                      item.disbursement_code || "",
-                                  tram: item.tram || "",
-                                  investment_project:
-                                      item.investment_project || "",
-                                  payment_type: item.payment_type || "",
-                                  individual_customer:
-                                      item.individual_customer || "",
-                                  individual_customer_code:
-                                      item.individual_customer_code || "",
-                                  corporate_customer:
-                                      item.corporate_customer || "",
-                                  corporate_customer_code:
-                                      item.corporate_customer_code || "",
-                                  total_amount: item.total_amount || 0,
-                                  total_hold_amount:
-                                      item.total_hold_amount || 0,
-                                  total_deduction: item.total_deduction || 0,
-                                  total_interest: item.total_interest || 0,
-                                  total_remaining: item.total_remaining || 0,
-                                  payment_date: item.payment_date || null,
-                                  proposal_number: item.proposal_number || "",
-                                  installment: item.installment || 1,
-                              }))
-                            : [];
-
-                        // Update unique values for payment filters
-                        this.updatePaymentFilterValues();
                     }
                 })
                 .catch((error) => {
                     console.error("Error fetching document:", error);
                     this.showError(
-                        "Lỗi khi tải thông tin phiếu trình thanh toán"
+                        "Lỗi khi tải thông tin phiếu trình thanh toán hom giống"
                     );
                     if (error.response?.status === 401) {
                         this.handleAuthError();
@@ -6423,9 +6466,12 @@ export default {
                 return;
             }
 
-            this.editForm.disbursementCode = "";
+            // Reset form
+            this.editForm = {
+                disbursementCode: "",
+            };
 
-            // Show the modal using Bootstrap's modal
+            // Show the modal
             if (!this.editModal) {
                 import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
                     (bootstrap) => {
@@ -6449,8 +6495,8 @@ export default {
             this.isUpdating = true;
 
             try {
-                const response = await axios.post(
-                    `/api/payment-requests/${this.document.payment_code}/update-records`,
+                const response = await axios.put(
+                    `/api/payment-requests-homgiong/${this.document.payment_code}/records`,
                     {
                         receipt_ids: this.selectedRecords,
                         disbursement_code: this.editForm.disbursementCode,
@@ -6497,6 +6543,9 @@ export default {
             }
         },
 
+        /**
+         * Delete selected records from payment request homgiong
+         */
         async deleteSelectedRecords() {
             if (!this.isAuthenticated()) return;
             if (this.selectedRecords.length === 0) {
@@ -6518,48 +6567,153 @@ export default {
                 },
             });
 
-            if (result.isConfirmed) {
-                try {
-                    const response = await axios.post(
-                        `/api/payment-requests/${this.document.payment_code}/delete-records`,
-                        {
+            if (!result.isConfirmed) return;
+
+            // ตรวจสอบข้อมูลก่อนส่ง
+            console.log("Selected records to delete:", this.selectedRecords);
+
+            this.isDeleting = true;
+
+            try {
+                // แก้ไขการส่งข้อมูลใน axios.delete - ย้าย data ไปใน config object
+                const response = await axios.delete(
+                    `/api/payment-requests-homgiong/${this.document.payment_code}/records`,
+                    {
+                        data: {
                             receipt_ids: this.selectedRecords,
                         },
-                        {
-                            headers: {
-                                Authorization: "Bearer " + this.store.getToken,
-                            },
-                        }
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    // Remove deleted records from the local array
+                    this.paymentDetails = this.paymentDetails.filter(
+                        (item) =>
+                            !this.selectedRecords.includes(item.document_code)
                     );
 
-                    if (response.data.success) {
-                        // Remove deleted records from the local array
-                        this.paymentDetails = this.paymentDetails.filter(
-                            (item) =>
-                                !this.selectedRecords.includes(
-                                    item.document_code
-                                )
-                        );
-
-                        // Clear selection
-                        this.selectedRecords = [];
-
-                        this.showSuccess("Xóa thành công");
-                        this.fetchDocument(); // Refresh data
-                    } else {
-                        throw new Error(
-                            response.data.message || "Unknown error"
-                        );
+                    // Update total amount if provided
+                    if (response.data.new_total_amount !== undefined) {
+                        this.document.total_amount =
+                            response.data.new_total_amount;
                     }
-                } catch (error) {
-                    console.error("Error deleting records:", error);
-                    this.showError("Đã xảy ra lỗi khi xóa bản ghi");
 
-                    if (error.response?.status === 401) {
-                        this.handleAuthError();
-                    }
+                    // Clear selection
+                    this.selectedRecords = [];
+
+                    this.showSuccess(
+                        `Đã xóa thành công ${response.data.affected_rows} bản ghi. ` +
+                            `Tổng tiền mới: ${this.formatCurrency(
+                                response.data.new_total_amount || 0
+                            )}`
+                    );
+
+                    this.fetchDocument(); // Refresh data
+                } else {
+                    throw new Error(response.data.message || "Unknown error");
                 }
+            } catch (error) {
+                console.error("Error deleting records:", error);
+
+                if (error.response && error.response.data) {
+                    console.error("Server response:", error.response.data);
+
+                    if (
+                        error.response.data.errors &&
+                        error.response.data.errors.receipt_ids
+                    ) {
+                        this.showError(
+                            "Lỗi: " + error.response.data.errors.receipt_ids[0]
+                        );
+                    } else {
+                        this.showError(
+                            error.response.data.message ||
+                                "Đã xảy ra lỗi khi xóa bản ghi"
+                        );
+                    }
+                } else {
+                    this.showError("Đã xảy ra lỗi khi xóa bản ghi");
+                }
+
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            } finally {
+                this.isDeleting = false;
             }
+        },
+
+        /**
+         * Show confirmation dialog for bulk delete
+         */
+        confirmBulkDelete() {
+            if (this.selectedRecords.length === 0) {
+                this.showError("Vui lòng chọn ít nhất một bản ghi để xóa");
+                return;
+            }
+
+            // Get selected records details for confirmation
+            const selectedDetails = this.paymentDetails.filter((item) =>
+                this.selectedRecords.includes(item.document_code)
+            );
+
+            const totalAmount = selectedDetails.reduce(
+                (sum, item) => sum + parseFloat(item.amount || 0),
+                0
+            );
+
+            Swal.fire({
+                title: "Xác nhận xóa bản ghi",
+                html: `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Bạn đang chuẩn bị xóa <strong>${
+                            this.selectedRecords.length
+                        }</strong> bản ghi
+                    </div>
+                    <div class="mb-3">
+                        <strong>Danh sách bản ghi sẽ xóa:</strong><br>
+                        <ul class="text-start">
+                            ${selectedDetails
+                                .map(
+                                    (item) =>
+                                        `<li>${
+                                            item.document_code
+                                        } - ${this.formatCurrency(
+                                            item.amount || 0
+                                        )}</li>`
+                                )
+                                .join("")}
+                        </ul>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Tổng tiền các bản ghi sẽ xóa:</strong><br>
+                        <span class="text-danger fs-5">${this.formatCurrency(
+                            totalAmount
+                        )}</span>
+                    </div>
+                    <div class="text-muted">
+                        <small>Hành động này sẽ cập nhật lại tổng tiền của phiếu trình và không thể hoàn tác.</small>
+                    </div>
+                `,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#dc3545",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText:
+                    '<i class="fas fa-trash me-1"></i> Xóa bản ghi',
+                cancelButtonText: '<i class="fas fa-times me-1"></i> Hủy',
+                reverseButtons: true,
+                width: "600px",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.deleteSelectedRecords();
+                }
+            });
         },
         openAddReceiptModal() {
             // Clear previous data
@@ -6602,7 +6756,7 @@ export default {
                 this.isSearching = true; // Add a loading state
 
                 const response = await axios.get(
-                    "/api/bienban-nghiemthu-search-pttt",
+                    "/api/bienban-nghiemthu-homgiong-search-pttt",
                     {
                         params: {
                             search: this.searchQuery,
@@ -6618,17 +6772,15 @@ export default {
                 console.log("Search response:", response.data); // Debug log
 
                 if (response.data && Array.isArray(response.data)) {
-                    // Map the response to include all required fields
+                    // Map the response to include all required fields for homgiong
                     this.receiptResults = response.data.map((item) => ({
-                        ma_nghiem_thu: item.ma_nghiem_thu,
-                        tieu_de: item.tieu_de,
+                        ma_so_phieu: item.ma_so_phieu,
                         tram: item.tram,
-                        can_bo_nong_vu: item.can_bo_nong_vu,
                         vu_dau_tu: item.vu_dau_tu,
-                        hop_dong_dau_tu_mia: item.hop_dong_dau_tu_mia,
-                        hinh_thuc_thuc_hien_dv: item.hinh_thuc_thuc_hien_dv,
-                        hop_dong_cung_ung_dich_vu:
-                            item.hop_dong_cung_ung_dich_vu,
+                        ten_phieu: item.ten_phieu,
+                        hop_dong_dau_tu_mia_ben_giao_hom:
+                            item.hop_dong_dau_tu_mia_ben_giao_hom,
+                        tong_thuc_nhan: item.tong_thuc_nhan || 0,
                         tong_tien: item.tong_tien || 0,
                     }));
                 } else {
@@ -6652,7 +6804,7 @@ export default {
         selectReceipt(item) {
             // Check if receipt is not already selected
             const isAlreadySelected = this.selectedReceipts.some(
-                (selected) => selected.ma_nghiem_thu === item.ma_nghiem_thu
+                (selected) => selected.ma_so_phieu === item.ma_so_phieu
             );
 
             if (!isAlreadySelected) {
@@ -6678,14 +6830,12 @@ export default {
             this.isAdding = true;
 
             try {
-                const receiptIds = this.selectedReceipts.map(
-                    (item) => item.ma_nghiem_thu
-                );
-
                 const response = await axios.post(
-                    `/api/payment-requests/${this.document.payment_code}/add-receipts`,
+                    `/api/payment-requests-homgiong/${this.document.payment_code}/receipts`,
                     {
-                        receipt_ids: receiptIds,
+                        receipt_ids: this.selectedReceipts.map(
+                            (item) => item.ma_so_phieu
+                        ),
                     },
                     {
                         headers: {
@@ -6695,25 +6845,37 @@ export default {
                 );
 
                 if (response.data.success) {
-                    // Close the modal
-                    this.addReceiptModal.hide();
+                    this.showSuccess("Thêm biên bản thành công!");
 
-                    // Show success message
-                    this.showSuccess(
-                        `Đã thêm ${this.selectedReceipts.length} biên bản thành công`
-                    );
+                    // Update total amount
+                    this.document.total_amount = response.data.new_total_amount;
 
-                    // Refresh data
-                    this.fetchDocument();
+                    // Clear selections
+                    this.selectedReceipts = [];
+                    this.searchQuery = "";
+                    this.receiptResults = [];
+
+                    // Close modal
+                    if (this.addReceiptModal) {
+                        this.addReceiptModal.hide();
+                    }
+
+                    await this.fetchDocument();
                 } else {
-                    throw new Error(response.data.message || "Unknown error");
+                    this.showError(
+                        response.data.message ||
+                            "Có lỗi xảy ra khi thêm biên bản"
+                    );
                 }
             } catch (error) {
                 console.error("Error adding receipts:", error);
-                this.showError("Đã xảy ra lỗi khi thêm biên bản");
 
                 if (error.response?.status === 401) {
                     this.handleAuthError();
+                } else if (error.response?.data?.message) {
+                    this.showError(error.response.data.message);
+                } else {
+                    this.showError("Có lỗi xảy ra khi thêm biên bản");
                 }
             } finally {
                 this.isAdding = false;
@@ -6734,7 +6896,7 @@ export default {
                 // Create a workbook with a worksheet
                 const wb = XLSX.utils.book_new();
 
-                // Format the data for export
+                // Format the data for export - updated for homgiong payment details
                 const paymentDetailsForExport = this.prepareDataForExport();
 
                 // Create worksheet from data
@@ -6750,10 +6912,14 @@ export default {
                 this.styleWorksheet(ws);
 
                 // Add the worksheet to the workbook
-                XLSX.utils.book_append_sheet(wb, ws, "Chi tiết thanh toán");
+                XLSX.utils.book_append_sheet(
+                    wb,
+                    ws,
+                    "Chi tiết hồ sơ thanh toán"
+                );
 
                 // Generate filename with document code and date
-                const fileName = `PhieuTrinhTT_${
+                const fileName = `ChiTietHoSoThanhToan_${
                     this.document.payment_code
                 }_${new Date().toISOString().slice(0, 10)}.xlsx`;
 
@@ -6777,42 +6943,39 @@ export default {
             // Get filtered data or all data if no filters applied
             const dataToExport = this.filteredPaymentDetails;
 
-            // Create translated headers and mapped data
-            return dataToExport.map((item) => {
+            // Create translated headers and mapped data for homgiong payment details
+            return dataToExport.map((item, index) => {
                 return {
-                    "Mã nghiệm thu": item.document_code,
+                    STT: index + 1,
+                    "Mã số phiếu": item.document_code || "N/A",
                     Trạm: item.tram || "N/A",
-                    "Tiêu đề": item.title,
-                    "Vụ đầu tư": item.investment_project,
-                    "KH Cá nhân": item.khach_hang_ca_nhan_dt_mia || "N/A",
-                    "KH Doanh nghiệp":
-                        item.khach_hang_doanh_nghiep_dt_mia || "N/A",
-                    "Hợp đồng đầu tư": item.contract_number,
-                    "Hình thức DV": item.service_type,
-                    "Hợp đồng cung ứng DV":
-                        item.hop_dong_cung_ung_dich_vu || "N/A",
+                    "Vụ đầu tư": item.investment_project || "N/A",
+                    "Tên phiếu": item.title || "N/A",
+                    "Hợp đồng đầu tư mía bên giao":
+                        item.hop_dong_dau_tu_mia_ben_giao_hom || "N/A",
+                    "Tổng thực nhận": this.formatCurrencyRaw(
+                        item.tong_thuc_nhan || 0
+                    ),
                     "Mã đề nghị giải ngân": item.disbursement_code || "N/A",
-                    "Đợt TT": item.installment,
-                    "Số tiền": this.formatCurrencyRaw(item.amount),
+                    "Đợt TT": item.installment || 1,
+                    "Số tiền": this.formatCurrencyRaw(item.amount || 0),
                 };
             });
         },
 
         calculateColumnWidths(data) {
-            // Base column widths
+            // Base column widths updated for homgiong payment details
             const baseWidths = {
-                "Mã nghiệm thu": 15,
-                Trạm: 10,
-                "Tiêu đề": 30,
-                "Vụ đầu tư": 15,
-                "KH Cá nhân": 25,
-                "KH Doanh nghiệp": 25,
-                "Hợp đồng đầu tư": 20,
-                "Hình thức DV": 15,
-                "Hợp đồng cung ứng DV": 20,
-                "Mã đề nghị giải ngân": 20,
-                "Đợt TT": 8,
-                "Số tiền": 15,
+                STT: 8,
+                "Mã số phiếu": 20,
+                Trạm: 15,
+                "Vụ đầu tư": 20,
+                "Tên phiếu": 35,
+                "Hợp đồng đầu tư mía bên giao": 30,
+                "Tổng thực nhận": 18,
+                "Mã đề nghị giải ngân": 25,
+                "Đợt TT": 10,
+                "Số tiền": 18,
             };
 
             // Convert to column width objects
@@ -6948,7 +7111,7 @@ export default {
 
             try {
                 const response = await axios.post(
-                    `/api/payment-requests/${this.document.payment_code}/import-data`,
+                    `/api/payment-requests-homgiong/${this.document.payment_code}/import`,
                     formData,
                     {
                         headers: {
@@ -7016,11 +7179,11 @@ export default {
                 // Create sample data
                 const data = [
                     {
-                        ma_nghiem_thu: "Example-001",
+                        ma_so_phieu: "Example-001",
                         ma_de_nghi_giai_ngan: "DN-001",
                     },
                     {
-                        ma_nghiem_thu: "Example-002",
+                        ma_so_phieu: "Example-002",
                         ma_de_nghi_giai_ngan: "DN-002",
                     },
                 ];

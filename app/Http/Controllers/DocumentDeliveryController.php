@@ -628,4 +628,54 @@ public function searchBienBanNgheThu_PTTT(Request $request)
 }
 
 
+/**
+ * Search bien ban nghiem thu hom giong for payment request creation
+ */
+public function searchBienBanHomGiong_PTTT(Request $request)
+{
+    try {
+        $search = $request->get('search', '');
+        $investmentProject = $request->get('investment_project', '');
+        
+        if (strlen($search) < 2) {
+            return response()->json([]);
+        }
+        
+        $query = DB::table('bien_ban_nghiem_thu_hom_giong')
+            ->select(
+                'ma_so_phieu',
+                'tram',
+                'vu_dau_tu',
+                'ten_phieu',
+                'hop_dong_dau_tu_mia_ben_giao_hom',
+                'tong_thuc_nhan',
+                'tong_tien'
+            )
+            ->where(function($q) use ($search) {
+                $q->where('ma_so_phieu', 'LIKE', '%' . $search . '%')
+                  ->orWhere('ten_phieu', 'LIKE', '%' . $search . '%')
+                  ->orWhere('tram', 'LIKE', '%' . $search . '%');
+            });
+            
+        // Filter by investment project if provided
+        
+        
+        // Add condition to exclude already processed records if needed
+        // You can add additional conditions here
+        
+        $results = $query->limit(10)->get();
+        
+        return response()->json($results);
+        
+    } catch (\Exception $e) {
+        Log::error('Error searching bien ban nghiem thu hom giong for PTTT: ' . $e->getMessage());
+        
+        return response()->json([
+            'error' => 'Search failed',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
 }

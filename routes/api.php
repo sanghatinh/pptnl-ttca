@@ -207,13 +207,17 @@ Route::put('/payment-requests-dichvu/{id}/update', [PhieudenghithanhtoandvContro
     Route::get('/payment-requests-homgiong/{id}', [PhieutrinhthanhtoanHomgiongControllers::class, 'show']);
     Route::put('/payment-requests-homgiong/{id}/status', [PhieutrinhthanhtoanHomgiongControllers::class, 'updateStatus']);
     Route::delete('/payment-requests-homgiong/{id}', [PhieutrinhthanhtoanHomgiongControllers::class, 'destroy']);
-    Route::get('/payment-requests-homgiong/{id}/processing-history', [PhieutrinhthanhtoanHomgiongControllers::class, 'getProcessingHistory']);
+    Route::get('/payment-requests-homgiong/{id}/history', [PhieutrinhthanhtoanHomgiongControllers::class, 'getProcessingHistory']);
     Route::post('/payment-requests-homgiong/{id}/note', [PhieutrinhthanhtoanHomgiongControllers::class, 'saveNote']);
     Route::put('/payment-requests-homgiong/{id}/records', [PhieutrinhthanhtoanHomgiongControllers::class, 'updateRecords']);
     Route::delete('/payment-requests-homgiong/{id}/records', [PhieutrinhthanhtoanHomgiongControllers::class, 'deleteRecords']);
+    Route::get('/bienban-nghiemthu-homgiong-search-pttt', [DocumentDeliveryController::class, 'searchBienBanHomGiong_PTTT']);
     Route::post('/payment-requests-homgiong/{id}/receipts', [PhieutrinhthanhtoanHomgiongControllers::class, 'addReceipts']);
     Route::post('/payment-requests-homgiong/{id}/import', [PhieutrinhthanhtoanHomgiongControllers::class, 'importData']);
     Route::put('/payment-requests-homgiong/{id}/basic-info', [PhieutrinhthanhtoanHomgiongControllers::class, 'updateBasicInfo']);
+     // Routes for Phieu de nghi thanh toan hom giong
+    Route::post('/disbursements-homgiong/with-receipts', [App\Http\Controllers\QuanlyTaichinh\PhieuDNTTHomgiongControllers::class, 'addWithReceipts']);
+    Route::get('/payment-requests/{id}/disbursements-homgiong', [App\Http\Controllers\QuanlyTaichinh\PhieuDNTTHomgiongControllers::class, 'getByPaymentRequest']);
 
 //Công nợ dịch vụ khấu trừ
 Route::get('/import-congno-dichvu-khautru-progress/{importId}', [DeductibleServiceDebtController::class, 'checkImportProgress']);
