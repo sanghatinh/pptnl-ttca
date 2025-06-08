@@ -1800,8 +1800,10 @@
                                         <option value="">
                                             Chọn loại thanh toán
                                         </option>
-                                        <option value="Hom giốnggiống">
-                                            Hom giống
+                                        <option
+                                            value="Phiếu giao nhận hom giống"
+                                        >
+                                            Phiếu giao nhận hom giống
                                         </option>
                                     </select>
                                     <i

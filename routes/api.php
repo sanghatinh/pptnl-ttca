@@ -19,6 +19,7 @@ use App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers;
 use App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController;
 use App\Http\Controllers\QuanlyCongno\DeductibleServiceDebtController;
 use App\Http\Controllers\QuanlyTaichinh\PhieutrinhthanhtoanHomgiongControllers;
+use App\Http\Controllers\QuanlyTaichinh\PhieuDNTTHomgiongControllers;
 use App\Http\Controllers\UserProfileController;
 
 
@@ -205,10 +206,9 @@ Route::put('/payment-requests-dichvu/{id}/update', [PhieudenghithanhtoandvContro
     Route::post('/check-payment-request-homgiong-duplicates', [PhieutrinhthanhtoanHomgiongControllers::class, 'checkDuplicates']);
     Route::post('/create-payment-request-homgiong', [PhieutrinhthanhtoanHomgiongControllers::class, 'createPaymentRequest']);
     Route::get('/payment-requests-homgiong/{id}', [PhieutrinhthanhtoanHomgiongControllers::class, 'show']);
-    Route::put('/payment-requests-homgiong/{id}/status', [PhieutrinhthanhtoanHomgiongControllers::class, 'updateStatus']);
-    Route::delete('/payment-requests-homgiong/{id}', [PhieutrinhthanhtoanHomgiongControllers::class, 'destroy']);
-    Route::get('/payment-requests-homgiong/{id}/history', [PhieutrinhthanhtoanHomgiongControllers::class, 'getProcessingHistory']);
-    Route::post('/payment-requests-homgiong/{id}/note', [PhieutrinhthanhtoanHomgiongControllers::class, 'saveNote']);
+
+
+
     Route::put('/payment-requests-homgiong/{id}/records', [PhieutrinhthanhtoanHomgiongControllers::class, 'updateRecords']);
     Route::delete('/payment-requests-homgiong/{id}/records', [PhieutrinhthanhtoanHomgiongControllers::class, 'deleteRecords']);
     Route::get('/bienban-nghiemthu-homgiong-search-pttt', [DocumentDeliveryController::class, 'searchBienBanHomGiong_PTTT']);
@@ -218,6 +218,18 @@ Route::put('/payment-requests-dichvu/{id}/update', [PhieudenghithanhtoandvContro
      // Routes for Phieu de nghi thanh toan hom giong
     Route::post('/disbursements-homgiong/with-receipts', [App\Http\Controllers\QuanlyTaichinh\PhieuDNTTHomgiongControllers::class, 'addWithReceipts']);
     Route::get('/payment-requests/{id}/disbursements-homgiong', [App\Http\Controllers\QuanlyTaichinh\PhieuDNTTHomgiongControllers::class, 'getByPaymentRequest']);
+    // เพิ่ม route ใหม่สำหรับการปรับปรุงยอดเงินตาม harvest costs
+Route::put('/disbursements-homgiong/update-hold-amount', [App\Http\Controllers\QuanlyTaichinh\PhieuDNTTHomgiongControllers::class, 'updateHoldAmount']);
+Route::delete('/disbursements-homgiong/bulk', [App\Http\Controllers\QuanlyTaichinh\PhieuDNTTHomgiongControllers::class, 'bulkDelete']);
+Route::put('/disbursements-homgiong/bulk', [App\Http\Controllers\QuanlyTaichinh\PhieuDNTTHomgiongControllers::class, 'bulkUpdate']);
+Route::post('/disbursements-homgiong/import', [App\Http\Controllers\QuanlyTaichinh\PhieuDNTTHomgiongControllers::class, 'import']);
+Route::get('/disbursements-homgiong/import-template', [App\Http\Controllers\QuanlyTaichinh\PhieuDNTTHomgiongControllers::class, 'downloadTemplate']);
+// Routes สำหรับ PhieuDNTTHomgiongControllers - new methods
+Route::put('/payment-requests-homgiong/{id}/status', [PhieuDNTTHomgiongControllers::class, 'updateStatusHomgiong']);
+Route::get('/payment-requests-homgiong/{paymentCode}/history', [PhieuDNTTHomgiongControllers::class, 'getProcessingHistoryHomgiong']);
+Route::post('/payment-requests-homgiong/{id}/notes', [PhieuDNTTHomgiongControllers::class, 'saveNoteHomgiong']);
+Route::put('/payment-requests-homgiong/{id}/basic-info', [PhieuDNTTHomgiongControllers::class, 'updateBasicInfoHomgiong']);
+Route::delete('/payment-requests-homgiong/{id}', [PhieuDNTTHomgiongControllers::class, 'destroyHomgiong']);
 
 //Công nợ dịch vụ khấu trừ
 Route::get('/import-congno-dichvu-khautru-progress/{importId}', [DeductibleServiceDebtController::class, 'checkImportProgress']);

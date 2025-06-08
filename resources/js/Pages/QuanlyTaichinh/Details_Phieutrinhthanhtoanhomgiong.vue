@@ -304,7 +304,9 @@
                                 <button
                                     v-if="
                                         document.status === 'processing' &&
-                                        hasPermission('submit_to_accounting')
+                                        hasPermission(
+                                            'nộp phiếu trình thanh toán'
+                                        )
                                     "
                                     class="button-30-blue"
                                     @click="
@@ -323,7 +325,9 @@
                                 <button
                                     v-if="
                                         document.status === 'submitted' &&
-                                        hasPermission('submit_to_accounting')
+                                        hasPermission(
+                                            'nộp phiếu trình thanh toán'
+                                        )
                                     "
                                     type="button"
                                     class="button-30-yellow"
@@ -571,11 +575,7 @@
                                                 <option value="" disabled>
                                                     -- Chọn loại thanh toán --
                                                 </option>
-                                                <option
-                                                    value="Nghiệm thu dịch vụ"
-                                                >
-                                                    Nghiệm thu dịch vụ
-                                                </option>
+
                                                 <option
                                                     value="Phiếu giao nhận hom giống"
                                                 >
@@ -1188,6 +1188,26 @@
                             <div class="col-md-4">
                                 <div class="d-flex gap-2 justify-content-end">
                                     <button
+                                        class="btn btn-warning btn-sm"
+                                        :disabled="
+                                            selectedPaymentRequests.length === 0
+                                        "
+                                        @click="openUpdateHoldAmountModal"
+                                        title="Điều chỉnh Amount cho các phiếu đã chọn"
+                                    >
+                                        <i class="fas fa-calculator me-1"></i>
+                                        Điều chỉnh
+                                        <span
+                                            class="badge bg-light text-dark ms-1"
+                                            v-if="
+                                                selectedPaymentRequests.length >
+                                                0
+                                            "
+                                        >
+                                            {{ selectedPaymentRequests.length }}
+                                        </span>
+                                    </button>
+                                    <button
                                         v-if="
                                             hasPermission(
                                                 'edit_phieu_trinh_thanhtoan_dv'
@@ -1378,7 +1398,7 @@
                                             Mã giải ngân
                                         </th>
                                         <th style="width: 140px">Vụ đầu tư</th>
-                                        <th style="width: 150px">
+                                        <th style="width: 190px">
                                             Loại thanh toán
                                         </th>
                                         <th style="width: 180px">KH Cá nhân</th>
@@ -1612,7 +1632,9 @@
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            {{ item.proposal_number }}
+                                            <span class="badge bg-warning">
+                                                {{ item.proposal_number }}
+                                            </span>
                                         </td>
                                         <td class="text-center">
                                             <span class="badge bg-primary">{{
@@ -1627,7 +1649,7 @@
                                 >
                                     <tr>
                                         <td
-                                            colspan="8"
+                                            colspan="9"
                                             class="text-end fw-bold"
                                         >
                                             Tổng cộng ({{
@@ -1808,6 +1830,19 @@
                                 <div
                                     class="d-flex gap-2 justify-content-center"
                                 >
+                                    <button
+                                        v-if="
+                                            hasPermission(
+                                                'add_phieu_trinh_thanhtoan_dv'
+                                            )
+                                        "
+                                        class="btn btn-primary btn-sm"
+                                        title="Thêm phiếu đề nghị"
+                                        @click="openAddPaymentRequestModal"
+                                    >
+                                        <i class="fa-solid fa-list-check"></i>
+                                        Tạo PDNTT
+                                    </button>
                                     <button
                                         v-if="
                                             hasPermission(
@@ -2295,6 +2330,335 @@
             </div>
         </div>
     </div>
+
+    <!-- Update Hold Amount Modal -->
+    <div
+        class="modal fade"
+        id="updateHoldAmountModal"
+        tabindex="-1"
+        aria-labelledby="updateHoldAmountModalLabel"
+        aria-hidden="true"
+        data-bs-backdrop="static"
+        data-bs-keyboard="false"
+    >
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-white">
+                    <h5 class="modal-title" id="updateHoldAmountModalLabel">
+                        <i class="fas fa-calculator me-2"></i>
+                        Điều chỉnh Amount - Chi phí thu hoạch
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Selected Items Summary -->
+                    <div class="alert alert-info mb-4">
+                        <div
+                            class="d-flex justify-content-between align-items-center"
+                        >
+                            <div>
+                                <h6 class="alert-heading mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Thông tin các phiếu đã chọn
+                                </h6>
+                            </div>
+                            <div class="d-flex gap-4">
+                                <div>
+                                    <span class="badge bg-primary ms-1">{{
+                                        selectedPaymentRequests.length
+                                    }}</span>
+                                </div>
+                                <!-- <div>
+                                    <strong>Tổng thực nhận:</strong>
+                                    <span class="fw-bold text-success ms-1">{{
+                                        totalSelectedThucNhan
+                                    }}</span>
+                                    <small class="text-muted">tấn</small>
+                                </div> -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Harvest Cost Input Form -->
+                    <form @submit.prevent="updateHoldAmount">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="donGiaChatMia" class="form-label">
+                                    <i class="fas fa-cut me-1"></i>
+                                    Đơn giá chặt mía (Kip/tấn)
+                                </label>
+                                <input
+                                    type="text"
+                                    id="donGiaChatMia"
+                                    v-model="holdAmountForm.don_gia_chat_mia"
+                                    class="form-control"
+                                    placeholder="Nhập đơn giá chặt mía"
+                                    @input="
+                                        formatCurrencyInput(
+                                            $event,
+                                            'don_gia_chat_mia'
+                                        )
+                                    "
+                                    @focus="
+                                        removeFormatting(
+                                            $event,
+                                            'don_gia_chat_mia'
+                                        )
+                                    "
+                                    @blur="
+                                        addFormatting(
+                                            $event,
+                                            'don_gia_chat_mia'
+                                        )
+                                    "
+                                />
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Nhập số tiền không bao gồm dấu phẩy
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="donGiaGapMia" class="form-label">
+                                    <i class="fas fa-tractor me-1"></i>
+                                    Đơn giá gặp mía (Kip/tấn)
+                                </label>
+                                <input
+                                    type="text"
+                                    id="donGiaGapMia"
+                                    v-model="holdAmountForm.don_gia_gap_mia"
+                                    class="form-control"
+                                    placeholder="Nhập đơn giá gặp mía"
+                                    @input="
+                                        formatCurrencyInput(
+                                            $event,
+                                            'don_gia_gap_mia'
+                                        )
+                                    "
+                                    @focus="
+                                        removeFormatting(
+                                            $event,
+                                            'don_gia_gap_mia'
+                                        )
+                                    "
+                                    @blur="
+                                        addFormatting($event, 'don_gia_gap_mia')
+                                    "
+                                />
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Nhập số tiền không bao gồm dấu phẩy
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label
+                                    for="donGiaVanChuyenMia"
+                                    class="form-label"
+                                >
+                                    <i class="fas fa-truck me-1"></i>
+                                    Đơn giá vận chuyển mía (Kip/tấn)
+                                </label>
+                                <input
+                                    type="text"
+                                    id="donGiaVanChuyenMia"
+                                    v-model="
+                                        holdAmountForm.don_gia_van_chuyen_mia
+                                    "
+                                    class="form-control"
+                                    placeholder="Nhập đơn giá vận chuyển"
+                                    @input="
+                                        formatCurrencyInput(
+                                            $event,
+                                            'don_gia_van_chuyen_mia'
+                                        )
+                                    "
+                                    @focus="
+                                        removeFormatting(
+                                            $event,
+                                            'don_gia_van_chuyen_mia'
+                                        )
+                                    "
+                                    @blur="
+                                        addFormatting(
+                                            $event,
+                                            'don_gia_van_chuyen_mia'
+                                        )
+                                    "
+                                />
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Nhập số tiền không bao gồm dấu phẩy
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calculation Summary -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i
+                                                class="fas fa-calculator me-2"
+                                            ></i>
+                                            Tính toán chi phí thu hoạch
+                                        </h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div
+                                                    class="d-flex justify-content-between"
+                                                >
+                                                    <span
+                                                        >Tổng chi phí thu
+                                                        hoạch/tấn:</span
+                                                    >
+                                                    <strong class="text-danger">
+                                                        {{
+                                                            formatCurrency(
+                                                                totalHarvestCostPerTon
+                                                            )
+                                                        }}
+                                                        /tấn
+                                                    </strong>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div
+                                                    class="d-flex justify-content-between"
+                                                >
+                                                    <span
+                                                        >Tổng tiền tạm giữ dự
+                                                        kiến:</span
+                                                    >
+                                                    <strong
+                                                        class="text-warning"
+                                                    >
+                                                        {{
+                                                            formatCurrency(
+                                                                estimatedTotalHoldAmount
+                                                            )
+                                                        }}
+                                                    </strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selected Payment Requests Preview -->
+                        <div class="mt-4">
+                            <h6>
+                                <i class="fas fa-list me-2"></i>
+                                Danh sách phiếu đề nghị sẽ được cập nhật:
+                            </h6>
+                            <div
+                                class="table-responsive"
+                                style="max-height: 300px"
+                            >
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Mã giải ngân</th>
+                                            <th class="text-end">
+                                                Thực nhận (tấn)
+                                            </th>
+                                            <th class="text-end">
+                                                Tạm giữ hiện tại
+                                            </th>
+                                            <th class="text-end">
+                                                Tạm giữ mới
+                                            </th>
+                                            <th class="text-end">
+                                                Còn lại mới
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr
+                                            v-for="item in selectedPaymentRequestsData"
+                                            :key="item.disbursement_code"
+                                        >
+                                            <td>
+                                                {{ item.disbursement_code }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{ item.actual_received }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{
+                                                    formatCurrency(
+                                                        item.total_hold_amount
+                                                    )
+                                                }}
+                                            </td>
+                                            <td
+                                                class="text-end text-warning fw-bold"
+                                            >
+                                                {{
+                                                    formatCurrency(
+                                                        calculateNewHoldAmount(
+                                                            item.actual_received
+                                                        )
+                                                    )
+                                                }}
+                                            </td>
+                                            <td
+                                                class="text-end text-success fw-bold"
+                                            >
+                                                {{
+                                                    formatCurrency(
+                                                        calculateNewRemainingAmount(
+                                                            item
+                                                        )
+                                                    )
+                                                }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        <i class="fas fa-times me-1"></i>
+                        Hủy
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-warning"
+                        @click="updateHoldAmount"
+                        :disabled="updateHoldAmountLoading || !isFormValid"
+                        ref="updateButton"
+                    >
+                        <span
+                            v-if="updateHoldAmountLoading"
+                            class="spinner-border spinner-border-sm me-2"
+                        ></span>
+                        <i v-else class="fas fa-save me-1"></i>
+                        {{
+                            updateHoldAmountLoading
+                                ? "Đang cập nhật..."
+                                : "Cập nhật Amount"
+                        }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Add this modal at the end of the template -->
     <!-- Edit Modal -->
     <div
@@ -2384,7 +2748,7 @@
                     ></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info mb-3 text-white">
+                    <div class="alert alert-info mb-3 text-info">
                         <i class="fas fa-info-circle me-2 text-white"></i>
                         <small
                             >Import data to update payment details. The file
@@ -2492,151 +2856,564 @@
         tabindex="-1"
         aria-labelledby="paymentEditModalLabel"
         aria-hidden="true"
+        data-bs-backdrop="static"
+        data-bs-keyboard="false"
     >
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="paymentEditModalLabel">
+                <div class="modal-header bg-warning text-white">
+                    <h5
+                        class="modal-title text-white"
+                        id="paymentEditModalLabel"
+                    >
                         <i class="fas fa-edit me-2"></i>
                         Chỉnh sửa phiếu đề nghị thanh toán
                     </h5>
                     <button
                         type="button"
-                        class="btn-close"
+                        class="btn-close btn-close-white"
                         data-bs-dismiss="modal"
                         aria-label="Close"
                     ></button>
                 </div>
-                <!-- ในส่วนของ Payment Request Edit Modal -->
-                <div class="modal-body">
-                    <div
-                        class="alert text-white"
-                        :class="{
-                            'alert-info text-white':
-                                selectedPaymentRequests.length > 1,
-                            'alert-success':
-                                selectedPaymentRequests.length === 1,
-                        }"
-                    >
-                        <i
-                            class="fas"
+
+                <div
+                    class="modal-body"
+                    style="max-height: 70vh; overflow-y: auto"
+                >
+                    <!-- Form Container -->
+                    <form @submit.prevent="updatePaymentRecords">
+                        <!-- Alert Section -->
+                        <div
+                            class="alert text-info mb-3"
                             :class="{
-                                'fa-info-circle me-2':
+                                'alert-info text-white':
                                     selectedPaymentRequests.length > 1,
-                                'fa-edit me-2':
+                                'alert-success':
                                     selectedPaymentRequests.length === 1,
                             }"
-                        ></i>
-                        <span v-if="selectedPaymentRequests.length === 1">
-                            Đang chỉnh sửa phiếu đề nghị:
-                            <strong>{{ selectedPaymentRequests[0] }}</strong>
-                        </span>
-                        <span v-else>
-                            Đang chỉnh sửa
-                            <strong>{{
-                                selectedPaymentRequests.length
-                            }}</strong>
-                            phiếu đề nghị
-                            <div class="mt-2 small">
-                                <i class="fas fa-exclamation-triangle me-1"></i>
-                                Lưu ý: Khi chỉnh sửa nhiều phiếu cùng lúc, tất
-                                cả phiếu sẽ được cập nhật với cùng giá trị mới.
+                        >
+                            <i
+                                class="fas me-2"
+                                :class="{
+                                    'fa-info-circle':
+                                        selectedPaymentRequests.length > 1,
+                                    'fa-edit':
+                                        selectedPaymentRequests.length === 1,
+                                }"
+                            ></i>
+                            <span v-if="selectedPaymentRequests.length === 1">
+                                Đang chỉnh sửa phiếu đề nghị:
+                                <strong>{{
+                                    selectedPaymentRequests[0]
+                                }}</strong>
+                            </span>
+                            <span v-else>
+                                Đang chỉnh sửa
+                                <strong>{{
+                                    selectedPaymentRequests.length
+                                }}</strong>
+                                phiếu đề nghị
+                                <div class="mt-2 small">
+                                    <strong>Lưu ý:</strong> Chỉ có thể chỉnh sửa
+                                    thông tin khách hàng khi chọn nhiều phiếu
+                                </div>
+                            </span>
+                        </div>
+
+                        <div class="row">
+                            <!-- Left Column -->
+                            <div class="col-md-6">
+                                <!-- Mã giải ngân -->
+                                <div class="mb-3">
+                                    <label
+                                        for="editDisbursementCode"
+                                        class="form-label"
+                                    >
+                                        <i
+                                            class="fas fa-barcode me-1 text-warning"
+                                        ></i>
+                                        Mã giải ngân
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="editDisbursementCode"
+                                        v-model="paymentEditForm.ma_giai_ngan"
+                                        placeholder="Nhập mã giải ngân"
+                                        :disabled="
+                                            selectedPaymentRequests.length > 1
+                                        "
+                                    />
+                                    <div
+                                        class="form-text text-warning"
+                                        v-if="
+                                            selectedPaymentRequests.length > 1
+                                        "
+                                    >
+                                        <i
+                                            class="fas fa-exclamation-triangle me-1"
+                                        ></i>
+                                        Không thể chỉnh sửa mã giải ngân khi
+                                        chọn nhiều phiếu
+                                    </div>
+                                </div>
                             </div>
-                        </span>
-                    </div>
 
-                    <!-- เพิ่มฟิลด์ Mã giải ngân ตรงนี้ -->
-                    <div class="mb-3">
-                        <label for="disbursementCode" class="form-label"
-                            >Mã giải ngân</label
-                        >
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="disbursementCode"
-                            v-model="paymentEditForm.ma_giai_ngan"
-                            placeholder="Nhập mã giải ngân"
-                            :disabled="selectedPaymentRequests.length > 1"
-                        />
+                            <!-- Right Column -->
+                            <div class="col-md-6">
+                                <!-- Spacer for alignment -->
+                                <div class="mb-3">
+                                    <div class="h-100 d-flex align-items-end">
+                                        <div
+                                            class="alert alert-light w-100 mb-0"
+                                        >
+                                            <i
+                                                class="fas fa-lightbulb text-warning me-2"
+                                            ></i>
+                                            <small
+                                                >Thông tin khách hàng có thể
+                                                chỉnh sửa cho tất cả phiếu đã
+                                                chọn</small
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                        <div
-                            class="form-text text-warning"
-                            v-if="selectedPaymentRequests.length > 1"
-                        >
-                            Không thể chỉnh sửa mã giải ngân khi chọn nhiều
-                            phiếu
+                        <div class="row">
+                            <!-- Left Column - Individual Customer -->
+                            <div class="col-md-6">
+                                <!-- Khách hàng cá nhân Section -->
+                                <div class="mb-4">
+                                    <h6
+                                        class="border-bottom border-primary text-primary pb-2 mb-3"
+                                    >
+                                        <i class="fas fa-user me-2"></i>
+                                        Khách hàng cá nhân
+                                    </h6>
+
+                                    <!-- Individual Customer Name -->
+                                    <div class="mb-3 customer-search-container">
+                                        <label
+                                            for="editIndividualCustomer"
+                                            class="form-label"
+                                        >
+                                            <i
+                                                class="fas fa-user me-1 text-primary"
+                                            ></i>
+                                            Tên khách hàng cá nhân
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="editIndividualCustomer"
+                                            v-model="
+                                                paymentEditForm.khach_hang_ca_nhan
+                                            "
+                                            @input="
+                                                searchEditIndividualCustomers
+                                            "
+                                            placeholder="Nhập tên khách hàng cá nhân"
+                                            autocomplete="off"
+                                        />
+
+                                        <!-- Individual Customer Dropdown -->
+                                        <div
+                                            v-if="
+                                                showEditIndividualDropdown &&
+                                                editIndividualCustomerResults.length >
+                                                    0
+                                            "
+                                            class="customer-dropdown"
+                                        >
+                                            <div
+                                                v-for="customer in editIndividualCustomerResults"
+                                                :key="customer.ma_kh_ca_nhan"
+                                                class="customer-dropdown-item"
+                                                @click="
+                                                    selectEditIndividualCustomer(
+                                                        customer
+                                                    )
+                                                "
+                                            >
+                                                <div class="customer-name">
+                                                    {{
+                                                        customer.khach_hang_ca_nhan
+                                                    }}
+                                                </div>
+                                                <small class="customer-code">{{
+                                                    customer.ma_kh_ca_nhan
+                                                }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Individual Customer Code -->
+                                    <div class="mb-3">
+                                        <label
+                                            for="editIndividualCustomerCode"
+                                            class="form-label"
+                                        >
+                                            <i
+                                                class="fas fa-id-card me-1 text-primary"
+                                            ></i>
+                                            Mã khách hàng cá nhân
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="editIndividualCustomerCode"
+                                            v-model="
+                                                paymentEditForm.ma_khach_hang_ca_nhan
+                                            "
+                                            placeholder="Nhập mã khách hàng cá nhân"
+                                            readonly
+                                        />
+                                        <div class="form-text">
+                                            <i
+                                                class="fas fa-info-circle text-primary me-1"
+                                            ></i>
+                                            Mã sẽ được điền tự động khi chọn tên
+                                            khách hàng
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Column - Corporate Customer -->
+                            <div class="col-md-6">
+                                <!-- Khách hàng doanh nghiệp Section -->
+                                <div class="mb-4">
+                                    <h6
+                                        class="border-bottom border-success text-success pb-2 mb-3"
+                                    >
+                                        <i class="fas fa-building me-2"></i>
+                                        Khách hàng doanh nghiệp
+                                    </h6>
+
+                                    <!-- Corporate Customer Name -->
+                                    <div class="mb-3 customer-search-container">
+                                        <label
+                                            for="editCorporateCustomer"
+                                            class="form-label"
+                                        >
+                                            <i
+                                                class="fas fa-building me-1 text-success"
+                                            ></i>
+                                            Tên khách hàng doanh nghiệp
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="editCorporateCustomer"
+                                            v-model="
+                                                paymentEditForm.khach_hang_doanh_nghiep
+                                            "
+                                            @input="
+                                                searchEditCorporateCustomers
+                                            "
+                                            placeholder="Nhập tên khách hàng doanh nghiệp"
+                                            autocomplete="off"
+                                        />
+
+                                        <!-- Corporate Customer Dropdown -->
+                                        <div
+                                            v-if="
+                                                showEditCorporateDropdown &&
+                                                editCorporateCustomerResults.length >
+                                                    0
+                                            "
+                                            class="customer-dropdown"
+                                        >
+                                            <div
+                                                v-for="customer in editCorporateCustomerResults"
+                                                :key="
+                                                    customer.ma_kh_doanh_nghiep
+                                                "
+                                                class="customer-dropdown-item"
+                                                @click="
+                                                    selectEditCorporateCustomer(
+                                                        customer
+                                                    )
+                                                "
+                                            >
+                                                <div class="customer-name">
+                                                    {{
+                                                        customer.khach_hang_doanh_nghiep
+                                                    }}
+                                                </div>
+                                                <small class="customer-code">{{
+                                                    customer.ma_kh_doanh_nghiep
+                                                }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Corporate Customer Code -->
+                                    <div class="mb-3">
+                                        <label
+                                            for="editCorporateCustomerCode"
+                                            class="form-label"
+                                        >
+                                            <i
+                                                class="fas fa-id-card me-1 text-success"
+                                            ></i>
+                                            Mã khách hàng doanh nghiệp
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="editCorporateCustomerCode"
+                                            v-model="
+                                                paymentEditForm.ma_khach_hang_doanh_nghiep
+                                            "
+                                            placeholder="Nhập mã khách hàng doanh nghiệp"
+                                            readonly
+                                        />
+                                        <div class="form-text">
+                                            <i
+                                                class="fas fa-info-circle text-success me-1"
+                                            ></i>
+                                            Mã sẽ được điền tự động khi chọn tên
+                                            khách hàng
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selected Payment Requests Preview -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card border-warning">
+                                    <div
+                                        class="card-header bg-warning text-dark"
+                                    >
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-list me-2"></i>
+                                            Phiếu đề nghị đang chỉnh sửa ({{
+                                                selectedPaymentRequests.length
+                                            }})
+                                        </h6>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div
+                                            class="table-responsive"
+                                            style="
+                                                max-height: 200px;
+                                                overflow-y: auto;
+                                            "
+                                        >
+                                            <table
+                                                class="table table-sm table-hover mb-0"
+                                            >
+                                                <thead
+                                                    class="table-light sticky-top"
+                                                >
+                                                    <tr>
+                                                        <th>STT</th>
+                                                        <th>Mã giải ngân</th>
+                                                        <th>
+                                                            Khách hàng hiện tại
+                                                        </th>
+                                                        <th>Vụ đầu tư</th>
+                                                        <th>Loại thanh toán</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr
+                                                        v-for="(
+                                                            code, index
+                                                        ) in selectedPaymentRequests"
+                                                        :key="code"
+                                                    >
+                                                        <td>{{ index + 1 }}</td>
+                                                        <td>
+                                                            <span
+                                                                class="badge bg-primary"
+                                                                >{{
+                                                                    code
+                                                                }}</span
+                                                            >
+                                                        </td>
+                                                        <td>
+                                                            <div
+                                                                v-if="
+                                                                    getPaymentRequestByCode(
+                                                                        code
+                                                                    )
+                                                                "
+                                                            >
+                                                                <div
+                                                                    v-if="
+                                                                        getPaymentRequestByCode(
+                                                                            code
+                                                                        )
+                                                                            .individual_customer
+                                                                    "
+                                                                >
+                                                                    <i
+                                                                        class="fas fa-user text-primary me-1"
+                                                                    ></i>
+                                                                    {{
+                                                                        getPaymentRequestByCode(
+                                                                            code
+                                                                        )
+                                                                            .individual_customer
+                                                                    }}
+                                                                </div>
+                                                                <div
+                                                                    v-else-if="
+                                                                        getPaymentRequestByCode(
+                                                                            code
+                                                                        )
+                                                                            .corporate_customer
+                                                                    "
+                                                                >
+                                                                    <i
+                                                                        class="fas fa-building text-success me-1"
+                                                                    ></i>
+                                                                    {{
+                                                                        getPaymentRequestByCode(
+                                                                            code
+                                                                        )
+                                                                            .corporate_customer
+                                                                    }}
+                                                                </div>
+                                                                <div
+                                                                    v-else
+                                                                    class="text-muted"
+                                                                >
+                                                                    <i
+                                                                        class="fas fa-minus me-1"
+                                                                    ></i>
+                                                                    Chưa có
+                                                                    thông tin
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span
+                                                                v-if="
+                                                                    getPaymentRequestByCode(
+                                                                        code
+                                                                    )
+                                                                "
+                                                            >
+                                                                {{
+                                                                    getPaymentRequestByCode(
+                                                                        code
+                                                                    )
+                                                                        .investment_project ||
+                                                                    "N/A"
+                                                                }}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span
+                                                                v-if="
+                                                                    getPaymentRequestByCode(
+                                                                        code
+                                                                    )
+                                                                "
+                                                                class="badge bg-info"
+                                                            >
+                                                                {{
+                                                                    getPaymentRequestByCode(
+                                                                        code
+                                                                    )
+                                                                        .payment_type ||
+                                                                    "N/A"
+                                                                }}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Validation Summary -->
+                        <div class="row mt-3" v-if="showEditValidationSummary">
+                            <div class="col-12">
+                                <div class="card border-danger">
+                                    <div
+                                        class="card-header bg-danger text-white"
+                                    >
+                                        <h6 class="mb-0">
+                                            <i
+                                                class="fas fa-exclamation-triangle me-2"
+                                            ></i>
+                                            Cần kiểm tra
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="mb-0 text-danger">
+                                            <li v-if="!hasEditFormChanges">
+                                                Vui lòng nhập ít nhất một thông
+                                                tin để cập nhật
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="modal-footer bg-light border-top-0">
+                    <div
+                        class="d-flex justify-content-between align-items-center w-100"
+                    >
+                        <!-- Left side - Status info -->
+                        <div class="text-muted small">
+                            <i class="fas fa-info-circle me-1"></i>
+                            {{
+                                selectedPaymentRequests.length > 0
+                                    ? `Đang chỉnh sửa ${selectedPaymentRequests.length} phiếu đề nghị`
+                                    : "Chưa chọn phiếu đề nghị"
+                            }}
+                        </div>
+
+                        <!-- Right side - Action buttons -->
+                        <div class="d-flex gap-2">
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal"
+                                :disabled="isPaymentUpdating"
+                            >
+                                <i class="fas fa-times me-1"></i>
+                                Hủy
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-warning"
+                                @click="updatePaymentRecords"
+                                :disabled="
+                                    isPaymentUpdating || !hasEditFormChanges
+                                "
+                            >
+                                <span v-if="isPaymentUpdating">
+                                    <span
+                                        class="spinner-border spinner-border-sm me-2"
+                                    ></span>
+                                    Đang lưu...
+                                </span>
+                                <span v-else>
+                                    <i class="fas fa-save me-1"></i>
+                                    Lưu thay đổi
+                                </span>
+                            </button>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="individualCustomer" class="form-label"
-                            >Khách hàng cá nhân</label
-                        >
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="individualCustomer"
-                            v-model="paymentEditForm.khach_hang_ca_nhan"
-                            placeholder="Nhập tên khách hàng cá nhân"
-                        />
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="individualCustomerCode" class="form-label"
-                            >Mã khách hàng cá nhân</label
-                        >
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="individualCustomerCode"
-                            v-model="paymentEditForm.ma_khach_hang_ca_nhan"
-                            placeholder="Nhập mã khách hàng cá nhân"
-                        />
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="corporateCustomer" class="form-label"
-                            >Khách hàng doanh nghiệp</label
-                        >
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="corporateCustomer"
-                            v-model="paymentEditForm.khach_hang_doanh_nghiep"
-                            placeholder="Nhập tên khách hàng doanh nghiệp"
-                        />
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="corporateCustomerCode" class="form-label"
-                            >Mã khách hàng doanh nghiệp</label
-                        >
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="corporateCustomerCode"
-                            v-model="paymentEditForm.ma_khach_hang_doanh_nghiep"
-                            placeholder="Nhập mã khách hàng doanh nghiệp"
-                        />
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button
-                        type="button"
-                        class="btn btn-secondary"
-                        data-bs-dismiss="modal"
-                    >
-                        Hủy
-                    </button>
-                    <button
-                        type="button"
-                        class="btn btn-success"
-                        @click="updatePaymentRecords"
-                        :disabled="isPaymentUpdating"
-                    >
-                        <i class="fas fa-save me-1"></i>
-                        <span v-if="isPaymentUpdating">Đang lưu...</span>
-                        <span v-else>Lưu thay đổi</span>
-                    </button>
                 </div>
             </div>
         </div>
@@ -2951,7 +3728,7 @@
                     ></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info text-white mb-3">
+                    <div class="alert alert-info text-info mb-3">
                         <i class="fas fa-info-circle me-2"></i>
                         <small>
                             Import dữ liệu đề nghị thanh toán. File cần chứa các
@@ -3165,12 +3942,12 @@
                                         "
                                         required
                                     >
-                                        <option value="" disabled>
+                                        <option
+                                            value="Phiếu giao nhận hom giống"
+                                        >
                                             -- Chọn loại thanh toán --
                                         </option>
-                                        <option value="Nghiệm thu dịch vụ">
-                                            Nghiệm thu dịch vụ
-                                        </option>
+
                                         <option
                                             value="Phiếu giao nhận hom giống"
                                         >
@@ -3699,6 +4476,10 @@ export default {
     },
     data() {
         return {
+            // เพิ่ม modalInstances ใน data()
+            modalInstances: [],
+            // Debounced functions
+            debouncedFormatInput: null,
             // Customer search related properties
             individualCustomerResults: [],
             corporateCustomerResults: [],
@@ -3706,6 +4487,14 @@ export default {
             showCorporateDropdown: false,
             individualSearchTimeout: null,
             corporateSearchTimeout: null,
+            // search related properties
+            editIndividualCustomerResults: [],
+            editCorporateCustomerResults: [],
+            showEditIndividualDropdown: false,
+            showEditCorporateDropdown: false,
+            editIndividualSearchTimeout: null,
+            editCorporateSearchTimeout: null,
+            showEditValidationSummary: false,
             // Payment Requests Modal specific data
             paymentRequestsModal: null,
             paymentSearchQuery: "",
@@ -3732,6 +4521,13 @@ export default {
                 notes: "",
                 payment_date: null,
             },
+            // Update Hold Amount Modal
+            holdAmountForm: {
+                don_gia_chat_mia: 0,
+                don_gia_gap_mia: 0,
+                don_gia_van_chuyen_mia: 0,
+            },
+            updateHoldAmountLoading: false,
             // Print related data
             printModal: null,
             printPreviewLoading: false,
@@ -3884,6 +4680,44 @@ export default {
         };
     },
     computed: {
+        hasEditFormChanges() {
+            return Object.values(this.paymentEditForm).some(
+                (value) => value !== null && value !== ""
+            );
+        },
+        totalSelectedThucNhan() {
+            return this.selectedPaymentRequestsData.reduce((total, item) => {
+                return total + parseFloat(item.actual_received || 0);
+            }, 0);
+        },
+
+        totalHarvestCostPerTon() {
+            const chatMia =
+                parseFloat(this.holdAmountForm.don_gia_chat_mia) || 0;
+            const gapMia = parseFloat(this.holdAmountForm.don_gia_gap_mia) || 0;
+            const vanChuyen =
+                parseFloat(this.holdAmountForm.don_gia_van_chuyen_mia) || 0;
+
+            return chatMia + gapMia + vanChuyen;
+        },
+
+        estimatedTotalHoldAmount() {
+            return this.totalSelectedThucNhan * this.totalHarvestCostPerTon;
+        },
+        selectedPaymentRequestsData() {
+            return this.paginatedPaymentRequests.data.filter((item) =>
+                this.selectedPaymentRequests.includes(item.disbursement_code)
+            );
+        },
+        isFormValid() {
+            const chatMia =
+                parseFloat(this.holdAmountForm.don_gia_chat_mia) || 0;
+            const gapMia = parseFloat(this.holdAmountForm.don_gia_gap_mia) || 0;
+            const vanChuyen =
+                parseFloat(this.holdAmountForm.don_gia_van_chuyen_mia) || 0;
+
+            return chatMia >= 0 && gapMia >= 0 && vanChuyen >= 0;
+        },
         printPreviewTotal() {
             return this.printPreviewData.reduce(
                 (sum, item) => sum + (parseFloat(item.total_amount) || 0),
@@ -4449,6 +5283,7 @@ export default {
     beforeUnmount() {
         // Clean up event listener and timeouts
         document.removeEventListener("click", this.hideDropdowns);
+        document.removeEventListener("click", this.hideEditDropdowns);
 
         if (this.individualSearchTimeout) {
             clearTimeout(this.individualSearchTimeout);
@@ -4457,9 +5292,467 @@ export default {
         if (this.corporateSearchTimeout) {
             clearTimeout(this.corporateSearchTimeout);
         }
+
+        // ตรวจสอบและปิด modal instances อย่างปลอดภัย
+        if (Array.isArray(this.modalInstances)) {
+            this.modalInstances.forEach((modalData) => {
+                try {
+                    if (
+                        modalData &&
+                        modalData.instance &&
+                        typeof modalData.instance.dispose === "function"
+                    ) {
+                        modalData.instance.dispose();
+                    }
+                } catch (error) {
+                    console.warn("Error disposing modal:", error);
+                }
+            });
+        }
+
+        // ล้าง array
+        this.modalInstances = [];
+
+        // ปิดและ dispose modal instances แบบเก่า (สำหรับ modals ที่อาจไม่ได้เก็บใน modalInstances)
+        const modalIds = [
+            "updateHoldAmountModal",
+            "paymentRequestsModal",
+            "paymentDetailsModal",
+            "addPaymentModal",
+            "paymentEditModal",
+            "printModal",
+            "importModal",
+            "paymentImportModal",
+            "editModal",
+            "addReceiptModal",
+        ];
+
+        modalIds.forEach((modalId) => {
+            try {
+                const modalElement = document.getElementById(modalId);
+                if (
+                    modalElement &&
+                    typeof bootstrap !== "undefined" &&
+                    bootstrap.Modal
+                ) {
+                    const modal = bootstrap.Modal.getInstance
+                        ? bootstrap.Modal.getInstance(modalElement)
+                        : null;
+                    if (modal && typeof modal.dispose === "function") {
+                        modal.dispose();
+                    }
+                }
+            } catch (error) {
+                console.warn(`Error disposing modal ${modalId}:`, error);
+            }
+        });
+    },
+    // เพิ่มวิธีการปิด modal อย่างปลอดภัย
+    safeDisposeModal(modalId) {
+        try {
+            // หาใน modalInstances array
+            const modalIndex = this.modalInstances.findIndex(
+                (m) => m.element && m.element.id === modalId
+            );
+
+            if (modalIndex !== -1) {
+                const modalData = this.modalInstances[modalIndex];
+                if (
+                    modalData.instance &&
+                    typeof modalData.instance.dispose === "function"
+                ) {
+                    modalData.instance.dispose();
+                }
+                this.modalInstances.splice(modalIndex, 1);
+                return;
+            }
+
+            // หากไม่พบใน array ให้ลองหาจาก DOM
+            const modalElement = document.getElementById(modalId);
+            if (
+                modalElement &&
+                typeof bootstrap !== "undefined" &&
+                bootstrap.Modal
+            ) {
+                const modal = bootstrap.Modal.getInstance
+                    ? bootstrap.Modal.getInstance(modalElement)
+                    : null;
+                if (modal && typeof modal.dispose === "function") {
+                    modal.dispose();
+                }
+            }
+        } catch (error) {
+            console.warn(`Error disposing modal ${modalId}:`, error);
+        }
     },
 
     methods: {
+        /**
+         * Search individual customers for edit modal
+         */
+        searchEditIndividualCustomers() {
+            // Clear previous timeout
+            if (this.editIndividualSearchTimeout) {
+                clearTimeout(this.editIndividualSearchTimeout);
+            }
+
+            const query = this.paymentEditForm.khach_hang_ca_nhan;
+
+            if (!query || query.length < 2) {
+                this.editIndividualCustomerResults = [];
+                this.showEditIndividualDropdown = false;
+                return;
+            }
+
+            // Debounce search
+            this.editIndividualSearchTimeout = setTimeout(async () => {
+                try {
+                    const response = await axios.get(
+                        "/api/search-individual-customers",
+                        {
+                            params: { query },
+                            headers: {
+                                Authorization: "Bearer " + this.store.getToken,
+                            },
+                        }
+                    );
+
+                    if (response.data.success) {
+                        this.editIndividualCustomerResults = response.data.data;
+                        this.showEditIndividualDropdown = true;
+                    }
+                } catch (error) {
+                    console.error(
+                        "Error searching individual customers:",
+                        error
+                    );
+                    this.editIndividualCustomerResults = [];
+                    this.showEditIndividualDropdown = false;
+                }
+            }, 300);
+        },
+
+        /**
+         * Search corporate customers for edit modal
+         */
+        searchEditCorporateCustomers() {
+            // Clear previous timeout
+            if (this.editCorporateSearchTimeout) {
+                clearTimeout(this.editCorporateSearchTimeout);
+            }
+
+            const query = this.paymentEditForm.khach_hang_doanh_nghiep;
+
+            if (!query || query.length < 2) {
+                this.editCorporateCustomerResults = [];
+                this.showEditCorporateDropdown = false;
+                return;
+            }
+
+            // Debounce search
+            this.editCorporateSearchTimeout = setTimeout(async () => {
+                try {
+                    const response = await axios.get(
+                        "/api/search-corporate-customers",
+                        {
+                            params: { query },
+                            headers: {
+                                Authorization: "Bearer " + this.store.getToken,
+                            },
+                        }
+                    );
+
+                    if (response.data.success) {
+                        this.editCorporateCustomerResults = response.data.data;
+                        this.showEditCorporateDropdown = true;
+                    }
+                } catch (error) {
+                    console.error(
+                        "Error searching corporate customers:",
+                        error
+                    );
+                    this.editCorporateCustomerResults = [];
+                    this.showEditCorporateDropdown = false;
+                }
+            }, 300);
+        },
+
+        /**
+         * Select individual customer for edit modal
+         */
+        selectEditIndividualCustomer(customer) {
+            this.paymentEditForm.khach_hang_ca_nhan =
+                customer.khach_hang_ca_nhan;
+            this.paymentEditForm.ma_khach_hang_ca_nhan = customer.ma_kh_ca_nhan;
+            this.editIndividualCustomerResults = [];
+            this.showEditIndividualDropdown = false;
+        },
+
+        /**
+         * Select corporate customer for edit modal
+         */
+        selectEditCorporateCustomer(customer) {
+            this.paymentEditForm.khach_hang_doanh_nghiep =
+                customer.khach_hang_doanh_nghiep;
+            this.paymentEditForm.ma_khach_hang_doanh_nghiep =
+                customer.ma_kh_doanh_nghiep;
+            this.editCorporateCustomerResults = [];
+            this.showEditCorporateDropdown = false;
+        },
+
+        /**
+         * Get payment request by disbursement code
+         */
+        getPaymentRequestByCode(code) {
+            return this.paymentRequests.find(
+                (item) => item.disbursement_code === code
+            );
+        },
+
+        /**
+         * Hide edit dropdowns when clicking outside
+         */
+        hideEditDropdowns() {
+            this.showEditIndividualDropdown = false;
+            this.showEditCorporateDropdown = false;
+        },
+
+        // Debounce function เพื่อป้องกัน multiple clicks
+        debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        },
+
+        // แก้ไข method สำหรับ currency input
+        formatCurrencyInput: function (event, fieldName) {
+            // ใช้ debounce เพื่อลดการเรียกใช้
+            if (!this.debouncedFormatInput) {
+                this.debouncedFormatInput = this.debounce(
+                    (event, fieldName) => {
+                        let value = event.target.value;
+
+                        // Remove non-numeric characters except dots
+                        value = value.replace(/[^0-9.]/g, "");
+
+                        // Ensure only one decimal point
+                        const parts = value.split(".");
+                        if (parts.length > 2) {
+                            value = parts[0] + "." + parts.slice(1).join("");
+                        }
+
+                        // Limit decimal places to 2
+                        if (parts[1] && parts[1].length > 2) {
+                            value = parts[0] + "." + parts[1].substring(0, 2);
+                        }
+
+                        // Update the model value as number
+                        this.holdAmountForm[fieldName] = value
+                            ? parseFloat(value) || 0
+                            : 0;
+
+                        // Update the input display value
+                        event.target.value = value;
+                    },
+                    300
+                );
+            }
+
+            this.debouncedFormatInput(event, fieldName);
+        },
+
+        removeFormatting(event, fieldName) {
+            // When focused, show raw number without formatting
+            const value = this.holdAmountForm[fieldName];
+            event.target.value = value || "";
+        },
+
+        addFormatting(event, fieldName) {
+            // When blurred, format the number for display
+            const value = this.holdAmountForm[fieldName];
+            if (value) {
+                event.target.value = this.formatNumber(value);
+            }
+        },
+
+        formatNumber(number) {
+            if (!number) return "";
+            return new Intl.NumberFormat("vi-VN").format(number);
+        },
+        openUpdateHoldAmountModal() {
+            if (this.selectedPaymentRequests.length === 0) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "Chưa chọn phiếu đề nghị",
+                    text: "Vui lòng chọn ít nhất một phiếu đề nghị để điều chỉnh Amount",
+                });
+                return;
+            }
+
+            // Reset form với giá trị số
+            this.holdAmountForm = {
+                don_gia_chat_mia: 0,
+                don_gia_gap_mia: 0,
+                don_gia_van_chuyen_mia: 0,
+            };
+
+            // Import Bootstrap vàสร้าง modal
+            import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                (bootstrap) => {
+                    const modalElement = document.getElementById(
+                        "updateHoldAmountModal"
+                    );
+                    if (modalElement) {
+                        // ตรวจสอบและ dispose modal เก่า
+                        const existingModal = bootstrap.Modal.getInstance
+                            ? bootstrap.Modal.getInstance(modalElement)
+                            : null;
+
+                        if (existingModal) {
+                            existingModal.dispose();
+                        }
+
+                        // สร้าง modal ใหม่
+                        this.$nextTick(() => {
+                            const modal = new bootstrap.Modal(modalElement, {
+                                backdrop: "static",
+                                keyboard: false,
+                                focus: true,
+                            });
+
+                            // เก็บ modal instance
+                            this.modalInstances.push({
+                                element: modalElement,
+                                instance: modal,
+                            });
+
+                            modal.show();
+
+                            // Focus on first input after modal is fully shown
+                            modalElement.addEventListener(
+                                "shown.bs.modal",
+                                () => {
+                                    const firstInput =
+                                        document.getElementById(
+                                            "donGiaChatMia"
+                                        );
+                                    if (firstInput) {
+                                        firstInput.focus();
+                                    }
+                                },
+                                { once: true }
+                            );
+                        });
+                    }
+                }
+            );
+        },
+
+        calculateNewHoldAmount(actualReceived) {
+            return (
+                this.totalHarvestCostPerTon * parseFloat(actualReceived || 0)
+            );
+        },
+
+        calculateNewRemainingAmount(item) {
+            const newHoldAmount = this.calculateNewHoldAmount(
+                item.actual_received
+            );
+            return (
+                item.total_amount -
+                newHoldAmount -
+                item.total_deduction +
+                item.total_interest
+            );
+        },
+
+        async updateHoldAmount() {
+            if (!this.isFormValid) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Dữ liệu không hợp lệ",
+                    text: "Vui lòng nhập đúng các giá trị chi phí thu hoạch",
+                });
+                return;
+            }
+
+            try {
+                this.updateHoldAmountLoading = true;
+
+                const response = await axios.put(
+                    "/api/disbursements-homgiong/update-hold-amount",
+                    {
+                        disbursement_codes: this.selectedPaymentRequests,
+                        don_gia_chat_mia: this.holdAmountForm.don_gia_chat_mia,
+                        don_gia_gap_mia: this.holdAmountForm.don_gia_gap_mia,
+                        don_gia_van_chuyen_mia:
+                            this.holdAmountForm.don_gia_van_chuyen_mia,
+                    }
+                );
+
+                if (response.data.success) {
+                    // Import Bootstrap และปิด modal
+                    import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                        (bootstrap) => {
+                            const modalElement = document.getElementById(
+                                "updateHoldAmountModal"
+                            );
+                            if (modalElement) {
+                                const modal = bootstrap.Modal.getInstance
+                                    ? bootstrap.Modal.getInstance(modalElement)
+                                    : new bootstrap.Modal(modalElement);
+
+                                if (modal) {
+                                    modal.hide();
+
+                                    // รอให้ modal ปิดสมบูรณ์แล้วค่อย dispose
+                                    modalElement.addEventListener(
+                                        "hidden.bs.modal",
+                                        () => {
+                                            if (modal.dispose) {
+                                                modal.dispose();
+                                            }
+                                        },
+                                        { once: true }
+                                    );
+                                }
+                            }
+                        }
+                    );
+
+                    // Clear selections
+                    this.selectedPaymentRequests = [];
+
+                    // Reload payment requests data
+                    await this.fetchPaymentRequests();
+
+                    Swal.fire({
+                        icon: "success",
+                        title: "Cập nhật thành công!",
+                        text: `Đã cập nhật ${response.data.updated_count} phiếu đề nghị`,
+                        showConfirmButton: false,
+                        timer: 2000,
+                    });
+                }
+            } catch (error) {
+                console.error("Error updating hold amount:", error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi cập nhật",
+                    text:
+                        error.response?.data?.message ||
+                        "Có lỗi xảy ra khi cập nhật Amount",
+                });
+            } finally {
+                this.updateHoldAmountLoading = false;
+            }
+        },
         async openPrintModal() {
             if (this.selectedPaymentRequests.length === 0) {
                 Swal.fire({
@@ -4701,8 +5994,14 @@ export default {
                                     keyboard: false,
                                 }
                             );
+
+                            // เก็บ modal instance
+                            this.modalInstances.push({
+                                element: modalElement,
+                                instance: this.paymentRequestsModal,
+                            });
+
                             this.paymentRequestsModal.show();
-                            // เพิ่มการเรียก fetchPaymentRequests ที่นี่
                             this.fetchPaymentRequests();
                         }
                     }
@@ -5030,6 +6329,13 @@ export default {
                                     keyboard: false,
                                 }
                             );
+
+                            // เก็บ modal instance
+                            this.modalInstances.push({
+                                element: modalElement,
+                                instance: this.paymentDetailsModal,
+                            });
+
                             this.paymentDetailsModal.show();
                         }
                     }
@@ -5098,7 +6404,7 @@ export default {
             if (!this.isAuthenticated()) return;
             try {
                 const response = await axios.get(
-                    `/api/payment-requests/${this.document.payment_code}/history`,
+                    `/api/payment-requests-homgiong/${this.document.payment_code}/history`,
                     {
                         headers: {
                             Authorization: "Bearer " + this.store.getToken,
@@ -5261,7 +6567,7 @@ export default {
 
                 // Call API to delete the document
                 const response = await axios.delete(
-                    `/api/payment-requests/${this.document.payment_code}`,
+                    `/api/payment-requests-homgiong/${this.document.payment_code}`,
                     {
                         headers: {
                             Authorization: "Bearer " + this.store.getToken,
@@ -5368,7 +6674,7 @@ export default {
                 }
 
                 const response = await axios.put(
-                    `/api/payment-requests/${this.document.payment_code}/status`,
+                    `/api/payment-requests-homgiong/${this.document.payment_code}/status`,
                     payload,
                     {
                         headers: {
@@ -5398,6 +6704,8 @@ export default {
                             confirmButton: "btn btn-success",
                         },
                     });
+                    // *** อัปเดต payment date ใน payment requests modal ***
+                    this.updatePaymentRequestsModalPaymentDate();
 
                     // ดึงข้อมูลเอกสารทั้งหมดใหม่เพื่อให้แน่ใจว่าทุกส่วนอัปเดต
                     this.fetchDocument();
@@ -5426,7 +6734,7 @@ export default {
             if (!this.isAuthenticated()) return;
             try {
                 const response = await axios.put(
-                    `/api/payment-requests/${this.document.payment_code}/basic-info`,
+                    `/api/payment-requests-homgiong/${this.document.payment_code}/basic-info`,
                     {
                         so_to_trinh: this.document.proposal_number,
                         ngay_tao: this.document.created_at,
@@ -5459,6 +6767,8 @@ export default {
                             confirmButton: "btn btn-success",
                         },
                     });
+                    // *** NEW: อัปเดต payment date ใน payment requests modal ***
+                    this.updatePaymentRequestsModalPaymentDate();
 
                     // Update local data if needed
                     this.fetchDocument(); // Refresh data to ensure payment_date is updated
@@ -5489,6 +6799,23 @@ export default {
                     customClass: {
                         confirmButton: "btn btn-danger",
                     },
+                });
+            }
+        },
+        // *** NEW METHOD: อัปเดต payment date ใน payment requests modal ***
+        updatePaymentRequestsModalPaymentDate() {
+            if (this.paymentRequests && this.paymentRequests.length > 0) {
+                this.paymentRequests.forEach((request) => {
+                    if (
+                        request.ma_trinh_thanh_toan ===
+                        this.document.payment_code
+                    ) {
+                        request.ngay_thanh_toan = this.document.payment_date;
+                        request.payment_date_formatted = this.document
+                            .payment_date
+                            ? this.formatDate(this.document.payment_date)
+                            : "Chưa có";
+                    }
                 });
             }
         },
@@ -5663,6 +6990,13 @@ export default {
                 ma_khach_hang_doanh_nghiep: "",
             };
 
+            // Reset search results
+            this.editIndividualCustomerResults = [];
+            this.editCorporateCustomerResults = [];
+            this.showEditIndividualDropdown = false;
+            this.showEditCorporateDropdown = false;
+            this.showEditValidationSummary = false;
+
             // If only one record is selected, populate the form with its data
             if (this.selectedPaymentRequests.length === 1) {
                 const selectedCode = this.selectedPaymentRequests[0];
@@ -5671,9 +7005,8 @@ export default {
                 );
 
                 if (selectedRecord) {
-                    // Populate form with existing data
                     this.paymentEditForm = {
-                        ma_giai_ngan: selectedRecord.disbursement_code || "", // เติมข้อมูลรหัสเบิกจ่ายเดิม
+                        ma_giai_ngan: selectedRecord.disbursement_code || "",
                         khach_hang_ca_nhan:
                             selectedRecord.individual_customer || "",
                         ma_khach_hang_ca_nhan:
@@ -5684,12 +7017,9 @@ export default {
                             selectedRecord.corporate_customer_code || "",
                     };
                 }
-            } else {
-                // If multiple records selected, show a message in the modal
-                // This will be handled in the modal template
             }
 
-            // Show the modal using Bootstrap's modal
+            // Show the modal
             if (!this.paymentEditModal) {
                 import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
                     (bootstrap) => {
@@ -5697,7 +7027,11 @@ export default {
                             document.getElementById("paymentEditModal");
                         if (modalElement) {
                             this.paymentEditModal = new bootstrap.Modal(
-                                modalElement
+                                modalElement,
+                                {
+                                    backdrop: "static",
+                                    keyboard: false,
+                                }
                             );
                             this.paymentEditModal.show();
                         }
@@ -5732,23 +7066,18 @@ export default {
             try {
                 // Add financial data to the request
                 const financialData = {
-                    tong_tien: this.totalPaymentAmount,
-                    tong_tien_tam_giu: this.totalHoldAmount,
-                    tong_tien_khau_tru: this.totalDeductionAmount,
-                    tong_tien_lai_suat: this.totalInterestAmount,
-                    tong_tien_thanh_toan_con_lai: this.totalRemainingAmount,
-                    payment_date: this.document.payment_date,
+                    tong_tien: this.document.total_amount,
+                    tong_tien_tam_giu: this.document.total_hold_amount,
+                    tong_tien_khau_tru: this.document.total_deduction,
+                    tong_tien_lai_suat: this.document.total_interest,
+                    tong_tien_thanh_toan_con_lai: this.document.total_remaining,
                 };
 
                 const response = await axios.put(
-                    `/api/disbursements/bulk`,
+                    `/api/disbursements-homgiong/bulk`,
                     {
                         disbursement_codes: this.selectedPaymentRequests,
-                        data: this.paymentEditForm,
-                        original_code:
-                            this.selectedPaymentRequests.length === 1
-                                ? this.selectedPaymentRequests[0]
-                                : null,
+                        update_data: this.paymentEditForm,
                         financial_data: financialData, // Add financial data
                     },
                     {
@@ -5817,7 +7146,7 @@ export default {
             if (result.isConfirmed) {
                 try {
                     const response = await axios.delete(
-                        `/api/disbursements/bulk`,
+                        `/api/disbursements-homgiong/bulk`,
                         {
                             data: {
                                 disbursement_codes:
@@ -5846,6 +7175,7 @@ export default {
                         );
                         // Refresh data
                         this.fetchPaymentRequests();
+                        this.fetchDocument(); // Refresh document details as well
                     } else {
                         throw new Error(
                             response.data.message || "Unknown error"
@@ -5967,7 +7297,7 @@ export default {
 
             try {
                 const response = await axios.post(
-                    `/api/disbursements/import`,
+                    "/api/disbursements-homgiong/import",
                     formData,
                     {
                         headers: {
@@ -6071,28 +7401,50 @@ export default {
          * Fetch payment requests data
          */
         async fetchPaymentRequests() {
+            if (!this.isAuthenticated()) return;
+
+            this.paymentRequestsLoading = true;
             try {
                 const response = await axios.get(
-                    `/api/payment-requests/${this.document.payment_code}/disbursements-homgiong`,
-                    {
-                        headers: {
-                            Authorization: "Bearer " + this.store.getToken,
-                        },
-                    }
+                    `/api/payment-requests/${this.document.payment_code}/disbursements-homgiong`
                 );
 
                 if (response.data.success) {
-                    this.paymentRequests = response.data.data;
+                    // อัปเดต payment requests และซิงค์ payment date จาก document หลัก
+                    this.paymentRequests = response.data.data.map(
+                        (request) => ({
+                            ...request,
+                            ngay_thanh_toan:
+                                request.ngay_thanh_toan ||
+                                this.document.payment_date, // ซิงค์จาก document หลัก
+                            payment_date_formatted:
+                                request.ngay_thanh_toan ||
+                                this.document.payment_date
+                                    ? this.formatDate(
+                                          request.ngay_thanh_toan ||
+                                              this.document.payment_date
+                                      )
+                                    : "Chưa có",
+                        })
+                    );
+
+                    this.updatePaymentFilterValues();
                 } else {
-                    this.showError("Failed to fetch payment requests data");
+                    console.error(
+                        "Failed to fetch payment requests:",
+                        response.data.message
+                    );
+                    this.paymentRequests = [];
                 }
             } catch (error) {
                 console.error("Error fetching payment requests:", error);
+                this.paymentRequests = [];
+
                 if (error.response?.status === 401) {
                     this.handleAuthError();
-                } else {
-                    this.showError("Error loading payment requests data");
                 }
+            } finally {
+                this.paymentRequestsLoading = false;
             }
         },
 
@@ -6307,38 +7659,53 @@ export default {
             return "";
         },
 
-        saveNote() {
+        async saveNote() {
             if (!this.isAuthenticated()) return;
-            axios
-                .post(
-                    `/api/payment-requests/${this.$route.params.id}/notes`,
-                    { note: this.noteText },
+            try {
+                // เปลี่ยนจาก `/api/payment-requests/${this.document.payment_code}/notes`
+                // เป็น `/api/payment-requests-homgiong/${this.document.payment_code}/notes`
+                const response = await axios.post(
+                    `/api/payment-requests-homgiong/${this.document.payment_code}/notes`,
+                    {
+                        note: this.document.notes,
+                    },
                     {
                         headers: {
                             Authorization: "Bearer " + this.store.getToken,
                         },
                     }
-                )
-                .then((response) => {
-                    if (response.data.success) {
-                        this.document.notes = this.noteText;
-                        this.isEditingNote = false;
-                        this.showSuccess("Ghi chú đã được cập nhật");
-                        // ลบบรรทัดนี้ออก - ไม่ต้อง refresh data เพื่อดึง history
-                        // this.fetchDocument(); // Refresh data to get updated history
-                    } else {
-                        this.showError(
-                            response.data.message || "Không thể lưu ghi chú"
-                        );
-                    }
-                })
-                .catch((error) => {
-                    console.error("Error saving note:", error);
-                    this.showError("Lỗi khi lưu ghi chú");
-                    if (error.response?.status === 401) {
-                        this.handleAuthError();
-                    }
+                );
+
+                if (response.data.success) {
+                    Swal.fire({
+                        title: "Thành công",
+                        text: "Ghi chú đã được lưu thành công",
+                        icon: "success",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
+                }
+            } catch (error) {
+                console.error("Error saving note:", error);
+
+                Swal.fire({
+                    title: "Lỗi",
+                    text: "Đã xảy ra lỗi khi lưu ghi chú",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
                 });
+
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            }
         },
         cancelEditNote() {
             this.noteText = this.document.notes || "";

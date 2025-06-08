@@ -304,7 +304,9 @@
                                 <button
                                     v-if="
                                         document.status === 'processing' &&
-                                        hasPermission('submit_to_accounting')
+                                        hasPermission(
+                                            'nộp phiếu trình thanh toán'
+                                        )
                                     "
                                     class="button-30-blue"
                                     @click="
@@ -323,7 +325,9 @@
                                 <button
                                     v-if="
                                         document.status === 'submitted' &&
-                                        hasPermission('submit_to_accounting')
+                                        hasPermission(
+                                            'nộp phiếu trình thanh toán'
+                                        )
                                     "
                                     type="button"
                                     class="button-30-yellow"
@@ -1795,6 +1799,19 @@
                                 <div
                                     class="d-flex gap-2 justify-content-center"
                                 >
+                                    <button
+                                        v-if="
+                                            hasPermission(
+                                                'add_phieu_trinh_thanhtoan_dv'
+                                            )
+                                        "
+                                        class="btn btn-primary btn-sm"
+                                        title="Thêm phiếu đề nghị"
+                                        @click="openAddPaymentRequestModal"
+                                    >
+                                        <i class="fa-solid fa-list-check"></i>
+                                        Tạo PDNTT
+                                    </button>
                                     <button
                                         v-if="
                                             hasPermission(

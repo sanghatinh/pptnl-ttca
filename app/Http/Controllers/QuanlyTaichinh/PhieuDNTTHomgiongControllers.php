@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Schema; 
 class PhieuDNTTHomgiongControllers extends Controller
 {
     /**
@@ -191,4 +191,952 @@ class PhieuDNTTHomgiongControllers extends Controller
         ], 500);
     }
 }
+
+
+/**
+ * Update hold amount for selected payment requests based on harvest costs
+ *
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function updateHoldAmount(Request $request)
+{
+    try {
+        // Validate input
+        $request->validate([
+            'disbursement_codes' => 'required|array|min:1',
+            'disbursement_codes.*' => 'string',
+            'don_gia_chat_mia' => 'required|numeric|min:0',
+            'don_gia_gap_mia' => 'required|numeric|min:0',
+            'don_gia_van_chuyen_mia' => 'required|numeric|min:0',
+        ]);
+        
+        $disbursementCodes = $request->input('disbursement_codes');
+        $donGiaChatMia = $request->input('don_gia_chat_mia');
+        $donGiaGapMia = $request->input('don_gia_gap_mia');
+        $donGiaVanChuyenMia = $request->input('don_gia_van_chuyen_mia');
+        
+        // Calculate total harvest cost per unit
+        $tongChiPhiThuHoach = $donGiaChatMia + $donGiaGapMia + $donGiaVanChuyenMia;
+        
+        DB::beginTransaction();
+        
+        $updatedCount = 0;
+        $updateResults = [];
+        
+        // Update each selected disbursement request
+        foreach ($disbursementCodes as $disbursementCode) {
+            // Get the disbursement request
+            $disbursementRequest = DB::table('tb_de_nghi_thanhtoan_homgiong')
+                ->where('ma_giai_ngan', $disbursementCode)
+                ->first();
+            
+            if (!$disbursementRequest) {
+                continue;
+            }
+            
+            // Calculate new hold amount: Chi phí thu hoạch * Thực nhận
+            $newHoldAmount = $tongChiPhiThuHoach * $disbursementRequest->thuc_nhan;
+            
+            // Calculate new remaining amount
+            $newRemainingAmount = $disbursementRequest->tong_tien 
+                - $newHoldAmount 
+                - $disbursementRequest->tong_tien_khau_tru 
+                + $disbursementRequest->tong_tien_lai_suat;
+            
+            // Update the disbursement request - ลบ updated_at ออก
+            $affected = DB::table('tb_de_nghi_thanhtoan_homgiong')
+                ->where('ma_giai_ngan', $disbursementCode)
+                ->update([
+                    'tong_tien_tam_giu' => $newHoldAmount,
+                    'tong_tien_thanh_toan_con_lai' => $newRemainingAmount
+                    // ลบ 'updated_at' => now() ออก
+                ]);
+            
+            if ($affected > 0) {
+                $updatedCount++;
+                $updateResults[] = [
+                    'ma_giai_ngan' => $disbursementCode,
+                    'thuc_nhan' => $disbursementRequest->thuc_nhan,
+                    'old_hold_amount' => $disbursementRequest->tong_tien_tam_giu,
+                    'new_hold_amount' => $newHoldAmount,
+                    'new_remaining_amount' => $newRemainingAmount
+                ];
+            }
+        }
+        
+        DB::commit();
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Đã cập nhật thành công {$updatedCount} phiếu đề nghị",
+            'updated_count' => $updatedCount,
+            'calculation_details' => [
+                'don_gia_chat_mia' => $donGiaChatMia,
+                'don_gia_gap_mia' => $donGiaGapMia,
+                'don_gia_van_chuyen_mia' => $donGiaVanChuyenMia,
+                'tong_chi_phi_thu_hoach' => $tongChiPhiThuHoach
+            ],
+            'update_results' => $updateResults
+        ]);
+        
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Dữ liệu không hợp lệ',
+            'errors' => $e->errors()
+        ], 422);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error updating hold amount for homgiong: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi cập nhật tổng tiền tạm giữ: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+/**
+ * Bulk delete payment requests for homgiong
+ *
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function bulkDelete(Request $request)
+{
+    try {
+        // Validate input
+        $request->validate([
+            'disbursement_codes' => 'required|array',
+            'disbursement_codes.*' => 'string'
+        ]);
+        
+        $disbursementCodes = $request->input('disbursement_codes');
+        
+        DB::beginTransaction();
+        
+        // Delete the payment requests and their associated logs
+        $deletedCount = 0;
+        foreach ($disbursementCodes as $code) {
+            // Find the payment request
+            $paymentRequest = PhieudenghithanhtoanHomgiong::where('ma_giai_ngan', $code)->first();
+            
+            if ($paymentRequest) {
+                // Delete associated logs in logs_phieu_trinh_thanh_toan_homgiong
+                DB::table('logs_phieu_trinh_thanh_toan_homgiong')
+                    ->where('ma_de_nghi_giai_ngan', $code)
+                    ->update(['ma_de_nghi_giai_ngan' => null]);
+                
+                // Delete the payment request itself
+                $paymentRequest->delete();
+                $deletedCount++;
+            }
+        }
+        
+        DB::commit();
+        
+        return response()->json([
+            'success' => true,
+            'message' => "{$deletedCount} payment requests deleted successfully",
+            'deleted_count' => $deletedCount
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error bulk deleting payment requests homgiong: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting payment requests',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+/**
+ * Bulk update payment requests for homgiong
+ *
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function bulkUpdate(Request $request)
+{
+    try {
+        // Validate input
+        $request->validate([
+            'disbursement_codes' => 'required|array',
+            'disbursement_codes.*' => 'string',
+            'update_data' => 'required|array',
+        ]);
+        
+        $disbursementCodes = $request->input('disbursement_codes');
+        $updateData = $request->input('update_data');
+        
+        DB::beginTransaction();
+        
+        $updatedCount = 0;
+        
+        foreach ($disbursementCodes as $code) {
+            $paymentRequest = PhieudenghithanhtoanHomgiong::where('ma_giai_ngan', $code)->first();
+            
+            if ($paymentRequest) {
+                // Handle disbursement code changes
+                if (isset($updateData['ma_giai_ngan']) && $updateData['ma_giai_ngan'] !== $code) {
+                    // Create new record with new disbursement code
+                    $newPaymentRequestData = $paymentRequest->toArray();
+                    unset($newPaymentRequestData['id']);
+                    
+                    // Update only the allowed fields
+                    $allowedFields = [
+                        'ma_giai_ngan',
+                        'khach_hang_ca_nhan',
+                        'ma_khach_hang_ca_nhan', 
+                        'khach_hang_doanh_nghiep',
+                        'ma_khach_hang_doanh_nghiep'
+                    ];
+                    
+                    foreach ($allowedFields as $field) {
+                        if (isset($updateData[$field])) {
+                            $newPaymentRequestData[$field] = $updateData[$field];
+                        }
+                    }
+                    
+                    // Create new record
+                    PhieudenghithanhtoanHomgiong::create($newPaymentRequestData);
+                    
+                    // Update logs to point to new disbursement code
+                    DB::table('logs_phieu_trinh_thanh_toan_homgiong')
+                        ->where('ma_de_nghi_giai_ngan', $code)
+                        ->update(['ma_de_nghi_giai_ngan' => $updateData['ma_giai_ngan']]);
+                    
+                    // Delete the old record
+                    $paymentRequest->delete();
+                    
+                    $updatedCount = 1;
+                } else {
+                    // Regular update without changing disbursement code
+                    $fieldsToUpdate = [];
+                    
+                    // Only allow specific fields to be updated
+                    $allowedFields = [
+                        'khach_hang_ca_nhan',
+                        'ma_khach_hang_ca_nhan',
+                        'khach_hang_doanh_nghiep', 
+                        'ma_khach_hang_doanh_nghiep'
+                    ];
+                    
+                    foreach ($allowedFields as $field) {
+                        if (isset($updateData[$field]) && !is_null($updateData[$field]) && $updateData[$field] !== '') {
+                            $fieldsToUpdate[$field] = $updateData[$field];
+                        }
+                    }
+                    
+                    if (!empty($fieldsToUpdate)) {
+                        $paymentRequest->update($fieldsToUpdate);
+                        $updatedCount++;
+                    }
+                }
+            }
+        }
+        
+        DB::commit();
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Đã cập nhật thành công {$updatedCount} phiếu đề nghị",
+            'updated_count' => $updatedCount
+        ]);
+        
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Dữ liệu không hợp lệ',
+            'errors' => $e->errors()
+        ], 422);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error bulk updating payment requests homgiong: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi cập nhật phiếu đề nghị: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Import payment requests from CSV/Excel file
+ *
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function import(Request $request)
+{
+    try {
+        // Validate input
+        $request->validate([
+            'file' => 'required|file|mimes:csv,xlsx,xls|max:10240', // 10MB max
+            'payment_code' => 'required|string' // Parent payment request code
+        ]);
+        
+        $file = $request->file('file');
+        $paymentCode = $request->input('payment_code');
+        
+        // Check if parent payment request exists
+        $parentPaymentRequest = DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $paymentCode)
+            ->first();
+            
+        if (!$parentPaymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parent payment request not found',
+                'errors' => ['Invalid payment code']
+            ], 404);
+        }
+        
+        $filePath = $file->getPathname();
+        $extension = $file->getClientOriginalExtension();
+        
+        // Process the file based on its extension
+        if ($extension == 'csv') {
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Csv');
+        } else {
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+        }
+        
+        $spreadsheet = $reader->load($filePath);
+        $worksheet = $spreadsheet->getActiveSheet();
+        $rows = $worksheet->toArray();
+        
+        // Get headers from first row
+        if (empty($rows) || count($rows) < 2) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File must contain at least a header row and one data row',
+                'errors' => ['Invalid file format']
+            ], 400);
+        }
+        
+        $headers = array_map('trim', $rows[0]);
+        
+        // Required columns for homgiong import
+        $requiredColumns = [
+            'ma_giai_ngan',
+            'vu_dau_tu',
+            'loai_thanh_toan'
+        ];
+        
+        // Optional columns
+        $optionalColumns = [
+            'khach_hang_ca_nhan',
+            'ma_khach_hang_ca_nhan',
+            'khach_hang_doanh_nghiep',
+            'ma_khach_hang_doanh_nghiep',
+         
+        ];
+        
+        // Find column indices
+        $columnIndices = [];
+        foreach (array_merge($requiredColumns, $optionalColumns) as $column) {
+            $index = array_search(strtolower($column), array_map('strtolower', $headers));
+            if ($index === false && in_array($column, $requiredColumns)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Required column '{$column}' not found in file",
+                    'errors' => ['Missing required columns']
+                ], 400);
+            }
+            $columnIndices[$column] = $index;
+        }
+        
+        // Skip header row
+        array_shift($rows);
+        
+        $importedCount = 0;
+        $duplicateCount = 0;
+        $errorCount = 0;
+        $errors = [];
+        
+        DB::beginTransaction();
+        
+        try {
+            foreach ($rows as $rowIndex => $row) {
+                if (empty(array_filter($row))) continue; // Skip empty rows
+                
+                $rowNumber = $rowIndex + 2; // +2 because we start from 1 and skipped header
+                
+                // Extract required data
+                $maGiaiNgan = trim($row[$columnIndices['ma_giai_ngan']] ?? '');
+                $vuDauTu = trim($row[$columnIndices['vu_dau_tu']] ?? '');
+                $loaiThanhToan = trim($row[$columnIndices['loai_thanh_toan']] ?? '');
+                
+                // Validate required fields
+                if (empty($maGiaiNgan) || empty($vuDauTu) || empty($loaiThanhToan)) {
+                    $errors[] = "Row {$rowNumber}: Missing required fields";
+                    $errorCount++;
+                    continue;
+                }
+                
+                // Check for duplicates
+                $existingRecord = PhieudenghithanhtoanHomgiong::where('ma_giai_ngan', $maGiaiNgan)->first();
+                if ($existingRecord) {
+                    $errors[] = "Row {$rowNumber}: Disbursement code '{$maGiaiNgan}' already exists";
+                    $duplicateCount++;
+                    continue;
+                }
+                
+                // Prepare data for creation
+                $paymentRequestData = [
+                    'ma_giai_ngan' => $maGiaiNgan,
+                    'ma_trinh_thanh_toan' => $paymentCode,
+                    'vu_dau_tu' => $vuDauTu,
+                    'loai_thanh_toan' => $loaiThanhToan,
+                    'tong_tien' => 0, // Default values
+                    'tong_tien_tam_giu' => 0,
+                    'tong_tien_khau_tru' => 0,
+                    'tong_tien_lai_suat' => 0,
+                    'tong_tien_thanh_toan_con_lai' => 0,
+                    'trang_thai_thanh_toan' => 'processing'
+                ];
+                
+                // Add optional fields if available
+                foreach ($optionalColumns as $column) {
+                    if ($columnIndices[$column] !== false && isset($row[$columnIndices[$column]])) {
+                        $value = trim($row[$columnIndices[$column]]);
+                        if (!empty($value)) {
+                            $paymentRequestData[$column] = $value;
+                        }
+                    }
+                }
+                
+                // Create the payment request
+                PhieudenghithanhtoanHomgiong::create($paymentRequestData);
+                $importedCount++;
+            }
+            
+            DB::commit();
+            
+            $message = "Import completed: {$importedCount} records imported";
+            if ($duplicateCount > 0) {
+                $message .= ", {$duplicateCount} duplicates skipped";
+            }
+            if ($errorCount > 0) {
+                $message .= ", {$errorCount} errors";
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'imported_count' => $importedCount,
+                'duplicate_count' => $duplicateCount,
+                'error_count' => $errorCount,
+                'errors' => $errors
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+        
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors' => $e->errors()
+        ], 422);
+        
+    } catch (\Exception $e) {
+        Log::error('Error importing payment requests homgiong: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Import failed: ' . $e->getMessage(),
+            'errors' => [$e->getMessage()]
+        ], 500);
+    }
+}
+
+/**
+ * Download template file for import
+ *
+ * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+ */
+public function downloadTemplate()
+{
+    try {
+        // Create workbook with headers
+        $wb = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter(
+            new \PhpOffice\PhpSpreadsheet\Spreadsheet(), 'Xlsx'
+        );
+        
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $worksheet = $spreadsheet->getActiveSheet();
+        
+        // Define headers
+        $headers = [
+            'ma_giai_ngan',
+            'vu_dau_tu', 
+            'loai_thanh_toan',
+            'khach_hang_ca_nhan',
+            'ma_khach_hang_ca_nhan',
+            'khach_hang_doanh_nghiep',
+            'ma_khach_hang_doanh_nghiep',
+            'tram'
+        ];
+        
+        // Set headers
+        foreach ($headers as $index => $header) {
+            $worksheet->setCellValue(chr(65 + $index) . '1', $header);
+        }
+        
+        // Add example data
+        $exampleData = [
+            'GN-HG-001',
+            'VDT001',
+            'Thanh toán hom giống',
+            'Nguyễn Văn A',
+            'KH001',
+            '',
+            '',
+            'Trạm 1'
+        ];
+        
+        foreach ($exampleData as $index => $value) {
+            $worksheet->setCellValue(chr(65 + $index) . '2', $value);
+        }
+        
+        // Style the headers
+        $headerStyle = [
+            'font' => ['bold' => true],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'E2E8F0']
+            ]
+        ];
+        
+        $worksheet->getStyle('A1:H1')->applyFromArray($headerStyle);
+        
+        // Auto-size columns
+        foreach (range('A', 'H') as $column) {
+            $worksheet->getColumnDimension($column)->setAutoSize(true);
+        }
+        
+        // Create writer and save to temporary file
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $tempFile = tempnam(sys_get_temp_dir(), 'homgiong_import_template') . '.xlsx';
+        $writer->save($tempFile);
+        
+        return response()->download($tempFile, 'phieu_de_nghi_thanh_toan_homgiong_template.xlsx')->deleteFileAfterSend(true);
+        
+    } catch (\Exception $e) {
+        Log::error('Error creating import template: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error creating template: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+/**
+ * อัพเดตสถานะของเอกสารขอเบิกเงิน homgiong
+ *
+ * @param  Request  $request
+ * @param  string  $id
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function updateStatusHomgiong(Request $request, $id)
+{
+    try {
+        // Validate the request - ลดการ validate เฉพาะข้อมูลที่จำเป็น
+        $validationRules = [
+            'status' => 'required|string|in:processing,submitted,paid,cancelled',
+            'action_notes' => 'nullable|string|max:1000',
+        ];
+        
+        // Add payment_date validation if status is 'paid'
+        if ($request->input('status') === 'paid') {
+            $validationRules['payment_date'] = 'required|date';
+        }
+        
+        $validated = $request->validate($validationRules);
+
+        // Find the payment request in homgiong table
+        $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->first();
+
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment request not found'
+            ], 404);
+        }
+
+        // Create update data array for main payment request - เฉพาะข้อมูลพื้นฐาน
+        $updateData = [
+            'trang_thai_thanh_toan' => $validated['status'],
+        ];
+        
+        // Add payment_date to update data if status is 'paid'
+        if ($validated['status'] === 'paid' && isset($validated['payment_date'])) {
+            $updateData['ngay_thanh_toan'] = $validated['payment_date'];
+        }
+
+        // Update the main payment request status
+        DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->update($updateData);
+
+        // Record the action in the action table for homgiong
+        DB::table('action_phieu_trinh_thanh_toan_homgiong')->insert([
+            'ma_trinh_thanh_toan' => $id,
+            'action' => $validated['status'],
+            'action_by' => Auth::id(),
+            'action_date' => now(),
+            'comments' => $validated['action_notes'] ?? '',
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+        
+        // Update status for all related disbursement requests in homgiong table
+        $disbursementCodes = DB::table('logs_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->whereNotNull('ma_de_nghi_giai_ngan')
+            ->pluck('ma_de_nghi_giai_ngan')
+            ->unique()
+            ->toArray();
+            
+        // Update status for all related disbursement requests - เฉพาะสถานะและวันที่
+        if (!empty($disbursementCodes)) {
+            $disbursementUpdateData = [
+                'trang_thai_thanh_toan' => $validated['status']
+            ];
+            
+            // Add payment_date if status is 'paid'
+            if ($validated['status'] === 'paid' && isset($validated['payment_date'])) {
+                $disbursementUpdateData['ngay_thanh_toan'] = $validated['payment_date'];
+            }
+            
+            // Update all related disbursement requests
+            DB::table('tb_de_nghi_thanhtoan_homgiong')
+                ->whereIn('ma_giai_ngan', $disbursementCodes)
+                ->update($disbursementUpdateData);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật trạng thái phiếu trình thanh toán thành công',
+            'status' => $validated['status'],
+            'payment_date' => $validated['status'] === 'paid' ? $validated['payment_date'] : null,
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error updating payment request homgiong status: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating payment request status: ' . $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+/**
+ * ดึงข้อมูลประวัติการประมวลผลสำหรับ homgiong
+ */
+public function getProcessingHistoryHomgiong($paymentCode)
+{
+    try {
+        $history = DB::table('action_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $paymentCode)
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        return response()->json([
+            'success' => true,
+            'history' => $history
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Save note for payment request homgiong
+ */
+public function saveNoteHomgiong(Request $request, $id)
+{
+    try {
+        // Validate the request
+        $validated = $request->validate([
+            'note' => 'nullable|string|max:1000'
+        ]);
+
+        // Find the payment request
+        $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->first();
+
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment request not found'
+            ], 404);
+        }
+
+        // Update the note field
+        $affected = DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->update(['note' => $validated['note']]);
+
+        if ($affected) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Ghi chú đã được lưu thành công',
+                'note' => $validated['note']
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không có thay đổi nào được thực hiện'
+            ], 400);
+        }
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Dữ liệu không hợp lệ',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Error saving payment request homgiong note: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi lưu ghi chú: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Update basic info for payment request homgiong
+ */
+public function updateBasicInfoHomgiong(Request $request, $id)
+{
+    try {
+        // Validate the request data
+        $validated = $request->validate([
+            'so_to_trinh' => 'nullable|string|max:255',
+            'ngay_tao' => 'nullable|date',
+            'so_dot_thanh_toan' => 'nullable|integer|min:1',
+            'loai_thanh_toan' => 'nullable|string|max:255',
+            'vu_dau_tu' => 'nullable|string|max:255',
+            'ngay_thanh_toan' => 'nullable|date', // เพิ่ม validation สำหรับ ngay_thanh_toan
+            'tong_tien_thanh_toan' => 'nullable|numeric|min:0',
+            'tong_tien_tam_giu' => 'nullable|numeric|min:0',
+            'tong_tien_khau_tru' => 'nullable|numeric|min:0',
+            'tong_tien_lai_suat' => 'nullable|numeric|min:0',
+            'tong_tien_thanh_toan_con_lai' => 'nullable|numeric|min:0',
+        ]);
+
+        // Find the payment request record
+        $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->first();
+
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment request not found'
+            ], 404);
+        }
+
+        // Prepare update data
+        $updateData = [];
+        
+        if (isset($validated['so_to_trinh'])) {
+            $updateData['so_to_trinh'] = $validated['so_to_trinh'];
+        }
+        
+        if (isset($validated['ngay_tao'])) {
+            $updateData['ngay_tao'] = $validated['ngay_tao'];
+        }
+        
+        if (isset($validated['so_dot_thanh_toan'])) {
+            $updateData['so_dot_thanh_toan'] = $validated['so_dot_thanh_toan'];
+        }
+        
+        if (isset($validated['loai_thanh_toan'])) {
+            $updateData['loai_thanh_toan'] = $validated['loai_thanh_toan'];
+        }
+        
+        if (isset($validated['vu_dau_tu'])) {
+            $updateData['vu_dau_tu'] = $validated['vu_dau_tu'];
+        }
+        
+        if (isset($validated['ngay_thanh_toan'])) {
+            $updateData['ngay_thanh_toan'] = $validated['ngay_thanh_toan'];
+        }
+        
+        // Add financial fields to update data
+        if (isset($validated['tong_tien_thanh_toan'])) {
+            $updateData['tong_tien_thanh_toan'] = $validated['tong_tien_thanh_toan'];
+        }
+        
+        if (isset($validated['tong_tien_tam_giu'])) {
+            $updateData['tong_tien_tam_giu'] = $validated['tong_tien_tam_giu'];
+        }
+        
+        if (isset($validated['tong_tien_khau_tru'])) {
+            $updateData['tong_tien_khau_tru'] = $validated['tong_tien_khau_tru'];
+        }
+        
+        if (isset($validated['tong_tien_lai_suat'])) {
+            $updateData['tong_tien_lai_suat'] = $validated['tong_tien_lai_suat'];
+        }
+        
+        if (isset($validated['tong_tien_thanh_toan_con_lai'])) {
+            $updateData['tong_tien_thanh_toan_con_lai'] = $validated['tong_tien_thanh_toan_con_lai'];
+        }
+
+        // Update the record if we have data to update
+        if (!empty($updateData)) {
+            // *** ลบ updated_at ออก เนื่องจากตารางไม่มี column นี้ ***
+            
+            DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->update($updateData);
+                
+            // *** NEW: อัปเดต ngay_thanh_toan ใน tb_de_nghi_thanhtoan_homgiong ***
+            if (isset($validated['ngay_thanh_toan'])) {
+                // Get all disbursement codes associated with this payment request
+                $disbursementCodes = DB::table('logs_phieu_trinh_thanh_toan_homgiong')
+                    ->where('ma_trinh_thanh_toan', $id)
+                    ->whereNotNull('ma_de_nghi_giai_ngan')
+                    ->pluck('ma_de_nghi_giai_ngan')
+                    ->unique()
+                    ->toArray();
+                    
+                // Update payment date for all related disbursement requests
+                if (!empty($disbursementCodes)) {
+                    // *** ตรวจสอบก่อนว่าตาราง tb_de_nghi_thanhtoan_homgiong มี column updated_at หรือไม่ ***
+                    $updateDisbursementData = [
+                        'ngay_thanh_toan' => $validated['ngay_thanh_toan']
+                    ];
+                    
+                    // ตรวจสอบว่ามี column updated_at หรือไม่
+                    if (Schema::hasColumn('tb_de_nghi_thanhtoan_homgiong', 'updated_at')) {
+                        $updateDisbursementData['updated_at'] = now();
+                    }
+                    
+                    DB::table('tb_de_nghi_thanhtoan_homgiong')
+                        ->whereIn('ma_giai_ngan', $disbursementCodes)
+                        ->update($updateDisbursementData);
+                }
+            }
+        }
+
+        // Get the updated record
+        $updatedRecord = DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật thông tin phiếu trình thanh toán thành công',
+            'data' => $updatedRecord
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error updating payment request homgiong basic info: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi cập nhật phiếu trình thanh toán: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Delete a payment request homgiong
+ */
+public function destroyHomgiong($id)
+{
+    try {
+        DB::beginTransaction();
+        
+        // Find the payment request
+        $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->first();
+        
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment request not found'
+            ], 404);
+        }
+        
+        // Check if payment request is in paid status - cannot delete if paid
+        if ($paymentRequest->trang_thai_thanh_toan === 'paid') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete a paid payment request'
+            ], 422);
+        }
+        
+        // 1. Delete related logs first
+        DB::table('logs_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->delete();
+        
+        // 2. Delete action records from action_phieu_trinh_thanh_toan_homgiong table
+        DB::table('action_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->delete();
+        
+        // 3. Delete related payment requests from tb_de_nghi_thanhtoan_homgiong
+        DB::table('tb_de_nghi_thanhtoan_homgiong')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->delete();
+        
+        // 4. Finally delete the payment request itself
+        DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->delete();
+        
+        DB::commit();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment request deleted successfully'
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        Log::error('Error deleting payment request homgiong: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting payment request',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+
 }
