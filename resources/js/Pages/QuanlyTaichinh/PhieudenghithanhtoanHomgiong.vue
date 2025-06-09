@@ -2293,7 +2293,7 @@ export default {
                 this.saveFilterState();
                 // Navigate to detail page
                 this.$router.push({
-                    name: "Details_Phieudenghithanhtoanhomgiong",
+                    name: "Details_PhieudenghithanhtoanHomgiong",
                     params: { id: item.ma_giai_ngan },
                 });
             } catch (error) {

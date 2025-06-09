@@ -399,6 +399,74 @@ const routes = [
         },
     },
     {
+        name: "Details_PhieudenghithanhtoanHomgiong",
+        path: "/Details_PhieudenghithanhtoanHomgiong/:id",
+        component: () =>
+            import(
+                "../Pages/QuanlyTaichinh/Details_PhieudenghithanhtoanHomgiong.vue"
+            ),
+        meta: {
+            middleware: [authMiddleware],
+            requiresAccess: true, // เพิ่ม flag นี้
+        },
+        beforeEnter: async (to, from, next) => {
+            // ดึงค่า id จาก route parameters
+            const id = to.params.id;
+
+            // ดึง token จาก localStorage
+            let token = localStorage.getItem("web_token");
+            const store = useStore();
+
+            // ถ้าไม่มี token ใน localStorage ให้ลองดึงจาก store
+            if (!token && store.getToken) {
+                token = store.getToken;
+            }
+
+            // ถ้ายังไม่มี token ให้รอสักครู่เผื่อ store กำลังโหลด
+            if (!token) {
+                // รอ 100ms เผื่อ store กำลังโหลดข้อมูล
+                await new Promise((resolve) => setTimeout(resolve, 100));
+                token = localStorage.getItem("web_token") || store.getToken;
+            }
+
+            if (!token) {
+                next("/login");
+                return;
+            }
+
+            try {
+                // ตรวจสอบสิทธิ์การเข้าถึง
+                const response = await axios.get(
+                    `/api/payment-requests-homgiong/${id}/check-access`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (response.data.hasAccess) {
+                    next(); // มีสิทธิ์เข้าถึง - อนุญาตให้เข้าถึงหน้านี้
+                } else {
+                    next("/unauthorized"); // ไม่มีสิทธิ์เข้าถึง - นำทางไปยังหน้า Unauthorized
+                }
+            } catch (error) {
+                console.error("Error checking access:", error);
+
+                if (error.response?.status === 401) {
+                    // Token หมดอายุหรือไม่ถูกต้อง - logout และนำทางไปยังหน้า login
+                    localStorage.removeItem("web_token");
+                    localStorage.removeItem("web_user");
+                    store.logout();
+                    next("/login");
+                } else {
+                    // ข้อผิดพลาดอื่นๆ - นำทางไปยังหน้า Unauthorized
+                    next("/unauthorized");
+                }
+            }
+        },
+    },
+    {
         name: "Phieudenghithanhtoandichvu",
         path: "/Phieudenghithanhtoandichvu",
         component: Phieudenghithanhtoandichvu,
@@ -412,6 +480,63 @@ const routes = [
         component: Details_PhieuDNTTDV,
         meta: {
             middleware: [authMiddleware],
+            requiresAccess: true, // เพิ่ม flag นี้
+        },
+        beforeEnter: async (to, from, next) => {
+            // ดึงค่า id จาก route parameters
+            const id = to.params.id;
+
+            // ดึง token จาก localStorage
+            let token = localStorage.getItem("web_token");
+            const store = useStore();
+
+            // ถ้าไม่มี token ใน localStorage ให้ลองดึงจาก store
+            if (!token && store.getToken) {
+                token = store.getToken;
+            }
+
+            // ถ้ายังไม่มี token ให้รอสักครู่เผื่อ store กำลังโหลด
+            if (!token) {
+                // รอ 100ms เผื่อ store กำลังโหลดข้อมูล
+                await new Promise((resolve) => setTimeout(resolve, 100));
+                token = localStorage.getItem("web_token") || store.getToken;
+            }
+
+            if (!token) {
+                next("/login");
+                return;
+            }
+
+            try {
+                // ตรวจสอบสิทธิ์การเข้าถึง
+                const response = await axios.get(
+                    `/api/payment-requests-dichvu/${id}/check-access`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (response.data.hasAccess) {
+                    next(); // มีสิทธิ์เข้าถึง - อนุญาตให้เข้าถึงหน้านี้
+                } else {
+                    next("/unauthorized"); // ไม่มีสิทธิ์เข้าถึง - นำทางไปยังหน้า Unauthorized
+                }
+            } catch (error) {
+                console.error("Error checking access:", error);
+
+                if (error.response?.status === 401) {
+                    // Token หมดอายุหรือไม่ถูกต้อง - logout และนำทางไปยังหน้า login
+                    localStorage.removeItem("web_token");
+                    localStorage.removeItem("web_user");
+                    store.logout();
+                    next("/login");
+                } else {
+                    // ข้อผิดพลาดอื่นๆ - นำทางไปยังหน้า Unauthorized
+                    next("/unauthorized");
+                }
+            }
         },
     },
 

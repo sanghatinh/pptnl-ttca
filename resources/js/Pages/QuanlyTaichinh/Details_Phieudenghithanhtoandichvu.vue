@@ -1574,12 +1574,13 @@ export default {
                 this.showError("Không tìm thấy mã phiếu đề nghị thanh toán");
                 return;
             }
-             // ตรวจสอบ token ก่อนเรียก API
-        const token = localStorage.getItem("web_token") || this.store.getToken;
-        if (!token) {
-            this.$router.replace("/login");
-            return;
-        }
+            // ตรวจสอบ token ก่อนเรียก API
+            const token =
+                localStorage.getItem("web_token") || this.store.getToken;
+            if (!token) {
+                this.$router.replace("/login");
+                return;
+            }
 
             axios
                 .get(`/api/payment-requests-dichvu/${id}/phieu-thu-no`, {
@@ -1891,11 +1892,15 @@ export default {
             }
 
             try {
+                // ใช้ axios โดยตรงแทนการใช้ this.store.getAuthHeaders()
+                // เพื่อให้ JwtMiddleware สามารถจัดการ headers ได้อย่างถูกต้อง
                 const response = await axios.get(
                     `/api/payment-requests-dichvu/${id}/processing-history`,
                     {
                         headers: {
-                            Authorization: "Bearer " + this.store.getToken,
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                            Accept: "application/json",
                         },
                     }
                 );
@@ -2107,6 +2112,10 @@ export default {
             if (userIds.length === 0) return;
 
             try {
+                // ใช้ token จาก localStorage หรือ store
+                const token =
+                    localStorage.getItem("web_token") || this.store.getToken;
+
                 const response = await axios.post(
                     "/api/users/get-by-ids",
                     {
@@ -2114,7 +2123,9 @@ export default {
                     },
                     {
                         headers: {
-                            Authorization: "Bearer " + this.store.getToken,
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                            Accept: "application/json",
                         },
                     }
                 );
@@ -2292,11 +2303,11 @@ export default {
             // Clear authentication data
             localStorage.clear();
             this.store.logout();
-             // Force navigate to login
-        this.$router.replace("/login").catch(() => {
-            // ถ้า router ไม่ทำงาน ใช้ window.location
-            window.location.href = "/login";
-        });
+            // Force navigate to login
+            this.$router.replace("/login").catch(() => {
+                // ถ้า router ไม่ทำงาน ใช้ window.location
+                window.location.href = "/login";
+            });
         },
         openAttachment() {
             // This function will open the attachment URL

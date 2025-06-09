@@ -2911,7 +2911,7 @@
                             :class="{
                                 'alert-info text-white':
                                     selectedPaymentRequests.length > 1,
-                                'alert-success':
+                                'alert-info text-dark':
                                     selectedPaymentRequests.length === 1,
                             }"
                         >
@@ -7487,7 +7487,7 @@ export default {
 
             this.isLoading = true;
             axios
-                .get(`/api/payment-requests-homgiong/${id}`, {
+                .get(`/api/payment-requests-homgiong/${id}/details`, {
                     headers: {
                         Authorization: "Bearer " + this.store.getToken,
                     },

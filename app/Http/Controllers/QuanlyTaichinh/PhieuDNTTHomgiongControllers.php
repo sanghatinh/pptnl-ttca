@@ -1304,4 +1304,441 @@ public function getAllPaymentRequestsHomgiong(Request $request)
     }
 }
 
+/**
+ * Display the detailed information of a payment request for homgiong
+ *
+ * @param string $id
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function showDetailPayment($id)
+{
+    try {
+        // Get the payment request details by ma_giai_ngan from homgiong table
+        $paymentRequest = DB::table('tb_de_nghi_thanhtoan_homgiong')
+            ->where('ma_giai_ngan', $id)
+            ->first();
+
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy phiếu đề nghị thanh toán'
+            ], 404);
+        }
+
+        // Get the parent payment request information from tb_phieu_trinh_thanh_toan_homgiong
+        $parentPaymentRequest = null;
+        if (!empty($paymentRequest->ma_trinh_thanh_toan)) {
+            $parentPaymentRequest = DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+                ->where('ma_trinh_thanh_toan', $paymentRequest->ma_trinh_thanh_toan)
+                ->first();
+        }
+
+        // Prepare response data with null checks for all properties
+        $responseData = [
+            'ma_giai_ngan' => $paymentRequest->ma_giai_ngan ?? '',
+            'vu_dau_tu' => $paymentRequest->vu_dau_tu ?? '',
+            'loai_thanh_toan' => $paymentRequest->loai_thanh_toan ?? '',
+            'trang_thai_thanh_toan' => $paymentRequest->trang_thai_thanh_toan ?? '',
+            'khach_hang_ca_nhan' => $paymentRequest->khach_hang_ca_nhan ?? '',
+            'ma_khach_hang_ca_nhan' => $paymentRequest->ma_khach_hang_ca_nhan ?? '',
+            'khach_hang_doanh_nghiep' => $paymentRequest->khach_hang_doanh_nghiep ?? '',
+            'ma_khach_hang_doanh_nghiep' => $paymentRequest->ma_khach_hang_doanh_nghiep ?? '',
+            'thuc_nhan' => $paymentRequest->thuc_nhan ?? 0,
+            'tong_tien' => $paymentRequest->tong_tien ?? 0,
+            'tong_tien_tam_giu' => $paymentRequest->tong_tien_tam_giu ?? 0,
+            'tong_tien_khau_tru' => $paymentRequest->tong_tien_khau_tru ?? 0,
+            'tong_tien_lai_suat' => $paymentRequest->tong_tien_lai_suat ?? 0,
+            'tong_tien_thanh_toan_con_lai' => $paymentRequest->tong_tien_thanh_toan_con_lai ?? 0,
+            'ngay_thanh_toan' => $paymentRequest->ngay_thanh_toan ?? '',
+            'comment' => $paymentRequest->comment ?? '',
+            'attachment_url' => $paymentRequest->attachment_url ?? '',
+            'so_to_trinh' => $parentPaymentRequest->so_to_trinh ?? '',
+            'so_dot_thanh_toan' => $parentPaymentRequest->so_dot_thanh_toan ?? '',
+            'created_date' => $parentPaymentRequest->ngay_tao ?? '',
+        ];
+
+        return response()->json([
+            'success' => true,
+            'document' => $responseData
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error fetching payment request homgiong details: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Get phieu giao nhan hom giong data related to a payment request
+ * 
+ * @param string $id Disbursement code (ma_giai_ngan)
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getphieugiaonhanhomgiong($id)
+{
+    try {
+        // Check if the payment request exists
+        $paymentRequest = DB::table('tb_de_nghi_thanhtoan_homgiong')
+            ->where('ma_giai_ngan', $id)
+            ->first();
+        
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy phiếu đề nghị thanh toán'
+            ], 404);
+        }
+        
+        // Get associated receipt IDs through logs_phieu_trinh_thanh_toan_homgiong
+        $receiptIds = DB::table('logs_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_de_nghi_giai_ngan', $id)
+            ->pluck('ma_so_phieu')
+            ->toArray();
+        
+        if (empty($receiptIds)) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'totals' => [
+                    'total_thuc_nhan' => 0,
+                    'total_amount' => 0
+                ]
+            ]);
+        }
+        
+        // Get detailed information from bien_ban_nghiem_thu_hom_giong table
+        $phieuGiaoNhanHG = DB::table('bien_ban_nghiem_thu_hom_giong')
+            ->whereIn('ma_so_phieu', $receiptIds)
+            ->select(
+                'ma_so_phieu',
+                'tram',
+                'vu_dau_tu',
+                'ten_phieu',
+                'hop_dong_dau_tu_mia_ben_giao_hom',
+                'khach_hang_ca_nhan',
+                'khach_hang_doanh_nghiep',
+                'tong_thuc_nhan',
+                'tong_tien'
+            )
+            ->get();
+        
+        // Calculate the total amounts
+        $totals = [
+            'total_thuc_nhan' => $phieuGiaoNhanHG->sum('tong_thuc_nhan'),
+            'total_amount' => $phieuGiaoNhanHG->sum('tong_tien')
+        ];
+        
+        return response()->json([
+            'success' => true,
+            'data' => $phieuGiaoNhanHG,
+            'totals' => $totals
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error fetching phieu giao nhan hom giong data: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+/**
+ * Get chi tiết giao nhan hom giong data related to a payment request
+ * 
+ * @param string $id Disbursement code (ma_giai_ngan)
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getchitietgiaonhanhomgiong($id)
+{
+    try {
+        // Check if the payment request exists
+        $paymentRequest = DB::table('tb_de_nghi_thanhtoan_homgiong')
+            ->where('ma_giai_ngan', $id)
+            ->first();
+        
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy phiếu đề nghị thanh toán'
+            ], 404);
+        }
+        
+        // Get associated receipt IDs through logs_phieu_trinh_thanh_toan_homgiong
+        $receiptIds = DB::table('logs_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_de_nghi_giai_ngan', $id)
+            ->pluck('ma_so_phieu')
+            ->toArray();
+        
+        if (empty($receiptIds)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No receipts found for this payment request',
+                'data' => [],
+                'totals' => [
+                    'total_thuc_nhan' => 0,
+                    'total_thanh_tien' => 0,
+                ]
+            ]);
+        }
+        
+        // Get detailed information from tb_chitiet_giaonhan_homgiong table
+        $chitietGiaoNhanHG = DB::table('tb_chitiet_giaonhan_homgiong')
+            ->whereIn('ma_so_phieu', $receiptIds)
+            ->select(
+                'ma_so_phieu',
+                'tram',
+                'phieu_gn_hom_giong',
+                'giong_mia',
+                'thua_dat',
+                'don_vi_tinh',
+                'thuc_nhan',
+                'don_gia',
+                'thanh_tien_hom_giong'
+            )
+            ->get();
+        
+        // Calculate the total amounts
+        $totals = [
+            'total_thuc_nhan' => $chitietGiaoNhanHG->sum('thuc_nhan'),
+            'total_thanh_tien' => $chitietGiaoNhanHG->sum('thanh_tien_hom_giong')
+        ];
+        
+        return response()->json([
+            'success' => true,
+            'data' => $chitietGiaoNhanHG,
+            'totals' => $totals
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error fetching chi tiết giao nhan hom giong data: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+/**
+* Update specific fields of the payment request for homgiong
+*
+* @param Request $request
+* @param string $id
+* @return \Illuminate\Http\JsonResponse
+*/
+public function updateDocumentHomgiong(Request $request, $id)
+{
+   try {
+       // Validate request - remove ma_giai_ngan requirement
+       $validated = $request->validate([
+           'comment' => 'nullable|string',
+       ]);
+       
+       // Begin transaction
+       DB::beginTransaction();
+       
+       // Find the payment request
+       $paymentRequest = DB::table('tb_de_nghi_thanhtoan_homgiong')
+           ->where('ma_giai_ngan', $id)
+           ->first();
+       
+       if (!$paymentRequest) {
+           DB::rollBack();
+           return response()->json([
+               'message' => 'Payment request not found'
+           ], 404);
+       }
+       
+       // Prepare update data - include only provided fields
+       $updateData = [];
+       
+       // Only include comment if it's provided
+       if (isset($validated['comment'])) {
+           $updateData['comment'] = $validated['comment'];
+       }
+       
+       // Only update ngay_thanh_toan if it's provided
+       if (isset($validated['ngay_thanh_toan'])) {
+           $updateData['ngay_thanh_toan'] = $validated['ngay_thanh_toan'];
+       }
+       
+       // Simple update
+       DB::table('tb_de_nghi_thanhtoan_homgiong')
+           ->where('ma_giai_ngan', $id)
+           ->update($updateData);
+       
+       DB::commit();
+       
+       return response()->json([
+        'success' => true,
+           'message' => 'Payment request updated successfully'
+
+       ]);
+       
+   } catch (\Exception $e) {
+       DB::rollBack();
+       
+       return response()->json([
+           'message' => 'Error updating payment request: ' . $e->getMessage()
+       ], 500);
+   }
+}
+
+/**
+ * Check access permission for payment request details homgiong
+ *
+ * @param string $id
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function checkAccessHomgiong($id, Request $request)
+{
+    try {
+        // Get user type and authentication info from headers set by JwtMiddleware
+        $userType = $request->header('X-User-Type', 'employee');
+        $userId = $request->header('X-User-ID');
+        
+        \Log::info('Check access for payment request homgiong details:', [
+            'payment_request_id' => $id,
+            'userType' => $userType,
+            'userId' => $userId
+        ]);
+        
+        // ค้นหาเอกสารที่ต้องการเข้าถึง
+        $document = DB::table('tb_de_nghi_thanhtoan_homgiong')
+            ->where('ma_giai_ngan', $id)
+            ->first();
+            
+        if (!$document) {
+            return response()->json([
+                'hasAccess' => false,
+                'message' => 'Document not found'
+            ], 404);
+        }
+        
+        // ถ้าเป็น employee ให้เข้าถึงได้ทั้งหมด
+        if ($userType === 'employee') {
+            return response()->json([
+                'hasAccess' => true,
+                'userType' => 'employee'
+            ]);
+        }
+        
+        // ถ้าเป็น farmer ให้ตรวจสอบสิทธิ์การเข้าถึงตาม customer ID
+        if ($userType === 'farmer') {
+            // ดึงข้อมูล farmer จาก user_farmer table
+            $farmer = DB::table('user_farmer')
+                ->where('id', $userId)
+                ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
+                ->first();
+                
+            if (!$farmer) {
+                return response()->json([
+                    'hasAccess' => false,
+                    'message' => 'Farmer data not found'
+                ], 404);
+            }
+            
+            // ตรวจสอบว่า farmer มีสิทธิ์เข้าถึงเอกสารนี้หรือไม่
+            $hasAccess = false;
+            
+            // ตรวจสอบ ma_khach_hang_ca_nhan
+            if (!empty($farmer->ma_kh_ca_nhan) && 
+                $document->ma_khach_hang_ca_nhan === $farmer->ma_kh_ca_nhan) {
+                $hasAccess = true;
+            }
+            
+            // ตรวจสอบ ma_khach_hang_doanh_nghiep
+            if (!empty($farmer->ma_kh_doanh_nghiep) && 
+                $document->ma_khach_hang_doanh_nghiep === $farmer->ma_kh_doanh_nghiep) {
+                $hasAccess = true;
+            }
+            
+            return response()->json([
+                'hasAccess' => $hasAccess,
+                'userType' => 'farmer',
+                'debug_info' => [
+                    'farmer_ma_kh_ca_nhan' => $farmer->ma_kh_ca_nhan,
+                    'farmer_ma_kh_doanh_nghiep' => $farmer->ma_kh_doanh_nghiep,
+                    'document_ma_kh_ca_nhan' => $document->ma_khach_hang_ca_nhan,
+                    'document_ma_kh_doanh_nghiep' => $document->ma_khach_hang_doanh_nghiep
+                ]
+            ]);
+        }
+        
+        // กรณีอื่นๆ ไม่อนุญาต
+        return response()->json([
+            'hasAccess' => false,
+            'message' => 'Access denied'
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error checking payment request homgiong access: ' . $e->getMessage(), [
+            'payment_request_id' => $id,
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'hasAccess' => false,
+            'message' => 'Error checking access',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Timeline giải ngân trang DNTT Hom Giong
+ * Get processing history for disbursement request (homgiong)
+ *
+ * @param string $id Disbursement code (ma_giai_ngan)
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getDisbursementProcessingHistoryHomgiong($id)
+{
+    try {
+        // First, get the ma_trinh_thanh_toan from the disbursement request homgiong
+        $disbursementRequest = DB::table('tb_de_nghi_thanhtoan_homgiong')
+            ->where('ma_giai_ngan', $id)
+            ->select('ma_trinh_thanh_toan')
+            ->first();
+        
+        if (!$disbursementRequest || !$disbursementRequest->ma_trinh_thanh_toan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy phiếu đề nghị thanh toán hom giống hoặc không có mã trình thanh toán',
+                'history' => [],
+                'payment_code' => null
+            ]);
+        }
+        
+        // Now fetch the history using the ma_trinh_thanh_toan from homgiong action table
+        $history = DB::table('action_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_trinh_thanh_toan', $disbursementRequest->ma_trinh_thanh_toan)
+            ->orderBy('action_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'history' => $history,
+            'payment_code' => $disbursementRequest->ma_trinh_thanh_toan
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error fetching disbursement processing history homgiong: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'message' => 'Lỗi khi tải lịch sử xử lý phiếu đề nghị thanh toán hom giống'
+        ], 500);
+    }
+}
+
 }

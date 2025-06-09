@@ -40,7 +40,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
 
 
-    Route::post('/users/get-by-ids', [UserController::class, 'getUsersByIds']);
+    
 
     Route::get('/positions', [UserController::class, 'getPositions']);
     Route::get('/stations', [UserController::class, 'getStations']);
@@ -198,7 +198,7 @@ Route::get('/import-thu-no-dich-vu-progress/{importId}', [PhieuthunodichvuContro
     Route::get('/payment-requests-homgiong', [PhieutrinhthanhtoanHomgiongControllers::class, 'index']);
     Route::post('/check-payment-request-homgiong-duplicates', [PhieutrinhthanhtoanHomgiongControllers::class, 'checkDuplicates']);
     Route::post('/create-payment-request-homgiong', [PhieutrinhthanhtoanHomgiongControllers::class, 'createPaymentRequest']);
-    Route::get('/payment-requests-homgiong/{id}', [PhieutrinhthanhtoanHomgiongControllers::class, 'show']);
+    Route::get('/payment-requests-homgiong/{id}/details', [PhieutrinhthanhtoanHomgiongControllers::class, 'show']);
 
 
 
@@ -277,7 +277,7 @@ Route::get('/user-info', [UserController::class, 'getUserInfo']);
 Route::get('/phieu-giao-nhan-hom-giong', [PhieuGiaoNhanHomGiongController::class, 'index']);
 Route::get('/bienban-nghiemthu-homgiong/{id}', [PhieuGiaoNhanHomGiongController::class, 'show']);
 Route::get('/bienban-nghiemthu-homgiong/{id}/check-access', [PhieuGiaoNhanHomGiongController::class, 'checkAccess']);
-
+Route::post('/users/get-by-ids', [UserController::class, 'getUsersByIds']);
 
  // Farmer Profile Management Routes
     Route::get('/farmer/my-profile', [App\Http\Controllers\Farmer\FarmerProfileController::class, 'getMyProfile']);
@@ -296,8 +296,18 @@ Route::get('/payment-requests-dichvu/{id}/phieu-thu-no', [Phieudenghithanhtoandv
 Route::get('/payment-requests-dichvu/{id}/processing-history', [PaymentRequestController::class, 'getDisbursementProcessingHistory']);
 Route::put('/payment-requests-dichvu/{id}/update', [PhieudenghithanhtoandvControllers::class, 'updateDocument']);
 
+    Route::get('/payment-requests-dichvu/{id}/check-access', [PhieudenghithanhtoandvControllers::class, 'checkAccess']);
+
 //Phiếu đề nghị thanh toán hom giống
 Route::get('/tai-chinh/phieu-de-nghi-thanh-toan-homgiong', [PhieuDNTTHomgiongControllers::class, 'getAllPaymentRequestsHomgiong']);
+Route::get('/payment-requests-homgiong/{id}', [PhieuDNTTHomgiongControllers::class, 'showDetailPayment']);
+
+  Route::get('/payment-requests-homgiong/{id}/phieu-giao-nhan', [PhieuDNTTHomgiongControllers::class, 'getphieugiaonhanhomgiong']);
+Route::get('/payment-requests-homgiong/{id}/chitiet-giaonhan', [PhieuDNTTHomgiongControllers::class, 'getchitietgiaonhanhomgiong']);
+
+    Route::get('/payment-requests-homgiong/{id}/processing-history', [PhieuDNTTHomgiongControllers::class, 'getDisbursementProcessingHistoryHomgiong']);
+    Route::put('/payment-requests-homgiong/{id}/update', [PhieuDNTTHomgiongControllers::class, 'updateDocumentHomgiong']);
+    Route::get('/payment-requests-homgiong/{id}/check-access', [PhieuDNTTHomgiongControllers::class, 'checkAccessHomgiong']);
 
 
 });

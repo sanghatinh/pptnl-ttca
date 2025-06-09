@@ -1356,6 +1356,108 @@ public function getAllPaymentRequests(Request $request)
         }
     }
 
+    /**
+ * Check access permission for payment request details
+ *
+ * @param string $id
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function checkAccess($id, Request $request)
+{
+    try {
+        // Get user type and authentication info from headers set by JwtMiddleware
+        $userType = $request->header('X-User-Type', 'employee');
+        $userId = $request->header('X-User-ID');
+        
+        \Log::info('Check access for payment request details:', [
+            'payment_request_id' => $id,
+            'userType' => $userType,
+            'userId' => $userId
+        ]);
+        
+        // ค้นหาเอกสารที่ต้องการเข้าถึง
+        $document = DB::table('tb_de_nghi_thanhtoan_dv')
+            ->where('ma_giai_ngan', $id)
+            ->first();
+            
+        if (!$document) {
+            return response()->json([
+                'hasAccess' => false,
+                'message' => 'Document not found'
+            ], 404);
+        }
+        
+        // ถ้าเป็น employee ให้เข้าถึงได้ทั้งหมด
+        if ($userType === 'employee') {
+            return response()->json([
+                'hasAccess' => true,
+                'userType' => 'employee'
+            ]);
+        }
+        
+        // ถ้าเป็น farmer ให้ตรวจสอบสิทธิ์การเข้าถึงตาม customer ID
+        if ($userType === 'farmer') {
+            // ดึงข้อมูล farmer จาก user_farmer table
+            $farmer = DB::table('user_farmer')
+                ->where('id', $userId)
+                ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
+                ->first();
+                
+            if (!$farmer) {
+                return response()->json([
+                    'hasAccess' => false,
+                    'message' => 'Farmer data not found'
+                ], 404);
+            }
+            
+            // ตรวจสอบว่า farmer มีสิทธิ์เข้าถึงเอกสารนี้หรือไม่
+            $hasAccess = false;
+            
+            // ตรวจสอบ ma_khach_hang_ca_nhan
+            if (!empty($farmer->ma_kh_ca_nhan) && 
+                $document->ma_khach_hang_ca_nhan === $farmer->ma_kh_ca_nhan) {
+                $hasAccess = true;
+            }
+            
+            // ตรวจสอบ ma_khach_hang_doanh_nghiep
+            if (!empty($farmer->ma_kh_doanh_nghiep) && 
+                $document->ma_khach_hang_doanh_nghiep === $farmer->ma_kh_doanh_nghiep) {
+                $hasAccess = true;
+            }
+            
+            return response()->json([
+                'hasAccess' => $hasAccess,
+                'userType' => 'farmer',
+                'debug_info' => [
+                    'farmer_ma_kh_ca_nhan' => $farmer->ma_kh_ca_nhan,
+                    'farmer_ma_kh_doanh_nghiep' => $farmer->ma_kh_doanh_nghiep,
+                    'document_ma_khach_hang_ca_nhan' => $document->ma_khach_hang_ca_nhan,
+                    'document_ma_khach_hang_doanh_nghiep' => $document->ma_khach_hang_doanh_nghiep
+                ]
+            ]);
+        }
+        
+        // กรณีอื่นๆ ไม่อนุญาต
+        return response()->json([
+            'hasAccess' => false,
+            'message' => 'Access denied'
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error checking payment request access: ' . $e->getMessage(), [
+            'payment_request_id' => $id,
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'hasAccess' => false,
+            'message' => 'Error checking access',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 /**
  * Get chi tiết nghiệm thu dịch vụ data related to a payment request
  * 
