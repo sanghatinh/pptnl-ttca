@@ -1092,130 +1092,192 @@ class PhieudenghithanhtoandvControllers extends Controller
         }
     }
 
-    public function getAllPaymentRequests(Request $request)
-    {
-        try {
-            // Build query with joins to get all required data
-            $query = DB::table('tb_de_nghi_thanhtoan_dv as dngn')
-                ->leftJoin('tb_phieu_trinh_thanh_toan as pttt', 'dngn.ma_trinh_thanh_toan', '=', 'pttt.ma_trinh_thanh_toan')
-                ->select(
-                    'dngn.id',
-                    'dngn.ma_giai_ngan',
-                    'dngn.vu_dau_tu',
-                    'dngn.loai_thanh_toan',
-                    'dngn.khach_hang_ca_nhan',
-                    'dngn.ma_khach_hang_ca_nhan',
-                    'dngn.khach_hang_doanh_nghiep',
-                    'dngn.ma_khach_hang_doanh_nghiep', 
-                    'dngn.tong_tien',
-                    'dngn.tong_tien_tam_giu',
-                    'dngn.tong_tien_khau_tru',
-                    'dngn.tong_tien_lai_suat',
-                    'dngn.tong_tien_thanh_toan_con_lai',
-                    'pttt.trang_thai_thanh_toan',
-                    'pttt.ngay_thanh_toan',
-                    'pttt.so_to_trinh',
-                    'pttt.so_dot_thanh_toan as dot_thanh_toan'
-                );
-                
-            // Apply filters based on request parameters
+    /**
+     * Get all payment requests with filtering and pagination
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+public function getAllPaymentRequests(Request $request)
+{
+    try {
+        // ดึงข้อมูล user type และ user ID จาก headers ที่ JwtMiddleware ส่งมา
+        $userType = $request->header('X-User-Type');
+        $userId = $request->header('X-User-ID');
+        
+        // Build query with joins to get all required data
+        $query = DB::table('tb_de_nghi_thanhtoan_dv as dngn')
+            ->leftJoin('tb_phieu_trinh_thanh_toan as pttt', 'dngn.ma_trinh_thanh_toan', '=', 'pttt.ma_trinh_thanh_toan')
+            ->leftJoin('tb_vudautu as vdt', 'vdt.Ma_Vudautu', '=', 'dngn.vu_dau_tu')
+            ->select(
+                'dngn.id',
+                'dngn.ma_giai_ngan',
+                'dngn.vu_dau_tu',
+                'vdt.Ten_Vudautu as ten_vu_dau_tu',
+                'dngn.loai_thanh_toan',
+                'dngn.khach_hang_ca_nhan',
+                'dngn.ma_khach_hang_ca_nhan',
+                'dngn.khach_hang_doanh_nghiep',
+                'dngn.ma_khach_hang_doanh_nghiep',
+                'dngn.tong_tien',
+                'dngn.tong_tien_tam_giu',
+                'dngn.tong_tien_khau_tru',
+                'dngn.tong_tien_lai_suat',
+                'dngn.tong_tien_thanh_toan_con_lai',
+                'dngn.trang_thai_thanh_toan',
+                'dngn.ngay_thanh_toan',
+                'dngn.comment',
+                'pttt.so_to_trinh as proposal_number',
+                'pttt.so_dot_thanh_toan as payment_installment',
+                'pttt.ngay_tao as created_date'
+            );
+
+        // ถ้าเป็น farmer ให้กรองข้อมูลตาม customer ID
+        if ($userType === 'farmer') {
+            // ดึงข้อมูล farmer จาก user_farmer table เพื่อเอา ma_kh_ca_nhan หรือ ma_kh_doanh_nghiep
+            $farmerData = DB::table('user_farmer')
+                ->where('id', $userId)
+                ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
+                ->first();
             
-            // Filter by status
-            if ($request->has('status') && $request->status !== 'all') {
-                $query->where('pttt.trang_thai_thanh_toan', $request->status);
-            }
-            
-            // Individual column filters
-            $filterableColumns = [
-                'ma_giai_ngan', 'vu_dau_tu', 'loai_thanh_toan',
-                'khach_hang_ca_nhan', 'ma_khach_hang_ca_nhan', 
-                'khach_hang_doanh_nghiep', 'ma_khach_hang_doanh_nghiep',
-                'so_to_trinh'
-            ];
-            
-            foreach ($filterableColumns as $column) {
-                $paramName = 'filter_' . $column;
-                if ($request->has($paramName) && !empty($request->$paramName)) {
-                    $tablePrefix = in_array($column, ['so_to_trinh']) ? 'pttt.' : 'dngn.';
-                    $query->where($tablePrefix . $column, 'like', '%' . $request->$paramName . '%');
-                }
-            }
-            
-            // Date filter for ngay_thanh_toan
-            if ($request->has('filter_ngay_thanh_toan') && !empty($request->filter_ngay_thanh_toan)) {
-                $query->whereDate('pttt.ngay_thanh_toan', $request->filter_ngay_thanh_toan);
-            }
-            
-            // Global search
-            if ($request->has('search') && !empty($request->search)) {
-                $searchTerm = '%' . $request->search . '%';
-                $query->where(function ($q) use ($searchTerm) {
-                    $q->where('dngn.ma_giai_ngan', 'like', $searchTerm)
-                        ->orWhere('dngn.vu_dau_tu', 'like', $searchTerm)
-                        ->orWhere('dngn.loai_thanh_toan', 'like', $searchTerm)
-                        ->orWhere('dngn.khach_hang_ca_nhan', 'like', $searchTerm)
-                        ->orWhere('dngn.ma_khach_hang_ca_nhan', 'like', $searchTerm)
-                        ->orWhere('dngn.khach_hang_doanh_nghiep', 'like', $searchTerm)
-                        ->orWhere('dngn.ma_khach_hang_doanh_nghiep', 'like', $searchTerm)
-                        ->orWhere('pttt.so_to_trinh', 'like', $searchTerm);
+            if ($farmerData) {
+                // สร้างเงื่อนไขสำหรับการกรองข้อมูล
+                $query->where(function($q) use ($farmerData) {
+                    // ถ้ามี ma_kh_ca_nhan ให้กรองตาม ma_khach_hang_ca_nhan
+                    if (!empty($farmerData->ma_kh_ca_nhan)) {
+                        $q->where('dngn.ma_khach_hang_ca_nhan', $farmerData->ma_kh_ca_nhan);
+                    }
+                    
+                    // ถ้ามี ma_kh_doanh_nghiep ให้กรองตาม ma_khach_hang_doanh_nghiep
+                    if (!empty($farmerData->ma_kh_doanh_nghiep)) {
+                        $q->orWhere('dngn.ma_khach_hang_doanh_nghiep', $farmerData->ma_kh_doanh_nghiep);
+                    }
                 });
+            } else {
+                // ถ้าไม่พบข้อมูล farmer ให้ return ข้อมูลว่าง
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'message' => 'No farmer data found'
+                ]);
             }
-    
-            // Sort options (default to newest first)
-            $sortField = $request->input('sort_field', 'dngn.id');
-            $sortDirection = $request->input('sort_direction', 'desc');
-            $query->orderBy($sortField, $sortDirection);
-    
-            // Get all records instead of paginating
-            $results = $query->get();
-            $totalCount = count($results);
-    
-            // Also get all unique values for dropdown filters
-            $uniqueVuDauTu = DB::table('tb_de_nghi_thanhtoan_dv')
-                ->select('vu_dau_tu')
-                ->distinct()
-                ->whereNotNull('vu_dau_tu')
-                ->pluck('vu_dau_tu');
-                
-            $uniqueLoaiThanhToan = DB::table('tb_de_nghi_thanhtoan_dv')
-                ->select('loai_thanh_toan')
-                ->distinct()
-                ->whereNotNull('loai_thanh_toan')
-                ->pluck('loai_thanh_toan');
-                
-            $uniqueTrangThaiThanhToan = DB::table('tb_phieu_trinh_thanh_toan')
-                ->select('trang_thai_thanh_toan')
-                ->distinct()
-                ->whereNotNull('trang_thai_thanh_toan')
-                ->pluck('trang_thai_thanh_toan');
-    
-            return response()->json([
-                'success' => true,
-                'data' => $results,
-                'pagination' => [
-                    'total' => $totalCount,
-                    'per_page' => $totalCount, // Set per_page to total count to indicate all records
-                    'current_page' => 1,
-                    'last_page' => 1,
-                    'from' => 1,
-                    'to' => $totalCount,
-                ],
-                'unique_filters' => [
-                    'vu_dau_tu' => $uniqueVuDauTu,
-                    'loai_thanh_toan' => $uniqueLoaiThanhToan,
-                    'trang_thai_thanh_toan' => $uniqueTrangThaiThanhToan
-                ]
-            ]);
-    
-        } catch (\Exception $e) {
-            Log::error('Error fetching payment requests: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error retrieving payment requests',
-                'error' => $e->getMessage()
-            ], 500);
         }
+        // สำหรับ employee ไม่ต้องกรองข้อมูล (แสดงทั้งหมด)
+
+        // Apply filters based on request parameters
+        
+        // Filter by status
+        if ($request->has('status') && $request->status !== 'all') {
+            $query->where('dngn.trang_thai_thanh_toan', $request->status);
+        }
+        
+        // Individual column filters
+        $filterableColumns = [
+            'filter_ma_giai_ngan' => 'dngn.ma_giai_ngan',
+            'filter_vu_dau_tu' => 'dngn.vu_dau_tu',
+            'filter_loai_thanh_toan' => 'dngn.loai_thanh_toan',
+            'filter_khach_hang_ca_nhan' => 'dngn.khach_hang_ca_nhan',
+            'filter_khach_hang_doanh_nghiep' => 'dngn.khach_hang_doanh_nghiep',
+        ];
+        
+        foreach ($filterableColumns as $filterParam => $dbColumn) {
+            if ($request->has($filterParam) && !empty($request->$filterParam)) {
+                $query->where($dbColumn, 'LIKE', '%' . $request->$filterParam . '%');
+            }
+        }
+        
+        // Date filter for ngay_thanh_toan
+        if ($request->has('filter_ngay_thanh_toan') && !empty($request->filter_ngay_thanh_toan)) {
+            $query->whereDate('dngn.ngay_thanh_toan', $request->filter_ngay_thanh_toan);
+        }
+        
+        // Global search
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('dngn.ma_giai_ngan', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhere('dngn.vu_dau_tu', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhere('dngn.loai_thanh_toan', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhere('dngn.khach_hang_ca_nhan', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhere('dngn.khach_hang_doanh_nghiep', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhere('vdt.Ten_Vudautu', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhere('pttt.so_to_trinh', 'LIKE', '%' . $searchTerm . '%');
+            });
+        }
+
+        // Sort options (default to newest first)
+        $sortField = $request->input('sort_field', 'dngn.id');
+        $sortDirection = $request->input('sort_direction', 'desc');
+        $query->orderBy($sortField, $sortDirection);
+
+        // Get all records instead of paginating
+        $results = $query->get();
+        $totalCount = count($results);
+
+        // Also get all unique values for dropdown filters (ปรับปรุงให้กรองตาม user type ด้วย)
+        $uniqueVuDauTu = DB::table('tb_de_nghi_thanhtoan_dv as dngn');
+        $uniqueLoaiThanhToan = DB::table('tb_de_nghi_thanhtoan_dv as dngn');
+        $uniqueTrangThaiThanhToan = DB::table('tb_de_nghi_thanhtoan_dv as dngn');
+
+        // ถ้าเป็น farmer ให้กรองข้อมูล unique values ด้วย
+        if ($userType === 'farmer' && isset($farmerData)) {
+            $uniqueVuDauTu->where(function($q) use ($farmerData) {
+                if (!empty($farmerData->ma_kh_ca_nhan)) {
+                    $q->where('dngn.ma_khach_hang_ca_nhan', $farmerData->ma_kh_ca_nhan);
+                }
+                if (!empty($farmerData->ma_kh_doanh_nghiep)) {
+                    $q->orWhere('dngn.ma_khach_hang_doanh_nghiep', $farmerData->ma_kh_doanh_nghiep);
+                }
+            });
+
+            $uniqueLoaiThanhToan->where(function($q) use ($farmerData) {
+                if (!empty($farmerData->ma_kh_ca_nhan)) {
+                    $q->where('dngn.ma_khach_hang_ca_nhan', $farmerData->ma_kh_ca_nhan);
+                }
+                if (!empty($farmerData->ma_kh_doanh_nghiep)) {
+                    $q->orWhere('dngn.ma_khach_hang_doanh_nghiep', $farmerData->ma_kh_doanh_nghiep);
+                }
+            });
+
+            $uniqueTrangThaiThanhToan->where(function($q) use ($farmerData) {
+                if (!empty($farmerData->ma_kh_ca_nhan)) {
+                    $q->where('dngn.ma_khach_hang_ca_nhan', $farmerData->ma_kh_ca_nhan);
+                }
+                if (!empty($farmerData->ma_kh_doanh_nghiep)) {
+                    $q->orWhere('dngn.ma_khach_hang_doanh_nghiep', $farmerData->ma_kh_doanh_nghiep);
+                }
+            });
+        }
+
+        $uniqueVuDauTu = $uniqueVuDauTu->distinct()->pluck('vu_dau_tu')->filter()->values();
+        $uniqueLoaiThanhToan = $uniqueLoaiThanhToan->distinct()->pluck('loai_thanh_toan')->filter()->values();
+        $uniqueTrangThaiThanhToan = $uniqueTrangThaiThanhToan->distinct()->pluck('trang_thai_thanh_toan')->filter()->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $results,
+            'total_count' => $totalCount,
+            'filter_options' => [
+                'unique_vu_dau_tu' => $uniqueVuDauTu,
+                'unique_loai_thanh_toan' => $uniqueLoaiThanhToan,
+                'unique_trang_thai_thanh_toan' => $uniqueTrangThaiThanhToan,
+            ],
+            'user_info' => [
+                'user_type' => $userType,
+                'user_id' => $userId,
+                'is_farmer' => $userType === 'farmer'
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error fetching payment requests: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error retrieving payment requests',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
 
 

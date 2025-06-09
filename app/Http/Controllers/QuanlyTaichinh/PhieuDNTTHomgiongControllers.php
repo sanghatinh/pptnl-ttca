@@ -881,7 +881,7 @@ public function saveNoteHomgiong(Request $request, $id)
     try {
         // Validate the request
         $validated = $request->validate([
-            'note' => 'nullable|string|max:1000'
+            'note' => 'nullable|string|max:1000' // Allow up to 1000 characters for note
         ]);
 
         // Find the payment request
@@ -910,8 +910,8 @@ public function saveNoteHomgiong(Request $request, $id)
         } else {
             return response()->json([
                 'success' => false,
-                'message' => 'Không có thay đổi nào được thực hiện'
-            ], 400);
+                'message' => 'Không thể lưu ghi chú'
+            ], 500);
         }
 
     } catch (\Illuminate\Validation\ValidationException $e) {
@@ -1137,6 +1137,171 @@ public function destroyHomgiong($id)
 }
 
 
+/**
+ * Get all payment requests for homgiong
+ *
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getAllPaymentRequestsHomgiong(Request $request)
+{
+    try {
+        // ดึงข้อมูล user type และ user ID จาก headers ที่ JwtMiddleware ส่งมา
+        $userType = $request->header('X-User-Type');
+        $userId = $request->header('X-User-ID');
+        
+        // Build query with joins to get all required data
+        $query = DB::table('tb_de_nghi_thanhtoan_homgiong as dngn')
+            ->leftJoin('tb_phieu_trinh_thanh_toan_homgiong as pttt', 'pttt.ma_trinh_thanh_toan', '=', 'dngn.ma_trinh_thanh_toan')
+            ->leftJoin('tb_vudautu as vdt', 'vdt.Ma_Vudautu', '=', 'dngn.vu_dau_tu')
+            ->select(
+                'dngn.ma_giai_ngan',
+                'dngn.vu_dau_tu',
+                'vdt.Ten_Vudautu as ten_vu_dau_tu',
+                'dngn.loai_thanh_toan',
+                'dngn.khach_hang_ca_nhan',
+                'dngn.ma_khach_hang_ca_nhan',
+                'dngn.khach_hang_doanh_nghiep',
+                'dngn.ma_khach_hang_doanh_nghiep',
+                'dngn.thuc_nhan',
+                'dngn.tong_tien',
+                'dngn.tong_tien_tam_giu',
+                'dngn.tong_tien_khau_tru',
+                'dngn.tong_tien_lai_suat',
+                'dngn.tong_tien_thanh_toan_con_lai',
+                'dngn.ngay_thanh_toan',
+                'dngn.trang_thai_thanh_toan',
+                'pttt.so_to_trinh',
+                'pttt.so_dot_thanh_toan',
+                'pttt.ngay_tao'
+            );
 
+        // ถ้าเป็น farmer ให้กรองข้อมูลตาม customer ID
+        if ($userType === 'farmer') {
+            // ดึงข้อมูล farmer จากตาราง user_farmer
+            $farmerData = DB::table('user_farmer')
+                ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
+                ->where('id', $userId)
+                ->first();
+            
+            if ($farmerData) {
+                $query->where(function($q) use ($farmerData) {
+                    // กรองตาม ma_khach_hang_ca_nhan หรือ ma_khach_hang_doanh_nghiep
+                    if (!empty($farmerData->ma_kh_ca_nhan)) {
+                        $q->where('dngn.ma_khach_hang_ca_nhan', $farmerData->ma_kh_ca_nhan);
+                    }
+                    if (!empty($farmerData->ma_kh_doanh_nghiep)) {
+                        $q->orWhere('dngn.ma_khach_hang_doanh_nghiep', $farmerData->ma_kh_doanh_nghiep);
+                    }
+                });
+            } else {
+                // ถ้าไม่พบข้อมูล farmer ให้คืนข้อมูลว่าง
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'total' => 0,
+                    'unique_values' => [
+                        'vu_dau_tu' => [],
+                        'loai_thanh_toan' => [],
+                        'trang_thai_thanh_toan' => []
+                    ]
+                ]);
+            }
+        }
+        // สำหรับ employee ไม่ต้องกรองข้อมูล (แสดงทั้งหมด)
+
+        // Apply filters based on request parameters
+        
+        // Filter by status
+        if ($request->has('status') && $request->status !== 'all') {
+            $query->where('dngn.trang_thai_thanh_toan', $request->status);
+        }
+        
+        // Individual column filters
+        $filterableColumns = [
+            'vu_dau_tu' => 'dngn.vu_dau_tu',
+            'loai_thanh_toan' => 'dngn.loai_thanh_toan',
+            'trang_thai_thanh_toan' => 'dngn.trang_thai_thanh_toan'
+        ];
+        
+        foreach ($filterableColumns as $column => $dbColumn) {
+            if ($request->has("filter_$column") && !empty($request->input("filter_$column"))) {
+                $filterValues = explode(',', $request->input("filter_$column"));
+                $query->whereIn($dbColumn, $filterValues);
+            }
+        }
+        
+        // Date filter for ngay_thanh_toan
+        if ($request->has('filter_ngay_thanh_toan') && !empty($request->filter_ngay_thanh_toan)) {
+            $dateRange = explode(',', $request->filter_ngay_thanh_toan);
+            if (count($dateRange) === 2) {
+                $query->whereBetween('dngn.ngay_thanh_toan', [$dateRange[0], $dateRange[1]]);
+            }
+        }
+        
+        // Global search
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = '%' . $request->search . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('dngn.ma_giai_ngan', 'like', $searchTerm)
+                  ->orWhere('dngn.khach_hang_doanh_nghiep', 'like', $searchTerm)
+                  ->orWhere('dngn.khach_hang_ca_nhan', 'like', $searchTerm);
+            });
+        }
+
+        // Sort options (default to newest first)
+        $sortField = $request->input('sort_field', 'dngn.id');
+        $sortDirection = $request->input('sort_direction', 'desc');
+        $query->orderBy($sortField, $sortDirection);
+
+        // Get all records instead of paginating
+        $results = $query->get();
+        $totalCount = count($results);
+
+        // Also get all unique values for dropdown filters (ปรับปรุงให้กรองตาม user type ด้วย)
+        $uniqueVuDauTu = DB::table('tb_de_nghi_thanhtoan_homgiong as dngn');
+        $uniqueLoaiThanhToan = DB::table('tb_de_nghi_thanhtoan_homgiong as dngn');
+        $uniqueTrangThaiThanhToan = DB::table('tb_de_nghi_thanhtoan_homgiong as dngn');
+
+        // ถ้าเป็น farmer ให้กรองข้อมูล unique values ด้วย
+        if ($userType === 'farmer' && isset($farmerData)) {
+            $filterCondition = function($query) use ($farmerData) {
+                if (!empty($farmerData->ma_kh_ca_nhan)) {
+                    $query->where('ma_khach_hang_ca_nhan', $farmerData->ma_kh_ca_nhan);
+                }
+                if (!empty($farmerData->ma_kh_doanh_nghiep)) {
+                    $query->orWhere('ma_khach_hang_doanh_nghiep', $farmerData->ma_kh_doanh_nghiep);
+                }
+            };
+
+            $uniqueVuDauTu = $uniqueVuDauTu->where($filterCondition);
+            $uniqueLoaiThanhToan = $uniqueLoaiThanhToan->where($filterCondition);
+            $uniqueTrangThaiThanhToan = $uniqueTrangThaiThanhToan->where($filterCondition);
+        }
+
+        $uniqueVuDauTu = $uniqueVuDauTu->distinct()->pluck('vu_dau_tu')->filter()->sort()->values();
+        $uniqueLoaiThanhToan = $uniqueLoaiThanhToan->distinct()->pluck('loai_thanh_toan')->filter()->sort()->values();
+        $uniqueTrangThaiThanhToan = $uniqueTrangThaiThanhToan->distinct()->pluck('trang_thai_thanh_toan')->filter()->sort()->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $results,
+            'total' => $totalCount,
+            'unique_values' => [
+                'vu_dau_tu' => $uniqueVuDauTu,
+                'loai_thanh_toan' => $uniqueLoaiThanhToan,
+                'trang_thai_thanh_toan' => $uniqueTrangThaiThanhToan
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error fetching payment requests homgiong: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error fetching payment requests homgiong',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 
 }

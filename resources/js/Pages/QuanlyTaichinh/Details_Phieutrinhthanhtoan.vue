@@ -4396,6 +4396,17 @@ export default {
             clearTimeout(this.corporateSearchTimeout);
         }
     },
+    watch: {
+        // เพิ่ม watcher สำหรับ payment_date เพื่อซิงค์ข้อมูลอัตโนมัติ
+        "document.payment_date": {
+            handler(newValue, oldValue) {
+                if (newValue !== oldValue) {
+                    this.updatePaymentRequestsModalPaymentDate();
+                }
+            },
+            immediate: false,
+        },
+    },
 
     methods: {
         async openPrintModal() {
@@ -5320,6 +5331,8 @@ export default {
                     this.$nextTick(() => {
                         // ดึงข้อมูลประวัติใหม่จาก API
                         this.fetchProcessingHistory();
+                        // ซิงค์ข้อมูล payment_date ใน modal
+                        this.updatePaymentRequestsModalPaymentDate();
                     });
 
                     // Show success message
@@ -5357,6 +5370,28 @@ export default {
                 }
             }
         },
+        /**
+         * อัปเดต payment date ในข้อมูลของ payment requests modal
+         */
+        updatePaymentRequestsModalPaymentDate() {
+            if (this.paymentRequests && this.paymentRequests.length > 0) {
+                // อัปเดต payment date สำหรับทุกรายการใน payment requests
+                this.paymentRequests = this.paymentRequests.map((request) => ({
+                    ...request,
+                    payment_date: this.document.payment_date, // ซิงค์วันที่จาก document หลัก
+                }));
+
+                // Force reactivity update เพื่อให้ Vue อัปเดต UI
+                this.$nextTick(() => {
+                    this.$forceUpdate();
+                });
+
+                console.log(
+                    "Payment requests updated with payment_date:",
+                    this.document.payment_date
+                );
+            }
+        },
         async saveBasicInfo() {
             if (!this.isAuthenticated()) return;
             try {
@@ -5368,7 +5403,7 @@ export default {
                         so_dot_thanh_toan: this.document.payment_installment,
                         loai_thanh_toan: this.document.payment_type,
                         vu_dau_tu: this.document.investment_project,
-                        ngay_thanh_toan: this.document.payment_date,
+                        ngay_thanh_toan: this.document.payment_date, // ส่ง payment_date ไปยัง backend
                         // Add financial fields
                         tong_tien: this.totalPaymentAmount,
                         tong_tien_tam_giu: this.totalHoldAmount,
@@ -5397,6 +5432,9 @@ export default {
 
                     // Update local data if needed
                     this.fetchDocument(); // Refresh data to ensure payment_date is updated
+
+                    // ซิงค์ข้อมูล payment date ใน modal
+                    this.updatePaymentRequestsModalPaymentDate();
                 } else {
                     Swal.fire({
                         title: "Lỗi",
@@ -5427,6 +5465,7 @@ export default {
                 });
             }
         },
+
         async fetchInvestmentProjects() {
             if (!this.isAuthenticated()) return;
             try {
@@ -6017,7 +6056,19 @@ export default {
                 );
 
                 if (response.data.success) {
-                    this.paymentRequests = response.data.data;
+                    // Map the payment requests data และซิงค์ payment_date
+                    this.paymentRequests = response.data.data.map((item) => ({
+                        ...item,
+                        // ซิงค์ payment_date จาก document หลักเสมอ เพื่อให้แน่ใจว่าข้อมูลตรงกัน
+                        payment_date:
+                            this.document.payment_date || item.payment_date,
+                    }));
+
+                    // Update unique values for payment filters
+                    this.updatePaymentFilterValues();
+
+                    // Force reactivity update
+                    this.$forceUpdate();
                 } else {
                     this.showError("Failed to fetch payment requests data");
                 }
@@ -6054,30 +6105,28 @@ export default {
                 })
                 .then((response) => {
                     if (response.data.success) {
-                        // Map main document data
-                        // ดึงข้อมูล action ล่าสุดจาก processingHistory (ซึ่งมาจากตาราง Action_phieu_trinh_thanh_toan)
-                        let latestAction = "";
-                        // Store processing history if it exists in the response
-                        if (response.data.processingHistory) {
-                            this.processingHistory =
-                                response.data.processingHistory;
+                        // กำหนดค่า latestAction จากข้อมูลที่ได้รับ
+                        let latestAction = null;
 
-                            // ดึง action ล่าสุดจากประวัติการดำเนินการ (เพิ่มโค้ดนี้)
-                            if (this.processingHistory.length > 0) {
-                                // จัดเรียงข้อมูลตามวันที่จากใหม่ไปเก่า
-                                const sortedHistory = [
-                                    ...this.processingHistory,
-                                ].sort(
+                        // ตรวจสอบว่ามีข้อมูล actions ใน response หรือไม่
+                        if (
+                            response.data.document.actions &&
+                            response.data.document.actions.length > 0
+                        ) {
+                            // จัดเรียงตามวันที่และเลือก action ล่าสุด
+                            const sortedActions =
+                                response.data.document.actions.sort(
                                     (a, b) =>
                                         new Date(b.created_at) -
                                         new Date(a.created_at)
                                 );
-                                latestAction = sortedHistory[0].action;
-                            }
-                        } else {
-                            // If it's not included in main response, fetch it separately
-                            this.fetchProcessingHistory();
+                            latestAction = sortedActions[0].action;
+                        } else if (response.data.document.status) {
+                            // ใช้ status จาก document หากไม่มี actions
+                            latestAction = response.data.document.status;
                         }
+
+                        // Map ข้อมูล document
                         this.document = {
                             payment_code:
                                 response.data.document.payment_code || "",
@@ -6086,7 +6135,6 @@ export default {
                                 response.data.document.investment_project || "",
                             payment_type:
                                 response.data.document.payment_type || "",
-                            // ใช้ action ล่าสุดเป็น status ถ้ามี แต่ถ้าไม่มีให้ใช้ค่า trang_thai_thanh_toan เหมือนเดิม
                             status:
                                 latestAction ||
                                 response.data.document.trang_thai_thanh_toan ||
@@ -6098,7 +6146,7 @@ export default {
                             created_at:
                                 response.data.document.created_at || null,
                             payment_date:
-                                response.data.document.payment_date || "", // Add this line
+                                response.data.document.payment_date || "",
                             total_amount:
                                 response.data.document.total_amount || 0,
                             creator_name:
@@ -6107,36 +6155,57 @@ export default {
                         };
                         this.noteText = this.document.notes || "";
 
-                        // Map payment details
-                        this.paymentDetails = Array.isArray(
-                            response.data.paymentDetails
-                        )
-                            ? response.data.paymentDetails.map((item) => ({
-                                  document_code: item.document_code || "",
-                                  document_type: "Biên bản nghiệm thu DV",
-                                  tram: item.tram || "",
-                                  title: item.title || "",
-                                  investment_project:
-                                      item.investment_project || "",
-                                  khach_hang_ca_nhan_dt_mia:
-                                      item.khach_hang_ca_nhan_dt_mia || "",
-                                  khach_hang_doanh_nghiep_dt_mia:
-                                      item.khach_hang_doanh_nghiep_dt_mia || "",
-                                  contract_number: item.contract_number || "",
-                                  service_type: item.service_type || "",
-                                  hop_dong_cung_ung_dich_vu:
-                                      item.hop_dong_cung_ung_dich_vu || "",
-                                  disbursement_code:
-                                      item.disbursement_code || "",
-                                  installment: item.installment || 1,
-                                  amount: item.amount || 0,
-                              }))
-                            : [];
+                        // Map ข้อมูล payment details หากมี
+                        if (
+                            response.data.document.details &&
+                            Array.isArray(response.data.document.details)
+                        ) {
+                            this.paymentDetails =
+                                response.data.document.details.map((item) => ({
+                                    document_code:
+                                        item.document_code ||
+                                        item.ma_nghiem_thu ||
+                                        "",
+                                    document_type: "Nghiệm thu",
+                                    title: item.title || item.tieu_de || "",
+                                    contract_number:
+                                        item.contract_number ||
+                                        item.hop_dong_dau_tu_mia ||
+                                        "",
+                                    installment:
+                                        item.installment ||
+                                        item.dot_thanh_toan ||
+                                        1,
+                                    amount: item.amount || item.tong_tien || 0,
+                                    investment_project:
+                                        item.investment_project ||
+                                        item.vu_dau_tu ||
+                                        "",
+                                    khach_hang_ca_nhan_dt_mia:
+                                        item.khach_hang_ca_nhan_dt_mia || "",
+                                    khach_hang_doanh_nghiep_dt_mia:
+                                        item.khach_hang_doanh_nghiep_dt_mia ||
+                                        "",
+                                    service_type:
+                                        item.service_type ||
+                                        item.hinh_thuc_thuc_hien_dv ||
+                                        "",
+                                    hop_dong_cung_ung_dich_vu:
+                                        item.hop_dong_cung_ung_dich_vu || "",
+                                    disbursement_code:
+                                        item.disbursement_code ||
+                                        item.ma_de_nghi_giai_ngan ||
+                                        "",
+                                    tram: item.tram || "",
+                                }));
 
-                        // Now fetch the payment requests (disbursements)
+                            // Update unique values for filters
+                            this.updateUniqueValues();
+                        }
+
+                        // ดึงข้อมูล disbursements
                         return axios.get(
                             `/api/payment-requests/${id}/disbursements`,
-
                             {
                                 headers: {
                                     Authorization:
@@ -6153,11 +6222,12 @@ export default {
                 })
                 .then((disbResponse) => {
                     if (disbResponse && disbResponse.data.success) {
-                        // Map the payment requests data
+                        // Map the payment requests data และซิงค์ payment_date
                         this.paymentRequests = Array.isArray(
                             disbResponse.data.data
                         )
                             ? disbResponse.data.data.map((item) => ({
+                                  ...item,
                                   disbursement_code:
                                       item.disbursement_code || "",
                                   tram: item.tram || "",
@@ -6178,7 +6248,11 @@ export default {
                                   total_deduction: item.total_deduction || 0,
                                   total_interest: item.total_interest || 0,
                                   total_remaining: item.total_remaining || 0,
-                                  payment_date: item.payment_date || null,
+                                  // ซิงค์ payment_date จาก document หลัก
+                                  payment_date:
+                                      this.document.payment_date ||
+                                      item.payment_date ||
+                                      null,
                                   proposal_number: item.proposal_number || "",
                                   installment: item.installment || 1,
                               }))
@@ -6186,6 +6260,12 @@ export default {
 
                         // Update unique values for payment filters
                         this.updatePaymentFilterValues();
+
+                        // ซิงค์ข้อมูล payment_date หลังจากโหลดข้อมูลเสร็จ
+                        this.updatePaymentRequestsModalPaymentDate();
+
+                        // ดึงข้อมูล processing history
+                        this.fetchProcessingHistory();
                     }
                 })
                 .catch((error) => {
@@ -6200,6 +6280,32 @@ export default {
                 .finally(() => {
                     this.isLoading = false;
                 });
+        },
+        updateUniqueValues() {
+            // Extract unique values for dropdown filters
+            this.uniqueValues = {
+                tram: [
+                    ...new Set(
+                        this.paymentDetails
+                            .map((item) => item.tram)
+                            .filter(Boolean)
+                    ),
+                ],
+                investment_project: [
+                    ...new Set(
+                        this.paymentDetails
+                            .map((item) => item.investment_project)
+                            .filter(Boolean)
+                    ),
+                ],
+                service_type: [
+                    ...new Set(
+                        this.paymentDetails
+                            .map((item) => item.service_type)
+                            .filter(Boolean)
+                    ),
+                ],
+            };
         },
 
         // Add this helper method to update payment filter values

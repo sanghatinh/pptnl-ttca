@@ -30,6 +30,7 @@ class PhieudenghithanhtoanHomgiong extends Model
         'ngay_thanh_toan',
         'trang_thai_thanh_toan',
         'comment',
+        'note', // เพิ่ม field note
     ];
 
     protected $casts = [

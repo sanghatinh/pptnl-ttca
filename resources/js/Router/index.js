@@ -390,6 +390,15 @@ const routes = [
         },
     },
     {
+        name: "PhieudenghithanhtoanHomgiong",
+        path: "/PhieudenghithanhtoanHomgiong",
+        component: () =>
+            import("../Pages/QuanlyTaichinh/PhieudenghithanhtoanHomgiong.vue"),
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
         name: "Phieudenghithanhtoandichvu",
         path: "/Phieudenghithanhtoandichvu",
         component: Phieudenghithanhtoandichvu,

@@ -40,7 +40,7 @@
                     >
                         <option value="">Tất cả vụ đầu tư</option>
                         <option
-                            v-for="option in uniqueValues.vu_dau_tu"
+                            v-for="option in uniqueValues.ten_vu_dau_tu"
                             :key="option"
                             :value="option"
                         >
@@ -256,7 +256,7 @@
                     >
                         <option value="">Vụ đầu tư</option>
                         <option
-                            v-for="option in uniqueValues.vu_dau_tu"
+                            v-for="option in uniqueValues.ten_vu_dau_tu"
                             :key="option"
                             :value="option"
                         >
@@ -355,7 +355,9 @@
                                                 <div
                                                     class="th-title"
                                                     @click="
-                                                        toggleSort('vu_dau_tu')
+                                                        toggleSort(
+                                                            'ten_vu_dau_tu'
+                                                        )
                                                     "
                                                 >
                                                     Vụ đầu tư
@@ -363,7 +365,7 @@
                                                         class="sort-indicator"
                                                         >{{
                                                             getSortIndicator(
-                                                                "vu_dau_tu"
+                                                                "ten_vu_dau_tu"
                                                             )
                                                         }}</span
                                                     >
@@ -371,7 +373,7 @@
                                                 <button
                                                     @click.stop="
                                                         toggleFilter(
-                                                            'vu_dau_tu'
+                                                            'ten_vu_dau_tu'
                                                         )
                                                     "
                                                     class="filter-btn"
@@ -380,14 +382,15 @@
                                                         class="fas fa-filter"
                                                         :class="{
                                                             'text-green-500':
-                                                                columnFilters.vu_dau_tu,
+                                                                columnFilters.ten_vu_dau_tu,
                                                         }"
                                                     ></i>
                                                 </button>
                                             </div>
                                             <div
                                                 v-if="
-                                                    activeFilter === 'vu_dau_tu'
+                                                    activeFilter ===
+                                                    'ten_vu_dau_tu'
                                                 "
                                                 class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
                                             >
@@ -395,21 +398,21 @@
                                                     class="max-h-40 overflow-y-auto mb-2"
                                                 >
                                                     <div
-                                                        v-for="option in uniqueValues.vu_dau_tu"
+                                                        v-for="option in uniqueValues.ten_vu_dau_tu"
                                                         :key="option"
                                                         class="flex items-center mb-2"
                                                     >
                                                         <input
                                                             type="checkbox"
-                                                            :id="`vu_dau_tu-${option}`"
+                                                            :id="`ten_vu_dau_tu-${option}`"
                                                             :value="option"
                                                             v-model="
-                                                                selectedFilterValues.vu_dau_tu
+                                                                selectedFilterValues.ten_vu_dau_tu
                                                             "
                                                             class="mr-2 rounded text-green-500 focus:ring-green-500"
                                                         />
                                                         <label
-                                                            :for="`vu_dau_tu-${option}`"
+                                                            :for="`ten_vu_dau_tu-${option}`"
                                                             class="select-none"
                                                             >{{ option }}</label
                                                         >
@@ -421,7 +424,7 @@
                                                     <button
                                                         @click="
                                                             resetFilter(
-                                                                'vu_dau_tu'
+                                                                'ten_vu_dau_tu'
                                                             )
                                                         "
                                                         class="btn btn-sm btn-light"
@@ -431,7 +434,7 @@
                                                     <button
                                                         @click="
                                                             applyFilter(
-                                                                'vu_dau_tu'
+                                                                'ten_vu_dau_tu'
                                                             )
                                                         "
                                                         class="btn btn-sm btn-success"
@@ -1060,7 +1063,7 @@
                                                     class="th-title"
                                                     @click="
                                                         toggleSort(
-                                                            'proposal_number'
+                                                            'so_to_trinh'
                                                         )
                                                     "
                                                 >
@@ -1069,7 +1072,7 @@
                                                         class="sort-indicator"
                                                         >{{
                                                             getSortIndicator(
-                                                                "proposal_number"
+                                                                "so_to_trinh"
                                                             )
                                                         }}</span
                                                     >
@@ -1077,7 +1080,7 @@
                                                 <button
                                                     @click.stop="
                                                         toggleFilter(
-                                                            'proposal_number'
+                                                            'so_to_trinh'
                                                         )
                                                     "
                                                     class="filter-btn"
@@ -1086,7 +1089,7 @@
                                                         class="fas fa-filter"
                                                         :class="{
                                                             'text-green-500':
-                                                                columnFilters.proposal_number,
+                                                                columnFilters.so_to_trinh,
                                                         }"
                                                     ></i>
                                                 </button>
@@ -1094,14 +1097,14 @@
                                             <div
                                                 v-if="
                                                     activeFilter ===
-                                                    'proposal_number'
+                                                    'so_to_trinh'
                                                 "
                                                 class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
                                             >
                                                 <input
                                                     type="text"
                                                     v-model="
-                                                        columnFilters.proposal_number
+                                                        columnFilters.so_to_trinh
                                                     "
                                                     class="form-control mb-2"
                                                     placeholder="Lọc theo số tờ trình..."
@@ -1112,7 +1115,7 @@
                                                     <button
                                                         @click="
                                                             resetFilter(
-                                                                'proposal_number'
+                                                                'so_to_trinh'
                                                             )
                                                         "
                                                         class="btn btn-sm btn-light"
@@ -1122,7 +1125,7 @@
                                                     <button
                                                         @click="
                                                             applyFilter(
-                                                                'proposal_number'
+                                                                'so_to_trinh'
                                                             )
                                                         "
                                                         class="btn btn-sm btn-success"
@@ -1138,7 +1141,7 @@
                                                     class="th-title"
                                                     @click="
                                                         toggleSort(
-                                                            'payment_installment'
+                                                            'so_dot_thanh_toan'
                                                         )
                                                     "
                                                 >
@@ -1147,7 +1150,7 @@
                                                         class="sort-indicator"
                                                         >{{
                                                             getSortIndicator(
-                                                                "payment_installment"
+                                                                "so_dot_thanh_toan"
                                                             )
                                                         }}</span
                                                     >
@@ -1155,7 +1158,7 @@
                                                 <button
                                                     @click.stop="
                                                         toggleFilter(
-                                                            'payment_installment'
+                                                            'so_dot_thanh_toan'
                                                         )
                                                     "
                                                     class="filter-btn"
@@ -1164,7 +1167,7 @@
                                                         class="fas fa-filter"
                                                         :class="{
                                                             'text-green-500':
-                                                                columnFilters.payment_installment,
+                                                                columnFilters.so_dot_thanh_toan,
                                                         }"
                                                     ></i>
                                                 </button>
@@ -1173,14 +1176,14 @@
                                             <div
                                                 v-if="
                                                     activeFilter ===
-                                                    'payment_installment'
+                                                    'so_dot_thanh_toan'
                                                 "
                                                 class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
                                             >
                                                 <input
                                                     type="text"
                                                     v-model="
-                                                        columnFilters.payment_installment
+                                                        columnFilters.so_dot_thanh_toan
                                                     "
                                                     class="form-control mb-2"
                                                     placeholder="Lọc theo đợt thanh toán..."
@@ -1191,7 +1194,7 @@
                                                     <button
                                                         @click="
                                                             resetFilter(
-                                                                'payment_installment'
+                                                                'so_dot_thanh_toan'
                                                             )
                                                         "
                                                         class="btn btn-sm btn-light"
@@ -1201,7 +1204,7 @@
                                                     <button
                                                         @click="
                                                             applyFilter(
-                                                                'payment_installment'
+                                                                'so_dot_thanh_toan'
                                                             )
                                                         "
                                                         class="btn btn-sm btn-success"
@@ -1221,7 +1224,7 @@
                                         class="cursor-pointer"
                                     >
                                         <td>{{ item.ma_giai_ngan }}</td>
-                                        <td>{{ item.vu_dau_tu }}</td>
+                                        <td>{{ item.ten_vu_dau_tu }}</td>
                                         <td>
                                             <span
                                                 class="badge bg-info text-white"
@@ -1309,14 +1312,14 @@
                                             <span
                                                 class="badge bg-warning text-dark"
                                             >
-                                                {{ item.proposal_number }}
+                                                {{ item.so_to_trinh }}
                                             </span>
                                         </td>
                                         <td class="text-center">
                                             <span
                                                 class="badge bg-danger text-white"
                                                 >{{
-                                                    item.payment_installment
+                                                    item.so_dot_thanh_toan
                                                 }}</span
                                             >
                                         </td>
@@ -1380,7 +1383,7 @@
                             {{ item.ma_giai_ngan || "Không xác định" }}
                         </h5>
                         <p class="font-medium mb-1">
-                            {{ item.vu_dau_tu || "Không có vụ đầu tư" }}
+                            {{ item.ten_vu_dau_tu || "Không có vụ đầu tư" }}
                         </p>
                         <p class="text-sm text-gray-600 mb-0">
                             Loại thanh toán: {{ item.loai_thanh_toan || "N/A" }}
@@ -1405,12 +1408,10 @@
                                 item.ma_khach_hang_doanh_nghiep ||
                                 "N/A"
                             }}
-                            <span v-if="item.proposal_number" class="mx-1"
-                                >•</span
-                            >
+                            <span v-if="item.so_to_trinh" class="mx-1">•</span>
                             {{
-                                item.proposal_number
-                                    ? "Số tờ trình: " + item.proposal_number
+                                item.so_to_trinh
+                                    ? "Số tờ trình: " + item.so_to_trinh
                                     : ""
                             }}
                         </p>
@@ -1637,8 +1638,8 @@ export default {
                 ma_khach_hang_ca_nhan: "",
                 khach_hang_doanh_nghiep: "",
                 ma_khach_hang_doanh_nghiep: "",
-                proposal_number: "",
-                payment_installment: "",
+                so_to_trinh: "",
+                so_dot_thanh_toan: "",
             },
             dateRangeActive: false,
             dateRange: {
@@ -1664,12 +1665,12 @@ export default {
             importModal: null,
             // Unique values and selected filter values
             uniqueValues: {
-                vu_dau_tu: [],
+                ten_vu_dau_tu: [],
                 loai_thanh_toan: [],
                 trang_thai_thanh_toan: [],
             },
             selectedFilterValues: {
-                vu_dau_tu: [],
+                ten_vu_dau_tu: [],
                 loai_thanh_toan: [],
                 trang_thai_thanh_toan: [],
             },
@@ -2026,10 +2027,10 @@ export default {
             // Ensure we're always working with arrays
             if (this.vuDauTuFilter) {
                 // Make sure this is an array
-                this.selectedFilterValues.vu_dau_tu = [this.vuDauTuFilter];
+                this.selectedFilterValues.ten_vu_dau_tu = [this.vuDauTuFilter];
             } else {
                 // Initialize as empty array
-                this.selectedFilterValues.vu_dau_tu = [];
+                this.selectedFilterValues.ten_vu_dau_tu = [];
             }
             this.fetchPhieuData(1);
         },
@@ -2143,112 +2144,90 @@ export default {
 
             this.isLoading = true;
             try {
+                // Build parameters for API request
                 const params = {
                     page: page,
                     per_page: this.perPage,
-                    search: this.search || null,
-                    status:
-                        this.statusFilter !== "all" ? this.statusFilter : null,
+                    search: this.search,
+                    status: this.statusFilter,
+                    sort_field: this.sortColumn,
+                    sort_direction: this.sortDirection,
                 };
 
-                // Add date range filter params
+                // Add column filters
+                for (const [key, value] of Object.entries(this.columnFilters)) {
+                    if (value !== "") {
+                        params[`filter_${key}`] = value;
+                    }
+                }
+
+                // Add dropdown filters
+                for (const [key, values] of Object.entries(
+                    this.selectedFilterValues
+                )) {
+                    if (Array.isArray(values) && values.length > 0) {
+                        params[`filter_${key}`] = values.join(",");
+                    }
+                }
+
+                // Add date range filter
                 if (
                     this.dateRange.active &&
                     this.dateRange.startDate &&
                     this.dateRange.endDate
                 ) {
-                    params.start_date = this.dateRange.startDate;
-                    params.end_date = this.dateRange.endDate;
+                    params.filter_ngay_thanh_toan = `${this.dateRange.startDate},${this.dateRange.endDate}`;
                 }
 
-                // Add column filters to params
-                Object.keys(this.columnFilters).forEach((key) => {
-                    if (this.columnFilters[key]) {
-                        params[`filter_${key}`] = this.columnFilters[key];
-                    }
-                });
-
-                // Add selected filter values for dropdown filters
-                Object.keys(this.selectedFilterValues).forEach((key) => {
-                    if (
-                        this.selectedFilterValues[key] &&
-                        this.selectedFilterValues[key].length > 0
-                    ) {
-                        params[`filter_${key}`] =
-                            this.selectedFilterValues[key].join(",");
-                    }
-                });
-
+                // Call the API for Hom Giong payment requests
                 const headers = this.store.getAuthHeaders();
                 const response = await axios.get(
-                    "/api/tai-chinh/phieu-de-nghi-thanh-toan-dv",
+                    "/api/tai-chinh/phieu-de-nghi-thanh-toan-homgiong",
                     {
-                        headers: headers,
                         params: params,
+                        headers: headers,
                     }
                 );
 
-                if (response.data && response.data.success) {
-                    this.phieuList = response.data.data;
+                if (response.data.success) {
+                    this.phieuList = response.data.data || [];
+                    this.allPhieuList = response.data.data || [];
 
-                    // Handle pagination data safely
-                    if (response.data.pagination) {
-                        // If pagination object exists, use it
-                        if (page !== null) {
-                            this.currentPage =
-                                response.data.pagination.current_page || page;
-                        }
-                        this.totalPages =
-                            response.data.pagination.last_page || 1;
-                        this.totalRecords =
-                            response.data.pagination.total ||
-                            this.phieuList.length;
-                    } else {
-                        // If no pagination object, handle as single page
-                        if (page !== null) {
-                            this.currentPage = page;
-                        }
-                        this.totalPages = 1;
-                        this.totalRecords = this.phieuList.length;
-                    }
+                    // Update unique values for filters
+                    this.uniqueValues.trang_thai_thanh_toan =
+                        response.data.unique_values?.trang_thai_thanh_toan ||
+                        [];
+                    this.uniqueValues.ten_vu_dau_tu =
+                        response.data.unique_values?.ten_vu_dau_tu || [];
+                    this.uniqueValues.loai_thanh_toan =
+                        response.data.unique_values?.loai_thanh_toan || [];
 
-                    // Store the entire collection for operations that need all data
-                    if (page === 1 || this.allPhieuList.length === 0) {
-                        this.allPhieuList = [...this.phieuList];
-                    }
+                    // Update current page
+                    this.currentPage = page;
 
-                    // Set unique values for dropdown filters if available
-                    if (response.data.unique_filters) {
-                        this.uniqueValues = {
-                            ...this.uniqueValues,
-                            ...response.data.unique_filters,
-                        };
-                    } else {
-                        // If server doesn't provide unique values, extract them from data
-                        this.updateAllUniqueValues();
-                    }
+                    // Since we're not using server-side pagination, calculate totals from the client
+                    this.totalRecords = this.phieuList.length;
 
                     // Update scrollbar after data is loaded
                     this.$nextTick(() => {
                         this.updateScrollbar();
                     });
                 } else {
-                    console.error("Failed to fetch payment request data");
-                    Swal.fire({
-                        icon: "error",
-                        title: "Error",
-                        text: "Failed to fetch payment request data",
-                    });
+                    this.phieuList = [];
+                    this.allPhieuList = [];
+                    console.error("API Error:", response.data.message);
                 }
             } catch (error) {
-                console.error("Error fetching payment request data:", error);
-                if (error.response?.status === 401) {
+                console.error("Error fetching phieu data:", error);
+
+                if (error.response && error.response.status === 401) {
                     this.handleAuthError();
                 } else {
                     Swal.fire({
+                        title: "Lỗi!",
+                        text: "Đã xảy ra lỗi khi tải dữ liệu phiếu đề nghị thanh toán hom giống",
                         icon: "error",
-                        title: "Error",
-                        text: "An error occurred while fetching data",
+                        confirmButtonText: "OK",
                     });
                 }
             } finally {
@@ -2260,7 +2239,7 @@ export default {
         updateAllUniqueValues() {
             // Update unique values for all dropdown filters
             const dropdownColumns = [
-                "vu_dau_tu",
+                "ten_vu_dau_tu",
                 "loai_thanh_toan",
                 "trang_thai_thanh_toan",
             ];
@@ -2314,7 +2293,7 @@ export default {
                 this.saveFilterState();
                 // Navigate to detail page
                 this.$router.push({
-                    name: "Details_Phieudenghithanhtoandichvu",
+                    name: "Details_Phieudenghithanhtoanhomgiong",
                     params: { id: item.ma_giai_ngan },
                 });
             } catch (error) {
@@ -2340,7 +2319,7 @@ export default {
 
             // If it's one of our dropdown columns and we're opening the filter, ensure unique values are populated
             if (
-                (column === "vu_dau_tu" ||
+                (column === "ten_vu_dau_tu" ||
                     column === "loai_thanh_toan" ||
                     column === "trang_thai_thanh_toan") &&
                 this.activeFilter === column
@@ -2352,7 +2331,7 @@ export default {
         updateUniqueValues(column) {
             // Get unique values for dropdown columns
             if (
-                column === "vu_dau_tu" ||
+                column === "ten_vu_dau_tu" ||
                 column === "loai_thanh_toan" ||
                 column === "trang_thai_thanh_toan"
             ) {
@@ -2369,7 +2348,7 @@ export default {
 
         resetFilter(column) {
             if (
-                column === "vu_dau_tu" ||
+                column === "ten_vu_dau_tu" ||
                 column === "loai_thanh_toan" ||
                 column === "trang_thai_thanh_toan"
             ) {
@@ -2464,7 +2443,7 @@ export default {
                 const exportData = data.map((item) => {
                     return {
                         "Mã giải ngân": item.ma_giai_ngan || "",
-                        "Vụ đầu tư": item.vu_dau_tu || "",
+                        "Vụ đầu tư": item.ten_vu_dau_tu || "",
                         "Loại thanh toán": item.loai_thanh_toan || "",
                         "Trạng thái thanh toán":
                             this.formatStatus(item.trang_thai_thanh_toan) || "",
@@ -2483,8 +2462,8 @@ export default {
                         "Tổng tiền lãi suất": item.tong_tien_lai_suat || 0,
                         "Tổng tiền thanh toán còn lại":
                             item.tong_tien_thanh_toan_con_lai || 0,
-                        "Số tờ trình": item.proposal_number || "",
-                        "Đợt thanh toán": item.payment_installment || "",
+                        "Số tờ trình": item.so_to_trinh || "",
+                        "Đợt thanh toán": item.so_dot_thanh_toan || "",
                     };
                 });
 

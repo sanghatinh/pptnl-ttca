@@ -192,14 +192,7 @@ Route::get('/phieu-thu-no-dich-vu/{id}/check-access', [App\Http\Controllers\Quan
 Route::post('/import-phieu-thu-no-dich-vu', [PhieuthunodichvuController::class, 'import']);
 Route::get('/import-thu-no-dich-vu-progress/{importId}', [PhieuthunodichvuController::class, 'importProgress']);
 
-//Phiếu nghị đề thanh toán dịch vụ
-Route::get('/tai-chinh/phieu-de-nghi-thanh-toan-dv', [PhieudenghithanhtoandvControllers::class, 'getAllPaymentRequests']);
-Route::get('/payment-requests-dichvu/{id}', [PhieudenghithanhtoandvControllers::class, 'showDetailPayment']);
-Route::get('/payment-requests-dichvu/{id}/bienban-nghiemthu', [PhieudenghithanhtoandvControllers::class, 'getbienbannghiemthudv']);
-Route::get('/payment-requests-dichvu/{id}/chitiet-dichvu', 'App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers@getchitietbienbannghiemthudv');
-Route::get('/payment-requests-dichvu/{id}/phieu-thu-no', [PhieudenghithanhtoandvControllers::class, 'getphieuthunodv']);
-Route::get('/payment-requests-dichvu/{id}/processing-history', [PaymentRequestController::class, 'getDisbursementProcessingHistory']);
-Route::put('/payment-requests-dichvu/{id}/update', [PhieudenghithanhtoandvControllers::class, 'updateDocument']);
+
 
  // Routes for Phieu trinh thanh toan hom giong (new)
     Route::get('/payment-requests-homgiong', [PhieutrinhthanhtoanHomgiongControllers::class, 'index']);
@@ -230,6 +223,8 @@ Route::get('/payment-requests-homgiong/{paymentCode}/history', [PhieuDNTTHomgion
 Route::post('/payment-requests-homgiong/{id}/notes', [PhieuDNTTHomgiongControllers::class, 'saveNoteHomgiong']);
 Route::put('/payment-requests-homgiong/{id}/basic-info', [PhieuDNTTHomgiongControllers::class, 'updateBasicInfoHomgiong']);
 Route::delete('/payment-requests-homgiong/{id}', [PhieuDNTTHomgiongControllers::class, 'destroyHomgiong']);
+
+
 
 //Công nợ dịch vụ khấu trừ
 Route::get('/import-congno-dichvu-khautru-progress/{importId}', [DeductibleServiceDebtController::class, 'checkImportProgress']);
@@ -292,6 +287,17 @@ Route::get('/bienban-nghiemthu-homgiong/{id}/check-access', [PhieuGiaoNhanHomGio
     // Banks API for farmer dropdown
     Route::get('/farmer/banks', [App\Http\Controllers\Farmer\FarmerProfileController::class, 'getBanks']);
 
+    //Phiếu nghị đề thanh toán dịch vụ
+Route::get('/tai-chinh/phieu-de-nghi-thanh-toan-dv', [PhieudenghithanhtoandvControllers::class, 'getAllPaymentRequests']);
+Route::get('/payment-requests-dichvu/{id}', [PhieudenghithanhtoandvControllers::class, 'showDetailPayment']);
+Route::get('/payment-requests-dichvu/{id}/bienban-nghiemthu', [PhieudenghithanhtoandvControllers::class, 'getbienbannghiemthudv']);
+Route::get('/payment-requests-dichvu/{id}/chitiet-dichvu', 'App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers@getchitietbienbannghiemthudv');
+Route::get('/payment-requests-dichvu/{id}/phieu-thu-no', [PhieudenghithanhtoandvControllers::class, 'getphieuthunodv']);
+Route::get('/payment-requests-dichvu/{id}/processing-history', [PaymentRequestController::class, 'getDisbursementProcessingHistory']);
+Route::put('/payment-requests-dichvu/{id}/update', [PhieudenghithanhtoandvControllers::class, 'updateDocument']);
+
+//Phiếu đề nghị thanh toán hom giống
+Route::get('/tai-chinh/phieu-de-nghi-thanh-toan-homgiong', [PhieuDNTTHomgiongControllers::class, 'getAllPaymentRequestsHomgiong']);
 
 
 });

@@ -813,162 +813,167 @@ public function createPaymentRequest(Request $request)
         }
     }
 
-    public function updateBasicInfo(Request $request, $id)
-    {
-        try {
-            // Validate the request data
-            $validated = $request->validate([
-                'so_to_trinh' => 'nullable|string|max:100', // Số tờ trình
-                'ngay_tao' => 'nullable|date', // Ngày tạo
-                'so_dot_thanh_toan' => 'nullable|integer|min:1', // Số đợt thanh toán
-                'loai_thanh_toan' => 'nullable|string|max:100', // Loại thanh toán
-                'vu_dau_tu' => 'nullable|string|max:100', // Vụ đầu tư
-                'ngay_thanh_toan' => 'nullable|date', // Ngày thanh toán
-                'tong_tien' => 'nullable|numeric', // Tổng tiền thanh toán
-                'tong_tien_tam_giu' => 'nullable|numeric', // Tổng tiền tạm giữ
-                'tong_tien_khau_tru' => 'nullable|numeric', // Tổng tiền khấu trừ
-                'tong_tien_lai_suat' => 'nullable|numeric', // Tổng tiền lãi suất
-                'tong_tien_thanh_toan_con_lai' => 'nullable|numeric', // Tổng tiền thanh toán còn lại
-            ]);
-    
-            // Find the payment request record
-            $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+public function updateBasicInfo(Request $request, $id)
+{
+    try {
+        // Validate the request data - เพิ่ม ngay_thanh_toan
+        $validated = $request->validate([
+            'so_to_trinh' => 'nullable|string|max:100', // Số tờ trình
+            'ngay_tao' => 'nullable|date', // Ngày tạo
+            'so_dot_thanh_toan' => 'nullable|integer|min:1', // Số đợt thanh toán
+            'loai_thanh_toan' => 'nullable|string|max:100', // Loại thanh toán
+            'vu_dau_tu' => 'nullable|string|max:100', // Vụ đầu tư
+            'ngay_thanh_toan' => 'nullable|date', // Ngày thanh toán - เพิ่มบรรทัดนี้
+            'tong_tien' => 'nullable|numeric', // Tổng tiền thanh toán
+            'tong_tien_tam_giu' => 'nullable|numeric', // Tổng tiền tạm giữ
+            'tong_tien_khau_tru' => 'nullable|numeric', // Tổng tiền khấu trừ
+            'tong_tien_lai_suat' => 'nullable|numeric', // Tổng tiền lãi suất
+            'tong_tien_thanh_toan_con_lai' => 'nullable|numeric', // Tổng tiền thanh toán còn lại
+        ]);
+
+        // Find the payment request record
+        $paymentRequest = DB::table('tb_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->first();
+        
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy phiếu trình thanh toán'
+            ], 404);
+        }
+
+        // Prepare update data
+        $updateData = [];
+        
+        if (isset($validated['so_to_trinh'])) {
+            $updateData['so_to_trinh'] = $validated['so_to_trinh'];
+        }
+        
+        if (isset($validated['ngay_tao'])) {
+            $updateData['ngay_tao'] = $validated['ngay_tao'];
+        }
+        
+        if (isset($validated['so_dot_thanh_toan'])) {
+            $updateData['so_dot_thanh_toan'] = $validated['so_dot_thanh_toan'];
+        }
+        
+        if (isset($validated['loai_thanh_toan'])) {
+            $updateData['loai_thanh_toan'] = $validated['loai_thanh_toan'];
+        }
+        
+        if (isset($validated['vu_dau_tu'])) {
+            $updateData['vu_dau_tu'] = $validated['vu_dau_tu'];
+        }
+        
+        if (isset($validated['ngay_thanh_toan'])) {
+            $updateData['ngay_thanh_toan'] = $validated['ngay_thanh_toan'];
+        }
+        
+        // Add new financial fields to update data
+        if (isset($validated['tong_tien'])) {
+            $updateData['tong_tien_thanh_toan'] = $validated['tong_tien'];
+        }
+        
+        if (isset($validated['tong_tien_tam_giu'])) {
+            $updateData['tong_tien_tam_giu'] = $validated['tong_tien_tam_giu'];
+        }
+        
+        if (isset($validated['tong_tien_khau_tru'])) {
+            $updateData['tong_tien_khau_tru'] = $validated['tong_tien_khau_tru'];
+        }
+        
+        if (isset($validated['tong_tien_lai_suat'])) {
+            $updateData['tong_tien_lai_suat'] = $validated['tong_tien_lai_suat'];
+        }
+        
+        if (isset($validated['tong_tien_thanh_toan_con_lai'])) {
+            $updateData['tong_tien_thanh_toan_con_lai'] = $validated['tong_tien_thanh_toan_con_lai'];
+        }
+
+        // Update the record if we have data to update
+        if (!empty($updateData)) {
+            DB::table('tb_phieu_trinh_thanh_toan')
                 ->where('ma_trinh_thanh_toan', $id)
-                ->first();
+                ->update($updateData);
             
-            if (!$paymentRequest) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Không tìm thấy phiếu trình thanh toán'
-                ], 404);
-            }
-    
-            // Prepare update data
-            $updateData = [];
+            // NEW CODE: Update the disbursement requests with payment date sync
+            // Get all disbursement codes associated with this payment request
+            $disbursementCodes = DB::table('Logs_phieu_trinh_thanh_toan')
+                ->where('ma_trinh_thanh_toan', $id)
+                ->whereNotNull('ma_de_nghi_giai_ngan')
+                ->distinct()
+                ->pluck('ma_de_nghi_giai_ngan')
+                ->toArray();
+                
+            // Create update data for disbursement records
+            $disbursementUpdateData = [];
             
-            if (isset($validated['so_to_trinh'])) {
-                $updateData['so_to_trinh'] = $validated['so_to_trinh'];
-            }
-            
-            if (isset($validated['ngay_tao'])) {
-                $updateData['ngay_tao'] = $validated['ngay_tao'];
-            }
-            
-            if (isset($validated['so_dot_thanh_toan'])) {
-                $updateData['so_dot_thanh_toan'] = $validated['so_dot_thanh_toan'];
-            }
-            
-            if (isset($validated['loai_thanh_toan'])) {
-                $updateData['loai_thanh_toan'] = $validated['loai_thanh_toan'];
-            }
-            
-            if (isset($validated['vu_dau_tu'])) {
-                $updateData['vu_dau_tu'] = $validated['vu_dau_tu'];
-            }
-            
+            // Add payment date if available - ซิงค์วันที่ thanh toán
             if (isset($validated['ngay_thanh_toan'])) {
-                $updateData['ngay_thanh_toan'] = $validated['ngay_thanh_toan'];
+                $disbursementUpdateData['ngay_thanh_toan'] = $validated['ngay_thanh_toan'];
             }
             
-            // Add new financial fields to update data
-            if (isset($validated['tong_tien'])) {
-                $updateData['tong_tien_thanh_toan'] = $validated['tong_tien'];
+            // Transfer current status from parent request if needed
+            if (!empty($paymentRequest->trang_thai_thanh_toan)) {
+                $disbursementUpdateData['trang_thai_thanh_toan'] = $paymentRequest->trang_thai_thanh_toan;
             }
             
-            if (isset($validated['tong_tien_tam_giu'])) {
-                $updateData['tong_tien_tam_giu'] = $validated['tong_tien_tam_giu'];
+            // Update disbursement records if we have data
+            if (!empty($disbursementUpdateData) && !empty($disbursementCodes)) {
+                DB::table('tb_de_nghi_thanhtoan_dv')
+                    ->whereIn('ma_giai_ngan', $disbursementCodes)
+                    ->update($disbursementUpdateData);
             }
             
-            if (isset($validated['tong_tien_khau_tru'])) {
-                $updateData['tong_tien_khau_tru'] = $validated['tong_tien_khau_tru'];
+            // Prepare financial data for disbursement requests
+            $financialData = [
+                'tong_tien' => $validated['tong_tien'] ?? null,
+                'tong_tien_tam_giu' => $validated['tong_tien_tam_giu'] ?? null,
+                'tong_tien_khau_tru' => $validated['tong_tien_khau_tru'] ?? null,
+                'tong_tien_lai_suat' => $validated['tong_tien_lai_suat'] ?? null,
+                'tong_tien_thanh_toan_con_lai' => $validated['tong_tien_thanh_toan_con_lai'] ?? null,
+            ];
+            
+            // Add payment date if available
+            if (isset($validated['ngay_thanh_toan'])) {
+                $financialData['payment_date'] = $validated['ngay_thanh_toan'];
             }
             
-            if (isset($validated['tong_tien_lai_suat'])) {
-                $updateData['tong_tien_lai_suat'] = $validated['tong_tien_lai_suat'];
-            }
-            
-            if (isset($validated['tong_tien_thanh_toan_con_lai'])) {
-                $updateData['tong_tien_thanh_toan_con_lai'] = $validated['tong_tien_thanh_toan_con_lai'];
-            }
-    
-            // Update the record if we have data to update
-            if (!empty($updateData)) {
-                DB::table('tb_phieu_trinh_thanh_toan')
-                    ->where('ma_trinh_thanh_toan', $id)
-                    ->update($updateData);
-                
-                // NEW CODE: Update the status and other fields in tb_de_nghi_thanhtoan_dv
-                // Get all disbursement codes associated with this payment request
-                $disbursementCodes = DB::table('Logs_phieu_trinh_thanh_toan')
-                    ->where('ma_trinh_thanh_toan', $id)
-                    ->whereNotNull('ma_de_nghi_giai_ngan')
-                    ->distinct()
-                    ->pluck('ma_de_nghi_giai_ngan')
-                    ->toArray();
-                    
-                // Create update data for disbursement records
-                $disbursementUpdateData = [];
-                
-                // Add payment date if available
-                if (isset($validated['ngay_thanh_toan'])) {
-                    $disbursementUpdateData['ngay_thanh_toan'] = $validated['ngay_thanh_toan'];
-                }
-                
-                // Transfer current status from parent request
-                if (!empty($paymentRequest->trang_thai_thanh_toan)) {
-                    $disbursementUpdateData['trang_thai_thanh_toan'] = $paymentRequest->trang_thai_thanh_toan;
-                }
-                
-                // Update disbursement records if we have data
-                if (!empty($disbursementUpdateData) && !empty($disbursementCodes)) {
-                    DB::table('tb_de_nghi_thanhtoan_dv')
-                        ->whereIn('ma_giai_ngan', $disbursementCodes)
-                        ->update($disbursementUpdateData);
-                }
-                
-                // Prepare financial data for disbursement requests
-                $financialData = [
-                    'tong_tien' => $validated['tong_tien'] ?? null,
-                    'tong_tien_tam_giu' => $validated['tong_tien_tam_giu'] ?? null,
-                    'tong_tien_khau_tru' => $validated['tong_tien_khau_tru'] ?? null,
-                    'tong_tien_lai_suat' => $validated['tong_tien_lai_suat'] ?? null,
-                    'tong_tien_thanh_toan_con_lai' => $validated['tong_tien_thanh_toan_con_lai'] ?? null,
-                ];
-                
-                // Add payment date if available
-                if (isset($validated['ngay_thanh_toan'])) {
-                    $financialData['payment_date'] = $validated['ngay_thanh_toan'];
-                }
-                
-                // Update financial information for all disbursement requests
+            // Update financial information for all disbursement requests
+            try {
                 $disbursementController = app()->make('App\Http\Controllers\QuanlyTaichinh\PhieudenghithanhtoandvControllers');
                 $updateFinancialRequest = new Request([
                     'payment_code' => $id,
                     'financial_data' => $financialData
                 ]);
                 $disbursementController->updateFinancialData($updateFinancialRequest);
+            } catch (\Exception $e) {
+                Log::warning('Failed to update financial data via controller: ' . $e->getMessage());
             }
-    
-            // Get the updated record
-            $updatedRecord = DB::table('tb_phieu_trinh_thanh_toan')
-                ->where('ma_trinh_thanh_toan', $id)
-                ->first();
-    
-            return response()->json([
-                'success' => true,
-                'message' => 'Cập nhật thông tin phiếu trình thanh toán thành công',
-                'data' => $updatedRecord
-            ]);
-    
-        } catch (\Exception $e) {
-            Log::error('Error updating payment request basic info: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Lỗi khi cập nhật phiếu trình thanh toán: ' . $e->getMessage()
-            ], 500);
         }
+
+        // Get the updated record
+        $updatedRecord = DB::table('tb_phieu_trinh_thanh_toan')
+            ->where('ma_trinh_thanh_toan', $id)
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật thông tin phiếu trình thanh toán thành công',
+            'data' => $updatedRecord,
+            'updated_disbursements_count' => count($disbursementCodes ?? [])
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error updating payment request basic info: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi cập nhật phiếu trình thanh toán: ' . $e->getMessage()
+        ], 500);
     }
+}
 
 /**
  * Delete a payment request

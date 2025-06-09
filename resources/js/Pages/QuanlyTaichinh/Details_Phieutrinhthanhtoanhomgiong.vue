@@ -981,56 +981,78 @@
                         </div>
                     </div>
 
-                    <!-- Ghi chú -->
-                    <div class="card mt-3">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <i class="fas fa-sticky-note me-2"></i>Ghi chú
-                            </h5>
-                            <div class="form-group">
+                    <!-- Note Section -->
+                    <div class="col-md-12 mt-3">
+                        <div class="card">
+                            <div
+                                class="card-header d-flex justify-content-between align-items-center"
+                            >
+                                <h6 class="mb-0">
+                                    <i class="fas fa-sticky-note me-2"></i>Ghi
+                                    chú
+                                </h6>
+                                <div v-if="!isEditingNote">
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-outline-primary"
+                                        @click="isEditingNote = true"
+                                        :disabled="isSavingNote"
+                                    >
+                                        <i class="fas fa-edit me-1"></i>Chỉnh
+                                        sửa
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
                                 <div v-if="!isEditingNote">
                                     <div
-                                        class="note-content p-3 border rounded bg-light"
-                                    >
-                                        {{
-                                            document.notes || "Chưa có ghi chú"
-                                        }}
-                                    </div>
-                                    <div
-                                        class="d-flex justify-content-end mt-2"
-                                        v-if="canEditNote"
-                                    >
-                                        <button
-                                            @click="isEditingNote = true"
-                                            class="button-30"
-                                        >
-                                            <i class="fas fa-edit me-1"></i>Sửa
-                                            ghi chú
-                                        </button>
-                                    </div>
+                                        class="note-content"
+                                        v-html="
+                                            document.notes
+                                                ? document.notes.replace(
+                                                      /\n/g,
+                                                      '<br>'
+                                                  )
+                                                : '<em class=\'text-muted\'>Chưa có ghi chú nào</em>'
+                                        "
+                                    ></div>
                                 </div>
                                 <div v-else>
                                     <textarea
-                                        class="form-control"
-                                        rows="4"
                                         v-model="noteText"
+                                        class="form-control mb-3"
+                                        rows="4"
                                         placeholder="Nhập ghi chú..."
+                                        :disabled="isSavingNote"
                                     ></textarea>
-                                    <div
-                                        class="d-flex justify-content-end mt-2"
-                                        v-if="showEditNoteButtons"
-                                    >
+                                    <div class="d-flex gap-2">
                                         <button
-                                            @click="cancelEditNote"
-                                            class="button-30 me-2"
+                                            type="button"
+                                            class="btn btn-success"
+                                            @click="saveNote"
+                                            :disabled="isSavingNote"
                                         >
-                                            <i class="fas fa-times me-1"></i>Hủy
+                                            <span
+                                                v-if="isSavingNote"
+                                                class="spinner-border spinner-border-sm me-1"
+                                            ></span>
+                                            <i
+                                                v-else
+                                                class="fas fa-save me-1"
+                                            ></i>
+                                            {{
+                                                isSavingNote
+                                                    ? "Đang lưu..."
+                                                    : "Lưu"
+                                            }}
                                         </button>
                                         <button
-                                            @click="saveNote"
-                                            class="button-30-text-green"
+                                            type="button"
+                                            class="btn btn-outline-secondary"
+                                            @click="cancelEditNote"
+                                            :disabled="isSavingNote"
                                         >
-                                            <i class="fas fa-save me-1"></i>Lưu
+                                            <i class="fas fa-times me-1"></i>Hủy
                                         </button>
                                     </div>
                                 </div>
@@ -4476,6 +4498,7 @@ export default {
     },
     data() {
         return {
+            isSavingNote: false,
             // เพิ่ม modalInstances ใน data()
             modalInstances: [],
             // Debounced functions
@@ -6588,7 +6611,7 @@ export default {
                     });
 
                     // Redirect to the payment request list page
-                    this.$router.push("/phieutrinhthanhtoan");
+                    this.$router.push("/PhieutrinhthanhtoanHomgiong");
                 } else {
                     throw new Error(
                         response.data.message ||
@@ -7659,53 +7682,61 @@ export default {
             return "";
         },
 
-        async saveNote() {
+        saveNote() {
             if (!this.isAuthenticated()) return;
-            try {
-                // เปลี่ยนจาก `/api/payment-requests/${this.document.payment_code}/notes`
-                // เป็น `/api/payment-requests-homgiong/${this.document.payment_code}/notes`
-                const response = await axios.post(
+
+            // Set loading state
+            this.isSavingNote = true;
+
+            axios
+                .post(
                     `/api/payment-requests-homgiong/${this.document.payment_code}/notes`,
                     {
-                        note: this.document.notes,
+                        note: this.noteText,
                     },
                     {
                         headers: {
-                            Authorization: "Bearer " + this.store.getToken,
+                            Authorization: `Bearer ${this.store.getToken}`,
+                            "Content-Type": "application/json",
                         },
                     }
-                );
+                )
+                .then((response) => {
+                    if (response.data.success) {
+                        this.showSuccess(
+                            response.data.message ||
+                                "Ghi chú đã được lưu thành công"
+                        );
+                        this.document.notes = this.noteText;
+                        this.isEditingNote = false;
+                    } else {
+                        this.showError(
+                            response.data.message || "Lỗi khi lưu ghi chú"
+                        );
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error saving note:", error);
 
-                if (response.data.success) {
-                    Swal.fire({
-                        title: "Thành công",
-                        text: "Ghi chú đã được lưu thành công",
-                        icon: "success",
-                        confirmButtonText: "OK",
-                        buttonsStyling: false,
-                        customClass: {
-                            confirmButton: "btn btn-success",
-                        },
-                    });
-                }
-            } catch (error) {
-                console.error("Error saving note:", error);
+                    if (error.response?.data?.message) {
+                        this.showError(error.response.data.message);
+                    } else if (error.response?.data?.errors) {
+                        // Handle validation errors
+                        const errors = Object.values(
+                            error.response.data.errors
+                        ).flat();
+                        this.showError(errors.join(", "));
+                    } else {
+                        this.showError("Lỗi khi lưu ghi chú");
+                    }
 
-                Swal.fire({
-                    title: "Lỗi",
-                    text: "Đã xảy ra lỗi khi lưu ghi chú",
-                    icon: "error",
-                    confirmButtonText: "OK",
-                    buttonsStyling: false,
-                    customClass: {
-                        confirmButton: "btn btn-success",
-                    },
+                    if (error.response?.status === 401) {
+                        this.handleAuthError();
+                    }
+                })
+                .finally(() => {
+                    this.isSavingNote = false;
                 });
-
-                if (error.response?.status === 401) {
-                    this.handleAuthError();
-                }
-            }
         },
         cancelEditNote() {
             this.noteText = this.document.notes || "";

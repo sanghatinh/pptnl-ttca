@@ -159,24 +159,23 @@
                                         @click="closeSidebar"
                                     >
                                         <span class="menu-text"
-                                            >Phiếu đề nghị thanh toán dịch
-                                            vụ</span
+                                            >Phiếu đề nghị TT dịch vụ</span
                                         >
                                     </router-link>
                                 </li>
-
                                 <li>
                                     <router-link
-                                        to="/Phieuthunodichvu"
+                                        to="/PhieudenghithanhtoanHomgiong"
                                         :class="
-                                            $route.path === '/Phieuthunodichvu'
+                                            $route.path ===
+                                            '/PhieudenghithanhtoanHomgiong'
                                                 ? 'current-page'
                                                 : ''
                                         "
                                         @click="closeSidebar"
                                     >
                                         <span class="menu-text"
-                                            >Phiếu thu nợ dịch vụ</span
+                                            >Phiếu đề nghị TT Hom giống</span
                                         >
                                     </router-link>
                                 </li>
@@ -217,6 +216,21 @@
                                     >
                                         <span class="menu-text"
                                             >Công nợ dịch vụ khấu trừ</span
+                                        >
+                                    </router-link>
+                                </li>
+                                <li>
+                                    <router-link
+                                        to="/Phieuthunodichvu"
+                                        :class="
+                                            $route.path === '/Phieuthunodichvu'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                        @click="closeSidebar"
+                                    >
+                                        <span class="menu-text"
+                                            >Phiếu thu nợ dịch vụ</span
                                         >
                                     </router-link>
                                 </li>
@@ -294,19 +308,6 @@
                                         @click="closeSidebar"
                                     >
                                         <span>Nhóm Cấp quyền</span>
-                                    </router-link>
-                                </li>
-                                <li>
-                                    <router-link
-                                        to="/Profile"
-                                        :class="
-                                            $route.path === '/Profile'
-                                                ? 'current-page'
-                                                : ''
-                                        "
-                                        @click="closeSidebar"
-                                    >
-                                        <span>Profile</span>
                                     </router-link>
                                 </li>
                             </ul>
