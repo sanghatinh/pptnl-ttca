@@ -313,6 +313,14 @@
                                             isEditing ? "Hủy" : "Điều chỉnh"
                                         }}</span>
                                     </button>
+                                    <button
+                                        type="button"
+                                        class="button-30"
+                                        @click="printDocument"
+                                    >
+                                        <i class="bx bxs-printer"></i>
+                                        <span>Print</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1399,6 +1407,218 @@
             </PerfectScrollbar>
         </div>
     </div>
+    <!-- Print Options Modal -->
+    <div
+        class="modal fade"
+        id="printOptionsModal"
+        tabindex="-1"
+        aria-labelledby="printOptionsModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="printOptionsModalLabel">
+                        <i class="fas fa-print me-2"></i>
+                        Tùy chọn in báo cáo
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info border-0">
+                        <div class="d-flex align-items-center">
+                            <i
+                                class="fas fa-info-circle fa-2x text-info me-3"
+                            ></i>
+                            <div>
+                                <h6 class="alert-heading mb-1 text-info">
+                                    Chọn nội dung để in
+                                </h6>
+                                <p class="mb-0">
+                                    Vui lòng chọn phần nội dung mà bạn muốn in
+                                    trong báo cáo. Báo cáo sẽ bao gồm thông tin
+                                    phiếu đề nghị và thông tin tài chính.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Print Options -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="fw-semibold mb-3">
+                                <i class="fas fa-list-check me-2"></i>
+                                Chọn nội dung in:
+                            </h6>
+
+                            <!-- Option 1: Biên bản nghiệm thu dịch vụ -->
+                            <div class="form-check mb-3">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    value="bienbannghiemthu"
+                                    id="printBienBanNghiemThu"
+                                    v-model="printOptions.sections"
+                                />
+                                <label
+                                    class="form-check-label"
+                                    for="printBienBanNghiemThu"
+                                >
+                                    <div class="d-flex align-items-center">
+                                        <i
+                                            class="fas fa-file-contract text-primary me-2"
+                                        ></i>
+                                        <div>
+                                            <strong
+                                                >Biên bản nghiệm thu dịch
+                                                vụ</strong
+                                            >
+                                            <small class="d-block text-muted">
+                                                Bảng thông tin nghiệm thu với mã
+                                                nghiệm thu, trạm, vụ đầu tư,
+                                                khách hàng và số tiền
+                                            </small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Option 2: Chi tiết nghiệm thu dịch vụ -->
+                            <div class="form-check mb-3">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    value="chitietdichvu"
+                                    id="printChiTietDichVu"
+                                    v-model="printOptions.sections"
+                                />
+                                <label
+                                    class="form-check-label"
+                                    for="printChiTietDichVu"
+                                >
+                                    <div class="d-flex align-items-center">
+                                        <i
+                                            class="fas fa-list-ul text-success me-2"
+                                        ></i>
+                                        <div>
+                                            <strong
+                                                >Chi tiết nghiệm thu dịch
+                                                vụ</strong
+                                            >
+                                            <small class="d-block text-muted">
+                                                Bảng chi tiết dịch vụ với mã số
+                                                thửa, đơn vị tính, khối lượng,
+                                                đơn giá và thành tiền
+                                            </small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Option 3: Phiếu thu cấn trừ nợ -->
+                            <div class="form-check mb-3">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    value="phieuthuno"
+                                    id="printPhieuThuNo"
+                                    v-model="printOptions.sections"
+                                />
+                                <label
+                                    class="form-check-label"
+                                    for="printPhieuThuNo"
+                                >
+                                    <div class="d-flex align-items-center">
+                                        <i
+                                            class="fas fa-receipt text-warning me-2"
+                                        ></i>
+                                        <div>
+                                            <strong
+                                                >Phiếu thu cấn trừ nợ</strong
+                                            >
+                                            <small class="d-block text-muted">
+                                                Bảng thông tin phiếu thu nợ với
+                                                invoice number, ngày vay/trả,
+                                                lãi suất và mô tả
+                                            </small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Validation Message -->
+                    <div
+                        v-if="printOptions.showValidation"
+                        class="alert alert-warning border-0 mt-3"
+                    >
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <span
+                                >Vui lòng chọn ít nhất một nội dung để in</span
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light border-top-0">
+                    <div
+                        class="d-flex justify-content-between align-items-center w-100"
+                    >
+                        <!-- Left side - Selected count -->
+                        <div class="text-muted small">
+                            <i class="fas fa-info-circle me-1"></i>
+                            {{
+                                printOptions.sections.length > 0
+                                    ? `Đã chọn ${printOptions.sections.length} nội dung`
+                                    : "Chưa chọn nội dung nào"
+                            }}
+                        </div>
+
+                        <!-- Right side - Action buttons -->
+                        <div class="d-flex gap-2">
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                @click="closePrintModal"
+                            >
+                                <i class="fas fa-times me-1"></i>
+                                Hủy
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-primary"
+                                @click="executePrintReport"
+                                :disabled="
+                                    printOptions.sections.length === 0 ||
+                                    printOptions.isExecuting
+                                "
+                            >
+                                <span v-if="printOptions.isExecuting">
+                                    <span
+                                        class="spinner-border spinner-border-sm me-2"
+                                        role="status"
+                                        aria-hidden="true"
+                                    ></span>
+                                    Đang tạo báo cáo...
+                                </span>
+                                <span v-else>
+                                    <i class="fas fa-print me-1"></i>
+                                    In báo cáo
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 <script>
 import { useStore } from "../../Store/Auth";
@@ -1436,6 +1656,13 @@ export default {
                 so_dot_thanh_toan: "", // Add this line
                 comment: "",
             },
+            // Print options data
+            printOptions: {
+                sections: [],
+                showValidation: false,
+                isExecuting: false,
+            },
+            printModal: null,
             bienbans: [], // Array to hold nghiệm thu dịch vụ data
             totals: {
                 total_amount: 0,
@@ -1568,6 +1795,129 @@ export default {
         this.setupToggleSections();
     },
     methods: {
+        /**
+         * Open print modal
+         */
+        printDocument() {
+            // Reset print options
+            this.printOptions = {
+                sections: [],
+                showValidation: false,
+                isExecuting: false,
+            };
+
+            // Show print modal
+            if (!this.printModal) {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                    (bootstrap) => {
+                        const modalElement =
+                            document.getElementById("printOptionsModal");
+                        if (modalElement) {
+                            this.printModal = new bootstrap.Modal(
+                                modalElement,
+                                {
+                                    backdrop: "static",
+                                    keyboard: false,
+                                }
+                            );
+                            this.printModal.show();
+                        }
+                    }
+                );
+            } else {
+                this.printModal.show();
+            }
+        },
+
+        /**
+         * Close print modal
+         */
+        closePrintModal() {
+            if (this.printModal) {
+                this.printModal.hide();
+            }
+            // Reset validation
+            this.printOptions.showValidation = false;
+        },
+
+        /**
+         * Execute print report
+         */
+        async executePrintReport() {
+            // Validate selection
+            if (this.printOptions.sections.length === 0) {
+                this.printOptions.showValidation = true;
+                return;
+            }
+
+            this.printOptions.isExecuting = true;
+            this.printOptions.showValidation = false;
+
+            try {
+                const paymentRequestId = this.$route.params.id;
+                if (!paymentRequestId) {
+                    throw new Error("ไม่พบรหัสเอกสาร");
+                }
+
+                // Prepare request data
+                const requestData = {
+                    payment_request_id: paymentRequestId,
+                    sections: this.printOptions.sections,
+                };
+
+                // Call API to generate print report
+                const response = await axios.post(
+                    "/api/print-report-dntt-dv",
+                    requestData,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${this.store.getToken}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                // The response should be HTML content for printing
+                if (response.data) {
+                    // Open print window with the generated report
+                    const printWindow = window.open("", "_blank");
+                    printWindow.document.write(response.data);
+                    printWindow.document.close();
+                    printWindow.focus();
+
+                    // Optional: Auto-print when loaded
+                    printWindow.onload = function () {
+                        printWindow.print();
+                    };
+
+                    // Show success message
+                    this.showSuccess("Báo cáo đã được tạo thành công");
+
+                    // Close modal
+                    this.closePrintModal();
+                } else {
+                    throw new Error("Không nhận được dữ liệu báo cáo");
+                }
+            } catch (error) {
+                console.error("Error executing print report:", error);
+
+                let errorMessage = "Đã xảy ra lỗi khi tạo báo cáo";
+                if (error.response?.data?.message) {
+                    errorMessage = error.response.data.message;
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+
+                this.showError(errorMessage);
+
+                if (error.response?.status === 401) {
+                    this.handleAuthError();
+                }
+            } finally {
+                this.printOptions.isExecuting = false;
+            }
+        },
+
         fetchPhieuThuNo() {
             const id = this.$route.params.id;
             if (!id) {
@@ -2377,7 +2727,7 @@ export default {
     top: 0px;
     left: 230px;
     right: 0;
-    z-index: 999;
+    z-index: 10;
     background: white;
     padding: 1rem 0;
     border-bottom: 1px solid #e0e3e8;
@@ -3496,5 +3846,88 @@ export default {
 
 .status-display.rejected {
     background-color: #dc3545;
+}
+
+/* Print Modal Styles */
+.form-check {
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.form-check:hover {
+    border-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.form-check-input:checked ~ .form-check-label {
+    color: #0d6efd;
+}
+
+.form-check-input:checked ~ .form-check-label strong {
+    color: #0d6efd;
+}
+
+.form-check-label {
+    cursor: pointer;
+    width: 100%;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+}
+
+/* Alert enhancements */
+.alert {
+    border-radius: 10px;
+}
+
+.alert-info {
+    background: linear-gradient(
+        135deg,
+        rgba(13, 202, 240, 0.1) 0%,
+        rgba(13, 110, 253, 0.05) 100%
+    );
+}
+
+.alert-warning {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 193, 7, 0.1) 0%,
+        rgba(255, 143, 0, 0.05) 100%
+    );
+}
+
+/* Icon styling */
+.fas {
+    width: 20px;
+    text-align: center;
+}
+
+/* Button loading state */
+.btn:disabled {
+    opacity: 0.6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .form-check {
+        padding: 0.75rem;
+    }
+
+    .modal-footer .d-flex {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .modal-footer .d-flex .d-flex {
+        width: 100%;
+        justify-content: center;
+    }
 }
 </style>

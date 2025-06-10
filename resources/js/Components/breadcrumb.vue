@@ -33,12 +33,22 @@ export default {
                 Details_Phieugiaonhanhomgiong: "Phiếu giao nhận hom giống",
                 Details_Phieudenghithanhtoandichvu:
                     "Phiếu đề nghị thanh toán dịch vụ",
+                Details_PhieudenghithanhtoanHomgiong:
+                    "Phiếu đề nghị thanh toán hom giống",
+                Details_Phieutrinhthanhtoan: "Phiếu trình thanh toán",
+                Details_PhieutrinhthanhtoanHomgiong:
+                    "Phiếu trình thanh toán hom giống",
             },
             customPathMap: {
                 Details_NghiemthuDV: "/Bienbannghiemthudichvu",
                 Details_Phieugiaonhanhomgiong: "/Phieugiaonhanhomgiong",
                 Details_Phieudenghithanhtoandichvu:
                     "/Phieudenghithanhtoandichvu",
+                Details_PhieudenghithanhtoanHomgiong:
+                    "/PhieudenghithanhtoanHomgiong",
+                Details_Phieutrinhthanhtoan: "/Phieutrinhthanhtoan",
+                Details_PhieutrinhthanhtoanHomgiong:
+                    "/PhieutrinhthanhtoanHomgiong",
             },
         };
     },

@@ -1154,7 +1154,7 @@ export default {
             }
         },
         formatCurrency(value) {
-            if (!value) return "0 VNĐ";
+            if (!value) return "0 KIP";
             return new Intl.NumberFormat("vi-VN", {
                 style: "currency",
                 currency: "KIP",

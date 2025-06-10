@@ -225,26 +225,31 @@ public function createPaymentRequest(Request $request)
             }
             
             // Get detailed information for each receipt from tb_bien_ban_nghiemthu_dv
-            $paymentDetails = DB::table('tb_bien_ban_nghiemthu_dv')
-                ->whereIn('ma_nghiem_thu', $receiptIds)
-                ->select(
-                    'ma_nghiem_thu as document_code',
-                    'tieu_de as title',
-                    'vu_dau_tu as investment_project',
-                    'khach_hang_ca_nhan_dt_mia',
-                    'khach_hang_doanh_nghiep_dt_mia',
-                    'hop_dong_dau_tu_mia as contract_number',
-                    'hinh_thuc_thuc_hien_dv as service_type',
-                    'hop_dong_cung_ung_dich_vu',
-                    'tram',
-                    'tong_tien as amount'
-                )
-                ->get();
+$paymentDetails = DB::table('tb_bien_ban_nghiemthu_dv as bb')
+    ->join('Logs_phieu_trinh_thanh_toan as logs', 'logs.ma_nghiem_thu', '=', 'bb.ma_nghiem_thu')
+    ->join('tb_phieu_trinh_thanh_toan as pt', 'pt.ma_trinh_thanh_toan', '=', 'logs.ma_trinh_thanh_toan')
+    ->where('logs.ma_trinh_thanh_toan', $id)
+    ->whereIn('bb.ma_nghiem_thu', $receiptIds)
+    ->select(
+        'bb.ma_nghiem_thu as document_code',
+        'bb.tieu_de as title',
+        'bb.vu_dau_tu as investment_project',
+        'bb.khach_hang_ca_nhan_dt_mia',
+        'bb.khach_hang_doanh_nghiep_dt_mia',
+        'bb.hop_dong_dau_tu_mia as contract_number',
+        'bb.hinh_thuc_thuc_hien_dv as service_type',
+        'bb.hop_dong_cung_ung_dich_vu',
+        'bb.tram',
+        'bb.tong_tien as amount',
+        'pt.so_dot_thanh_toan as installment' // ดึงจากตาราง tb_phieu_trinh_thanh_toan
+    )
+    ->get();
+
             
             // Map the payment details and add the disbursement_code from our mapping
             $mappedPaymentDetails = $paymentDetails->map(function($item) use ($disbursementCodeMap) {
                 $item->disbursement_code = $disbursementCodeMap[$item->document_code] ?? '';
-                $item->installment = 1; // Set default installment value
+               
                 return $item;
             });
             

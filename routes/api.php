@@ -257,7 +257,11 @@ Route::get('/employees/by-station', [UserController::class, 'getEmployeesByStati
 Route::get('/print-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'printGet']);
 Route::post('/print-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'print']);
 Route::post('/print-preview-phieu-dntt', [App\Http\Controllers\Print\PrintPhieuDNTTControllers::class, 'getPrintPreview']);
-
+Route::get('/print-phieu-dntt-hg', [App\Http\Controllers\Print\PrintGiaoNhanHSController::class, 'printPDNTTHG']);
+Route::post('/print-phieu-dntt-hg', [App\Http\Controllers\Print\PrintGiaoNhanHSController::class, 'printPDNTTHG']);
+Route::post('/print-preview-phieu-dntt-hg', [App\Http\Controllers\Print\PrintGiaoNhanHSController::class, 'getPrintPreviewPDNTTHG']);
+Route::post('/print-report-dntt-dv', [App\Http\Controllers\Print\PrintGiaoNhanHSController::class, 'printDocumentReportDNTTDV']);
+Route::post('/print-report-dntt-hg', [App\Http\Controllers\Print\PrintGiaoNhanHSController::class, 'printDocumentReportDNTTHG']);
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Middleware for JWT authentication เพื่อป้องกันการเข้าถึง API ที่ต้องการการยืนยันตัวตน ให้ใช้ได้ ทั้ง ผู้ดูแลระบบและเกษตรกร

@@ -5794,28 +5794,30 @@ export default {
                 this.printModal.show();
             }
 
-            // Load preview data
-            await this.loadPrintPreview();
+            // ข้าม loadPrintPreview และตั้งค่าข้อมูลตรงๆ
+            this.printPreviewData = this.selectedPaymentRequests.map((code) => {
+                const item = this.paymentRequests.find(
+                    (req) => req.disbursement_code === code
+                );
+                return {
+                    ma_giai_ngan: code,
+                    khach_hang:
+                        item?.individual_customer ||
+                        item?.corporate_customer ||
+                        "N/A",
+                    so_tien: item?.total_amount || 0,
+                    noi_dung: "Thanh toán tiền Hom giống",
+                };
+            });
+            this.printPreviewLoading = false;
         },
-
-        closePrintModal() {
-            if (this.printModal) {
-                this.printModal.hide();
-            }
-
-            // Reset data
-            this.printPreviewData = [];
-            this.printPreviewError = null;
-            this.printExecuting = false;
-        },
-
         async loadPrintPreview() {
             this.printPreviewLoading = true;
             this.printPreviewError = null;
 
             try {
                 const response = await axios.post(
-                    "/api/print-preview-phieu-dntt",
+                    "/api/print-preview-phieu-dntt-hg", // เปลี่ยนจาก "/api/print-preview-phieu-dntt"
                     {
                         disbursement_codes: this.selectedPaymentRequests,
                     },
@@ -5845,11 +5847,14 @@ export default {
             this.printExecuting = true;
 
             try {
-                // สร้าง URL สำหรับ API route
-                const codes = this.selectedPaymentRequests.join(",");
-                const printUrl = `/api/print-phieu-dntt?codes=${encodeURIComponent(
-                    codes
-                )}`;
+                // สร้าง parameters สำหรับ query string
+                const params = new URLSearchParams();
+                this.selectedPaymentRequests.forEach((code) => {
+                    params.append("disbursement_codes[]", code);
+                });
+
+                // เปลี่ยน endpoint จาก /print-phieu-dntt เป็น /print-phieu-dntt-hg
+                const printUrl = `/api/print-phieu-dntt-hg?${params.toString()}`;
 
                 // เปิดหน้าใหม่
                 window.open(printUrl, "_blank");
@@ -8713,7 +8718,7 @@ export default {
     top: 0px;
     left: 230px;
     right: 0;
-    z-index: 999;
+    z-index: 10;
     background: white;
     padding: 1rem 0;
     border-bottom: 1px solid #e0e3e8;
