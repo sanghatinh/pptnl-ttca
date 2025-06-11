@@ -697,8 +697,36 @@
                                                 <div
                                                     class="max-h-40 overflow-y-auto mb-2"
                                                 >
+                                                    <!-- Add null option first if there are items without payment status -->
                                                     <div
-                                                        v-for="option in uniqueValues.trang_thai_thanh_toan"
+                                                        v-if="
+                                                            uniqueValues.trang_thai_thanh_toan.includes(
+                                                                'null'
+                                                            )
+                                                        "
+                                                        class="flex items-center mb-2"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            id="trang_thai_thanh_toan-null"
+                                                            value="null"
+                                                            v-model="
+                                                                selectedFilterValues.trang_thai_thanh_toan
+                                                            "
+                                                            class="mr-2 rounded text-green-500 focus:ring-green-500"
+                                                        />
+                                                        <label
+                                                            for="trang_thai_thanh_toan-null"
+                                                            class="select-none"
+                                                        >
+                                                            Chưa thanh toán
+                                                        </label>
+                                                    </div>
+                                                    <div
+                                                        v-for="option in uniqueValues.trang_thai_thanh_toan.filter(
+                                                            (opt) =>
+                                                                opt !== 'null'
+                                                        )"
                                                         :key="option"
                                                         class="flex items-center mb-2"
                                                     >
@@ -714,12 +742,13 @@
                                                         <label
                                                             :for="`trang_thai_thanh_toan-${option}`"
                                                             class="select-none"
-                                                            >{{
+                                                        >
+                                                            {{
                                                                 formatPaymentStatus(
                                                                     option
                                                                 )
-                                                            }}</label
-                                                        >
+                                                            }}
+                                                        </label>
                                                     </div>
                                                 </div>
                                                 <div
@@ -1622,7 +1651,18 @@
                                             </template>
                                         </td>
                                         <td class="px-4 py-2">
-                                            {{ formatDate(item.ngay_nhan) }}
+                                            <span
+                                                v-if="item.ngay_nhan"
+                                                class="badge bg-warning text-dark px-2 py-1 rounded-pill"
+                                            >
+                                                {{ formatDate(item.ngay_nhan) }}
+                                            </span>
+                                            <span
+                                                v-else
+                                                class="text-gray-400 italic text-xs"
+                                            >
+                                                Chưa có ngày nhận
+                                            </span>
                                         </td>
                                         <td class="px-4 py-2p">
                                             <span
@@ -1762,18 +1802,89 @@
                             <strong>Tổng tiền:</strong>
                             {{ formatCurrency(item.tong_tien_dich_vu) }}
                         </div>
+                        <div class="mb-2">
+                            <strong>Tình trạng giao nhận hồ sơ:</strong>
+                            <span
+                                v-if="item.trang_thai_nhan_hs !== undefined"
+                                :class="statusClass(item.trang_thai_nhan_hs)"
+                                class="flex items-center"
+                            >
+                                <i
+                                    :class="
+                                        statusIcons(item.trang_thai_nhan_hs)
+                                    "
+                                    class="mr-1"
+                                ></i>
+                                {{ formatStatus(item.trang_thai_nhan_hs) }}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
-            <!-- pagination -->
-            <div class="flex justify-center mt-4">
-                <div class="pagination-card">
-                    <Bootstrap5Pagination
-                        :data="paginatedItems"
-                        @pagination-change-page="pageChanged"
-                        :limit="5"
-                        :classes="paginationClasses"
-                    />
+            <!-- Mobile Pagination Card - ปรับปรุงใหม่ -->
+            <div class="mobile-pagination-card" v-if="isMobile">
+                <div class="pagination-info">
+                    <span class="page-info"
+                        >Trang {{ currentPage }} của
+                        {{ paginatedItems.last_page }}</span
+                    >
+                    <span class="record-info"
+                        >{{ paginatedItems.from }}-{{ paginatedItems.to }} của
+                        {{ paginatedItems.total }} bản ghi</span
+                    >
+                </div>
+
+                <div class="pagination-controls">
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(1)"
+                        :disabled="currentPage === 1"
+                    >
+                        <i class="fas fa-angle-double-left"></i>
+                    </button>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(currentPage - 1)"
+                        :disabled="currentPage === 1"
+                    >
+                        <i class="fas fa-angle-left"></i>
+                    </button>
+
+                    <div class="current-page">{{ currentPage }}</div>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(currentPage + 1)"
+                        :disabled="currentPage === paginatedItems.last_page"
+                    >
+                        <i class="fas fa-angle-right"></i>
+                    </button>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(paginatedItems.last_page)"
+                        :disabled="currentPage === paginatedItems.last_page"
+                    >
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
+                </div>
+
+                <!-- Quick jump สำหรับหน้าเยอะ -->
+                <div class="quick-jump" v-if="paginatedItems.last_page > 5">
+                    <span>Đi đến trang:</span>
+                    <select
+                        :value="currentPage"
+                        @change="pageChanged(parseInt($event.target.value))"
+                    >
+                        <option
+                            v-for="page in paginatedItems.last_page"
+                            :key="page"
+                            :value="page"
+                        >
+                            {{ page }}
+                        </option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -2477,6 +2588,7 @@ export default {
             return this.bienBanList.filter((item) => {
                 // Filter by search query
                 const matchesSearch =
+                    !this.search ||
                     item.ma_nghiem_thu
                         ?.toLowerCase()
                         .includes(this.search.toLowerCase()) ||
@@ -2488,12 +2600,27 @@ export default {
                         .includes(this.search.toLowerCase()) ||
                     item.tram
                         ?.toLowerCase()
+                        .includes(this.search.toLowerCase()) ||
+                    item.can_bo_nong_vu
+                        ?.toLowerCase()
+                        .includes(this.search.toLowerCase()) ||
+                    item.khach_hang_ca_nhan_dt_mia
+                        ?.toLowerCase()
+                        .includes(this.search.toLowerCase()) ||
+                    item.khach_hang_doanh_nghiep_dt_mia
+                        ?.toLowerCase()
+                        .includes(this.search.toLowerCase()) ||
+                    item.nguoi_giao
+                        ?.toLowerCase()
+                        .includes(this.search.toLowerCase()) ||
+                    item.nguoi_nhan
+                        ?.toLowerCase()
                         .includes(this.search.toLowerCase());
 
-                // Filter by status
+                // Filter by payment status
                 let matchesStatus = true;
                 if (this.statusFilter !== "all") {
-                    if (this.statusFilter === null) {
+                    if (this.statusFilter === "null") {
                         // For "Chưa thanh toán" - null value
                         matchesStatus = !item.trang_thai_thanh_toan;
                     } else {
@@ -2509,7 +2636,8 @@ export default {
                     matchesInvestment =
                         item.vu_dau_tu === this.investmentFilter;
                 }
-                // Add the deliveryStatusFilter logic
+
+                // Filter by delivery status
                 let matchesDeliveryStatus = true;
                 if (this.deliveryStatusFilter !== "all") {
                     matchesDeliveryStatus =
@@ -2519,105 +2647,109 @@ export default {
                 // Column specific filters
                 const matchColumnFilters =
                     // Search text filters
-                    ((!this.columnFilters.ma_nghiem_thu ||
+                    (!this.columnFilters.ma_nghiem_thu ||
                         (item.ma_nghiem_thu &&
                             item.ma_nghiem_thu
                                 .toLowerCase()
                                 .includes(
                                     this.columnFilters.ma_nghiem_thu.toLowerCase()
                                 ))) &&
-                        (!this.columnFilters.tieu_de ||
-                            (item.tieu_de &&
-                                item.tieu_de
-                                    .toLowerCase()
-                                    .includes(
-                                        this.columnFilters.tieu_de.toLowerCase()
-                                    ))) &&
-                        (!this.columnFilters.khach_hang_ca_nhan_dt_mia ||
-                            (item.khach_hang_ca_nhan_dt_mia &&
-                                item.khach_hang_ca_nhan_dt_mia
-                                    .toLowerCase()
-                                    .includes(
-                                        this.columnFilters.khach_hang_ca_nhan_dt_mia.toLowerCase()
-                                    ))) &&
-                        (!this.columnFilters.khach_hang_doanh_nghiep_dt_mia ||
-                            (item.khach_hang_doanh_nghiep_dt_mia &&
-                                item.khach_hang_doanh_nghiep_dt_mia
-                                    .toLowerCase()
-                                    .includes(
-                                        this.columnFilters.khach_hang_doanh_nghiep_dt_mia.toLowerCase()
-                                    ))) &&
-                        (!this.columnFilters.hop_dong_dau_tu_mia ||
-                            (item.hop_dong_dau_tu_mia &&
-                                item.hop_dong_dau_tu_mia
-                                    .toLowerCase()
-                                    .includes(
-                                        this.columnFilters.hop_dong_dau_tu_mia.toLowerCase()
-                                    ))) &&
-                        (!this.columnFilters.hop_dong_cung_ung_dich_vu ||
-                            (item.hop_dong_cung_ung_dich_vu &&
-                                item.hop_dong_cung_ung_dich_vu
-                                    .toLowerCase()
-                                    .includes(
-                                        this.columnFilters.hop_dong_cung_ung_dich_vu.toLowerCase()
-                                    ))) &&
-                        (!this.columnFilters.nguoi_giao ||
-                            (item.nguoi_giao &&
-                                item.nguoi_giao
-                                    .toLowerCase()
-                                    .includes(
-                                        this.columnFilters.nguoi_giao.toLowerCase()
-                                    ))) &&
-                        (!this.columnFilters.nguoi_nhan ||
-                            (item.nguoi_nhan &&
-                                item.nguoi_nhan
-                                    .toLowerCase()
-                                    .includes(
-                                        this.columnFilters.nguoi_nhan.toLowerCase()
-                                    ))) &&
-                        (!this.columnFilters.ngay_nhan ||
-                            (item.ngay_nhan &&
-                                this.formatDateForComparison(item.ngay_nhan) ===
-                                    this.formatDateForComparison(
-                                        this.columnFilters.ngay_nhan
-                                    ))) &&
-                        (!this.columnFilters.can_bo_nong_vu ||
-                            (item.can_bo_nong_vu &&
-                                item.can_bo_nong_vu
-                                    .toLowerCase()
-                                    .includes(
-                                        this.columnFilters.can_bo_nong_vu.toLowerCase()
-                                    ))) &&
-                        // Dropdown filters - check if empty or if value is in selected options
-                        (this.selectedFilterValues.tram.length === 0 ||
-                            (item.tram &&
-                                this.selectedFilterValues.tram.includes(
-                                    item.tram
+                    (!this.columnFilters.tieu_de ||
+                        (item.tieu_de &&
+                            item.tieu_de
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.tieu_de.toLowerCase()
                                 ))) &&
-                        (this.selectedFilterValues.vu_dau_tu.length === 0 ||
-                            (item.vu_dau_tu &&
-                                this.selectedFilterValues.vu_dau_tu.includes(
-                                    item.vu_dau_tu
+                    (!this.columnFilters.khach_hang_ca_nhan_dt_mia ||
+                        (item.khach_hang_ca_nhan_dt_mia &&
+                            item.khach_hang_ca_nhan_dt_mia
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.khach_hang_ca_nhan_dt_mia.toLowerCase()
                                 ))) &&
-                        (this.selectedFilterValues.hinh_thuc_thuc_hien_dv
-                            .length === 0 ||
-                            (item.hinh_thuc_thuc_hien_dv &&
-                                this.selectedFilterValues.hinh_thuc_thuc_hien_dv.includes(
-                                    item.hinh_thuc_thuc_hien_dv
+                    (!this.columnFilters.khach_hang_doanh_nghiep_dt_mia ||
+                        (item.khach_hang_doanh_nghiep_dt_mia &&
+                            item.khach_hang_doanh_nghiep_dt_mia
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.khach_hang_doanh_nghiep_dt_mia.toLowerCase()
                                 ))) &&
-                        (this.selectedFilterValues.trang_thai_nhan_hs.length ===
-                            0 ||
-                            (item.trang_thai_nhan_hs &&
-                                this.selectedFilterValues.trang_thai_nhan_hs.includes(
-                                    item.trang_thai_nhan_hs
+                    (!this.columnFilters.hop_dong_dau_tu_mia ||
+                        (item.hop_dong_dau_tu_mia &&
+                            item.hop_dong_dau_tu_mia
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.hop_dong_dau_tu_mia.toLowerCase()
                                 ))) &&
-                        // Add this new check for trang_thai_thanh_toan
-                        this.selectedFilterValues.trang_thai_thanh_toan
-                            .length === 0) ||
-                    (item.trang_thai_thanh_toan &&
-                        this.selectedFilterValues.trang_thai_thanh_toan.includes(
-                            item.trang_thai_thanh_toan
-                        ));
+                    (!this.columnFilters.hop_dong_cung_ung_dich_vu ||
+                        (item.hop_dong_cung_ung_dich_vu &&
+                            item.hop_dong_cung_ung_dich_vu
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.hop_dong_cung_ung_dich_vu.toLowerCase()
+                                ))) &&
+                    (!this.columnFilters.nguoi_giao ||
+                        (item.nguoi_giao &&
+                            item.nguoi_giao
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.nguoi_giao.toLowerCase()
+                                ))) &&
+                    (!this.columnFilters.nguoi_nhan ||
+                        (item.nguoi_nhan &&
+                            item.nguoi_nhan
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.nguoi_nhan.toLowerCase()
+                                ))) &&
+                    (!this.columnFilters.ngay_nhan ||
+                        (item.ngay_nhan &&
+                            this.formatDateForComparison(item.ngay_nhan) ===
+                                this.formatDateForComparison(
+                                    this.columnFilters.ngay_nhan
+                                ))) &&
+                    (!this.columnFilters.can_bo_nong_vu ||
+                        (item.can_bo_nong_vu &&
+                            item.can_bo_nong_vu
+                                .toLowerCase()
+                                .includes(
+                                    this.columnFilters.can_bo_nong_vu.toLowerCase()
+                                ))) &&
+                    // Dropdown filters - check if empty or if value is in selected options
+                    (this.selectedFilterValues.tram.length === 0 ||
+                        (item.tram &&
+                            this.selectedFilterValues.tram.includes(
+                                item.tram
+                            ))) &&
+                    (this.selectedFilterValues.vu_dau_tu.length === 0 ||
+                        (item.vu_dau_tu &&
+                            this.selectedFilterValues.vu_dau_tu.includes(
+                                item.vu_dau_tu
+                            ))) &&
+                    (this.selectedFilterValues.hinh_thuc_thuc_hien_dv.length ===
+                        0 ||
+                        (item.hinh_thuc_thuc_hien_dv &&
+                            this.selectedFilterValues.hinh_thuc_thuc_hien_dv.includes(
+                                item.hinh_thuc_thuc_hien_dv
+                            ))) &&
+                    (this.selectedFilterValues.trang_thai_nhan_hs.length ===
+                        0 ||
+                        (item.trang_thai_nhan_hs &&
+                            this.selectedFilterValues.trang_thai_nhan_hs.includes(
+                                item.trang_thai_nhan_hs
+                            ))) &&
+                    // Trang thai thanh toan filter
+                    (this.selectedFilterValues.trang_thai_thanh_toan.length ===
+                        0 ||
+                        (this.selectedFilterValues.trang_thai_thanh_toan.includes(
+                            "null"
+                        ) &&
+                            !item.trang_thai_thanh_toan) ||
+                        (item.trang_thai_thanh_toan &&
+                            this.selectedFilterValues.trang_thai_thanh_toan.includes(
+                                item.trang_thai_thanh_toan
+                            )));
 
                 return (
                     matchesSearch &&
@@ -3041,11 +3173,32 @@ export default {
 
         updateUniqueValues(column) {
             // Get unique values for dropdown columns
-            this.uniqueValues[column] = [
-                ...new Set(
-                    this.bienBanList.map((item) => item[column]).filter(Boolean) // Remove null/undefined values
-                ),
-            ];
+            if (column === "trang_thai_thanh_toan") {
+                // For payment status, include null values and add specific statuses
+                const existingStatuses = [
+                    ...new Set(
+                        this.bienBanList
+                            .map((item) => item[column])
+                            .filter(Boolean)
+                    ),
+                ];
+                // Add null option for "Chưa thanh toán" if there are any null values
+                const hasNullValues = this.bienBanList.some(
+                    (item) => !item[column]
+                );
+                if (hasNullValues) {
+                    existingStatuses.unshift("null"); // Add null as first option
+                }
+                this.uniqueValues[column] = existingStatuses;
+            } else {
+                this.uniqueValues[column] = [
+                    ...new Set(
+                        this.bienBanList
+                            .map((item) => item[column])
+                            .filter(Boolean)
+                    ),
+                ];
+            }
         },
 
         resetFilter(column) {
@@ -3055,6 +3208,7 @@ export default {
                     "vu_dau_tu",
                     "hinh_thuc_thuc_hien_dv",
                     "trang_thai_nhan_hs",
+                    "trang_thai_thanh_toan", // เพิ่มบรรทัดนี้
                 ].includes(column)
             ) {
                 this.selectedFilterValues[column] = [];
@@ -4292,9 +4446,11 @@ export default {
                     // Reset selections
                     this.selectedItems = [];
 
-                    // Option: Navigate to the payment request detail page
+                    // Navigate to the payment request detail page
                     if (response.data.payment_request_id) {
-                        // this.$router.push(`/payment-request/${response.data.payment_request_id}`);
+                        this.$router.push(
+                            `/Details_Phieutrinhthanhtoandv/${response.data.payment_request_id}`
+                        );
                     }
                 } else {
                     throw new Error(response.data.message || "Unknown error");
@@ -5102,7 +5258,7 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         font-size: 1.5rem;
     }
     .flex-1.justify-items-start {
-        font-size: 12px;
+        font-size: 10px;
     }
 }
 /* Table container with fixed header */
@@ -6329,6 +6485,117 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     .mobile-status-select {
         height: 42px;
         font-size: 0.8rem;
+    }
+}
+
+/* Mobile Pagination - Simple & Clean */
+.mobile-pagination-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.pagination-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.page-info {
+    font-weight: 600;
+    color: #374151;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.page-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: white;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: #10b981;
+    color: #10b981;
+    transform: translateY(-1px);
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.current-page {
+    background: #10b981;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin: 0 8px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.quick-jump {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.quick-jump select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+}
+
+.quick-jump select:focus {
+    outline: none;
+    border-color: #10b981;
+}
+
+@media (max-width: 480px) {
+    .pagination-info {
+        flex-direction: column;
+        gap: 4px;
+        text-align: center;
+    }
+
+    .page-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .current-page {
+        padding: 6px 12px;
+        margin: 0 4px;
     }
 }
 </style>

@@ -250,6 +250,11 @@ Route::get('/employees/by-station', [UserController::class, 'getEmployeesByStati
     // เพิ่ม routes สำหรับรูปภาพ
     Route::post('/farmer-users/upload-image', [App\Http\Controllers\Farmer\UserFarmerController::class, 'uploadFarmerImage']);
     Route::delete('/farmer-users/{id}/delete-image', [App\Http\Controllers\Farmer\UserFarmerController::class, 'deleteFarmerImage']);
+// Calender Routes
+
+   Route::get('/payment-schedule/calendar-events', [App\Http\Controllers\Calender\LichThanhToanControllers::class, 'getCalendarEvents']);
+    Route::get('/payment-schedule/service-tracking', [App\Http\Controllers\Calender\LichThanhToanControllers::class, 'getServicePaymentTracking']);
+    Route::get('/payment-schedule/seed-tracking', [App\Http\Controllers\Calender\LichThanhToanControllers::class, 'getSeedPaymentTracking']);
 
 });
 
@@ -281,6 +286,7 @@ Route::get('/user-info', [UserController::class, 'getUserInfo']);
 Route::get('/phieu-giao-nhan-hom-giong', [PhieuGiaoNhanHomGiongController::class, 'index']);
 Route::get('/bienban-nghiemthu-homgiong/{id}', [PhieuGiaoNhanHomGiongController::class, 'show']);
 Route::get('/bienban-nghiemthu-homgiong/{id}/check-access', [PhieuGiaoNhanHomGiongController::class, 'checkAccess']);
+Route::get('/bienban-nghiemthu-homgiong/{id}/history', [PhieuGiaoNhanHomGiongController::class, 'getHistory']);
 Route::post('/users/get-by-ids', [UserController::class, 'getUsersByIds']);
 
  // Farmer Profile Management Routes

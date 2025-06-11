@@ -1164,15 +1164,79 @@
                     </div>
                 </div>
             </div>
-            <!-- pagination -->
-            <div class="flex justify-center mt-4">
-                <div class="pagination-card">
-                    <pagination
-                        :data="paginatedDeliveries"
-                        @pagination-change-page="pageChanged"
-                        :limit="5"
-                        :classes="paginationClasses"
-                    />
+            <!-- Mobile Pagination Card - แทนที่ pagination เดิม -->
+            <div class="mobile-pagination-card" v-if="isMobile">
+                <div class="pagination-info">
+                    <span class="page-info"
+                        >Trang {{ currentPage }} của
+                        {{ paginatedDeliveries.last_page }}</span
+                    >
+                    <span class="record-info"
+                        >{{ paginatedDeliveries.from }}-{{
+                            paginatedDeliveries.to
+                        }}
+                        của {{ paginatedDeliveries.total }} bản ghi</span
+                    >
+                </div>
+
+                <div class="pagination-controls">
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(1)"
+                        :disabled="currentPage === 1"
+                    >
+                        <i class="fas fa-angle-double-left"></i>
+                    </button>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(currentPage - 1)"
+                        :disabled="currentPage === 1"
+                    >
+                        <i class="fas fa-angle-left"></i>
+                    </button>
+
+                    <div class="current-page">{{ currentPage }}</div>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(currentPage + 1)"
+                        :disabled="
+                            currentPage === paginatedDeliveries.last_page
+                        "
+                    >
+                        <i class="fas fa-angle-right"></i>
+                    </button>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(paginatedDeliveries.last_page)"
+                        :disabled="
+                            currentPage === paginatedDeliveries.last_page
+                        "
+                    >
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
+                </div>
+
+                <!-- Quick jump สำหรับหน้าเยอะ -->
+                <div
+                    class="quick-jump"
+                    v-if="paginatedDeliveries.last_page > 5"
+                >
+                    <span>Đi đến trang:</span>
+                    <select
+                        :value="currentPage"
+                        @change="pageChanged(parseInt($event.target.value))"
+                    >
+                        <option
+                            v-for="page in paginatedDeliveries.last_page"
+                            :key="page"
+                            :value="page"
+                        >
+                            {{ page }}
+                        </option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -2680,6 +2744,9 @@ input[type="checkbox"] {
     .table-scroll-container {
         max-height: calc(100vh - 300px);
     }
+    .justify-items-start {
+        font-size: 12px;
+    }
 }
 
 .filter-btn {
@@ -2749,5 +2816,115 @@ input[type="checkbox"] {
     right: 0;
     top: 100%;
     z-index: 1000;
+}
+/* Mobile Pagination - Simple & Clean */
+.mobile-pagination-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.pagination-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.page-info {
+    font-weight: 600;
+    color: #374151;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.page-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: white;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: #10b981;
+    color: #10b981;
+    transform: translateY(-1px);
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.current-page {
+    background: #10b981;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin: 0 8px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.quick-jump {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.quick-jump select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+}
+
+.quick-jump select:focus {
+    outline: none;
+    border-color: #10b981;
+}
+
+@media (max-width: 480px) {
+    .pagination-info {
+        flex-direction: column;
+        gap: 4px;
+        text-align: center;
+    }
+
+    .page-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .current-page {
+        padding: 6px 12px;
+        margin: 0 4px;
+    }
 }
 </style>

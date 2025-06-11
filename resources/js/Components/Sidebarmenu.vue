@@ -314,6 +314,55 @@
                         </div>
                     </li>
                 </ul>
+
+                <ul>
+                    <li
+                        class="sidebar-dropdown"
+                        :class="{ active: activeDropdowns.system }"
+                    >
+                        <a href="#" @click.prevent="toggleDropdown('system')">
+                            <i class="fa-solid fa-calendar"></i>
+                            <span class="menu-text">Calender</span>
+                        </a>
+                        <div
+                            class="sidebar-submenu"
+                            :style="{
+                                display: activeDropdowns.system
+                                    ? 'block'
+                                    : 'none',
+                            }"
+                        >
+                            <ul>
+                                <li>
+                                    <router-link
+                                        to="/LichThanhToan"
+                                        :class="
+                                            $route.path === '/LichThanhToan'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                        @click="closeSidebar"
+                                    >
+                                        <span>Lịch thanh toán</span>
+                                    </router-link>
+                                </li>
+                                <li>
+                                    <router-link
+                                        to="/LichGiaoNhanHoso"
+                                        :class="
+                                            $route.path === '/LichGiaoNhanHoso'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                        @click="closeSidebar"
+                                    >
+                                        <span>Lịch giao nhận HS</span>
+                                    </router-link>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
             </div>
             <!-- sidebar menu end -->
         </div>

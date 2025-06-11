@@ -354,6 +354,14 @@ const routes = [
         },
     },
     {
+        name: "LichThanhToan",
+        path: "/LichThanhToan",
+        component: () => import("../Pages/Catalog/LichThanhtoan.vue"),
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
         name: "Phieutrinhthanhtoan",
         path: "/Phieutrinhthanhtoan",
         component: Phieutrinhthanhtoan,

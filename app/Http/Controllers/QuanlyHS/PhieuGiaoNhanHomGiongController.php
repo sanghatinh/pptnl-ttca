@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\BienBanNghiemThuHomGiong;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class PhieuGiaoNhanHomGiongController extends Controller
 {
  
+
 
 
 public function index(Request $request)
@@ -38,7 +41,19 @@ public function index(Request $request)
             // Join with users table for creator name (nguoi_giao_ho_so)
             ->leftJoin('users as creator', 'dd.creator_id', '=', 'creator.id')
             // Join with users table for receiver name (nguoi_nhan_ho_so)
-            ->leftJoin('users as receiver', 'dd.receiver_id', '=', 'receiver.id');
+            ->leftJoin('users as receiver', 'dd.receiver_id', '=', 'receiver.id')
+            // Join for payment status information using the latest log entry
+            ->leftJoin(\DB::raw("(
+                SELECT l1.ma_so_phieu, l1.ma_trinh_thanh_toan, l1.ma_de_nghi_giai_ngan
+                FROM logs_phieu_trinh_thanh_toan_homgiong l1
+                JOIN (
+                    SELECT ma_so_phieu, MAX(id) as max_id
+                    FROM logs_phieu_trinh_thanh_toan_homgiong
+                    GROUP BY ma_so_phieu
+                ) l2 ON l1.ma_so_phieu = l2.ma_so_phieu AND l1.id = l2.max_id
+            ) as logs"), 'hg.ma_so_phieu', '=', 'logs.ma_so_phieu')
+            // Join with payment request table to get payment status
+            ->leftJoin('tb_phieu_trinh_thanh_toan_homgiong as pttt', 'logs.ma_trinh_thanh_toan', '=', 'pttt.ma_trinh_thanh_toan');
 
         // Apply role-based filtering based on user type
         if ($userType === 'farmer') {
@@ -175,7 +190,11 @@ public function index(Request $request)
             'creator.full_name as nguoi_giao_ho_so',
             'receiver.full_name as nguoi_nhan_ho_so',
             'dd.received_date as ngay_nhan_ho_so',
-            'dd.status as tinh_trang_giao_nhan_ho_so'
+            'dd.status as tinh_trang_giao_nhan_ho_so',
+            // เพิ่มข้อมูล payment status
+            'logs.ma_trinh_thanh_toan',
+            'logs.ma_de_nghi_giai_ngan',
+            'pttt.trang_thai_thanh_toan as tinh_trang_thanh_toan'
         );
 
         // Get the filtered records
@@ -190,8 +209,22 @@ public function index(Request $request)
                 'ma_khach_hang_CN' => $records[0]->ma_khach_hang_CN ?? 'N/A',
                 'ma_khach_hang_DN' => $records[0]->ma_khach_hang_DN ?? 'N/A',
                 'ma_khach_hang_giao_hom' => $records[0]->ma_khach_hang_giao_hom ?? 'N/A',
-                'ma_khach_hang_giao_hom_DN' => $records[0]->ma_khach_hang_giao_hom_DN ?? 'N/A'
+                'ma_khach_hang_giao_hom_DN' => $records[0]->ma_khach_hang_giao_hom_DN ?? 'N/A',
+                'tinh_trang_thanh_toan' => $records[0]->tinh_trang_thanh_toan ?? 'N/A'
             ]);
+        }
+
+        // Add processing_status to each record based on payment data  
+        foreach ($records as $record) {
+            if ($record->tinh_trang_thanh_toan === 'paid') {
+                $record->processing_status = 'paid';
+            } elseif ($record->ma_trinh_thanh_toan) {
+                $record->processing_status = 'submitted';
+            } elseif ($record->ma_de_nghi_giai_ngan) {
+                $record->processing_status = 'processing';
+            } else {
+                $record->processing_status = 'received';
+            }
         }
 
         return response()->json([
@@ -900,5 +933,348 @@ private function updateFinancialInfo($paymentRequestId, $financialData)
 
 
 
+/**
+ * ดึงประวัติการดำเนินการของเอกสาร
+ */
+public function getHistory($id)
+{
+    try {
+        \Log::info("Processing history requested for phieu giao nhan hom giong ID: " . $id);
+        // Array to store our history entries
+        $historyItems = [];
+        
+        // Get the document info
+        $document = \DB::table('bien_ban_nghiem_thu_hom_giong')
+            ->where('ma_so_phieu', $id)
+            ->first();
+            
+        if (!$document) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy thông tin phiếu giao nhận hom giống'
+            ], 404);
+        }
 
+        // ไม่ต้องสร้าง creating history อัตโนมัติ แต่ให้หาจากข้อมูลจริง
+        $creatingDate = $document->created_at ?? $document->updated_at ?? now();
+        
+        // พยายามหาข้อมูลเพิ่มเติมจาก document_mapping_homgiong (ถ้ามี)
+        $documentMapping = \DB::table('document_mapping_homgiong')
+            ->where('ma_so_phieu', $id)
+            ->first();
+            
+        if ($documentMapping) {
+            $documentCode = $documentMapping->document_code;
+            
+            // Get creating info
+            $creatingInfo = \DB::table('document_delivery as dd')
+                ->join('users as u', 'dd.creator_id', '=', 'u.id')
+                ->where('dd.document_code', $documentCode)
+                ->select('dd.created_at as date', 'u.full_name as user')
+                ->first();
+                
+            if ($creatingInfo) {
+                // เพิ่มประวัติเฉพาะเมื่อมีข้อมูล creator จริงๆ
+                $creatingDate = new \DateTime($creatingInfo->date);
+                
+                $historyItems['creating'] = [
+                    'action' => 'creating',
+                    'date' => $creatingInfo->date,
+                    'user' => $creatingInfo->user,
+                    'days_since_previous' => 0, // First step always has 0 days
+                    'note' => 'Hồ sơ đang được tạo mới trong hệ thống.'
+                ];
+            }
+            
+            // Get received info
+            $receivedInfo = \DB::table('document_delivery as dd')
+                ->join('users as u', 'dd.receiver_id', '=', 'u.id')
+                ->where('dd.document_code', $documentCode)
+                ->select('dd.received_date as date', 'u.full_name as user')
+                ->first();
+                
+            if ($receivedInfo) {
+                // Fix: Ensure proper date handling for different formats
+                $receivedDateStr = $receivedInfo->date;
+                $receivedDate = null;
+                
+                // Handle different possible date formats
+                try {
+                    // First try with datetime format
+                    $receivedDate = new \DateTime($receivedDateStr);
+                } catch (\Exception $e) {
+                    try {
+                        $receivedDate = \DateTime::createFromFormat('Y-m-d', $receivedDateStr);
+                    } catch (\Exception $e2) {
+                        // Default to current date if all parsing fails
+                        $receivedDate = new \DateTime();
+                    }
+                }
+                
+                // Calculate days between receiving and creating
+                $daysSincePrevious = 0;
+                if ($receivedDate instanceof \DateTime && isset($creatingDate) && $creatingDate instanceof \DateTime) {
+                    $interval = $receivedDate->diff($creatingDate);
+                    $daysSincePrevious = $interval->days;
+                    // If dates are the same except for time, ensure we show at least 1 day if they're on different calendar days
+                    if ($daysSincePrevious == 0 && $receivedDate->format('Y-m-d') != $creatingDate->format('Y-m-d')) {
+                        $daysSincePrevious = 1;
+                    }
+                }
+                
+                $historyItems['received'] = [
+                    'action' => 'received',
+                    'date' => $receivedInfo->date,
+                    'user' => $receivedInfo->user,
+                    'days_since_previous' => $daysSincePrevious,
+                    'note' => 'Hồ sơ đã được nhận và xác nhận trong hệ thống.'
+                ];
+            }
+        } else {
+            // หากไม่พบ document_mapping_homgiong แต่มีข้อมูลการรับเอกสารในตารางอื่น
+            if (!empty($document->ngay_nhan) && !empty($document->nguoi_nhan)) {
+                try {
+                    $receivedDate = new \DateTime($document->ngay_nhan);
+                    $creatingDateObj = new \DateTime($creatingDate);
+                    $daysSincePrevious = $receivedDate->diff($creatingDateObj)->days;
+                    
+                    $historyItems['received'] = [
+                        'action' => 'received',
+                        'date' => $document->ngay_nhan,
+                        'user' => $document->nguoi_nhan,
+                        'days_since_previous' => $daysSincePrevious,
+                        'note' => 'Hồ sơ đã được nhận trong hệ thống.'
+                    ];
+                } catch (\Exception $e) {
+                    // ถ้าไม่สามารถแปลงวันที่ได้ ไม่ต้องเพิ่มประวัติ
+                    \Log::warning("Could not parse received date: " . $e->getMessage());
+                }
+            }
+        }
+        
+        // Get logs for this document from logs_phieu_trinh_thanh_toan_homgiong
+        $logInfo = \DB::table('logs_phieu_trinh_thanh_toan_homgiong')
+            ->where('ma_so_phieu', $id)
+            ->orderBy('id', 'desc')
+            ->first();
+            
+        if ($logInfo && $logInfo->ma_trinh_thanh_toan) {
+            // Get processing info
+            $processingInfo = \DB::table('action_phieu_trinh_thanh_toan_homgiong as apt')
+                ->join('users', 'apt.action_by', '=', 'users.id')
+                ->where('ma_trinh_thanh_toan', $logInfo->ma_trinh_thanh_toan)
+                ->where('action', 'processing')
+                ->orderBy('apt.id', 'desc')
+                ->select('apt.action_date as date', 'users.full_name as user')
+                ->first();
+                
+            if ($processingInfo) {
+                $processingDate = new \DateTime($processingInfo->date);
+                $previousDate = null;
+                $previousStep = null;
+                
+                // หาวันที่ของขั้นตอนก่อนหน้า
+                if (isset($historyItems['received'])) {
+                    try {
+                        $previousDate = new \DateTime($historyItems['received']['date']);
+                        $previousStep = 'received';
+                    } catch (\Exception $e) {
+                        // ถ้าไม่สามารถแปลงวันที่ได้ ตรวจสอบขั้นตอน creating
+                        if (isset($historyItems['creating'])) {
+                            try {
+                                $previousDate = new \DateTime($historyItems['creating']['date']);
+                                $previousStep = 'creating';
+                            } catch (\Exception $e2) {
+                                $previousDate = null;
+                            }
+                        }
+                    }
+                } elseif (isset($historyItems['creating'])) {
+                    try {
+                        $previousDate = new \DateTime($historyItems['creating']['date']);
+                        $previousStep = 'creating';
+                    } catch (\Exception $e) {
+                        $previousDate = null;
+                    }
+                }
+                
+                // เพิ่มประวัติ processing เมื่อมีข้อมูล
+                $daysSincePrevious = 0;
+                if ($previousDate) {
+                    $daysSincePrevious = $processingDate->diff($previousDate)->days;
+                }
+                
+                $historyItems['processing'] = [
+                    'action' => 'processing',
+                    'date' => $processingInfo->date,
+                    'user' => $processingInfo->user,
+                    'days_since_previous' => $daysSincePrevious,
+                    'note' => 'Hồ sơ đang được xử lý, vui lòng chờ.'
+                ];
+                
+                // เพิ่มข้อมูลขั้นตอนก่อนหน้า เพื่อใช้อ้างอิงในอนาคต
+                if ($previousStep) {
+                    $historyItems['processing']['previous_step'] = $previousStep;
+                }
+            }
+            
+            // Get submitted info
+            $submittedInfo = \DB::table('action_phieu_trinh_thanh_toan_homgiong as apt')
+                ->join('users', 'apt.action_by', '=', 'users.id')
+                ->where('ma_trinh_thanh_toan', $logInfo->ma_trinh_thanh_toan)
+                ->where('action', 'submitted')
+                ->orderBy('apt.id', 'desc')
+                ->select('apt.action_date as date', 'users.full_name as user')
+                ->first();
+                
+            if ($submittedInfo) {
+                $submittedDate = new \DateTime($submittedInfo->date);
+                $previousDate = null;
+                $previousStep = null;
+                $daysSincePrevious = 0;
+                $timeNote = "";
+                
+                // หาขั้นตอนก่อนหน้าที่มีอยู่จริง
+                if (isset($historyItems['processing'])) {
+                    $previousStep = 'processing';
+                    try {
+                        $previousDate = new \DateTime($historyItems['processing']['date']);
+                        
+                        // คำนวณเวลาระหว่าง processing และ submitted
+                        $interval = $submittedDate->diff($previousDate);
+                        $totalHours = ($interval->days * 24) + $interval->h;
+                        $daysSincePrevious = $interval->days;
+                        
+                        // เพิ่มบันทึกเวลาเมื่ออยู่ในวันเดียวกัน
+                        $sameDay = $submittedDate->format('Y-m-d') === $previousDate->format('Y-m-d');
+                        if ($sameDay && $totalHours > 0) {
+                            $timeNote = " (sau " . $totalHours . " giờ)";
+                        }
+                    } catch (\Exception $e) {
+                        // ถ้าแปลงวันที่ไม่สำเร็จ ใช้ค่าเริ่มต้น
+                        $daysSincePrevious = 0;
+                    }
+                } elseif (isset($historyItems['received'])) {
+                    $previousStep = 'received';
+                    try {
+                        $previousDate = new \DateTime($historyItems['received']['date']);
+                        $daysSincePrevious = $submittedDate->diff($previousDate)->days;
+                    } catch (\Exception $e) {
+                        $daysSincePrevious = 0;
+                    }
+                } elseif (isset($historyItems['creating'])) {
+                    $previousStep = 'creating';
+                    try {
+                        $previousDate = new \DateTime($historyItems['creating']['date']);
+                        $daysSincePrevious = $submittedDate->diff($previousDate)->days;
+                    } catch (\Exception $e) {
+                        $daysSincePrevious = 0;
+                    }
+                }
+                
+                // เพิ่มประวัติ submitted
+                $historyItems['submitted'] = [
+                    'action' => 'submitted',
+                    'date' => $submittedInfo->date,
+                    'user' => $submittedInfo->user,
+                    'days_since_previous' => $daysSincePrevious,
+                    'note' => 'Hồ sơ đã được chuyển đến phòง kế toán.' . $timeNote
+                ];
+                
+                // เพิ่มข้อมูลขั้นตอนก่อนหน้า
+                if ($previousStep) {
+                    $historyItems['submitted']['previous_step'] = $previousStep;
+                }
+            }
+            
+            // Get paid info
+            if ($logInfo->ma_de_nghi_giai_ngan) {
+                $paidDateInfo = \DB::table('tb_de_nghi_thanhtoan_homgiong')
+                    ->where('ma_giai_ngan', $logInfo->ma_de_nghi_giai_ngan)
+                    ->select('ngay_thanh_toan as date')
+                    ->first();
+                    
+                $paidUserInfo = \DB::table('action_phieu_trinh_thanh_toan_homgiong as apt')
+                    ->join('users', 'apt.action_by', '=', 'users.id')
+                    ->where('ma_trinh_thanh_toan', $logInfo->ma_trinh_thanh_toan)
+                    ->where('action', 'paid')
+                    ->orderBy('apt.id', 'desc')
+                    ->select('users.full_name as user')
+                    ->first();
+                
+                if ($paidDateInfo && $paidUserInfo) {
+                    // หาขั้นตอนก่อนหน้า - อาจเป็น submitted, processing หรือ received
+                    $previousStep = null;
+                    $previousDate = null;
+                    
+                    foreach (['submitted', 'processing', 'received', 'creating'] as $step) {
+                        if (isset($historyItems[$step])) {
+                            $previousStep = $step;
+                            try {
+                                $previousDate = new \DateTime($historyItems[$step]['date']);
+                                break;
+                            } catch (\Exception $e) {
+                                // ถ้าแปลงวันที่ไม่สำเร็จ ลองขั้นตอนถัดไป
+                                continue;
+                            }
+                        }
+                    }
+                    
+                    // คำนวณวันที่แตกต่าง
+                    $daysSincePrevious = 0;
+                    if ($previousDate) {
+                        try {
+                            $paidDate = new \DateTime($paidDateInfo->date);
+                            $daysSincePrevious = $paidDate->diff($previousDate)->days;
+                        } catch (\Exception $e) {
+                            // ในกรณีที่มีปัญหากับการคำนวณวันที่ ใช้ค่าเริ่มต้น
+                            $daysSincePrevious = 0;
+                        }
+                    }
+                    
+                    // เพิ่มประวัติ paid
+                    $historyItems['paid'] = [
+                        'action' => 'paid',
+                        'date' => $paidDateInfo->date,
+                        'user' => $paidUserInfo->user,
+                        'days_since_previous' => $daysSincePrevious,
+                        'note' => 'Thanh toán đã hoàn tất thông qua chuyển khoản ngân hàng.',
+                        'amount' => $document->tong_tien ?? 0
+                    ];
+                    
+                    // เพิ่มข้อมูลขั้นตอนก่อนหน้า
+                    if ($previousStep) {
+                        $historyItems['paid']['previous_step'] = $previousStep;
+                    }
+                }
+            }
+        }
+        
+        // Define the correct order of steps
+        $stepOrder = ['creating', 'received', 'processing', 'submitted', 'paid'];
+        
+        // Create the final history array in the correct order
+        $history = [];
+        foreach ($stepOrder as $step) {
+            if (isset($historyItems[$step])) {
+                $history[] = $historyItems[$step];
+            }
+        }
+        
+        // บันทึก log ข้อมูลที่จะส่งกลับเพื่อช่วยในการตรวจสอบ
+        \Log::info("History items to be returned for phieu giao nhan hom giong: " . count($history));
+        
+        // ถ้าไม่มีประวัติเลย ส่งกลับ array ว่างแทนที่จะสร้างข้อมูลเทียม
+        return response()->json([
+            'success' => true,
+            'history' => $history // อาจเป็น array ว่างได้
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error in getHistory for phieu giao nhan hom giong: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi lấy lịch sử xử lý: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

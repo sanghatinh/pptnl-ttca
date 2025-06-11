@@ -139,7 +139,7 @@ $totalThucNhan = $this->calculateTotalThucNhan($request->receipt_ids);
                 ->where('ma_trinh_thanh_toan', $maTrinh)
                ->update([
         'tong_tien_thanh_toan' => $totalAmount,
-        'thuc_nhan' => $totalThucNhan // เพิ่มการอัปเดต thuc_nhan
+        // 'thuc_nhan' => $totalThucNhan // เพิ่มการอัปเดต thuc_nhan
     ]);
 
             // บันทึกประวัติการดำเนินการสร้างใบเบิกเงิน

@@ -556,18 +556,42 @@
                                             >
                                                 Mã giải ngân
                                             </label>
+                                            <div
+                                                v-if="
+                                                    document.ma_de_nghi_giai_ngan
+                                                "
+                                                class="input-group"
+                                                style="cursor: pointer"
+                                                @click="navigateToPaymentDetail"
+                                                title="Click để xem chi tiết phiếu đề nghị thanh toán"
+                                            >
+                                                <span class="input-group-text">
+                                                    <i
+                                                        class="fas fa-external-link-alt text-primary"
+                                                    ></i>
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    class="form-control link-input"
+                                                    id="maGiaiNgan"
+                                                    :value="
+                                                        document.ma_de_nghi_giai_ngan
+                                                    "
+                                                    readonly
+                                                    style="cursor: pointer"
+                                                />
+                                            </div>
                                             <input
+                                                v-else
                                                 type="text"
                                                 class="form-control"
                                                 id="maGiaiNgan"
-                                                :value="
-                                                    document.ma_de_nghi_giai_ngan ||
-                                                    'N/A'
-                                                "
+                                                value="N/A"
                                                 disabled
                                             />
                                         </div>
                                     </div>
+
                                     <!-- Người giao hồ sơ -->
                                     <div class="col-12">
                                         <div class="form-group mb-3">
@@ -1382,6 +1406,20 @@ export default {
                         );
                     }
                 });
+        },
+        // Navigate to payment detail page
+        navigateToPaymentDetail() {
+            const maGiaiNgan = this.document.ma_de_nghi_giai_ngan;
+
+            if (!maGiaiNgan || maGiaiNgan === "N/A") {
+                this.showError("Không tìm thấy mã giải ngân");
+                return;
+            }
+
+            // Navigate to payment detail page with the payment code
+            this.$router.push(
+                `/Details_Phieudenghithanhtoandichvu/${maGiaiNgan}`
+            );
         },
     },
 };

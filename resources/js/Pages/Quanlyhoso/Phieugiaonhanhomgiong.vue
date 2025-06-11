@@ -1238,9 +1238,25 @@
                                             </template>
                                         </td>
                                         <td>
-                                            {{
-                                                formatDate(item.ngay_nhan_ho_so)
-                                            }}
+                                            <span
+                                                v-if="item.ngay_nhan_ho_so"
+                                                class="badge bg-warning text-dark fw-bold"
+                                            >
+                                                <i
+                                                    class="fas fa-calendar-check me-1"
+                                                ></i>
+                                                {{
+                                                    formatDate(
+                                                        item.ngay_nhan_ho_so
+                                                    )
+                                                }}
+                                            </span>
+                                            <span
+                                                v-else
+                                                class="badge bg-secondary text-light"
+                                            >
+                                                Chưa nhận
+                                            </span>
                                         </td>
                                         <td>
                                             <span
@@ -1313,11 +1329,14 @@
                                         item.tinh_trang_thanh_toan
                                     ),
                                     'text-3xl mb-1',
+                                    paymentStatusClass(
+                                        item.tinh_trang_thanh_toan
+                                    ), // เพิ่มบรรทัดนี้
                                 ]"
                             ></i>
                             <i
                                 v-else
-                                class="fas fa-money-bill-slash text-3xl mb-1 text-gray-400"
+                                class="fas fa-money-bill-slash text-3xl mb-1 text-green-600"
                             ></i>
                             <span
                                 v-if="item.tinh_trang_thanh_toan"
@@ -1353,10 +1372,7 @@
                             <strong>Trạm:</strong>
                             {{ item.tram }}
                         </div>
-                        <div class="mb-2">
-                            <strong>Cán bộ nông vụ:</strong>
-                            {{ item.can_bo_nong_vu }}
-                        </div>
+
                         <div class="mb-2">
                             <strong>Vụ đầu tư:</strong>
                             {{ item.vu_dau_tu }}
@@ -1365,14 +1381,7 @@
                             <strong>Tên phiếu:</strong>
                             {{ item.ten_phieu }}
                         </div>
-                        <div class="mb-2">
-                            <strong>Hợp đồng đầu tư mía bên giao:</strong>
-                            {{ item.hop_dong_dau_tu_mia_ben_giao_hom }}
-                        </div>
-                        <div class="mb-2">
-                            <strong>Hợp đồng đầu tư mía bên nhận:</strong>
-                            {{ item.ma_hop_dong }}
-                        </div>
+
                         <div class="mb-2">
                             <strong>Tổng thực nhận:</strong>
                             {{
@@ -1387,18 +1396,7 @@
                             <strong>Tổng tiền:</strong>
                             {{ formatCurrency(item.tong_tien) }}
                         </div>
-                        <div class="mb-2">
-                            <strong>Người giao hồ sơ:</strong>
-                            {{ item.nguoi_giao_ho_so }}
-                        </div>
-                        <div class="mb-2">
-                            <strong>Người nhận hồ sơ:</strong>
-                            {{ item.nguoi_nhan_ho_so }}
-                        </div>
-                        <div class="mb-2">
-                            <strong>Ngày nhận hồ sơ:</strong>
-                            {{ formatDate(item.ngay_nhan_ho_so) }}
-                        </div>
+
                         <div class="mb-2">
                             <strong>Tình trạng giao nhận hồ sơ:</strong>
                             <span
@@ -1430,29 +1428,70 @@
                 </div>
             </div>
 
-            <!-- Pagination -->
-            <div class="flex justify-center mt-0">
-                <div class="pagination-card">
-                    <div class="pagination-wrapper">
-                        <Bootstrap5Pagination
-                            :data="paginatedItems"
-                            @pagination-change-page="pageChanged"
-                            :limit="isMobile ? 3 : 5"
-                            :classes="paginationClasses"
-                        />
-                        <!-- เพิ่มข้อมูล pagination info สำหรับมือถือ -->
-                        <div
-                            v-if="isMobile && paginatedItems.data.length > 0"
-                            class="pagination-info"
+            <!-- Mobile Pagination Card - แทนที่ pagination เดิม -->
+            <div class="mobile-pagination-card" v-if="isMobile">
+                <div class="pagination-info">
+                    <span class="page-info"
+                        >Trang {{ currentPage }} của
+                        {{ paginatedItems.last_page }}</span
+                    >
+                    <span class="record-info"
+                        >{{ paginatedItems.from }}-{{ paginatedItems.to }} của
+                        {{ paginatedItems.total }} bản ghi</span
+                    >
+                </div>
+
+                <div class="pagination-controls">
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(1)"
+                        :disabled="currentPage === 1"
+                    >
+                        <i class="fas fa-angle-double-left"></i>
+                    </button>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(currentPage - 1)"
+                        :disabled="currentPage === 1"
+                    >
+                        <i class="fas fa-angle-left"></i>
+                    </button>
+
+                    <div class="current-page">{{ currentPage }}</div>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(currentPage + 1)"
+                        :disabled="currentPage === paginatedItems.last_page"
+                    >
+                        <i class="fas fa-angle-right"></i>
+                    </button>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(paginatedItems.last_page)"
+                        :disabled="currentPage === paginatedItems.last_page"
+                    >
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
+                </div>
+
+                <!-- Quick jump สำหรับหน้าเยอะ -->
+                <div class="quick-jump" v-if="paginatedItems.last_page > 5">
+                    <span>Đi đến trang:</span>
+                    <select
+                        :value="currentPage"
+                        @change="pageChanged(parseInt($event.target.value))"
+                    >
+                        <option
+                            v-for="page in paginatedItems.last_page"
+                            :key="page"
+                            :value="page"
                         >
-                            แสดง {{ paginatedItems.from }}-{{
-                                paginatedItems.to
-                            }}
-                            จาก {{ paginatedItems.total }} รายการ (หน้า
-                            {{ paginatedItems.current_page }} /
-                            {{ paginatedItems.last_page }})
-                        </div>
-                    </div>
+                            {{ page }}
+                        </option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -1839,7 +1878,8 @@
                                             type="number"
                                             class="modern-input text-center"
                                             min="1"
-                                            readonly
+                                            @input="validateInstallment"
+                                            @blur="validateInstallment"
                                         />
                                         <button
                                             type="button"
@@ -2177,7 +2217,7 @@ export default {
                         0 ||
                         (item.tinh_trang_thanh_toan &&
                             this.selectedFilterValues.tinh_trang_thanh_toan.includes(
-                                item.tinh_trang_thanh_toan
+                                item.tinh_trang_thanh_toan || "Chưa thanh toán"
                             ))) &&
                     // Vụ đầu tư
                     (this.selectedFilterValues.vu_dau_tu.length === 0 ||
@@ -2278,6 +2318,20 @@ export default {
         },
     },
     methods: {
+        validateInstallment() {
+            // ตรวจสอบว่าค่าที่ป้อนเป็นตัวเลขที่ถูกต้อง
+            const value = this.paymentRequestForm.payment_installment;
+
+            // ถ้าไม่ใช่ตัวเลขหรือน้อยกว่า 1 ให้ตั้งเป็น 1
+            if (!value || isNaN(value) || value < 1) {
+                this.paymentRequestForm.payment_installment = 1;
+            } else {
+                // ตรวจสอบว่าเป็นจำนวนเต็มหรือไม่
+                this.paymentRequestForm.payment_installment = Math.floor(
+                    Math.abs(value)
+                );
+            }
+        },
         // เพิ่ม methods เหล่านี้
         applyMobileFilters() {
             this.showMobileFilterModal = false;
@@ -2410,7 +2464,9 @@ export default {
                     this.uniqueValues.tinh_trang_thanh_toan = [
                         ...new Set(
                             this.allPhieuList.map(
-                                (item) => item.tinh_trang_thanh_toan
+                                (item) =>
+                                    item.tinh_trang_thanh_toan ||
+                                    "Chưa thanh toán"
                             )
                         ),
                     ];
@@ -2587,8 +2643,8 @@ export default {
                 // ตรวจสอบว่ามีรายการที่เลือกหรือไม่
                 if (this.selectedItems.length === 0) {
                     Swal.fire({
-                        title: "แจ้งเตือน",
-                        text: "กรุณาเลือกรายการที่ต้องการสร้างphiếu trình thanh toán",
+                        title: "Thông báo",
+                        text: "Vui lòng chọn các mục cần tạo phiếu trình thanh toán",
                         icon: "warning",
                         confirmButtonText: "OK",
                     });
@@ -2663,6 +2719,11 @@ export default {
                         text: `Đã tạo phiếu trình thanh toán: ${response.data.payment_request_id}`,
                         icon: "success",
                         confirmButtonText: "OK",
+                    }).then(() => {
+                        // Navigate to the details page after user clicks OK
+                        this.$router.push(
+                            `/Details_PhieutrinhthanhtoanHomgiong/${response.data.payment_request_id}`
+                        );
                     });
 
                     // Refresh data
@@ -2770,14 +2831,22 @@ export default {
             if (
                 column === "vu_dau_tu" ||
                 column === "tram" ||
-                column === "tinh_trang_giao_nhan_ho_so" ||
-                column === "tinh_trang_thanh_toan"
+                column === "tinh_trang_giao_nhan_ho_so"
             ) {
                 this.uniqueValues[column] = [
                     ...new Set(
                         this.phieuList
                             .map((item) => item[column])
                             .filter(Boolean) // Remove null/undefined values
+                    ),
+                ];
+            } else if (column === "tinh_trang_thanh_toan") {
+                // จัดการพิเศษสำหรับ tình trạng thanh toán
+                this.uniqueValues[column] = [
+                    ...new Set(
+                        this.phieuList.map(
+                            (item) => item[column] || "Chưa thanh toán"
+                        )
                     ),
                 ];
             }
@@ -3416,7 +3485,7 @@ export default {
             }
         },
         formatPaymentStatus(status) {
-            if (!status) return "Chưa thanh toántoán";
+            if (!status) return "Chưa thanh toán";
 
             const statusMap = {
                 paid: "Đã thanh toán",
@@ -4933,6 +5002,9 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     .step-label {
         font-size: 0.7rem;
     }
+    .justify-items-start {
+        font-size: 10px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -5604,7 +5676,7 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     .checkbox-container {
         max-height: 200px;
         overflow-y: auto;
-        padding: 0.25rem;
+        padding: 0rem 1.5rem;
     }
 
     .form-check {
@@ -5773,7 +5845,7 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     }
 
     .search-input-container {
-        width: 13rem;
+        width: 12rem;
     }
 
     .mobile-header-row {
@@ -6126,6 +6198,116 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         align-items: center;
         gap: 0.5rem;
         font-size: 0.8rem;
+    }
+}
+/* Mobile Pagination - Simple & Clean */
+.mobile-pagination-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 0px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.pagination-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.page-info {
+    font-weight: 600;
+    color: #374151;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.page-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: white;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: #10b981;
+    color: #10b981;
+    transform: translateY(-1px);
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.current-page {
+    background: #10b981;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin: 0 8px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.quick-jump {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.quick-jump select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+}
+
+.quick-jump select:focus {
+    outline: none;
+    border-color: #10b981;
+}
+
+@media (max-width: 480px) {
+    .pagination-info {
+        flex-direction: column;
+        gap: 4px;
+        text-align: center;
+    }
+
+    .page-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .current-page {
+        padding: 6px 12px;
+        margin: 0 4px;
     }
 }
 </style>
