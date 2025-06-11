@@ -379,15 +379,17 @@ $paymentDetails = DB::table('tb_bien_ban_nghiemthu_dv as bb')
                 ->update($updateData);
     
             // Record the action in the action table
-            DB::table('Action_phieu_trinh_thanh_toan')->insert([
-                'ma_trinh_thanh_toan' => $id,
-                'action' => $validated['status'],
-                'action_by' => auth()->id(),
-                'action_date' => now(),
-                'comments' => $validated['action_notes'] ?? null,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
+           DB::table('Action_phieu_trinh_thanh_toan')->insert([
+    'ma_trinh_thanh_toan' => $id,
+    'action' => $validated['status'],
+    'action_by' => auth()->id(),
+    'action_date' => $validated['status'] === 'paid' && isset($validated['payment_date']) 
+                    ? $validated['payment_date'] 
+                    : now(),
+    'comments' => $validated['action_notes'] ?? null,
+    'created_at' => now(),
+    'updated_at' => now()
+]);
             
             // NEW CODE: Update the status in tb_de_nghi_thanhtoan_dv table
             // Get all disbursement codes associated with this payment request

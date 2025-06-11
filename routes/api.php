@@ -255,6 +255,9 @@ Route::get('/employees/by-station', [UserController::class, 'getEmployeesByStati
    Route::get('/payment-schedule/calendar-events', [App\Http\Controllers\Calender\LichThanhToanControllers::class, 'getCalendarEvents']);
     Route::get('/payment-schedule/service-tracking', [App\Http\Controllers\Calender\LichThanhToanControllers::class, 'getServicePaymentTracking']);
     Route::get('/payment-schedule/seed-tracking', [App\Http\Controllers\Calender\LichThanhToanControllers::class, 'getSeedPaymentTracking']);
+  // Lịch Giao Nhận Hồ Sơ Routes
+    Route::get('/document-schedule/calendar-events', [App\Http\Controllers\Calender\LichgiaonhanHosoControllers::class, 'getCalendarEvents']);
+    Route::get('/document-schedule/transactions', [App\Http\Controllers\Calender\LichgiaonhanHosoControllers::class, 'getDocumentTransactions']);
 
 });
 

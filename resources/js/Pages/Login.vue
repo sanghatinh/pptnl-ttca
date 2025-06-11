@@ -333,11 +333,11 @@ export default {
 
 .login-center-box {
     display: flex;
-    width: 900px;
+    width: 540px; /* ลดลงจาก 900px เป็น 540px (40% reduction) */
     max-width: 98vw;
-    min-height: 520px;
-    border-radius: 24px;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+    min-height: 420px; /* ลดลงจาก 520px เป็น 420px */
+    border-radius: 20px; /* ลดลงจาก 24px */
+    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.18); /* ลดลงจาก 8px และ 40px */
     overflow: hidden;
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(2px);
@@ -351,27 +351,25 @@ export default {
     align-items: center;
     justify-content: center;
     position: relative;
-    padding: 32px 16px;
+    padding: 24px 12px; /* ลดลงจาก 32px 16px */
     color: #fff;
 }
 
 .logo-center img {
-    width: 120px;
-    height: 120px;
+    width: 90px; /* ลดลงจาก 120px */
+    height: 90px; /* ลดลงจาก 120px */
     object-fit: contain;
-    margin-bottom: 16px;
-    border-radius: 16px;
-    /* background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.13); */
+    margin-bottom: 12px; /* ลดลงจาก 16px */
+    border-radius: 12px; /* ลดลงจาก 16px */
 }
 
 .company-info {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 18px; /* ลดลงจาก 24px */
 }
 
 .company-name {
-    font-size: 1.5rem;
+    font-size: 1.2rem; /* ลดลงจาก 1.5rem */
     font-weight: 700;
     margin-bottom: 0.2rem;
     letter-spacing: 1px;
@@ -379,18 +377,18 @@ export default {
 }
 
 .company-slogan {
-    font-size: 1.1rem;
+    font-size: 0.9rem; /* ลดลงจาก 1.1rem */
     opacity: 0.95;
     letter-spacing: 0.5px;
 }
 
 .dev-credit {
     position: absolute;
-    bottom: 18px;
+    bottom: 14px; /* ลดลงจาก 18px */
     left: 0;
     width: 100%;
     text-align: center;
-    font-size: 1rem;
+    font-size: 0.85rem; /* ลดลงจาก 1rem */
     opacity: 0.85;
     letter-spacing: 0.5px;
 }
@@ -398,46 +396,46 @@ export default {
 .login-form-modern {
     flex: 1.2;
     background: #fff;
-    padding: 48px 36px 32px 36px;
+    padding: 36px 28px 24px 28px; /* ลดลงจาก 48px 36px 32px 36px */
     display: flex;
     flex-direction: column;
     justify-content: center;
-    border-radius: 0 24px 24px 0;
-    min-width: 320px;
+    border-radius: 0 20px 20px 0; /* ลดลงจาก 24px */
+    min-width: 280px; /* ลดลงจาก 320px */
     box-shadow: 0 2px 12px rgba(1, 144, 45, 0.06);
 }
 
 .login-title {
-    font-size: 2rem;
+    font-size: 1.6rem; /* ลดลงจาก 2rem */
     font-weight: 700;
     color: #01902d;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem; /* ลดลงจาก 0.5rem */
     text-align: left;
 }
 
 .login-welcome {
     color: #555;
-    margin-bottom: 1.5rem;
-    font-size: 1.1rem;
+    margin-bottom: 1.2rem; /* ลดลงจาก 1.5rem */
+    font-size: 0.95rem; /* ลดลงจาก 1.1rem */
     text-align: left;
 }
 
 .login-tabs {
     display: flex;
-    margin-bottom: 1.5rem;
-    border-radius: 8px;
+    margin-bottom: 1.2rem; /* ลดลงจาก 1.5rem */
+    border-radius: 6px; /* ลดลงจาก 8px */
     overflow: hidden;
     background: #f3f3f3;
 }
 
 .tab-btn {
     flex: 1;
-    padding: 0.85rem 0;
+    padding: 0.7rem 0; /* ลดลงจาก 0.85rem */
     background: none;
     border: none;
     color: #01902d;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.9rem; /* ลดลงจาก 1rem */
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
 }
@@ -449,26 +447,26 @@ export default {
 }
 
 .form-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem; /* ลดลงจาก 1.25rem */
     position: relative;
 }
 
 .input-icon {
     position: absolute;
-    left: 14px;
+    left: 12px; /* ลดลงจาก 14px */
     top: 50%;
     transform: translateY(-50%);
     color: #b0b0b0;
-    font-size: 1.1rem;
+    font-size: 1rem; /* ลดลงจาก 1.1rem */
     z-index: 2;
 }
 
 .form-group input {
     width: 100%;
-    padding: 14px 44px 14px 40px; /* เพิ่ม padding ซ้ายสำหรับ icon */
+    padding: 12px 38px 12px 36px; /* ลดลงจาก 14px 44px 14px 40px */
     border: 1.5px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 1rem;
+    border-radius: 6px; /* ลดลงจาก 8px */
+    font-size: 0.9rem; /* ลดลงจาก 1rem */
     background: #f8f8f8;
     transition: border 0.2s;
 }
@@ -481,19 +479,19 @@ export default {
 
 .toggle-password {
     position: absolute;
-    right: 12px;
+    right: 10px; /* ลดลงจาก 12px */
     top: 50%;
     transform: translateY(-50%);
     color: #aaa;
     cursor: pointer;
-    font-size: 1.1rem;
+    font-size: 1rem; /* ลดลงจาก 1.1rem */
 }
 
 .form-options {
     display: flex;
     align-items: center;
-    margin-bottom: 1.5rem;
-    font-size: 0.98rem;
+    margin-bottom: 1.2rem; /* ลดลงจาก 1.5rem */
+    font-size: 0.88rem; /* ลดลงจาก 0.98rem */
     color: #555;
 }
 
@@ -504,16 +502,16 @@ export default {
 
 .btn-modern {
     width: 100%;
-    padding: 14px;
+    padding: 12px; /* ลดลงจาก 14px */
     background: linear-gradient(90deg, #01902d 0%, #38b87c 100%);
     border: none;
-    border-radius: 8px;
+    border-radius: 6px; /* ลดลงจาก 8px */
     color: #fff;
     font-weight: 700;
-    font-size: 1.08rem;
+    font-size: 0.98rem; /* ลดลงจาก 1.08rem */
     transition: background 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 16px rgba(1, 144, 45, 0.1);
-    margin-bottom: 8px;
+    box-shadow: 0 3px 14px rgba(1, 144, 45, 0.1); /* ลดลงจาก 4px และ 16px */
+    margin-bottom: 6px; /* ลดลงจาก 8px */
 }
 
 .btn-modern:hover:not(:disabled) {
@@ -532,29 +530,30 @@ export default {
     background: #fff2f2;
     color: #e74c3c;
     border: 1px solid #fadbd8;
-    border-radius: 8px;
-    padding: 0.8rem 1rem;
-    margin-top: 0.8rem;
-    font-size: 1rem;
+    border-radius: 6px; /* ลดลงจาก 8px */
+    padding: 0.7rem 0.8rem; /* ลดลงจาก 0.8rem 1rem */
+    margin-top: 0.6rem; /* ลดลงจาก 0.8rem */
+    font-size: 0.9rem; /* ลดลงจาก 1rem */
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem; /* ลดลงจาก 0.5rem */
 }
 
 .login-footer {
-    margin-top: 2rem;
+    margin-top: 1.5rem; /* ลดลงจาก 2rem */
     text-align: center;
     color: #999;
-    font-size: 0.9rem;
+    font-size: 0.8rem; /* ลดลงจาก 0.9rem */
 }
 
 /* Responsive */
-@media (max-width: 900px) {
+@media (max-width: 540px) {
+    /* ปรับจาก 900px เป็น 540px */
     .login-center-box {
         flex-direction: column;
         width: 98vw;
         min-height: 0;
-        border-radius: 24px;
+        border-radius: 20px; /* ลดลงจาก 24px */
     }
     .login-gradient,
     .login-form-modern {
@@ -562,12 +561,12 @@ export default {
         min-width: 0;
     }
     .login-gradient {
-        border-radius: 24px 24px 0 0;
-        padding: 28px 10vw 18px 10vw;
+        border-radius: 20px 20px 0 0; /* ลดลงจาก 24px */
+        padding: 22px 10vw 14px 10vw; /* ลดลงจาก 28px และ 18px */
     }
     .login-form-modern {
-        border-radius: 0 0 24px 24px;
-        padding: 32px 10vw 24px 10vw;
+        border-radius: 0 0 20px 20px; /* ลดลงจาก 24px */
+        padding: 28px 10vw 20px 10vw; /* ลดลงจาก 32px และ 24px */
     }
 }
 

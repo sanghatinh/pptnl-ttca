@@ -362,6 +362,22 @@ const routes = [
         },
     },
     {
+        name: "LichGiaoNhanHoso",
+        path: "/LichGiaoNhanHoso",
+        component: () => import("../Pages/Catalog/LichGiaoNhanHoso.vue"),
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
+        name: "PlanNopHoso",
+        path: "/PlanNopHoso",
+        component: () => import("../Pages/Catalog/PlanNopHoso.vue"),
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
         name: "Phieutrinhthanhtoan",
         path: "/Phieutrinhthanhtoan",
         component: Phieutrinhthanhtoan,

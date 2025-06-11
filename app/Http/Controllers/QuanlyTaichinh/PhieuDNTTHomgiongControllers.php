@@ -798,12 +798,17 @@ public function updateStatusHomgiong(Request $request, $id)
             ->where('ma_trinh_thanh_toan', $id)
             ->update($updateData);
 
+        // Determine action_date: use payment_date if status is 'paid' and payment_date is provided, otherwise use now()
+        $actionDate = ($validated['status'] === 'paid' && isset($validated['payment_date'])) 
+            ? $validated['payment_date'] 
+            : now();
+
         // Record the action in the action table for homgiong
         DB::table('action_phieu_trinh_thanh_toan_homgiong')->insert([
             'ma_trinh_thanh_toan' => $id,
             'action' => $validated['status'],
             'action_by' => Auth::id(),
-            'action_date' => now(),
+            'action_date' => $actionDate,
             'comments' => $validated['action_notes'] ?? '',
             'created_at' => now(),
             'updated_at' => now()

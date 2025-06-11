@@ -318,16 +318,16 @@
                 <ul>
                     <li
                         class="sidebar-dropdown"
-                        :class="{ active: activeDropdowns.system }"
+                        :class="{ active: activeDropdowns.calendar }"
                     >
-                        <a href="#" @click.prevent="toggleDropdown('system')">
+                        <a href="#" @click.prevent="toggleDropdown('calendar')">
                             <i class="fa-solid fa-calendar"></i>
-                            <span class="menu-text">Calender</span>
+                            <span class="menu-text">Calendar</span>
                         </a>
                         <div
                             class="sidebar-submenu"
                             :style="{
-                                display: activeDropdowns.system
+                                display: activeDropdowns.calendar
                                     ? 'block'
                                     : 'none',
                             }"
@@ -356,7 +356,21 @@
                                         "
                                         @click="closeSidebar"
                                     >
-                                        <span>Lịch giao nhận HS</span>
+                                        <span>Lịch giao nhận hồ sơ </span>
+                                    </router-link>
+                                </li>
+
+                                <li>
+                                    <router-link
+                                        to="/PlanNopHoso"
+                                        :class="
+                                            $route.path === '/PlanNopHoso'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                        @click="closeSidebar"
+                                    >
+                                        <span>Kế hoạch nộp hồ sơ</span>
                                     </router-link>
                                 </li>
                             </ul>
@@ -397,13 +411,17 @@ export default {
                 finance: false,
                 debt: false,
                 system: false,
+                calendar: false, // เพิ่ม calendar dropdown
             },
         };
     },
     watch: {
         // ตรวจสอบเมื่อ route เปลี่ยน เพื่อเปิด dropdown ที่เกี่ยวข้อง
-        "$route.path"(newPath) {
-            this.setActiveDropdownBasedOnRoute(newPath);
+        "$route.path": {
+            handler(newPath) {
+                this.setActiveDropdownBasedOnRoute(newPath);
+            },
+            immediate: true, // เพิ่ม immediate เพื่อให้ทำงานทันทีเมื่อ component โหลด
         },
         // ตรวจสอบการเปลี่ยนแปลงใน store (เช่น หลัง login)
         "store.token"(newToken) {
@@ -414,53 +432,71 @@ export default {
         },
     },
     methods: {
-        // ฟังก์ชันสำหรับ toggle dropdown
+        // ฟังก์ชันสำหรับ toggle dropdown - ปรับปรุงให้ทำงานได้ครั้งแรก
         toggleDropdown(dropdownName) {
-            // ปิด dropdown อื่นๆ ก่อน (ถ้าต้องการให้เปิดได้ทีละอัน)
-            // Object.keys(this.activeDropdowns).forEach(key => {
-            //     if (key !== dropdownName) {
-            //         this.activeDropdowns[key] = false;
-            //     }
-            // });
-
-            // Toggle dropdown ที่เลือก
+            // Toggle dropdown ที่เลือกโดยตรง
             this.activeDropdowns[dropdownName] =
                 !this.activeDropdowns[dropdownName];
+
+            // Force reactivity update
+            this.$forceUpdate();
         },
 
-        // ฟังก์ชันเพื่อกำหนด dropdown ที่ active ตาม route
+        // ฟังก์ชันเพื่อกำหนด dropdown ที่ active ตาม route - ปรับปรุงให้ครอบคลุมมากขึ้น
         setActiveDropdownBasedOnRoute(path) {
-            // Reset ทุก dropdown
+            // Reset ทุก dropdown ก่อน
             Object.keys(this.activeDropdowns).forEach((key) => {
                 this.activeDropdowns[key] = false;
             });
 
             // เปิด dropdown ตาม route ปัจจุบัน
             if (
-                path.includes("/DanhsachHoso") ||
+                path.includes("/Danhsachhoso") ||
                 path.includes("/Bienbannghiemthudichvu") ||
-                path.includes("/Phieugiaonhanhomgiong")
+                path.includes("/Phieugiaonhanhomgiong") ||
+                path.includes("/Details_NghiemthuDV") ||
+                path.includes("/Details_Phieugiaonhanhomgiong")
             ) {
                 this.activeDropdowns.documents = true;
             } else if (
                 path.includes("/Phieutrinhthanhtoan") ||
+                path.includes("/PhieutrinhthanhtoanHomgiong") ||
                 path.includes("/Phieudenghithanhtoandichvu") ||
-                path.includes("/Phieuthunodichvu")
+                path.includes("/PhieudenghithanhtoanHomgiong") ||
+                path.includes("/Details_Phieutrinhthanhtoandv") ||
+                path.includes("/Details_PhieutrinhthanhtoanHomgiong") ||
+                path.includes("/Details_Phieudenghithanhtoandichvu") ||
+                path.includes("/Details_PhieudenghithanhtoanHomgiong")
             ) {
                 this.activeDropdowns.finance = true;
-            } else if (path.includes("/CongnoDichvuKhautru")) {
+            } else if (
+                path.includes("/CongnoDichvuKhautru") ||
+                path.includes("/Phieuthunodichvu") ||
+                path.includes("/Details_CongnoDichvuKhautru")
+            ) {
                 this.activeDropdowns.debt = true;
             } else if (
                 path.includes("/user") ||
+                path.includes("/UserFarmer") ||
                 path.includes("/permission") ||
                 path.includes("/role") ||
-                path.includes("/Profile")
+                path.includes("/Profile") ||
+                path.includes("/Myprofile") ||
+                path.includes("/Myprofilefarmer") ||
+                path.includes("/AddUser") ||
+                path.includes("/EditUser")
             ) {
                 this.activeDropdowns.system = true;
+            } else if (
+                path.includes("/LichThanhToan") ||
+                path.includes("/LichGiaoNhanHoso") ||
+                path.includes("/PlanNopHoso")
+            ) {
+                this.activeDropdowns.calendar = true;
             }
         },
 
-        // ฟังก์ชันเพื่อ initialize dropdown หลัง login
+        // ฟังก์ชันเพื่อ initialize dropdown หลัง login - ปรับปรุง
         initializeDropdowns() {
             this.$nextTick(() => {
                 this.setActiveDropdownBasedOnRoute(this.$route.path);
@@ -488,8 +524,10 @@ export default {
         // ตรวจจับการเปลี่ยนแปลงขนาดหน้าจอ
         window.addEventListener("resize", this.checkScreenSize);
 
-        // Initialize dropdown ตาม route ปัจจุบัน
-        this.initializeDropdowns();
+        // Initialize dropdown ตาม route ปัจจุบัน - ปรับปรุงให้ทำงานได้ดีขึ้น
+        this.$nextTick(() => {
+            this.setActiveDropdownBasedOnRoute(this.$route.path);
+        });
     },
     unmounted() {
         // ลบ event listener เมื่อคอมโพเนนต์ถูกทำลาย
