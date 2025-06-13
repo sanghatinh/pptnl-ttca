@@ -9,6 +9,9 @@ Larvel
     -php artisan config:clear
     -php artisan make:controller MyController  เพื่อสร้าง Controller 
     -php artisan make:model Component
+    ///Run in mobile
+    php artisan serve --host=0.0.0.0 --port=8000
+    npm run dev -- --host=0.0.0.0
 
 
 VueJS
@@ -22,7 +25,7 @@ Git
     - git push                   = ຄຳສັ່ງ ອັບໂຫຼດໂປຼເຈັກຂື້ນ github 
     - git pull                   = ຄຳສັ່ງ ອັບເດດ ໂຄດລ່າສຸດຈາກ github
 
-    - git add . && git commit -m "v1.6.5.4" && git push
+    - git add . && git commit -m "v1.6.5.5" && git push
 
 
     -cls = ຄຳສັ່ງ clear cmd

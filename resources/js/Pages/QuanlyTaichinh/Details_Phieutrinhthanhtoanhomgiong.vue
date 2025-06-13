@@ -5777,72 +5777,57 @@ export default {
             }
         },
         async openPrintModal() {
-            if (this.selectedPaymentRequests.length === 0) {
-                Swal.fire({
-                    title: "Thông báo",
-                    text: "Vui lòng chọn ít nhất một phiếu để in",
-                    icon: "warning",
-                    confirmButtonText: "Đồng ý",
-                });
-                return;
-            }
+    if (this.selectedPaymentRequests.length === 0) {
+        Swal.fire({
+            title: "Thông báo",
+            text: "Vui lòng chọn ít nhất một phiếu để in",
+            icon: "warning",
+            confirmButtonText: "Đồng ý",
+        });
+        return;
+    }
 
-            // Show modal
-            const modalElement = document.getElementById("printModal");
-            if (modalElement) {
-                this.printModal = new bootstrap.Modal(modalElement);
-                this.printModal.show();
-            }
+    // Show modal
+    const modalElement = document.getElementById("printModal");
+    if (modalElement) {
+        this.printModal = new bootstrap.Modal(modalElement);
+        this.printModal.show();
+    }
 
-            // ข้าม loadPrintPreview และตั้งค่าข้อมูลตรงๆ
-            this.printPreviewData = this.selectedPaymentRequests.map((code) => {
-                const item = this.paymentRequests.find(
-                    (req) => req.disbursement_code === code
-                );
-                return {
-                    ma_giai_ngan: code,
-                    khach_hang:
-                        item?.individual_customer ||
-                        item?.corporate_customer ||
-                        "N/A",
-                    so_tien: item?.total_amount || 0,
-                    noi_dung: "Thanh toán tiền Hom giống",
-                };
-            });
-            this.printPreviewLoading = false;
-        },
+    // เรียกใช้ loadPrintPreview() แทนการตั้งค่าข้อมูลตรงๆ
+    await this.loadPrintPreview();
+},
         async loadPrintPreview() {
-            this.printPreviewLoading = true;
-            this.printPreviewError = null;
+    this.printPreviewLoading = true;
+    this.printPreviewError = null;
 
-            try {
-                const response = await axios.post(
-                    "/api/print-preview-phieu-dntt-hg", // เปลี่ยนจาก "/api/print-preview-phieu-dntt"
-                    {
-                        disbursement_codes: this.selectedPaymentRequests,
-                    },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${this.store.getToken}`,
-                        },
-                    }
-                );
-
-                if (response.data.success) {
-                    this.printPreviewData = response.data.data || [];
-                } else {
-                    throw new Error(response.data.message || "Unknown error");
-                }
-            } catch (error) {
-                console.error("Error loading print preview:", error);
-                this.printPreviewError =
-                    error.response?.data?.message ||
-                    "Đã xảy ra lỗi khi tải danh sách in";
-            } finally {
-                this.printPreviewLoading = false;
+    try {
+        const response = await axios.post(
+            "/api/print-preview-phieu-dntt-hg",
+            {
+                disbursement_codes: this.selectedPaymentRequests,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${this.store.getToken}`,
+                },
             }
-        },
+        );
 
+        if (response.data.success) {
+            this.printPreviewData = response.data.data || [];
+        } else {
+            throw new Error(response.data.message || "Unknown error");
+        }
+    } catch (error) {
+        console.error("Error loading print preview:", error);
+        this.printPreviewError =
+            error.response?.data?.message ||
+            "Đã xảy ra lỗi khi tải danh sách in";
+    } finally {
+        this.printPreviewLoading = false;
+    }
+},
         async executePrint() {
             this.printExecuting = true;
 
@@ -5882,6 +5867,16 @@ export default {
                 this.printExecuting = false;
             }
         },
+        closePrintModal() {
+    if (this.printModal) {
+        this.printModal.hide();
+    }
+    
+    // Reset print data
+    this.printPreviewData = [];
+    this.printPreviewError = null;
+    this.printPreviewLoading = false;
+},
         /**
          * Search individual customers
          */

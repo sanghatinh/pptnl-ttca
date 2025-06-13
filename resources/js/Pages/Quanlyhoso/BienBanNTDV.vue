@@ -59,7 +59,11 @@
                                     Export to excel
                                 </a>
                             </li>
-                            <li>
+                            <li
+                                v-if="
+                                    hasPermission('import biên bản nghiệm thu')
+                                "
+                            >
                                 <a
                                     class="dropdown-item"
                                     href="#"
@@ -77,6 +81,7 @@
                 <!-- Add this button next to actions-menu in the toolbar -->
                 <button
                     class="modern-create-payment-btn"
+                    v-if="hasPermission('tạo phiếu trình thanh thanh toán')"
                     @click="showCreatePaymentRequestModal"
                     :disabled="selectedItems.length === 0"
                     title="Tạo phiếu trình thanh toán"
@@ -1529,7 +1534,7 @@
                                         v-for="item in paginatedItems.data"
                                         :key="item.id"
                                         class="desktop-row"
-                                        @dblclick="viewDetails(item)"
+                                        @click="viewDetails(item)"
                                     >
                                         <td class="px-4 py-2" @click.stop>
                                             <input
@@ -2421,6 +2426,7 @@ import { Bootstrap5Pagination } from "laravel-vue-pagination"; // Add this impor
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
 import Swal from "sweetalert2"; // Import SweetAlert2
+import { usePermissions } from "../../Composables/usePermissions";
 
 import PerfectScrollbar from "perfect-scrollbar"; // Add this import
 import "perfect-scrollbar/css/perfect-scrollbar.css"; // Add this import
@@ -2430,8 +2436,10 @@ export default {
     },
     setup() {
         const store = useStore();
+        const { hasPermission } = usePermissions();
         return {
             store,
+            hasPermission,
         };
     },
     data() {
@@ -3228,6 +3236,8 @@ export default {
             for (const key in this.selectedFilterValues) {
                 this.selectedFilterValues[key] = [];
             }
+            //Refresh Table data
+            this.fetchBienBanData();
 
             // Reset global filters
             this.search = "";
@@ -4449,7 +4459,7 @@ export default {
                     // Navigate to the payment request detail page
                     if (response.data.payment_request_id) {
                         this.$router.push(
-                            `/Details_Phieutrinhthanhtoandv/${response.data.payment_request_id}`
+                            `/Details_Phieutrinhthanhtoan/${response.data.payment_request_id}`
                         );
                     }
                 } else {

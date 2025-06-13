@@ -14,7 +14,7 @@
                     </button>
                 </router-link>
                 <button
-                    v-if="hasPermission('delete')"
+                    v-if="hasPermission('xóa danh sách hồ sơ')"
                     type="button"
                     class="button-30-text-red"
                     @click="deleteSelected"
@@ -996,7 +996,7 @@
                                         </td>
                                         <td
                                             class="px-4 py-2 clickable-cell"
-                                            @dblclick="goToEditPage(item.id)"
+                                            @click="goToEditPage(item.id)"
                                         >
                                             <span class="document-code">{{
                                                 item.document_code
@@ -1004,32 +1004,32 @@
                                         </td>
                                         <td
                                             class="px-4 py-2"
-                                            @dblclick="goToEditPage(item.id)"
+                                            @click="goToEditPage(item.id)"
                                         >
                                             {{ item.station }}
                                         </td>
 
                                         <td
                                             class="px-4 py-2"
-                                            @dblclick="goToEditPage(item.id)"
+                                            @click="goToEditPage(item.id)"
                                         >
                                             {{ item.title }}
                                         </td>
                                         <td
                                             class="px-4 py-2"
-                                            @dblclick="goToEditPage(item.id)"
+                                            @click="goToEditPage(item.id)"
                                         >
                                             {{ item.investment_project }}
                                         </td>
                                         <td
                                             class="px-4 py-2"
-                                            @dblclick="goToEditPage(item.id)"
+                                            @click="goToEditPage(item.id)"
                                         >
                                             {{ item.file_count }}
                                         </td>
                                         <td
                                             class="px-4 py-2"
-                                            @dblclick="goToEditPage(item.id)"
+                                            @click="goToEditPage(item.id)"
                                         >
                                             {{ item.document_type }}
                                         </td>
@@ -1109,7 +1109,7 @@
                 v-for="item in paginatedDeliveries.data"
                 :key="item.id"
                 class="card border p-4 mb-4 rounded shadow hover:shadow-green-500 transition-shadow duration-300"
-                @dblclick="goToEditPage(item.id)"
+                @click="goToEditPage(item.id)"
             >
                 <div class="flex">
                     <!-- ห้องแรก: แสดงแค่สถานะ logo -->

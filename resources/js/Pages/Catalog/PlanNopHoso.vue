@@ -145,13 +145,35 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <button
-                                    class="btn btn-outline-primary w-100"
-                                    @click="goToCurrentWeek"
-                                >
-                                    <i class="bi bi-calendar-today me-2"></i>
-                                    Tuần hiện tại
-                                </button>
+                                <div class="d-flex gap-2">
+                                    <button
+                                        class="btn btn-outline-primary flex-fill"
+                                        @click="goToCurrentWeek"
+                                    >
+                                        <i class="fas fa-calendar-day me-2"></i>
+                                        Tuần hiện tại
+                                    </button>
+                                    <button
+                                        class="btn btn-outline-secondary"
+                                        @click="
+                                            showControlButtons =
+                                                !showControlButtons
+                                        "
+                                        :title="
+                                            showControlButtons
+                                                ? 'Ẩn panel điều khiển'
+                                                : 'Hiện panel điều khiển'
+                                        "
+                                    >
+                                        <i
+                                            :class="
+                                                showControlButtons
+                                                    ? 'fas fa-eye-slash'
+                                                    : 'fas fa-eye'
+                                            "
+                                        ></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -160,46 +182,50 @@
         </div>
 
         <!-- Control Panel -->
-        <div class="row mb-4">
+        <div class="row mb-4" v-show="showControlButtons">
             <div class="col-12">
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <button
-                                    class="btn btn-success w-100"
-                                    @click="openEditModal('normal')"
-                                >
-                                    <i class="bi bi-file-earmark-text me-2"></i>
-                                    Cấu hình Nộp hồ sơ
-                                </button>
-                            </div>
-                            <div class="col-md-3">
-                                <button
-                                    class="btn btn-warning w-100"
-                                    @click="openEditModal('sign')"
-                                >
-                                    <i class="bi bi-pen me-2"></i>
-                                    Cấu hình Ký trưởng phòng
-                                </button>
-                            </div>
-                            <div class="col-md-3">
-                                <button
-                                    class="btn btn-info w-100"
-                                    @click="openEditModal('system')"
-                                >
-                                    <i class="bi bi-cloud-upload me-2"></i>
-                                    Cấu hình đưa Trình hệ thống EO
-                                </button>
-                            </div>
-                            <div class="col-md-3">
-                                <button
-                                    class="btn btn-primary w-100"
-                                    @click="openEditModal('transfer')"
-                                >
-                                    <i class="bi bi-bank me-2"></i>
-                                    Cấu hình chuyển tiền
-                                </button>
+                        <div class="control-buttons-container">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <button
+                                        class="btn btn-success w-100"
+                                        @click="openEditModal('normal')"
+                                    >
+                                        <i
+                                            class="bi bi-file-earmark-text me-2"
+                                        ></i>
+                                        Cấu hình Nộp hồ sơ
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <button
+                                        class="btn btn-warning w-100"
+                                        @click="openEditModal('sign')"
+                                    >
+                                        <i class="bi bi-pen me-2"></i>
+                                        Cấu hình Ký trưởng phòng
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <button
+                                        class="btn btn-info w-100"
+                                        @click="openEditModal('system')"
+                                    >
+                                        <i class="bi bi-cloud-upload me-2"></i>
+                                        Cấu hình đưa Trình hệ thống EO
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <button
+                                        class="btn btn-primary w-100"
+                                        @click="openEditModal('transfer')"
+                                    >
+                                        <i class="bi bi-bank me-2"></i>
+                                        Cấu hình chuyển tiền
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -453,7 +479,7 @@ export default {
         ]);
         const currentEditType = ref("");
         const editModal = ref(null);
-
+        const showControlButtons = ref(false); // เพิ่มบรรทัดนี้
         // Week selector variables
         const selectedYear = ref(new Date().getFullYear());
         const selectedMonth = ref(new Date().getMonth());
@@ -755,6 +781,7 @@ export default {
             goToCurrentWeek,
             totalActiveDays,
             currentWeekProgress,
+            showControlButtons, // เพิ่มบรรทัดนี้
         };
     },
 };
@@ -765,7 +792,7 @@ export default {
 .modern-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 20px !important;
-    min-height: 300px;
+    min-height: 180px;
     position: relative;
 }
 
@@ -803,12 +830,10 @@ export default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 90px;
-    height: 90px;
-
-    border-radius: 20px;
-
-    padding: 10px;
+    width: 54px;
+    height: 54px;
+    border-radius: 12px;
+    padding: 6px;
 }
 
 .logo-img {
@@ -830,15 +855,15 @@ export default {
 }
 
 .header-title {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     font-weight: 700;
     margin: 0;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .header-title .badge {
-    font-size: 0.8rem;
-    padding: 0.5em 0.8em;
+    font-size: 0.5rem;
+    padding: 0.3em 0.5em;
     border-radius: 50px;
     background: rgba(255, 255, 255, 0.2) !important;
     backdrop-filter: blur(10px);
@@ -846,7 +871,7 @@ export default {
 }
 
 .header-subtitle {
-    font-size: 1.1rem;
+    font-size: 0.66rem;
     opacity: 0.9;
     font-weight: 400;
     line-height: 1.6;
@@ -854,7 +879,7 @@ export default {
 
 .header-stats {
     display: flex;
-    gap: 2rem;
+    gap: 1.2rem;
     flex-wrap: wrap;
 }
 
@@ -865,16 +890,16 @@ export default {
 }
 
 .stat-number {
-    font-size: 2rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: white;
     line-height: 1;
 }
 
 .stat-label {
-    font-size: 0.9rem;
+    font-size: 0.54rem;
     opacity: 0.8;
-    margin-top: 0.25rem;
+    margin-top: 0.15rem;
 }
 
 .header-visual {
@@ -892,8 +917,8 @@ export default {
 }
 
 .card-mini {
-    padding: 1.5rem 1rem;
-    border-radius: 15px;
+    padding: 0.9rem 0.6rem;
+    border-radius: 9px;
     color: white;
     text-align: center;
     backdrop-filter: blur(10px);
@@ -908,13 +933,13 @@ export default {
 }
 
 .card-mini i {
-    font-size: 1.5rem;
+    font-size: 0.9rem;
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.3rem;
 }
 
 .card-mini span {
-    font-size: 0.8rem;
+    font-size: 0.48rem;
     font-weight: 600;
     display: block;
 }
@@ -932,40 +957,40 @@ export default {
 /* Responsive adjustments */
 @media (max-width: 992px) {
     .header-title {
-        font-size: 2rem;
+        font-size: 1.2rem;
     }
 
     .floating-card {
         grid-template-columns: 1fr;
-        gap: 0.5rem;
+        gap: 0.3rem;
     }
 
     .card-mini {
-        padding: 1rem 0.8rem;
+        padding: 0.6rem 0.48rem;
     }
 
     .header-stats {
-        gap: 1rem;
+        gap: 0.6rem;
     }
 
     .stat-number {
-        font-size: 1.5rem;
+        font-size: 0.9rem;
     }
 }
 
 @media (max-width: 768px) {
     .modern-header {
-        min-height: 250px;
+        min-height: 150px;
     }
 
     .header-title {
-        font-size: 1.8rem;
+        font-size: 1.08rem;
     }
 
     .icon-wrapper {
-        width: 60px;
-        height: 60px;
-        padding: 8px;
+        width: 36px;
+        height: 36px;
+        padding: 5px;
     }
 
     .header-stats {
@@ -1046,5 +1071,57 @@ export default {
 .btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+/* Animation for control buttons */
+.control-buttons-container {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Button hover effects */
+.btn-outline-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+/* Button hover effects */
+.btn-outline-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.btn-outline-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+/* Animation for control panel */
+.control-buttons-container {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+/* Button hover effects */
+.btn-outline-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
 }
 </style>

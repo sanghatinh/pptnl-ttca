@@ -36,7 +36,10 @@
                             </button>
 
                             <button
-                                v-if="showSubmitButton && hasPermission('send')"
+                                v-if="
+                                    showSubmitButton &&
+                                    hasPermission('nộp hồ sơ')
+                                "
                                 class="button-30-text-green"
                                 @click="sendDocument"
                             >
@@ -46,7 +49,8 @@
 
                             <button
                                 v-if="
-                                    showRejectButton && hasPermission('cancel')
+                                    showRejectButton &&
+                                    hasPermission('không duyệt hồ sơ')
                                 "
                                 type="button"
                                 class="button-30"
@@ -59,7 +63,7 @@
                             <button
                                 v-if="
                                     showApproveButton &&
-                                    hasPermission('receive')
+                                    hasPermission('nhận hồ sơ')
                                 "
                                 type="button"
                                 class="button-30-text-green"
@@ -71,7 +75,8 @@
 
                             <button
                                 v-if="
-                                    showCancelButton && hasPermission('cancel')
+                                    showCancelButton &&
+                                    hasPermission('hủy hồ sơ')
                                 "
                                 type="button"
                                 class="button-30"
@@ -763,7 +768,12 @@
                                                     </button>
                                                 </td>
                                                 <td
-                                                    class="text-primary fw-medium"
+                                                    class="text-primary fw-medium clickable-cell"
+                                                    @click="
+                                                        navigateToHomGiongDetails(
+                                                            item.ma_so_phieu
+                                                        )
+                                                    "
                                                 >
                                                     {{ item.ma_so_phieu }}
                                                 </td>
@@ -1245,7 +1255,7 @@ export default {
             if (this.document.status === "creating") {
                 return true;
             }
-            return this.hasPermission("delete");
+            return this.hasPermission("xóa hồ sơ");
         },
         showCancelledStep() {
             return this.document.status === "cancelled";
@@ -1293,7 +1303,7 @@ export default {
             return (
                 ["sending", "received", "cancelled"].includes(
                     this.document.status
-                ) && this.hasPermission("add_detail")
+                ) && this.hasPermission("thêm chi tiết hồ sơ")
             );
         },
         canDeleteMappings() {
@@ -1303,7 +1313,7 @@ export default {
             return (
                 ["sending", "received", "cancelled"].includes(
                     this.document.status
-                ) && this.hasPermission("del_detail")
+                ) && this.hasPermission("xóa chi tiết hồ sơ")
             );
         },
         documentCount() {
@@ -1330,6 +1340,9 @@ export default {
     methods: {
         navigateToNghiemThuDetails(maNghiemThu) {
             this.$router.push(`/Details_NghiemthuDV/${maNghiemThu}`);
+        },
+        navigateToHomGiongDetails(maSoPhieu) {
+            this.$router.push(`/Details_Phieugiaonhanhomgiong/${maSoPhieu}`);
         },
         formatNumber(value) {
             if (!value) return "";

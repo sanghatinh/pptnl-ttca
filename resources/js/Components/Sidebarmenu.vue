@@ -24,6 +24,7 @@
                     <li
                         class="sidebar-dropdown"
                         :class="{ active: activeDropdowns.documents }"
+                        v-if="canViewComponent('Quản lý hồ sơ')"
                     >
                         <a
                             href="#"
@@ -41,9 +42,13 @@
                             }"
                         >
                             <ul>
-                                <!-- Assuming permission check for each dashboard if needed -->
-
-                                <li v-if="canViewComponent('Quản lý hồ sơ')">
+                                <li
+                                    v-if="
+                                        canViewComponent(
+                                            'Danh sách giao nhận hồ sơ'
+                                        )
+                                    "
+                                >
                                     <router-link
                                         to="/DanhsachHoso"
                                         :class="
@@ -59,7 +64,13 @@
                                     </router-link>
                                 </li>
 
-                                <li v-if="canViewComponent('Quản lý hồ sơ')">
+                                <li
+                                    v-if="
+                                        canViewComponent(
+                                            'Biên bản nghiệm thu dịch vụ'
+                                        )
+                                    "
+                                >
                                     <router-link
                                         to="/Bienbannghiemthudichvu"
                                         :class="
@@ -75,7 +86,13 @@
                                         >
                                     </router-link>
                                 </li>
-                                <li v-if="canViewComponent('Quản lý hồ sơ')">
+                                <li
+                                    v-if="
+                                        canViewComponent(
+                                            'Phiếu giao nhận hom giống'
+                                        )
+                                    "
+                                >
                                     <router-link
                                         to="/Phieugiaonhanhomgiong"
                                         :class="
@@ -101,6 +118,7 @@
                     <li
                         class="sidebar-dropdown"
                         :class="{ active: activeDropdowns.finance }"
+                        v-if="canViewComponent('Quản lý tài chính')"
                     >
                         <a href="#" @click.prevent="toggleDropdown('finance')">
                             <i class="fa-solid fa-hand-holding-dollar"></i>
@@ -115,7 +133,13 @@
                             }"
                         >
                             <ul>
-                                <li>
+                                <li
+                                    v-if="
+                                        canViewComponent(
+                                            'Phiếu trình TT dịch vụ'
+                                        )
+                                    "
+                                >
                                     <router-link
                                         to="/Phieutrinhthanhtoan"
                                         :class="
@@ -131,7 +155,13 @@
                                         >
                                     </router-link>
                                 </li>
-                                <li>
+                                <li
+                                    v-if="
+                                        canViewComponent(
+                                            'Phiếu trình TT hom giống'
+                                        )
+                                    "
+                                >
                                     <router-link
                                         to="/PhieutrinhthanhtoanHomgiong"
                                         :class="
@@ -147,7 +177,13 @@
                                         >
                                     </router-link>
                                 </li>
-                                <li>
+                                <li
+                                    v-if="
+                                        canViewComponent(
+                                            'Phiếu đề nghị TT dịch vụ'
+                                        )
+                                    "
+                                >
                                     <router-link
                                         to="/Phieudenghithanhtoandichvu"
                                         :class="
@@ -163,7 +199,13 @@
                                         >
                                     </router-link>
                                 </li>
-                                <li>
+                                <li
+                                    v-if="
+                                        canViewComponent(
+                                            'Phiếu đề nghị TT Hom giống'
+                                        )
+                                    "
+                                >
                                     <router-link
                                         to="/PhieudenghithanhtoanHomgiong"
                                         :class="
@@ -189,6 +231,7 @@
                     <li
                         class="sidebar-dropdown"
                         :class="{ active: activeDropdowns.debt }"
+                        v-if="canViewComponent('Quản lý công nợ')"
                     >
                         <a href="#" @click.prevent="toggleDropdown('debt')">
                             <i class="fas fa-file-invoice-dollar"></i>
@@ -203,7 +246,13 @@
                             }"
                         >
                             <ul>
-                                <li>
+                                <li
+                                    v-if="
+                                        canViewComponent(
+                                            'Công nợ dịch vụ phải thu'
+                                        )
+                                    "
+                                >
                                     <router-link
                                         to="/CongnoDichvuKhautru"
                                         :class="
@@ -215,11 +264,15 @@
                                         @click="closeSidebar"
                                     >
                                         <span class="menu-text"
-                                            >Công nợ dịch vụ khấu trừ</span
+                                            >Công nợ dịch vụ phải thu</span
                                         >
                                     </router-link>
                                 </li>
-                                <li>
+                                <li
+                                    v-if="
+                                        canViewComponent('Phiếu thu nợ dịch vụ')
+                                    "
+                                >
                                     <router-link
                                         to="/Phieuthunodichvu"
                                         :class="
@@ -244,6 +297,7 @@
                     <li
                         class="sidebar-dropdown"
                         :class="{ active: activeDropdowns.system }"
+                        v-if="canViewComponent('Quản lý hệ thống')"
                     >
                         <a href="#" @click.prevent="toggleDropdown('system')">
                             <i class="fa-solid fa-screwdriver-wrench"></i>
@@ -271,7 +325,11 @@
                                         <span>Danh sách User</span>
                                     </router-link>
                                 </li>
-                                <li v-if="canViewComponent('Danh sách User')">
+                                <li
+                                    v-if="
+                                        canViewComponent('Danh sách Khách Hàng')
+                                    "
+                                >
                                     <router-link
                                         to="/UserFarmer"
                                         :class="
@@ -297,19 +355,6 @@
                                         <span>Cấp quyền</span>
                                     </router-link>
                                 </li>
-                                <li v-if="canViewComponent('Nhóm Cấp quyền')">
-                                    <router-link
-                                        to="/role"
-                                        :class="
-                                            $route.path === '/role'
-                                                ? 'current-page'
-                                                : ''
-                                        "
-                                        @click="closeSidebar"
-                                    >
-                                        <span>Nhóm Cấp quyền</span>
-                                    </router-link>
-                                </li>
                             </ul>
                         </div>
                     </li>
@@ -319,6 +364,7 @@
                     <li
                         class="sidebar-dropdown"
                         :class="{ active: activeDropdowns.calendar }"
+                        v-if="canViewComponent('Calendar')"
                     >
                         <a href="#" @click.prevent="toggleDropdown('calendar')">
                             <i class="fa-solid fa-calendar"></i>
@@ -333,7 +379,7 @@
                             }"
                         >
                             <ul>
-                                <li>
+                                <li v-if="canViewComponent('Lịch thanh toán')">
                                     <router-link
                                         to="/LichThanhToan"
                                         :class="
@@ -346,7 +392,11 @@
                                         <span>Lịch thanh toán</span>
                                     </router-link>
                                 </li>
-                                <li>
+                                <li
+                                    v-if="
+                                        canViewComponent('Lịch giao nhận hồ sơ')
+                                    "
+                                >
                                     <router-link
                                         to="/LichGiaoNhanHoso"
                                         :class="
@@ -360,7 +410,11 @@
                                     </router-link>
                                 </li>
 
-                                <li>
+                                <li
+                                    v-if="
+                                        canViewComponent('Kế hoạch nộp hồ sơ')
+                                    "
+                                >
                                     <router-link
                                         to="/PlanNopHoso"
                                         :class="

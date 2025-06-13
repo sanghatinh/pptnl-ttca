@@ -229,13 +229,26 @@ public function getPrintPreviewPDNTTHG(Request $request)
                 continue;
             }
 
-            $customerName = $disbursementRequest->khach_hang_ca_nhan ?: $disbursementRequest->khach_hang_doanh_nghiep ?: 'Khách hàng không xác định';
+            // กำหนดชื่อลูกค้า (ลำดับความสำคัญ: cá nhân -> doanh nghiệp)
+            $customerName = $disbursementRequest->khach_hang_ca_nhan ?: 
+                           $disbursementRequest->khach_hang_doanh_nghiep ?: 
+                           'Khách hàng không xác định';
+
+            // ดึงชื่อ investment project
+            $investmentProjectName = '';
+            if ($disbursementRequest->vu_dau_tu) {
+                $project = DB::table('tb_vudautu')
+                    ->where('Ma_Vudautu', $disbursementRequest->vu_dau_tu)
+                    ->first();
+                $investmentProjectName = $project ? $project->Ten_Vudautu : $disbursementRequest->vu_dau_tu;
+            }
 
             $previewData[] = [
                 'ma_giai_ngan' => $disbursementCode,
-                'khach_hang' => $customerName,
-                'so_tien' => $disbursementRequest->tong_tien ?: 0,
-                'noi_dung' => 'Thanh toán tiền Hom giống'
+                'customer_name' => $customerName,
+                'investment_project' => $investmentProjectName,
+                'payment_type' => $disbursementRequest->loai_thanh_toan ?: 'Phiếu giao nhận hom giống',
+                'total_amount' => $disbursementRequest->tong_tien ?: 0
             ];
         }
 
@@ -252,9 +265,7 @@ public function getPrintPreviewPDNTTHG(Request $request)
             'message' => 'เกิดข้อผิดพลาดในการโหลดตัวอย่าง: ' . $e->getMessage()
         ], 500);
     }
-
 }
-
 
 /**
  * Print Report DNTT DV with selected sections

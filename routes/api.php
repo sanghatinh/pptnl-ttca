@@ -38,7 +38,10 @@ Route::get('/farmer/components', [UserController::class, 'getFarmerComponents'])
 Route::group(['middleware' => ['auth:api']], function () {
 
 
-
+ // Permission Management Routes
+    Route::apiResource('permissions', App\Http\Controllers\PermissionController::class);
+    // Role Management Routes
+    Route::apiResource('roles', App\Http\Controllers\RoleController::class);
 
     
 
@@ -67,7 +70,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
 
 Route::post('/role/permissions', [RolePermissionController::class, 'store']);
-Route::get('/roles', [RoleController::class, 'index']);
+// Route::get('/roles', [RoleController::class, 'index']);
 Route::get('/permissions', [PermissionController::class, 'index']);
 Route::get('/components', [ComponentController::class, 'index']);
 Route::get('/role/{role}/permissions', [RolePermissionController::class, 'getPermissions']);
