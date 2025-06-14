@@ -53,6 +53,19 @@
                                     Export to Excel
                                 </a>
                             </li>
+                            <!-- เพิ่ม Report PDF option ใหม่ -->
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="#"
+                                    @click.prevent="showReportModal"
+                                >
+                                    <i
+                                        class="fas fa-file-pdf text-danger me-2"
+                                    ></i>
+                                    Report PDF
+                                </a>
+                            </li>
                             <li>
                                 <a
                                     class="dropdown-item"
@@ -160,6 +173,19 @@
                                         Export Excel
                                     </a>
                                 </li>
+                                <li>
+                                    <a
+                                        class="dropdown-item"
+                                        href="#"
+                                        @click.prevent="showReportModal"
+                                    >
+                                        <i
+                                            class="fas fa-file-pdf text-danger me-2"
+                                        ></i>
+                                        Report PDF
+                                    </a>
+                                </li>
+
                                 <li>
                                     <a
                                         class="dropdown-item"
@@ -1979,6 +2005,68 @@
             </div>
         </div>
     </div>
+    <!-- Report PDF Modal -->
+    <div
+        class="modal fade"
+        id="reportModal"
+        tabindex="-1"
+        aria-labelledby="reportModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title text-danger" id="reportModalLabel">
+                        <i class="fas fa-file-pdf text-danger me-2"></i>
+                        Report PDF
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        @click="closeReportModal"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Chọn định dạng báo cáo:</p>
+                    <div class="d-grid gap-2">
+                        <button
+                            @click="generateReportCurrentPage"
+                            class="btn btn-outline-danger"
+                            :disabled="isGeneratingReport"
+                        >
+                            <i class="fas fa-file-export me-2"></i>
+                            <span v-if="isGeneratingReport">Đang tạo...</span>
+                            <span v-else>Báo cáo trang hiện tại</span>
+                        </button>
+                        <button
+                            @click="generateReportAllPages"
+                            class="btn btn-danger"
+                            :disabled="isGeneratingReport"
+                        >
+                            <i class="fas fa-table me-2"></i>
+                            <span v-if="isGeneratingReport">Đang tạo...</span>
+                            <span v-else>Báo cáo tất cả dữ liệu</span>
+                        </button>
+                    </div>
+
+                    <!-- Progress bar for report generation -->
+                    <div v-if="isGeneratingReport" class="mt-3">
+                        <div class="progress">
+                            <div
+                                class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
+                                role="progressbar"
+                                style="width: 100%"
+                            >
+                                Đang tạo báo cáo...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -2003,6 +2091,9 @@ export default {
     },
     data() {
         return {
+            // เพิ่ม data สำหรับ Report
+            reportModal: null,
+            isGeneratingReport: false,
             showMobileFilterModal: false,
             // Add PerfectScrollbar instance
             ps: null,
@@ -2318,6 +2409,199 @@ export default {
         },
     },
     methods: {
+        // เพิ่ม methods สำหรับ Report Modal
+        showReportModal() {
+            try {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                    (bootstrap) => {
+                        const modalElement =
+                            document.getElementById("reportModal");
+                        if (modalElement) {
+                            this.reportModal = new bootstrap.Modal(
+                                modalElement,
+                                {
+                                    backdrop: "static",
+                                    keyboard: false,
+                                }
+                            );
+                            this.reportModal.show();
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error("Error showing report modal:", error);
+            }
+        },
+
+        closeReportModal() {
+            if (this.reportModal) {
+                this.reportModal.hide();
+            } else {
+                const modalElement = document.getElementById("reportModal");
+                if (modalElement) {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                }
+            }
+
+            // Reset report state
+            this.isGeneratingReport = false;
+        },
+
+        async generateReportCurrentPage() {
+            if (this.paginatedItems.data.length === 0) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "Không có dữ liệu",
+                    text: "Không có dữ liệu để tạo báo cáo trên trang hiện tại",
+                    confirmButtonText: "Đồng ý",
+                });
+                return;
+            }
+
+            this.isGeneratingReport = true;
+
+            try {
+                // Prepare data for current page
+                const reportData = this.paginatedItems.data.map(
+                    (item) => item.ma_so_phieu
+                );
+
+                await this.generateReport(reportData, "current_page");
+            } catch (error) {
+                console.error("Error generating current page report:", error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi tạo báo cáo",
+                    text: "Có lỗi xảy ra khi tạo báo cáo trang hiện tại",
+                    confirmButtonText: "Đồng ý",
+                });
+            } finally {
+                this.isGeneratingReport = false;
+            }
+        },
+
+        async generateReportAllPages() {
+            if (this.filteredItems.length === 0) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "Không có dữ liệu",
+                    text: "Không có dữ liệu để tạo báo cáo",
+                    confirmButtonText: "Đồng ý",
+                });
+                return;
+            }
+
+            this.isGeneratingReport = true;
+
+            try {
+                // Prepare data for all filtered items
+                const reportData = this.filteredItems.map(
+                    (item) => item.ma_so_phieu
+                );
+
+                await this.generateReport(reportData, "all_pages");
+            } catch (error) {
+                console.error("Error generating all pages report:", error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi tạo báo cáo",
+                    text: "Có lỗi xảy ra khi tạo báo cáo tất cả trang",
+                    confirmButtonText: "Đồng ý",
+                });
+            } finally {
+                this.isGeneratingReport = false;
+            }
+        },
+
+        async generateReport(reportData, reportType) {
+            try {
+                // Prepare filter parameters to send to backend
+                const filterParams = {
+                    ma_so_phieu_list: reportData,
+                    report_type: reportType,
+                    applied_filters: {
+                        search: this.search,
+                        statusFilter: this.statusFilter,
+                        columnFilters: this.columnFilters,
+                        selectedFilterValues: this.selectedFilterValues,
+                    },
+                };
+
+                // Show confirmation dialog
+                const result = await Swal.fire({
+                    title: "Xác nhận tạo báo cáo",
+                    text: `Bạn có muốn tạo báo cáo cho ${reportData.length} bản ghi?`,
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonColor: "#198754",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Tạo báo cáo",
+                    cancelButtonText: "Hủy",
+                });
+
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                // Get token from store
+                const token = this.store.getToken;
+                if (!token) {
+                    throw new Error("Token không hợp lệ");
+                }
+
+                // Create query parameters for GET request
+                const queryParams = new URLSearchParams();
+                queryParams.append(
+                    "filter_params",
+                    JSON.stringify(filterParams)
+                );
+                queryParams.append("token", token);
+
+                // Create URL for opening in new tab
+                const reportUrl = `/api/generate-report-phieugiaonhan-hg?${queryParams.toString()}`;
+
+                // Open new tab for printing
+                window.open(reportUrl, "_blank");
+
+                // Show success message
+                Swal.fire({
+                    icon: "success",
+                    title: "Thành công",
+                    text: "Báo cáo đã được tạo thành công",
+                    timer: 1500,
+                    showConfirmButton: false,
+                    position: "top-end",
+                });
+
+                // Close the modal
+                this.closeReportModal();
+            } catch (error) {
+                console.error("Error in generateReport:", error);
+
+                let errorMessage = "Có lỗi xảy ra khi tạo báo cáo";
+
+                if (error.response) {
+                    if (error.response.status === 401) {
+                        errorMessage = "Phiên đăng nhập đã hết hạn";
+                        this.handleAuthError();
+                    } else if (error.response.data?.message) {
+                        errorMessage = error.response.data.message;
+                    }
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi tạo báo cáo",
+                    text: errorMessage,
+                    confirmButtonText: "Đồng ý",
+                });
+            }
+        },
         validateInstallment() {
             // ตรวจสอบว่าค่าที่ป้อนเป็นตัวเลขที่ถูกต้อง
             const value = this.paymentRequestForm.payment_installment;
@@ -2508,6 +2792,8 @@ export default {
 
             // Reset to first page
             this.currentPage = 1;
+            // Fetch data again to apply filters
+            this.fetchPhieuData(1);
 
             // เคลียร์การเลือกรายการ
             this.selectedItems = [];
@@ -4080,7 +4366,7 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 }
 
 .dropdown-menu {
-    min-width: 200px;
+    min-width: 80px;
     padding: 0.5rem 0;
     margin: 0.125rem 0 0;
     border-radius: 0.375rem;
@@ -5797,7 +6083,7 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     }
 
     /* Enhanced dropdown menu for mobile */
-    .dropdown-menu {
+    /* .dropdown-menu {
         min-width: 200px;
         padding: 0.5rem 0;
         margin: 0.125rem 0 0;
@@ -5806,6 +6092,31 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
             0 4px 6px -2px rgba(0, 0, 0, 0.05);
         background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    } */
+    .dropdown-menu {
+        max-height: 70px; /* กำหนดความสูงสูงสุด */
+        overflow-y: auto; /* เพิ่ม scroll แนวตั้ง */
+        overflow-x: hidden; /* ซ่อน scroll แนวนอน */
+        -webkit-overflow-scrolling: touch; /* ทำให้ scroll ลื่นบนมือถือ */
+    }
+
+    /* ปรับแต่ง scrollbar สำหรับมือถือ */
+    .dropdown-menu::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .dropdown-menu::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+
+    .dropdown-menu::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+
+    .dropdown-menu::-webkit-scrollbar-thumb:hover {
+        background: #555;
     }
 
     .dropdown-item {

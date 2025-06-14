@@ -273,7 +273,15 @@ Route::post('/print-phieu-dntt-hg', [App\Http\Controllers\Print\PrintGiaoNhanHSC
 Route::post('/print-preview-phieu-dntt-hg', [App\Http\Controllers\Print\PrintGiaoNhanHSController::class, 'getPrintPreviewPDNTTHG']);
 Route::post('/print-report-dntt-dv', [App\Http\Controllers\Print\PrintGiaoNhanHSController::class, 'printDocumentReportDNTTDV']);
 Route::post('/print-report-dntt-hg', [App\Http\Controllers\Print\PrintGiaoNhanHSController::class, 'printDocumentReportDNTTHG']);
+// เพิ่ม Route สำหรับ Report PDF Bien Ban Nghiem Thu DV
+Route::match(['GET', 'POST'], '/generate-report-bienban-ntdv', [BienBanNghiemThuController::class, 'generateReportTableBienBanNTDV']);
+// เพิ่ม Route สำหรับ Report PDF Phieu Giao Nhan Hom Giong  
+Route::match(['GET', 'POST'], '/generate-report-phieugiaonhan-hg', [PhieuGiaoNhanHomGiongController::class, 'generateReportTablePhieugiaonhanHG']);
+// เพิ่ม Route สำหรับ Report PDF Phieu De Nghi Thanh Toan DV
+Route::match(['GET', 'POST'], '/generate-report-phieu-dntt-dv', [PhieudenghithanhtoandvControllers::class, 'generateReportTableDNTTDV']);
 
+// เพิ่ม Route สำหรับ Report PDF Phieu De Nghi Thanh Toan Hom Giong
+Route::match(['GET', 'POST'], '/generate-report-phieu-dntt-hg', [PhieuDNTTHomgiongControllers::class, 'generateReportTableDNTTHG']);
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Middleware for JWT authentication เพื่อป้องกันการเข้าถึง API ที่ต้องการการยืนยันตัวตน ให้ใช้ได้ ทั้ง ผู้ดูแลระบบและเกษตรกร
 Route::middleware([\App\Http\Middleware\JwtMiddleware::class])->group(function () {
@@ -286,6 +294,7 @@ Route::get('/bienban-nghiemthu/{id}', [BienBanNghiemThuController::class, 'show'
 Route::get('/bien-ban-nghiemthu/{id}/check-access', [BienBanNghiemThuController::class, 'checkAccess']);
 //Timeline bieenban-nghiemthu
 Route::get('/bienban-nghiemthu/{id}/history', [BienBanNghiemThuController::class, 'processingHistoryNghiemthuDV']);
+
 //สำหรับดึงข้อมูลผู้ใช้งาน
 Route::get('/user-info', [UserController::class, 'getUserInfo']);
 //Phiếu giao nhận hom giống

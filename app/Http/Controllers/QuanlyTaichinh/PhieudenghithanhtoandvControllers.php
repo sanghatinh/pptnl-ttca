@@ -1706,6 +1706,231 @@ public function updateDocument(Request $request, $id)
 }
 
 
+/**
+ * Generate Report PDF for Payment Request DV
+ */
+/**
+ * Generate Report PDF for Payment Request DV (Updated)
+ */
+public function generateReportTableDNTTDV(Request $request)
+{
+    try {
+        // Handle authentication for GET requests with token in query parameter
+        if ($request->isMethod('get') && $request->has('token')) {
+            $token = $request->query('token');
+            
+            try {
+                // Validate token
+                \JWTAuth::setToken($token);
+                $user = \JWTAuth::authenticate();
+                
+                if (!$user) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid token'
+                    ], 401);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token authentication failed: ' . $e->getMessage()
+                ], 401);
+            }
+        }
 
+        // Handle both GET and POST requests
+        if ($request->isMethod('get')) {
+            // For GET request, get filter_params from query string
+            $filterParamsJson = $request->query('filter_params');
+            if (!$filterParamsJson) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid filter parameters'
+                ], 400);
+            }
+            $filterParams = json_decode($filterParamsJson, true);
+        } else {
+            // For POST request, validate and get from form data
+            $request->validate([
+                'filter_params' => 'required|string'
+            ]);
+            $filterParams = json_decode($request->filter_params, true);
+        }
+        
+        if (!$filterParams || !isset($filterParams['ma_giai_ngan_list'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid filter parameters'
+            ], 400);
+        }
+
+        $maGiaiNganList = $filterParams['ma_giai_ngan_list'];
+        
+        if (empty($maGiaiNganList)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No records to generate report'
+            ], 400);
+        }
+
+        // Log for debugging large datasets
+        if (count($maGiaiNganList) > 100) {
+            Log::info('Generating large report for DNTTDV', [
+                'record_count' => count($maGiaiNganList),
+                'report_type' => $filterParams['report_type'] ?? 'unknown'
+            ]);
+        }
+
+        // Build the main query
+        $query = DB::table('tb_de_nghi_thanhtoan_dv as dntd')
+            ->leftJoin('tb_phieu_trinh_thanh_toan as pttt', 'dntd.ma_trinh_thanh_toan', '=', 'pttt.ma_trinh_thanh_toan')
+            ->whereIn('dntd.ma_giai_ngan', $maGiaiNganList)
+            ->select([
+                'dntd.ma_giai_ngan',
+                'dntd.khach_hang_ca_nhan',
+                'dntd.khach_hang_doanh_nghiep',
+                'dntd.ma_khach_hang_ca_nhan',
+                'dntd.ma_khach_hang_doanh_nghiep',
+                'dntd.tong_tien',
+                'dntd.tong_tien_tam_giu',
+                'dntd.tong_tien_khau_tru',
+                'dntd.tong_tien_lai_suat',
+                'dntd.tong_tien_thanh_toan_con_lai',
+                'dntd.vu_dau_tu',
+                'dntd.ngay_thanh_toan',
+                'pttt.so_dot_thanh_toan',
+                'pttt.trang_thai_thanh_toan'
+            ])
+            ->orderBy('dntd.ma_giai_ngan', 'asc'); // เพิ่ม orderBy
+
+        $reportData = $query->get();
+
+        if ($reportData->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No data found for the selected records'
+            ], 404);
+        }
+
+        // Process each record to format data
+        $processedData = [];
+        
+        foreach ($reportData as $record) {
+            // Get customer name (Priority: Individual -> Corporate)
+            $doiTacNhanTien = $record->khach_hang_ca_nhan ?: $record->khach_hang_doanh_nghiep;
+            
+            // Get customer code (Priority: Individual -> Corporate)
+            $maKhachHang = $record->ma_khach_hang_ca_nhan ?: $record->ma_khach_hang_doanh_nghiep;
+            
+            // Format payment status for report display
+            $trangThaiThanhToan = $this->formatPaymentStatusForReport($record->trang_thai_thanh_toan);
+
+            $processedData[] = [
+                'ma_giai_ngan' => $record->ma_giai_ngan ?: 'N/A',
+                'doi_tac_nhan_tien' => $doiTacNhanTien ?: 'N/A',
+                'ma_khach_hang' => $maKhachHang ?: 'N/A',
+                'tong_tien' => $record->tong_tien ?: 0,
+                'tong_tien_tam_giu' => $record->tong_tien_tam_giu ?: 0,
+                'tong_tien_khau_tru' => $record->tong_tien_khau_tru ?: 0,
+                'tong_tien_lai_suat' => $record->tong_tien_lai_suat ?: 0,
+                'tong_tien_thanh_toan_con_lai' => $record->tong_tien_thanh_toan_con_lai ?: 0,
+                'vu_dau_tu' => $record->vu_dau_tu ?: 'N/A',
+                'ngay_thanh_toan' => $record->ngay_thanh_toan ?: null,
+                'so_dot_thanh_toan' => $record->so_dot_thanh_toan ?: 'N/A',
+                'trang_thai_thanh_toan' => $trangThaiThanhToan
+            ];
+        }
+
+        // Generate report info with enhanced details
+        $reportInfo = [
+            'title' => 'Báo cáo Phiếu đề nghị thanh toán dịch vụ',
+            'generated_date' => now()->format('d/m/Y H:i:s'),
+            'total_records' => count($processedData),
+            'report_type' => $filterParams['report_type'] ?? 'selected_items',
+            'report_type_display' => $this->getReportTypeDisplay($filterParams['report_type'] ?? 'selected_items'),
+            'generated_by' => $filterParams['generated_by'] ?? 'Hệ thống',
+            'filter_summary' => $this->buildFilterSummary($filterParams)
+        ];
+
+        // Return view for printing (using existing template structure)
+        return view('Print.ReportDNTTDV', [
+            'reportData' => $processedData,
+            'reportInfo' => $reportInfo
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid request data',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Error generating DNTTDV report: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'request_data' => $request->all()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error generating report: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Get display text for report type
+ */
+private function getReportTypeDisplay($reportType)
+{
+    $types = [
+        'selected_items' => 'Mục đã chọn',
+        'all_data' => 'Tất cả dữ liệu',
+        'current_page' => 'Trang hiện tại'
+    ];
+
+    return $types[$reportType] ?? 'Không xác định';
+}
+
+/**
+ * Build filter summary for report
+ */
+private function buildFilterSummary($filterParams)
+{
+    $summary = [];
+    
+    if (isset($filterParams['current_filters'])) {
+        $filters = $filterParams['current_filters'];
+        
+        if (!empty($filters['search'])) {
+            $summary[] = "Tìm kiếm: " . $filters['search'];
+        }
+        
+        if (!empty($filters['status']) && $filters['status'] !== 'all') {
+            $summary[] = "Trạng thái: " . $filters['status'];
+        }
+    }
+    
+    return !empty($summary) ? implode(', ', $summary) : 'Không có bộ lọc';
+}
+
+/**
+ * Format payment status for report display
+ */
+private function formatPaymentStatusForReport($status)
+{
+    if (!$status) {
+        return 'Chưa thanh toán';
+    }
+
+    $statusMap = [
+        'processing' => 'Đang xử lý',
+        'submitted' => 'Đã nộp kế toán', 
+        'paid' => 'Đã thanh toán',
+        'cancelled' => 'Đã hủy',
+        'rejected' => 'Từ chối'
+    ];
+
+    return $statusMap[$status] ?? $status;
+}
 
 }

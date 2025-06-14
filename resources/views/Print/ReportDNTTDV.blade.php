@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Báo cáo Phiếu đề nghị thanh toán hom giống - TTC Attapeu</title>
+    <title>Báo cáo Phiếu đề nghị thanh toán dịch vụ - TTC Attapeu</title>
     <style>
         body {
             font-family: "Times New Roman", Times, serif;
@@ -77,7 +78,7 @@
             }
             
             .section-header {
-                background: #0d6efd !important;
+                background: #dc3545 !important;
                 color: white !important;
             }
             
@@ -91,7 +92,7 @@
         }
 
         /* Portrait specific styles */
-      @media print and (orientation: portrait) {
+        @media print and (orientation: portrait) {
             @page {
                 size: A4 portrait;
                 margin: 1cm;
@@ -217,12 +218,11 @@
             }
             
             /* ปรับขนาดคอลัมน์สำคัญ */
-            table th:nth-child(1), table td:nth-child(1) { width: 5%; } /* STT */
-            table th:nth-child(2), table td:nth-child(2) { width: 12%; } /* Mã nghiệm thu */
-            table th:nth-child(3), table td:nth-child(3) { width: 8%; } /* Trạm */
-            table th:nth-child(10), table td:nth-child(10) { width: 12%; } /* Tổng tiền */
-            table th:nth-child(11), table td:nth-child(11) { width: 12%; } /* Tiền tạm giữ */
-            table th:nth-child(12), table td:nth-child(12) { width: 12%; } /* Tiền thanh toán */
+            table th:nth-child(1), table td:nth-child(1) { width: 4%; } /* STT */
+            table th:nth-child(2), table td:nth-child(2) { width: 12%; } /* Mã giải ngân */
+            table th:nth-child(3), table td:nth-child(3) { width: 15%; } /* Đối tác */
+            table th:nth-child(4), table td:nth-child(4) { width: 10%; } /* Mã KH */
+            table th:nth-child(5), table td:nth-child(5) { width: 10%; } /* Tổng tiền */
             
             /* Section headers */
             .section-header {
@@ -328,8 +328,8 @@
         .info-section h3 {
             margin: 0 0 10px 0;
             font-size: 14px;
-            color: #0d6efd;
-            border-bottom: 1px solid #0d6efd;
+            color: #dc3545;
+            border-bottom: 1px solid #dc3545;
             padding-bottom: 5px;
             font-weight: bold;
         }
@@ -353,7 +353,7 @@
 
         /* Section Headers */
         .section-header {
-            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
             color: white;
             padding: 12px 20px;
             margin: 25px 0 15px 0;
@@ -422,7 +422,7 @@
 
         .amount {
             font-weight: bold;
-            color: #28a745;
+            color: #dc3545;
         }
 
         /* Footer */
@@ -445,31 +445,6 @@
             font-size: 24px;
             margin-bottom: 10px;
             display: block;
-        }
-
-        /* Responsive adjustments */
-        @media screen and (max-width: 768px) {
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .header {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .company-info {
-                margin-bottom: 15px;
-            }
-        }
-
-        /* Custom spacing */
-        .mb-3 {
-            margin-bottom: 15px;
-        }
-
-        .mt-3 {
-            margin-top: 15px;
         }
 
         /* Status badge */
@@ -505,6 +480,37 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+
+        .status-cancelled {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Custom spacing */
+        .mb-3 {
+            margin-bottom: 15px;
+        }
+
+        .mt-3 {
+            margin-top: 15px;
+        }
+
+        /* Responsive adjustments */
+        @media screen and (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .company-info {
+                margin-bottom: 15px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -534,7 +540,7 @@
                 <p>Attapeu Province, Laos</p>
             </div>
             <div class="title">
-                <h1>BÁO CÁO BIÊN BẢN NGHIỆM THU DỊCH VỤ</h1>
+                <h1>BÁO CÁO PHIẾU ĐỀ NGHỊ THANH TOÁN DỊCH VỤ</h1>
                 <p>Ngày tạo: {{ $reportInfo['generated_date'] ?? now()->format('d/m/Y H:i:s') }}</p>
                 <p>Tổng số bản ghi: {{ $reportInfo['total_records'] ?? 0 }}</p>
                 <p>Loại báo cáo: {{ $reportInfo['report_type'] === 'current_page' ? 'Trang hiện tại' : 'Tất cả dữ liệu' }}</p>
@@ -548,7 +554,7 @@
                     <h3><i class="fas fa-info-circle"></i> Thông tin báo cáo</h3>
                     <div class="info-row">
                         <span class="info-label">Tiêu đề:</span>
-                        <span class="info-value">{{ $reportInfo['title'] ?? 'Báo cáo Biên bản nghiệm thu dịch vụ' }}</span>
+                        <span class="info-value">{{ $reportInfo['title'] ?? 'Báo cáo Phiếu đề nghị thanh toán dịch vụ' }}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Thời gian tạo:</span>
@@ -564,6 +570,9 @@
                     @php
                         $totalAmount = collect($reportData)->sum('tong_tien');
                         $totalHoldAmount = collect($reportData)->sum('tong_tien_tam_giu');
+                        $totalDeductionAmount = collect($reportData)->sum('tong_tien_khau_tru');
+                        $totalInterestAmount = collect($reportData)->sum('tong_tien_lai_suat');
+                        $totalRemaining = collect($reportData)->sum('tong_tien_thanh_toan_con_lai');
                         $paidCount = collect($reportData)->where('trang_thai_thanh_toan', 'Đã thanh toán')->count();
                     @endphp
                     <div class="info-row">
@@ -575,8 +584,20 @@
                         <span class="info-value amount">{{ number_format($totalHoldAmount) }} KIP</span>
                     </div>
                     <div class="info-row">
+                        <span class="info-label">Tổng tiền khấu trừ:</span>
+                        <span class="info-value amount">{{ number_format($totalDeductionAmount) }} KIP</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Tổng tiền lãi suất:</span>
+                        <span class="info-value amount">{{ number_format($totalInterestAmount) }} KIP</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Tổng tiền còn lại:</span>
+                        <span class="info-value amount">{{ number_format($totalRemaining) }} KIP</span>
+                    </div>
+                    <div class="info-row">
                         <span class="info-label">Đã thanh toán:</span>
-                        <span class="info-value">{{ $paidCount }}/{{ count($reportData) }} biên bản</span>
+                        <span class="info-value">{{ $paidCount }}/{{ count($reportData) }} phiếu</span>
                     </div>
                 </div>
             </div>
@@ -585,7 +606,7 @@
         <!-- Main Data Table -->
         @if(count($reportData) > 0)
             <div class="section-header">
-                <i class="fas fa-table"></i> Danh sách Biên bản nghiệm thu dịch vụ
+                <i class="fas fa-table"></i> Danh sách Phiếu đề nghị thanh toán dịch vụ
             </div>
 
             <div class="table-container">
@@ -593,16 +614,17 @@
                     <thead>
                         <tr>
                             <th class="text-center">STT</th>
-                            <th>Mã nghiệm thu</th>
-                            <th>Trạm</th>
-                            <th>Chủ mía</th>
-                            <th>Bên thực hiện</th>
-                            <th>Tên công việc</th>
+                            <th>Mã giải ngân</th>
+                            <th>Đối tác nhận tiền</th>
+                            <th>Mã khách hàng</th>
                             <th class="text-right">Tổng tiền (KIP)</th>
                             <th class="text-right">Tiền tạm giữ (KIP)</th>
+                            <th class="text-right">Tiền khấu trừ (KIP)</th>
+                            <th class="text-right">Tiền lãi suất (KIP)</th>
+                            <th class="text-right">Tiền còn lại (KIP)</th>
                             <th>Vụ đầu tư</th>
-                            <th>Mã giải ngân</th>
-                            <th class="text-center">Đợt thanh toán</th>
+                            <th class="text-center">Ngày thanh toán</th>
+                            <th class="text-center">Số đợt</th>
                             <th class="text-center">Trạng thái</th>
                         </tr>
                     </thead>
@@ -610,16 +632,19 @@
                         @foreach($reportData as $index => $item)
                             <tr>
                                 <td class="text-center">{{ $index + 1 }}</td>
-                                <td>{{ $item['ma_nghiem_thu'] }}</td>
-                                <td>{{ $item['tram'] }}</td>
-                                <td>{{ $item['chu_mia'] }}</td>
-                                <td>{{ $item['ben_thuc_hien'] }}</td>
-                                <td>{{ $item['ten_cong_viec'] }}</td>
+                                <td>{{ $item['ma_giai_ngan'] }}</td>
+                                <td>{{ $item['doi_tac_nhan_tien'] }}</td>
+                                <td>{{ $item['ma_khach_hang'] }}</td>
                                 <td class="text-right amount">{{ number_format($item['tong_tien']) }}</td>
                                 <td class="text-right amount">{{ number_format($item['tong_tien_tam_giu']) }}</td>
+                                <td class="text-right amount">{{ number_format($item['tong_tien_khau_tru']) }}</td>
+                                <td class="text-right amount">{{ number_format($item['tong_tien_lai_suat']) }}</td>
+                                <td class="text-right amount">{{ number_format($item['tong_tien_thanh_toan_con_lai']) }}</td>
                                 <td>{{ $item['vu_dau_tu'] }}</td>
-                                <td>{{ $item['ma_giai_ngan'] }}</td>
-                                <td class="text-center">{{ $item['dot_thanh_toan'] }}</td>
+                                <td class="text-center">
+                                    {{ $item['ngay_thanh_toan'] ? date('d/m/Y', strtotime($item['ngay_thanh_toan'])) : 'N/A' }}
+                                </td>
+                                <td class="text-center">{{ $item['so_dot_thanh_toan'] }}</td>
                                 <td class="text-center">
                                     @php
                                         $status = $item['trang_thai_thanh_toan'];
@@ -633,6 +658,9 @@
                                                 break;
                                             case 'Đã thanh toán':
                                                 $statusClass = 'status-paid';
+                                                break;
+                                            case 'Đã hủy':
+                                                $statusClass = 'status-cancelled';
                                                 break;
                                             case 'Từ chối':
                                                 $statusClass = 'status-rejected';
@@ -648,12 +676,21 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="6" class="text-right"><strong>Tổng cộng:</strong></td>
+                            <td colspan="4" class="text-right"><strong>Tổng cộng:</strong></td>
                             <td class="text-right amount">
                                 <strong>{{ number_format(collect($reportData)->sum('tong_tien')) }}</strong>
                             </td>
                             <td class="text-right amount">
                                 <strong>{{ number_format(collect($reportData)->sum('tong_tien_tam_giu')) }}</strong>
+                            </td>
+                            <td class="text-right amount">
+                                <strong>{{ number_format(collect($reportData)->sum('tong_tien_khau_tru')) }}</strong>
+                            </td>
+                            <td class="text-right amount">
+                                <strong>{{ number_format(collect($reportData)->sum('tong_tien_lai_suat')) }}</strong>
+                            </td>
+                            <td class="text-right amount">
+                                <strong>{{ number_format(collect($reportData)->sum('tong_tien_thanh_toan_con_lai')) }}</strong>
                             </td>
                             <td colspan="4" class="text-center">
                                 <strong>{{ count($reportData) }} bản ghi</strong>
@@ -669,12 +706,13 @@
             </div>
 
             <div class="table-container">
-                <table style="width: 50%; margin: 0 auto;">
+                <table style="width: 60%; margin: 0 auto;">
                     <thead>
                         <tr>
                             <th>Trạng thái</th>
                             <th class="text-center">Số lượng</th>
                             <th class="text-right">Tổng tiền (KIP)</th>
+                            <th class="text-right">Tiền còn lại (KIP)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -682,7 +720,8 @@
                             $statusSummary = collect($reportData)->groupBy('trang_thai_thanh_toan')->map(function($group) {
                                 return [
                                     'count' => $group->count(),
-                                    'total_amount' => $group->sum('tong_tien')
+                                    'total_amount' => $group->sum('tong_tien'),
+                                    'remaining_amount' => $group->sum('tong_tien_thanh_toan_con_lai')
                                 ];
                             });
                         @endphp
@@ -691,6 +730,7 @@
                                 <td>{{ $status }}</td>
                                 <td class="text-center">{{ $summary['count'] }}</td>
                                 <td class="text-right amount">{{ number_format($summary['total_amount']) }}</td>
+                                <td class="text-right amount">{{ number_format($summary['remaining_amount']) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -700,7 +740,7 @@
             <div class="empty-section">
                 <i class="fas fa-inbox"></i>
                 <h3>Không có dữ liệu</h3>
-                <p>Không tìm thấy biên bản nghiệm thu nào phù hợp với tiêu chí lọc</p>
+                <p>Không tìm thấy phiếu đề nghị thanh toán nào phù hợp với tiêu chí lọc</p>
             </div>
         @endif
 
@@ -714,7 +754,7 @@
         </div>
     </div>
 
-    <!-- Keep existing JavaScript -->
+    <!-- JavaScript -->
     <script>
         function setOrientation(orientation) {
             const styleId = 'dynamic-page-style';

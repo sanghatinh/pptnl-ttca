@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Báo cáo Phiếu đề nghị thanh toán hom giống - TTC Attapeu</title>
+    <title>Báo cáo Phiếu giao nhận hom giống - TTC Attapeu</title>
     <style>
         body {
             font-family: "Times New Roman", Times, serif;
@@ -91,7 +92,7 @@
         }
 
         /* Portrait specific styles */
-      @media print and (orientation: portrait) {
+        @media print and (orientation: portrait) {
             @page {
                 size: A4 portrait;
                 margin: 1cm;
@@ -218,11 +219,10 @@
             
             /* ปรับขนาดคอลัมน์สำคัญ */
             table th:nth-child(1), table td:nth-child(1) { width: 5%; } /* STT */
-            table th:nth-child(2), table td:nth-child(2) { width: 12%; } /* Mã nghiệm thu */
+            table th:nth-child(2), table td:nth-child(2) { width: 12%; } /* Mã số phiếu */
             table th:nth-child(3), table td:nth-child(3) { width: 8%; } /* Trạm */
-            table th:nth-child(10), table td:nth-child(10) { width: 12%; } /* Tổng tiền */
-            table th:nth-child(11), table td:nth-child(11) { width: 12%; } /* Tiền tạm giữ */
-            table th:nth-child(12), table td:nth-child(12) { width: 12%; } /* Tiền thanh toán */
+            table th:nth-child(7), table td:nth-child(7) { width: 12%; } /* Tổng thực nhận */
+            table th:nth-child(8), table td:nth-child(8) { width: 12%; } /* Tổng tiền */
             
             /* Section headers */
             .section-header {
@@ -534,7 +534,7 @@
                 <p>Attapeu Province, Laos</p>
             </div>
             <div class="title">
-                <h1>BÁO CÁO BIÊN BẢN NGHIỆM THU DỊCH VỤ</h1>
+                <h1>BÁO CÁO PHIẾU GIAO NHẬN HOM GIỐNG</h1>
                 <p>Ngày tạo: {{ $reportInfo['generated_date'] ?? now()->format('d/m/Y H:i:s') }}</p>
                 <p>Tổng số bản ghi: {{ $reportInfo['total_records'] ?? 0 }}</p>
                 <p>Loại báo cáo: {{ $reportInfo['report_type'] === 'current_page' ? 'Trang hiện tại' : 'Tất cả dữ liệu' }}</p>
@@ -548,7 +548,7 @@
                     <h3><i class="fas fa-info-circle"></i> Thông tin báo cáo</h3>
                     <div class="info-row">
                         <span class="info-label">Tiêu đề:</span>
-                        <span class="info-value">{{ $reportInfo['title'] ?? 'Báo cáo Biên bản nghiệm thu dịch vụ' }}</span>
+                        <span class="info-value">{{ $reportInfo['title'] ?? 'Báo cáo Phiếu giao nhận hom giống' }}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Thời gian tạo:</span>
@@ -563,7 +563,7 @@
                     <h3><i class="fas fa-chart-bar"></i> Thống kê tóm tắt</h3>
                     @php
                         $totalAmount = collect($reportData)->sum('tong_tien');
-                        $totalHoldAmount = collect($reportData)->sum('tong_tien_tam_giu');
+                        $totalThucNhan = collect($reportData)->sum('tong_thuc_nhan');
                         $paidCount = collect($reportData)->where('trang_thai_thanh_toan', 'Đã thanh toán')->count();
                     @endphp
                     <div class="info-row">
@@ -571,12 +571,12 @@
                         <span class="info-value amount">{{ number_format($totalAmount) }} KIP</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">Tổng tiền tạm giữ:</span>
-                        <span class="info-value amount">{{ number_format($totalHoldAmount) }} KIP</span>
+                        <span class="info-label">Tổng thực nhận:</span>
+                        <span class="info-value amount">{{ number_format($totalThucNhan) }} Tấn</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Đã thanh toán:</span>
-                        <span class="info-value">{{ $paidCount }}/{{ count($reportData) }} biên bản</span>
+                        <span class="info-value">{{ $paidCount }}/{{ count($reportData) }} phiếu</span>
                     </div>
                 </div>
             </div>
@@ -585,7 +585,7 @@
         <!-- Main Data Table -->
         @if(count($reportData) > 0)
             <div class="section-header">
-                <i class="fas fa-table"></i> Danh sách Biên bản nghiệm thu dịch vụ
+                <i class="fas fa-table"></i> Danh sách Phiếu giao nhận hom giống
             </div>
 
             <div class="table-container">
@@ -593,30 +593,30 @@
                     <thead>
                         <tr>
                             <th class="text-center">STT</th>
-                            <th>Mã nghiệm thu</th>
+                            <th>Mã số phiếu</th>
                             <th>Trạm</th>
-                            <th>Chủ mía</th>
-                            <th>Bên thực hiện</th>
+                            <th>Chủ mía bên giao hom</th>
+                            <th>Chủ mía bên nhận hom</th>
                             <th>Tên công việc</th>
+                            <th class="text-right">Tổng thực nhận (Tấn)</th>
                             <th class="text-right">Tổng tiền (KIP)</th>
-                            <th class="text-right">Tiền tạm giữ (KIP)</th>
                             <th>Vụ đầu tư</th>
                             <th>Mã giải ngân</th>
                             <th class="text-center">Đợt thanh toán</th>
-                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center">Trạng thái thanh toán</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($reportData as $index => $item)
                             <tr>
                                 <td class="text-center">{{ $index + 1 }}</td>
-                                <td>{{ $item['ma_nghiem_thu'] }}</td>
+                                <td>{{ $item['ma_so_phieu'] }}</td>
                                 <td>{{ $item['tram'] }}</td>
-                                <td>{{ $item['chu_mia'] }}</td>
-                                <td>{{ $item['ben_thuc_hien'] }}</td>
+                                <td>{{ $item['chu_mia_ben_giao_hom'] }}</td>
+                                <td>{{ $item['chu_mia_ben_nhan_hom'] }}</td>
                                 <td>{{ $item['ten_cong_viec'] }}</td>
+                                <td class="text-right amount">{{ number_format($item['tong_thuc_nhan'], 2) }}</td>
                                 <td class="text-right amount">{{ number_format($item['tong_tien']) }}</td>
-                                <td class="text-right amount">{{ number_format($item['tong_tien_tam_giu']) }}</td>
                                 <td>{{ $item['vu_dau_tu'] }}</td>
                                 <td>{{ $item['ma_giai_ngan'] }}</td>
                                 <td class="text-center">{{ $item['dot_thanh_toan'] }}</td>
@@ -650,10 +650,10 @@
                         <tr>
                             <td colspan="6" class="text-right"><strong>Tổng cộng:</strong></td>
                             <td class="text-right amount">
-                                <strong>{{ number_format(collect($reportData)->sum('tong_tien')) }}</strong>
+                                <strong>{{ number_format(collect($reportData)->sum('tong_thuc_nhan'), 2) }}</strong>
                             </td>
                             <td class="text-right amount">
-                                <strong>{{ number_format(collect($reportData)->sum('tong_tien_tam_giu')) }}</strong>
+                                <strong>{{ number_format(collect($reportData)->sum('tong_tien')) }}</strong>
                             </td>
                             <td colspan="4" class="text-center">
                                 <strong>{{ count($reportData) }} bản ghi</strong>
@@ -662,45 +662,11 @@
                     </tfoot>
                 </table>
             </div>
-
-            <!-- Status Summary -->
-            <div class="section-header">
-                <i class="fas fa-pie-chart"></i> Thống kê theo trạng thái
-            </div>
-
-            <div class="table-container">
-                <table style="width: 50%; margin: 0 auto;">
-                    <thead>
-                        <tr>
-                            <th>Trạng thái</th>
-                            <th class="text-center">Số lượng</th>
-                            <th class="text-right">Tổng tiền (KIP)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php
-                            $statusSummary = collect($reportData)->groupBy('trang_thai_thanh_toan')->map(function($group) {
-                                return [
-                                    'count' => $group->count(),
-                                    'total_amount' => $group->sum('tong_tien')
-                                ];
-                            });
-                        @endphp
-                        @foreach($statusSummary as $status => $summary)
-                            <tr>
-                                <td>{{ $status }}</td>
-                                <td class="text-center">{{ $summary['count'] }}</td>
-                                <td class="text-right amount">{{ number_format($summary['total_amount']) }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
         @else
             <div class="empty-section">
                 <i class="fas fa-inbox"></i>
                 <h3>Không có dữ liệu</h3>
-                <p>Không tìm thấy biên bản nghiệm thu nào phù hợp với tiêu chí lọc</p>
+                <p>Không tìm thấy phiếu giao nhận hom giống nào phù hợp với tiêu chí lọc</p>
             </div>
         @endif
 
@@ -714,7 +680,7 @@
         </div>
     </div>
 
-    <!-- Keep existing JavaScript -->
+    <!-- JavaScript -->
     <script>
         function setOrientation(orientation) {
             const styleId = 'dynamic-page-style';

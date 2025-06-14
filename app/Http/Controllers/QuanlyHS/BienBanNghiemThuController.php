@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\BienBanNghiemThu;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller; // Add this import
+use Illuminate\Support\Facades\Log; 
+use Tymon\JWTAuth\Facades\JWTAuth; 
 
 use App\Models\QuanlyHS\PaymentRequestAction; // เพิ่ม model สำหรับตาราง Action
 use App\Models\QuanlyHS\PaymentRequest;
@@ -1136,6 +1138,263 @@ public function processingHistoryNghiemthuDV($id)
         ], 500);
     }
 }
+
+
+/**
+     * Generate Report PDF for Bien Ban Nghiem Thu DV
+     */
+    public function generateReportTableBienBanNTDV(Request $request)
+    {
+        try {
+            // Handle authentication for GET requests with token in query parameter
+            if ($request->isMethod('get') && $request->has('token')) {
+                $token = $request->query('token');
+                
+                try {
+                    // Validate token
+               \JWTAuth::setToken($token);
+$user = \JWTAuth::authenticate();
+                    
+                    if (!$user) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Invalid token'
+                        ], 401);
+                    }
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Token authentication failed: ' . $e->getMessage()
+                    ], 401);
+                }
+            }
+
+            // Handle both GET and POST requests
+            if ($request->isMethod('get')) {
+                // For GET request, get filter_params from query string
+                $filterParamsJson = $request->query('filter_params');
+                if (!$filterParamsJson) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid filter parameters'
+                    ], 400);
+                }
+                $filterParams = json_decode($filterParamsJson, true);
+            } else {
+                // For POST request, validate and get from form data
+                $request->validate([
+                    'filter_params' => 'required|string'
+                ]);
+                $filterParams = json_decode($request->filter_params, true);
+            }
+            
+            if (!$filterParams || !isset($filterParams['ma_nghiem_thu_list'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid filter parameters'
+                ], 400);
+            }
+
+            $maNghiemThuList = $filterParams['ma_nghiem_thu_list'];
+            
+            if (empty($maNghiemThuList)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No records to generate report'
+                ], 400);
+            }
+
+            // Rest of the existing code remains the same...
+             // Build the main query
+            $query = DB::table('tb_bien_ban_nghiemthu_dv as bb')
+                ->whereIn('bb.ma_nghiem_thu', $maNghiemThuList)
+                ->select([
+                    'bb.ma_nghiem_thu',
+                    'bb.tram',
+                    'bb.khach_hang_ca_nhan_dt_mia',
+                    'bb.khach_hang_doanh_nghiep_dt_mia',
+                    'bb.hop_dong_cung_ung_dich_vu',
+                    'bb.tong_tien',
+                    'bb.tong_tien_tam_giu',
+                    'bb.vu_dau_tu'
+                ]);
+
+            $reportData = $query->get();
+
+            if ($reportData->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No data found for the selected records'
+                ], 404);
+            }
+
+            // Process each record to get additional information
+            $processedData = [];
+            
+            foreach ($reportData as $record) {
+                // Get Chủ mía (Priority: Cá nhân -> Doanh nghiệp)
+                $chuMia = $record->khach_hang_ca_nhan_dt_mia ?: $record->khach_hang_doanh_nghiep_dt_mia;
+                
+                // Get Bên thực hiện - extract name from hop_dong_cung_ung_dich_vu
+                $benThucHien = 'N/A';
+                if (!empty($record->hop_dong_cung_ung_dich_vu)) {
+                    $benThucHien = $this->extractNameFromContract($record->hop_dong_cung_ung_dich_vu);
+                }
+
+                // Get Tên Công việc - join with tb_chitiet_dichvu_nt
+                $dichVuList = DB::table('tb_chitiet_dichvu_nt')
+                    ->where('ma_nghiem_thu', $record->ma_nghiem_thu)
+                    ->whereNotNull('dich_vu')
+                    ->where('dich_vu', '!=', '')
+                    ->distinct()
+                    ->pluck('dich_vu')
+                    ->filter()
+                    ->unique()
+                    ->toArray();
+                
+                $tenCongViec = !empty($dichVuList) ? implode(', ', $dichVuList) : 'N/A';
+
+                // Get Mã giải ngân from Logs_phieu_trinh_thanh_toan
+                $maGiaiNgan = DB::table('Logs_phieu_trinh_thanh_toan')
+                    ->where('ma_nghiem_thu', $record->ma_nghiem_thu)
+                    ->value('ma_de_nghi_giai_ngan');
+
+                // Get Đợt thanh toán and Trạng thái thanh toán
+                $dotThanhToan = 'N/A';
+                $trangThaiThanhToan = 'Chưa thanh toán';
+
+                if ($maGiaiNgan) {
+                    // Get ma_trinh_thanh_toan from Logs table
+                    $maTrinh = DB::table('Logs_phieu_trinh_thanh_toan')
+                        ->where('ma_de_nghi_giai_ngan', $maGiaiNgan)
+                        ->value('ma_trinh_thanh_toan');
+
+                    if ($maTrinh) {
+                        // Get payment info from tb_phieu_trinh_thanh_toan
+                        $paymentInfo = DB::table('tb_phieu_trinh_thanh_toan')
+                            ->where('ma_trinh_thanh_toan', $maTrinh)
+                            ->select('so_dot_thanh_toan', 'trang_thai_thanh_toan')
+                            ->first();
+
+                        if ($paymentInfo) {
+                            $dotThanhToan = $paymentInfo->so_dot_thanh_toan ?: 'N/A';
+                            $trangThaiThanhToan = $this->formatPaymentStatusForReport($paymentInfo->trang_thai_thanh_toan);
+                        }
+                    }
+                }
+
+                $processedData[] = [
+                    'ma_nghiem_thu' => $record->ma_nghiem_thu,
+                    'tram' => $record->tram ?: 'N/A',
+                    'chu_mia' => $chuMia ?: 'N/A',
+                    'ben_thuc_hien' => $benThucHien, 
+                    'ten_cong_viec' => $tenCongViec,
+                    'tong_tien' => $record->tong_tien ?: 0,
+                    'tong_tien_tam_giu' => $record->tong_tien_tam_giu ?: 0,
+                    'vu_dau_tu' => $record->vu_dau_tu ?: 'N/A',
+                    'ma_giai_ngan' => $maGiaiNgan ?: 'N/A',
+                    'dot_thanh_toan' => $dotThanhToan,
+                    'trang_thai_thanh_toan' => $trangThaiThanhToan
+                ];
+            }
+
+            // Generate report info
+            $reportInfo = [
+                'title' => 'Báo cáo Biên bản nghiệm thu dịch vụ',
+                'generated_date' => now()->format('d/m/Y H:i:s'),
+                'total_records' => count($processedData),
+                'report_type' => $filterParams['report_type'] ?? 'all_pages'
+            ];
+
+            // Return view for printing (instead of PDF download)
+            return view('Print.ReportBBNTDV', [
+                'reportData' => $processedData,
+                'reportInfo' => $reportInfo
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid request data',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error generating BBNTDV report: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error generating report: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Extract name from contract string
+     * Example: "HDDV-LÊ XUÂN QUÝ-230544583" -> "LÊ XUÂN QUÝ"
+     */
+    private function extractNameFromContract($contractString)
+    {
+        if (empty($contractString)) {
+            return 'N/A';
+        }
+
+        // Split by dash (-)
+        $parts = explode('-', $contractString);
+        
+        // Check if we have at least 3 parts (HDDV-NAME-NUMBER)
+        if (count($parts) >= 3) {
+            // Return the middle part (index 1) which should be the name
+            return trim($parts[1]);
+        }
+        
+        // If the format doesn't match expected pattern, try to extract name
+        // by removing common prefixes and suffixes
+        $cleaned = $contractString;
+        
+        // Remove common prefixes
+        $prefixes = ['HDDV-', 'HD-', 'CONTRACT-'];
+        foreach ($prefixes as $prefix) {
+            if (strpos($cleaned, $prefix) === 0) {
+                $cleaned = substr($cleaned, strlen($prefix));
+                break;
+            }
+        }
+        
+        // If still contains dash, take the first part after removing prefix
+        if (strpos($cleaned, '-') !== false) {
+            $parts = explode('-', $cleaned);
+            return trim($parts[0]);
+        }
+        
+        // Return the cleaned string or original if no pattern matches
+        return trim($cleaned) ?: $contractString;
+    }
+
+
+    /**
+     * Format payment status for report display
+     */
+    private function formatPaymentStatusForReport($status)
+    {
+        if (!$status) {
+            return 'Chưa thanh toán';
+        }
+
+        $statusMap = [
+            'processing' => 'Đang xử lý',
+            'submitted' => 'Đã nộp kế toán', 
+            'paid' => 'Đã thanh toán',
+            'cancelled' => 'Đã hủy',
+            'rejected' => 'Từ chối'
+        ];
+
+        return $statusMap[$status] ?? $status;
+    }
+
+
 
 
 }

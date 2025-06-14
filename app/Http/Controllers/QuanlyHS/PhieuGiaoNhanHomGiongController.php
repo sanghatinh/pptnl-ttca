@@ -1277,4 +1277,205 @@ public function getHistory($id)
         ], 500);
     }
 }
+
+/**
+ * Generate Report PDF for Phieu Giao Nhan Hom Giong
+ */
+public function generateReportTablePhieugiaonhanHG(Request $request)
+{
+    try {
+        // Handle authentication for GET requests with token in query parameter
+        if ($request->isMethod('get') && $request->has('token')) {
+            $token = $request->query('token');
+            
+            try {
+                // Validate token
+                \JWTAuth::setToken($token);
+                $user = \JWTAuth::authenticate();
+                
+                if (!$user) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid token'
+                    ], 401);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token authentication failed: ' . $e->getMessage()
+                ], 401);
+            }
+        }
+
+        // Handle both GET and POST requests
+        if ($request->isMethod('get')) {
+            // For GET request, get filter_params from query string
+            $filterParamsJson = $request->query('filter_params');
+            if (!$filterParamsJson) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid filter parameters'
+                ], 400);
+            }
+            $filterParams = json_decode($filterParamsJson, true);
+        } else {
+            // For POST request, validate and get from form data
+            $request->validate([
+                'filter_params' => 'required|string'
+            ]);
+            $filterParams = json_decode($request->filter_params, true);
+        }
+        
+        if (!$filterParams || !isset($filterParams['ma_so_phieu_list'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid filter parameters'
+            ], 400);
+        }
+
+        $maSoPhieuList = $filterParams['ma_so_phieu_list'];
+        
+        if (empty($maSoPhieuList)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No records to generate report'
+            ], 400);
+        }
+
+        // Build the main query
+        $query = DB::table('bien_ban_nghiem_thu_hom_giong as bbhg')
+            ->whereIn('bbhg.ma_so_phieu', $maSoPhieuList)
+            ->select([
+                'bbhg.ma_so_phieu',
+                'bbhg.tram',
+                'bbhg.doi_tac_giao_hom',
+                'bbhg.doi_tac_giao_hom_DN',
+                'bbhg.khach_hang_ca_nhan',
+                'bbhg.khach_hang_doanh_nghiep',
+                'bbhg.tong_thuc_nhan',
+                'bbhg.tong_tien',
+                'bbhg.vu_dau_tu'
+            ]);
+
+        $reportData = $query->get();
+
+        if ($reportData->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No data found for the selected records'
+            ], 404);
+        }
+
+        // Process each record to get additional information
+        $processedData = [];
+        
+        foreach ($reportData as $record) {
+            // Chủ mía bên giao hom (Priority: doi_tac_giao_hom -> doi_tac_giao_hom_DN)
+            $chuMiaBenGiaoHom = $record->doi_tac_giao_hom ?: $record->doi_tac_giao_hom_DN;
+            
+            // Chủ mía bên nhận hom (Priority: khach_hang_ca_nhan -> khach_hang_doanh_nghiep)
+            $chuMiaBenNhanHom = $record->khach_hang_ca_nhan ?: $record->khach_hang_doanh_nghiep;
+
+            // Tên Công việc - ค่าตายตัว
+            $tenCongViec = 'Hom giống';
+
+            // Get Mã giải ngân from logs_phieu_trinh_thanh_toan_homgiong
+            $maGiaiNgan = DB::table('logs_phieu_trinh_thanh_toan_homgiong')
+                ->where('ma_so_phieu', $record->ma_so_phieu)
+                ->value('ma_de_nghi_giai_ngan');
+
+            // Get Đợt thanh toán and Trạng thái thanh toán
+            $dotThanhToan = 'N/A';
+            $trangThaiThanhToan = 'Chưa thanh toán';
+
+            if ($maGiaiNgan) {
+                // Get ma_trinh_thanh_toan from logs_phieu_trinh_thanh_toan_homgiong
+                $maTrinh = DB::table('logs_phieu_trinh_thanh_toan_homgiong')
+                    ->where('ma_de_nghi_giai_ngan', $maGiaiNgan)
+                    ->value('ma_trinh_thanh_toan');
+
+                if ($maTrinh) {
+                    // Get payment info from tb_phieu_trinh_thanh_toan_homgiong
+                    $paymentInfo = DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+                        ->where('ma_trinh_thanh_toan', $maTrinh)
+                        ->select('so_dot_thanh_toan', 'trang_thai_thanh_toan')
+                        ->first();
+
+                    if ($paymentInfo) {
+                        $dotThanhToan = $paymentInfo->so_dot_thanh_toan ?: 'N/A';
+                        $trangThaiThanhToan = $this->formatPaymentStatusForReport($paymentInfo->trang_thai_thanh_toan);
+                    }
+                }
+            }
+
+            $processedData[] = [
+                'ma_so_phieu' => $record->ma_so_phieu,
+                'tram' => $record->tram ?: 'N/A',
+                'chu_mia_ben_giao_hom' => $chuMiaBenGiaoHom ?: 'N/A',
+                'chu_mia_ben_nhan_hom' => $chuMiaBenNhanHom ?: 'N/A',
+                'ten_cong_viec' => $tenCongViec,
+                'tong_thuc_nhan' => $record->tong_thuc_nhan ?: 0,
+                'tong_tien' => $record->tong_tien ?: 0,
+                'vu_dau_tu' => $record->vu_dau_tu ?: 'N/A',
+                'ma_giai_ngan' => $maGiaiNgan ?: 'N/A',
+                'dot_thanh_toan' => $dotThanhToan,
+                'trang_thai_thanh_toan' => $trangThaiThanhToan
+            ];
+        }
+
+        // Generate report info
+        $reportInfo = [
+            'title' => 'Báo cáo Phiếu giao nhận hom giống',
+            'generated_date' => now()->format('d/m/Y H:i:s'),
+            'total_records' => count($processedData),
+            'report_type' => $filterParams['report_type'] ?? 'all_pages'
+        ];
+
+        // Return view for printing (instead of PDF download)
+        return view('Print.ReportPGNHG', [
+            'reportData' => $processedData,
+            'reportInfo' => $reportInfo
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid request data',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Error generating PGNHG report: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'request_data' => $request->all()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error generating report: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Format payment status for report display
+ */
+private function formatPaymentStatusForReport($status)
+{
+    if (!$status) {
+        return 'Chưa thanh toán';
+    }
+
+    $statusMap = [
+        'processing' => 'Đang xử lý',
+        'submitted' => 'Đã nộp kế toán', 
+        'paid' => 'Đã thanh toán',
+        'cancelled' => 'Đã hủy',
+        'rejected' => 'Từ chối'
+    ];
+
+    return $statusMap[$status] ?? $status;
+}
+
+
+
 }
