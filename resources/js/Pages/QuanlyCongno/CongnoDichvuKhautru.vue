@@ -56,6 +56,18 @@
                                 <a
                                     class="dropdown-item"
                                     href="#"
+                                    @click.prevent="showReportModal"
+                                >
+                                    <i
+                                        class="fas fa-file-pdf text-danger me-2"
+                                    ></i>
+                                    Report PDF
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="#"
                                     @click.prevent="importData"
                                 >
                                     <i
@@ -264,6 +276,26 @@
                             <table class="table-auto w-full">
                                 <thead>
                                     <tr>
+                                        <!-- Add Checkbox Column Header -->
+                                        <th
+                                            style="
+                                                width: 50px;
+                                                text-align: center;
+                                                position: sticky;
+                                                top: 0;
+                                                z-index: 21;
+                                            "
+                                        >
+                                            <div class="th-content">
+                                                <input
+                                                    type="checkbox"
+                                                    :checked="isAllSelected"
+                                                    @change="toggleSelectAll"
+                                                    class="form-check-input"
+                                                    style="margin: 0"
+                                                />
+                                            </div>
+                                        </th>
                                         <!-- Trạm -->
                                         <th @click="sortTable('tram')">
                                             Trạm
@@ -1873,6 +1905,22 @@
                                         @dblclick="viewDetails(item)"
                                         class="desktop-row cursor-pointer"
                                     >
+                                        <!-- Add Checkbox Column -->
+                                        <td
+                                            style="
+                                                text-align: center;
+                                                width: 50px;
+                                            "
+                                            @click.stop
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                :value="item"
+                                                v-model="selectedItems"
+                                                class="form-check-input"
+                                                style="margin: 0"
+                                            />
+                                        </td>
                                         <td>{{ item.tram }}</td>
                                         <td>{{ item.invoicenumber }}</td>
                                         <td>{{ item.vu_dau_tu }}</td>
@@ -2272,6 +2320,124 @@
             </div>
         </div>
     </div>
+    <!-- เพิ่ม Report PDF Modal -->
+    <div
+        class="modal fade"
+        id="reportPdfModal"
+        tabindex="-1"
+        aria-labelledby="reportPdfModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5
+                        class="modal-title text-danger"
+                        id="reportPdfModalLabel"
+                    >
+                        <i class="fas fa-file-pdf me-2"></i>Báo cáo PDF
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        @click="closeReportModal"
+                        aria-label="Close"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Chọn loại báo cáo để tạo:
+                    </p>
+                    <div class="d-grid gap-2">
+                        <!-- Report Selected Items Button -->
+                        <button
+                            @click="generateReportSelectedItems"
+                            class="btn btn-outline-danger"
+                            :disabled="
+                                isGeneratingReport || selectedItems.length === 0
+                            "
+                        >
+                            <div
+                                v-if="
+                                    isGeneratingReport &&
+                                    reportType === 'selected'
+                                "
+                                class="d-flex align-items-center"
+                            >
+                                <div
+                                    class="spinner-border spinner-border-sm me-2"
+                                    role="status"
+                                >
+                                    <span class="visually-hidden"
+                                        >Đang tạo...</span
+                                    >
+                                </div>
+                                Đang tạo báo cáo...
+                            </div>
+                            <div v-else class="d-flex align-items-center">
+                                <i class="fas fa-check-square me-2"></i>
+                                Báo cáo mục đã chọn ({{ selectedItems.length }})
+                            </div>
+                        </button>
+
+                        <!-- Report All Data Button -->
+                        <button
+                            @click="generateReportAllData"
+                            class="btn btn-danger"
+                            :disabled="
+                                isGeneratingReport || filteredItems.length === 0
+                            "
+                        >
+                            <div
+                                v-if="
+                                    isGeneratingReport && reportType === 'all'
+                                "
+                                class="d-flex align-items-center"
+                            >
+                                <div
+                                    class="spinner-border spinner-border-sm me-2"
+                                    role="status"
+                                >
+                                    <span class="visually-hidden"
+                                        >Đang tạo...</span
+                                    >
+                                </div>
+                                Đang tạo báo cáo...
+                            </div>
+                            <div v-else class="d-flex align-items-center">
+                                <i class="fas fa-table me-2"></i>
+                                Báo cáo tất cả dữ liệu ({{
+                                    filteredItems.length
+                                }})
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Info Messages -->
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Báo cáo sẽ bao gồm dữ liệu theo bộ lọc hiện tại
+                        </small>
+                    </div>
+
+                    <!-- Progress bar for report generation -->
+                    <div v-if="isGeneratingReport" class="mt-3">
+                        <div class="progress" style="height: 6px">
+                            <div
+                                class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
+                                role="progressbar"
+                                style="width: 100%"
+                            ></div>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            Đang tạo báo cáo, vui lòng đợi...
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -2296,6 +2462,10 @@ export default {
     },
     data() {
         return {
+            // เพิ่ม properties สำหรับ Report
+            isGeneratingReport: false,
+            selectedItems: [], // Array to store selected items for report
+            reportType: "",
             isLoading: false,
             congnoList: [],
             allCongnoList: [],
@@ -2393,6 +2563,12 @@ export default {
         };
     },
     computed: {
+        isAllSelected() {
+            return (
+                this.paginatedItems.data.length > 0 &&
+                this.selectedItems.length === this.paginatedItems.data.length
+            );
+        },
         shouldShowFilter() {
             return (field) => {
                 return (
@@ -2601,6 +2777,276 @@ export default {
         },
     },
     methods: {
+        /**
+         * Toggle Select All Checkbox
+         */
+        toggleSelectAll(event) {
+            if (event.target.checked) {
+                // Select all items on current page
+                this.selectedItems = [...this.paginatedItems.data];
+            } else {
+                // Deselect all items
+                this.selectedItems = [];
+            }
+        },
+
+        /**
+         * Clear all selections
+         */
+        clearSelection() {
+            this.selectedItems = [];
+        },
+
+        /**
+         * Check if item is selected
+         */
+        isItemSelected(item) {
+            return this.selectedItems.some(
+                (selectedItem) =>
+                    selectedItem.invoicenumber === item.invoicenumber
+            );
+        },
+
+        /**
+         * Toggle single item selection
+         */
+        toggleItemSelection(item) {
+            const index = this.selectedItems.findIndex(
+                (selectedItem) =>
+                    selectedItem.invoicenumber === item.invoicenumber
+            );
+
+            if (index > -1) {
+                // Item is selected, remove it
+                this.selectedItems.splice(index, 1);
+            } else {
+                // Item is not selected, add it
+                this.selectedItems.push(item);
+            }
+        },
+        /**
+         * Show Report Modal
+         */
+        showReportModal() {
+            // Show the report modal using Bootstrap
+            const modalElement = document.getElementById("reportPdfModal");
+            if (modalElement) {
+                // Try jQuery first
+                if (window.$ && window.$.fn.modal) {
+                    window.$("#reportPdfModal").modal("show");
+                } else {
+                    // Use Bootstrap 5 native method
+                    import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                        (bootstrap) => {
+                            const modal = new bootstrap.Modal(modalElement);
+                            modal.show();
+                        }
+                    );
+                }
+            }
+        },
+
+        /**
+         * Close Report Modal
+         */
+        closeReportModal() {
+            const modalElement = document.getElementById("reportPdfModal");
+            if (modalElement) {
+                // Try jQuery first
+                if (window.$ && window.$.fn.modal) {
+                    window.$("#reportPdfModal").modal("hide");
+                } else {
+                    // Use Bootstrap 5 native method
+                    modalElement.classList.remove("show");
+                    modalElement.style.display = "none";
+                    document.body.classList.remove("modal-open");
+
+                    // Remove backdrop if it exists
+                    const backdrop = document.querySelector(".modal-backdrop");
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }
+            }
+            this.isGeneratingReport = false;
+            this.reportType = "";
+        },
+
+        /**
+         * Generate Report for Selected Items
+         */
+        async generateReportSelectedItems() {
+            try {
+                this.isGeneratingReport = true;
+                this.reportType = "selected";
+
+                // Get selected items for report
+                const selectedInvoiceNumbers = this.selectedItems.map(
+                    (item) => item.invoicenumber
+                );
+
+                if (selectedInvoiceNumbers.length === 0) {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Chưa chọn dữ liệu",
+                        text: "Vui lòng chọn ít nhất một mục để tạo báo cáo",
+                        confirmButtonText: "Đồng ý",
+                    });
+                    return;
+                }
+
+                await this.generateReport(
+                    selectedInvoiceNumbers,
+                    "selected_items",
+                    selectedInvoiceNumbers.length
+                );
+            } catch (error) {
+                console.error("Error generating selected items report:", error);
+                this.handleReportError(error);
+            } finally {
+                this.isGeneratingReport = false;
+                this.reportType = "";
+            }
+        },
+
+        /**
+         * Generate Report for All Data
+         */
+        async generateReportAllData() {
+            try {
+                this.isGeneratingReport = true;
+                this.reportType = "all";
+
+                if (this.filteredItems.length === 0) {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Không có dữ liệu",
+                        text: "Không có dữ liệu để tạo báo cáo",
+                        confirmButtonText: "Đồng ý",
+                    });
+                    return;
+                }
+
+                // Show confirmation for large datasets
+                if (this.filteredItems.length > 100) {
+                    const result = await Swal.fire({
+                        icon: "question",
+                        title: "Xác nhận tạo báo cáo",
+                        text: `Bạn đang tạo báo cáo cho ${this.filteredItems.length} bản ghi. Quá trình này có thể mất thời gian. Bạn có muốn tiếp tục?`,
+                        showCancelButton: true,
+                        confirmButtonText: "Tiếp tục",
+                        cancelButtonText: "Hủy",
+                    });
+
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+                }
+
+                // Get all filtered items
+                const allInvoiceNumbers = this.filteredItems.map(
+                    (item) => item.invoicenumber
+                );
+
+                await this.generateReport(
+                    allInvoiceNumbers,
+                    "all_data",
+                    this.filteredItems.length
+                );
+            } catch (error) {
+                console.error("Error generating all data report:", error);
+                this.handleReportError(error);
+            } finally {
+                this.isGeneratingReport = false;
+                this.reportType = "";
+            }
+        },
+
+        /**
+         * Generate Report - Main function
+         */
+        async generateReport(invoiceNumbers, reportType, totalCount) {
+            // Prepare filter parameters
+            const filterParams = {
+                invoice_numbers: invoiceNumbers,
+                report_type: reportType,
+                generated_by: this.store.user?.full_name || "Hệ thống",
+                generated_date: new Date().toISOString(),
+                total_records: totalCount,
+                // Include current filters for context
+                search: this.search || "",
+                status_filter: this.statusFilter || "all",
+                current_filters: {
+                    search: this.search,
+                    column_filters: this.columnFilters,
+                    selected_filter_values: this.selectedFilterValues,
+                },
+            };
+
+            // Create form data
+            const formData = new FormData();
+            formData.append("filter_params", JSON.stringify(filterParams));
+
+            // Make API request to generate report
+            const headers = this.store.getAuthHeaders();
+            const response = await axios.post(
+                "/api/generate-report-congno-phaithu", // API endpoint ที่จะสร้างใน step ต่อไป
+                formData,
+                {
+                    headers: {
+                        ...headers,
+                        "Content-Type": "multipart/form-data",
+                    },
+                    responseType: "text", // Important for HTML response
+                }
+            );
+
+            if (response.status === 200) {
+                // Open the HTML report in a new window
+                const newWindow = window.open("", "_blank");
+                if (newWindow) {
+                    newWindow.document.write(response.data);
+                    newWindow.document.close();
+                    newWindow.focus();
+                } else {
+                    // Fallback if popup is blocked
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Popup bị chặn",
+                        text: "Trình duyệt đã chặn popup. Vui lòng cho phép popup và thử lại.",
+                        confirmButtonText: "Đồng ý",
+                    });
+                }
+
+                // Close modal after successful generation
+                this.closeReportModal();
+            }
+        },
+
+        /**
+         * Handle Report Generation Errors
+         */
+        handleReportError(error) {
+            let errorMessage = "Đã xảy ra lỗi khi tạo báo cáo";
+
+            if (error.response) {
+                if (error.response.status === 401) {
+                    this.handleAuthError();
+                    return;
+                } else if (error.response.data?.message) {
+                    errorMessage = error.response.data.message;
+                }
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            Swal.fire({
+                icon: "error",
+                title: "Lỗi tạo báo cáo",
+                text: errorMessage,
+                confirmButtonText: "Đồng ý",
+            });
+        },
         saveFilterState() {
             const filterState = {
                 search: this.search,
@@ -4521,14 +4967,17 @@ export default {
                 title: "Tùy chọn",
                 html: `
                 <div class="list-group">
-                    <button class="list-group-item list-group-item-action" onclick="window.exportToExcel()">
-                        <i class="fas fa-file-excel text-success me-2"></i> Export to Excel
+                    <button onclick="exportToExcel()" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-excel text-success me-2"></i> Export Excel
                     </button>
-                    <button class="list-group-item list-group-item-action" onclick="window.importData()">
-                        <i class="fas fa-upload text-primary me-2"></i> Import Data
+                    <button onclick="showReportPdf()" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-pdf text-danger me-2"></i> Report PDF
                     </button>
-                    <button class="list-group-item list-group-item-action" onclick="window.downloadTemplate()">
-                        <i class="fas fa-file-download text-info me-2"></i> Download Template
+                    <button onclick="downloadTemplate()" class="list-group-item list-group-item-action">
+                        <i class="fas fa-download text-primary me-2"></i> Download Template
+                    </button>
+                    <button onclick="importData()" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-import text-info me-2"></i> Import Data
                     </button>
                 </div>
                 `,
@@ -4540,20 +4989,25 @@ export default {
                         Swal.close();
                         this.showExportModal();
                     };
-                    window.importData = () => {
+                    window.showReportPdf = () => {
                         Swal.close();
-                        this.importData();
+                        this.showReportModal();
                     };
                     window.downloadTemplate = () => {
                         Swal.close();
                         this.downloadImportTemplate();
                     };
+                    window.importData = () => {
+                        Swal.close();
+                        this.importData();
+                    };
                 },
                 willClose: () => {
                     // Clean up global functions
                     delete window.exportToExcel;
-                    delete window.importData;
+                    delete window.showReportPdf;
                     delete window.downloadTemplate;
+                    delete window.importData;
                 },
             });
         },
@@ -4586,6 +5040,19 @@ export default {
         },
     },
     watch: {
+        // เพิ่ม watcher สำหรับ selectedItems
+        selectedItems: {
+            handler(newVal) {
+                // Optional: Save selection state or perform other actions
+                console.log("Selected items changed:", newVal.length);
+            },
+            deep: true,
+        },
+        // Clear selections when page changes
+        currentPage() {
+            // เคลียร์การเลือกเมื่อเปลี่ยนหน้า (ตัวเลือก)
+            // this.selectedItems = [];
+        },
         "uniqueValues.category_debt": {
             handler() {
                 this.updateStatusOptions();

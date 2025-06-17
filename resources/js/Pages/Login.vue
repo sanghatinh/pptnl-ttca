@@ -214,6 +214,44 @@ export default {
     },
 
     methods: {
+        initializeSidebarToggle() {
+            // รอให้ DOM โหลดเสร็จแล้วค่อย initialize
+            setTimeout(() => {
+                // Import และ initialize jQuery events สำหรับ sidebar toggle
+                if (typeof $ !== "undefined") {
+                    // Re-initialize sidebar toggle functionality
+                    $("#toggle-sidebar")
+                        .off("click")
+                        .on("click", function () {
+                            $(".page-wrapper").toggleClass("toggled");
+                        });
+
+                    // Re-initialize pin sidebar functionality
+                    $("#pin-sidebar")
+                        .off("click")
+                        .on("click", function () {
+                            if ($(".page-wrapper").hasClass("pinned")) {
+                                $(".page-wrapper").removeClass("pinned");
+                                $("#sidebar").unbind("hover");
+                            } else {
+                                $(".page-wrapper").addClass("pinned");
+                                $("#sidebar").hover(
+                                    function () {
+                                        $(".page-wrapper").addClass(
+                                            "sidebar-hovered"
+                                        );
+                                    },
+                                    function () {
+                                        $(".page-wrapper").removeClass(
+                                            "sidebar-hovered"
+                                        );
+                                    }
+                                );
+                            }
+                        });
+                }
+            }, 100);
+        },
         async loginEmployee() {
             if (!this.isEmployeeFormValid) return;
 
@@ -292,6 +330,10 @@ export default {
                     // นำทางไปยังหน้า dashboard
 
                     this.$router.push("/");
+                    // เพิ่มโค้ดนี้เพื่อ initialize sidebar toggle หลังจาก login สำเร็จ
+                    this.$nextTick(() => {
+                        this.initializeSidebarToggle();
+                    });
                 });
             } else {
                 this.errorMessage =

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class PhieuthunodichvuController extends Controller
 {
@@ -695,4 +696,217 @@ public function index(Request $request)
         // Default: return as string
         return $value !== null ? (string)$value : null;
     }
+    /**
+ * Generate Report PDF for Phieu Thu No Dich Vu
+ */
+public function generateReportTablePhieuthuno(Request $request)
+{
+    try {
+        // Handle authentication for GET requests with token in query parameter
+        if ($request->isMethod('get') && $request->has('token')) {
+            $token = $request->query('token');
+            
+            try {
+                // Verify JWT token for GET requests
+                $user = JWTAuth::setToken($token)->authenticate();
+                if (!$user) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid authentication token'
+                    ], 401);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication failed: ' . $e->getMessage()
+                ], 401);
+            }
+        }
+
+        // Handle both GET and POST requests
+        if ($request->isMethod('get')) {
+            $filterParamsJson = $request->query('filter_params');
+            if (!$filterParamsJson) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Missing filter parameters'
+                ], 400);
+            }
+            $filterParams = json_decode($filterParamsJson, true);
+        } else {
+            $request->validate([
+                'filter_params' => 'required|string'
+            ]);
+            $filterParams = json_decode($request->filter_params, true);
+        }
+        
+        if (!$filterParams || !isset($filterParams['record_ids'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid filter parameters'
+            ], 400);
+        }
+
+        $recordIds = $filterParams['record_ids'];
+        
+        if (empty($recordIds)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No records to generate report'
+            ], 400);
+        }
+
+        // Log for debugging large datasets
+        if (count($recordIds) > 100) {
+            Log::info('Generating large Phieu Thu No report', [
+                'record_count' => count($recordIds),
+                'report_type' => $filterParams['report_type'] ?? 'unknown'
+            ]);
+        }
+
+        // Build the main query to get data from Logs_Phieu_Tinh_Lai_dv
+        $query = DB::table('Logs_Phieu_Tinh_Lai_dv as logs')
+            ->whereIn('logs.Ma_So_Phieu_PDN_Thu_No', $recordIds)
+            ->leftJoin('tb_phieu_trinh_thanh_toan as pttt', 'logs.So_Tro_Trinh', '=', 'pttt.so_to_trinh')
+            ->select([
+                'logs.Invoice_Number_Phan_Bo_Dau_Tu as invoice_number',
+                'logs.Vu_Dau_Tu_Phan_Bo_Dau_Tu as vu_dau_tu', 
+                'logs.Category_Debt as loai_dau_tu',
+                'logs.Khach_Hang_Ca_Nhan_PDN_Thu_No as khach_hang_ca_nhan',
+                'logs.Khach_Hang_Doanh_Nghiep_PDN_Thu_No as khach_hang_doanh_nghiep',
+                'logs.Ma_Khach_Hang_Ca_Nhan as ma_khach_hang_ca_nhan',
+                'logs.Ma_Khach_Hang_Doanh_Nghiep as ma_khach_hang_doanh_nghiep',
+                'logs.Description as noi_dung',
+                'logs.Da_Tra_Goc as da_tra_goc',
+                'logs.Tien_Lai as tien_lai',
+                'logs.Lai_Suat_Phan_Bo_Dau_Tu as lai_suat',
+                'logs.Ngay_Vay as ngay_vay',
+                'logs.Ngay_Tra as ngay_tra',
+                'logs.So_Tro_Trinh as so_tro_trinh',
+                'pttt.so_dot_thanh_toan as so_dot_thanh_toan'
+            ])
+            ->orderBy('logs.Invoice_Number_Phan_Bo_Dau_Tu', 'asc');
+
+        $reportData = $query->get();
+
+        if ($reportData->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No data found for the selected records'
+            ], 404);
+        }
+
+        // Process each record to format data for report
+        $processedData = [];
+        
+        foreach ($reportData as $record) {
+            // Get customer name (Priority: Individual -> Corporate)
+            $khachHang = $record->khach_hang_ca_nhan ?: $record->khach_hang_doanh_nghiep;
+            
+            // Get customer code (Priority: Individual -> Corporate)  
+            $maKhachHang = $record->ma_khach_hang_ca_nhan ?: $record->ma_khach_hang_doanh_nghiep;
+
+            $processedData[] = [
+                'invoice_number' => $record->invoice_number ?: 'N/A',
+                'vu_dau_tu' => $record->vu_dau_tu ?: 'N/A',
+                'loai_dau_tu' => $record->loai_dau_tu ?: 'N/A',
+                'khach_hang' => $khachHang ?: 'N/A',
+                'ma_khach_hang' => $maKhachHang ?: 'N/A',
+                'noi_dung' => $record->noi_dung ?: 'N/A',
+                'da_tra_goc' => $record->da_tra_goc ?: 0,
+                'tien_lai' => $record->tien_lai ?: 0,
+                'lai_suat' => $record->lai_suat ?: 0,
+                'ngay_vay' => $record->ngay_vay ?: null,
+                'ngay_tra' => $record->ngay_tra ?: null,
+                'so_dot_thanh_toan' => $record->so_dot_thanh_toan ?: 'N/A'
+            ];
+        }
+
+        // Generate report info with enhanced details
+        $reportInfo = [
+            'title' => 'Báo cáo Phiếu thu nợ dịch vụ',
+            'generated_date' => now()->format('d/m/Y H:i:s'),
+            'total_records' => count($processedData),
+            'report_type' => $filterParams['report_type'] ?? 'selected_items',
+            'report_type_display' => $this->getReportTypeDisplay($filterParams['report_type'] ?? 'selected_items'),
+            'generated_by' => $filterParams['generated_by'] ?? 'Hệ thống',
+            'filter_summary' => $this->buildFilterSummary($filterParams)
+        ];
+
+        // Return view for printing (using ReportPhieuthuno.blade.php template)
+        return view('Print.ReportPhieuthuno', [
+            'reportData' => $processedData,
+            'reportInfo' => $reportInfo
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid request data',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Error generating Phieu Thu No report: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'request_data' => $request->all()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error generating report: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Get display text for report type
+ */
+private function getReportTypeDisplay($reportType)
+{
+    $types = [
+        'selected_items' => 'Mục đã chọn',
+        'all_data' => 'Tất cả dữ liệu',
+        'current_page' => 'Trang hiện tại'
+    ];
+
+    return $types[$reportType] ?? 'Không xác định';
+}
+
+/**
+ * Build filter summary for report
+ */
+private function buildFilterSummary($filterParams)
+{
+    $summary = [];
+    
+    if (isset($filterParams['current_filters'])) {
+        $filters = $filterParams['current_filters'];
+        
+        if (!empty($filters['search'])) {
+            $summary[] = "Tìm kiếm: " . $filters['search'];
+        }
+        
+        if (!empty($filters['status_filter']) && $filters['status_filter'] !== 'all') {
+            $summary[] = "Trạng thái: " . $filters['status_filter'];
+        }
+        
+        // Add other filter summaries as needed
+        if (!empty($filters['selected_filter_values'])) {
+            foreach ($filters['selected_filter_values'] as $field => $values) {
+                if (!empty($values)) {
+                    $fieldNames = [
+                        'tinh_trang' => 'Tình trạng',
+                        'vu_dau_tu' => 'Vụ đầu tư',
+                        'category_debt' => 'Loại nợ',
+                        'khach_hang' => 'Khách hàng'
+                    ];
+                    $fieldName = $fieldNames[$field] ?? $field;
+                    $summary[] = $fieldName . ": " . implode(', ', $values);
+                }
+            }
+        }
+    }
+    
+    return !empty($summary) ? implode(', ', $summary) : 'Không có bộ lọc';
+}
 }

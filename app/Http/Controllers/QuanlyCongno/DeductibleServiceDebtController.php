@@ -12,6 +12,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Tymon\JWTAuth\Facades\JWTAuth; // เพิ่ม import นี้
 
 class DeductibleServiceDebtController extends Controller
 {
@@ -669,5 +670,218 @@ public function showDetails($invoicenumber)
     }
 }
 
+/**
+ * Generate Report PDF for Congno Phaithu
+ */
+public function generateReportTableCongnoPhaithu(Request $request)
+{
+    try {
+        // Handle authentication for GET requests with token in query parameter
+        if ($request->isMethod('get') && $request->has('token')) {
+            $token = $request->query('token');
+            
+            try {
+                // Verify JWT token for GET requests
+                $user = JWTAuth::setToken($token)->authenticate();
+                if (!$user) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid authentication token'
+                    ], 401);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication failed: ' . $e->getMessage()
+                ], 401);
+            }
+        }
+
+        // Handle both GET and POST requests
+        if ($request->isMethod('get')) {
+            $filterParamsJson = $request->query('filter_params');
+            if (!$filterParamsJson) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Missing filter parameters'
+                ], 400);
+            }
+            $filterParams = json_decode($filterParamsJson, true);
+        } else {
+            $request->validate([
+                'filter_params' => 'required|string'
+            ]);
+            $filterParams = json_decode($request->filter_params, true);
+        }
+        
+        if (!$filterParams || !isset($filterParams['invoice_numbers'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid filter parameters'
+            ], 400);
+        }
+
+        $invoiceNumbers = $filterParams['invoice_numbers'];
+        
+        if (empty($invoiceNumbers)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No records to generate report'
+            ], 400);
+        }
+
+        // Log for debugging large datasets
+        if (count($invoiceNumbers) > 100) {
+            Log::info('Generating large Congno Phaithu report', [
+                'record_count' => count($invoiceNumbers),
+                'report_type' => $filterParams['report_type'] ?? 'unknown'
+            ]);
+        }
+
+        // Build the main query
+        $query = DB::table('deductible_service_debt')
+            ->whereIn('invoicenumber', $invoiceNumbers)
+            ->select([
+                'invoicenumber',
+                'vu_dau_tu',
+                'category_debt',
+                'khach_hang_ca_nhan',
+                'ma_khach_hang_ca_nhan',
+                'khach_hang_doanh_nghiep',
+                'ma_khach_hang_doanh_nghiep',
+                'description',
+                'so_tien_no_goc_da_quy',
+                'da_tra_goc',
+                'so_tien_con_lai',
+                'tien_lai',
+                'ngay_phat_sinh',
+                'loai_tien',
+                'tram'
+            ])
+            ->orderBy('invoicenumber', 'asc');
+
+        $reportData = $query->get();
+
+        if ($reportData->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No data found for the selected records'
+            ], 404);
+        }
+
+        // Process each record to format data for Congno Phaithu
+        $processedData = [];
+        
+        foreach ($reportData as $record) {
+            // Get customer name (Priority: Individual -> Corporate)
+            $khachHang = $record->khach_hang_ca_nhan ?: $record->khach_hang_doanh_nghiep;
+            
+            // Get customer code (Priority: Individual -> Corporate)
+            $maKhachHang = $record->ma_khach_hang_ca_nhan ?: $record->ma_khach_hang_doanh_nghiep;
+
+            $processedData[] = [
+                'invoice_number' => $record->invoicenumber ?: 'N/A',
+                'vu_dau_tu' => $record->vu_dau_tu ?: 'N/A',
+                'loai_dau_tu' => $record->category_debt ?: 'N/A',
+                'khach_hang' => $khachHang ?: 'N/A',
+                'ma_khach_hang' => $maKhachHang ?: 'N/A',
+                'noi_dung' => $record->description ?: 'N/A',
+                'tong_no_goc' => $record->so_tien_no_goc_da_quy ?: 0,
+                'da_tra_goc' => $record->da_tra_goc ?: 0,
+                'so_tien_con_lai' => $record->so_tien_con_lai ?: 0,
+                'tien_lai' => $record->tien_lai ?: 0,
+                'ngay_phat_sinh' => $record->ngay_phat_sinh ?: null,
+                'loai_tien' => $record->loai_tien ?: 'KIP',
+                'tram' => $record->tram ?: 'N/A'
+            ];
+        }
+
+        // Generate report info with enhanced details
+        $reportInfo = [
+            'title' => 'Báo cáo Công nợ dịch vụ phải thu',
+            'generated_date' => now()->format('d/m/Y H:i:s'),
+            'total_records' => count($processedData),
+            'report_type' => $filterParams['report_type'] ?? 'selected_items',
+            'report_type_display' => $this->getReportTypeDisplay($filterParams['report_type'] ?? 'selected_items'),
+            'generated_by' => $filterParams['generated_by'] ?? 'Hệ thống',
+            'filter_summary' => $this->buildFilterSummary($filterParams)
+        ];
+
+        // Return view for printing (using ReportCongNoDvPhaithu.blade.php template)
+        return view('Print.ReportCongNoDvPhaithu', [
+            'reportData' => $processedData,
+            'reportInfo' => $reportInfo
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid request data',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Error generating Congno Phaithu report: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'request_data' => $request->all()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error generating report: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Get display text for report type
+ */
+private function getReportTypeDisplay($reportType)
+{
+    $types = [
+        'selected_items' => 'Mục đã chọn',
+        'all_data' => 'Tất cả dữ liệu',
+        'current_page' => 'Trang hiện tại'
+    ];
+
+    return $types[$reportType] ?? 'Không xác định';
+}
+
+/**
+ * Build filter summary for report
+ */
+private function buildFilterSummary($filterParams)
+{
+    $summary = [];
+    
+    if (isset($filterParams['current_filters'])) {
+        $filters = $filterParams['current_filters'];
+        
+        if (!empty($filters['search'])) {
+            $summary[] = "Tìm kiếm: " . $filters['search'];
+        }
+        
+        if (!empty($filters['status']) && $filters['status'] !== 'all') {
+            $summary[] = "Trạng thái: " . $filters['status'];
+        }
+        
+        // Add other filter summaries as needed
+        if (!empty($filters['selected_filter_values'])) {
+            foreach ($filters['selected_filter_values'] as $field => $values) {
+                if (!empty($values)) {
+                    $fieldNames = [
+                        'tram' => 'Trạm',
+                        'vu_dau_tu' => 'Vụ đầu tư',
+                        'category_debt' => 'Loại nợ',
+                        'loai_tien' => 'Loại tiền'
+                    ];
+                    $fieldName = $fieldNames[$field] ?? $field;
+                    $summary[] = $fieldName . ": " . implode(', ', $values);
+                }
+            }
+        }
+    }
+    
+    return !empty($summary) ? implode(', ', $summary) : 'Không có bộ lọc';
+}
 
 }

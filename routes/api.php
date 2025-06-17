@@ -37,14 +37,16 @@ Route::get('/farmer/components', [UserController::class, 'getFarmerComponents'])
 
 Route::group(['middleware' => ['auth:api']], function () {
 
-
+    
  // Permission Management Routes
     Route::apiResource('permissions', App\Http\Controllers\PermissionController::class);
     // Role Management Routes
     Route::apiResource('roles', App\Http\Controllers\RoleController::class);
 
+     // Dashboard Report Routes
+    Route::get('/dashboard/chart-section', [App\Http\Controllers\Report\DashboardReportControllers::class, 'getReportChartSection']);
+    Route::get('/dashboard/table-section', [App\Http\Controllers\Report\DashboardReportControllers::class, 'getReportTableSection']);
     
-
     Route::get('/positions', [UserController::class, 'getPositions']);
     Route::get('/stations', [UserController::class, 'getStations']);
     Route::get('/roles', [UserController::class, 'getRoles']);
@@ -67,6 +69,8 @@ Route::group(['middleware' => ['auth:api']], function () {
 
 
 });
+
+
 
 
 Route::post('/role/permissions', [RolePermissionController::class, 'store']);
@@ -282,6 +286,10 @@ Route::match(['GET', 'POST'], '/generate-report-phieu-dntt-dv', [Phieudenghithan
 
 // เพิ่ม Route สำหรับ Report PDF Phieu De Nghi Thanh Toan Hom Giong
 Route::match(['GET', 'POST'], '/generate-report-phieu-dntt-hg', [PhieuDNTTHomgiongControllers::class, 'generateReportTableDNTTHG']);
+// เพิ่ม Route สำหรับ Report PDF Công nợ dịch vụ phải thu
+Route::match(['GET', 'POST'], '/generate-report-congno-phaithu', [DeductibleServiceDebtController::class, 'generateReportTableCongnoPhaithu']);
+// เพิ่ม Route สำหรับ Report PDF Phieu Thu No Dich Vu
+Route::match(['GET', 'POST'], '/generate-report-table-phieuthuno', [PhieuthunodichvuController::class, 'generateReportTablePhieuthuno']);
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Middleware for JWT authentication เพื่อป้องกันการเข้าถึง API ที่ต้องการการยืนยันตัวตน ให้ใช้ได้ ทั้ง ผู้ดูแลระบบและเกษตรกร
 Route::middleware([\App\Http\Middleware\JwtMiddleware::class])->group(function () {
