@@ -46,7 +46,8 @@ Route::group(['middleware' => ['auth:api']], function () {
      // Dashboard Report Routes
     Route::get('/dashboard/chart-section', [App\Http\Controllers\Report\DashboardReportControllers::class, 'getReportChartSection']);
     Route::get('/dashboard/table-section', [App\Http\Controllers\Report\DashboardReportControllers::class, 'getReportTableSection']);
-    
+    Route::get('/dashboard/available-stations', [App\Http\Controllers\Report\DashboardReportControllers::class, 'getAvailableStations']);
+
     Route::get('/positions', [UserController::class, 'getPositions']);
     Route::get('/stations', [UserController::class, 'getStations']);
     Route::get('/roles', [UserController::class, 'getRoles']);

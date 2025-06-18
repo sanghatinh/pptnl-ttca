@@ -3,7 +3,7 @@
         <!-- Header Section -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="page-header">
+                <div class="page-header-calander">
                     <div
                         class="d-flex justify-content-between align-items-center flex-wrap"
                     >
@@ -991,8 +991,32 @@ export default {
 
         // เพิ่ม methods สำหรับ Day Details Modal
         showDayDetailsModal() {
-            if (this.dayDetailsModal) {
-                this.dayDetailsModal.show();
+            try {
+                // ใช้ dynamic import แทน
+                import("bootstrap/dist/js/bootstrap.bundle.min.js")
+                    .then((bootstrap) => {
+                        const modalElement =
+                            document.getElementById("dayDetailsModal");
+                        if (modalElement) {
+                            // ตรวจสอบว่ามี modal instance อยู่แล้วหรือไม่
+                            let modalInstance =
+                                bootstrap.Modal.getInstance(modalElement);
+                            if (!modalInstance) {
+                                modalInstance = new bootstrap.Modal(
+                                    modalElement
+                                );
+                            }
+                            modalInstance.show();
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("Failed to load Bootstrap:", err);
+                        // Fallback method
+                        this.showModalFallback("dayDetailsModal");
+                    });
+            } catch (error) {
+                console.error("Error showing day details modal:", error);
+                this.showModalFallback("dayDetailsModal");
             }
         },
 
@@ -1087,29 +1111,101 @@ export default {
 
         viewPaymentDetails(payment) {
             this.selectedPayment = payment;
-            if (this.paymentDetailsModal) {
-                this.paymentDetailsModal.show();
+            try {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js")
+                    .then((bootstrap) => {
+                        const modalElement = document.getElementById(
+                            "paymentDetailsModal"
+                        );
+                        if (modalElement) {
+                            let modalInstance =
+                                bootstrap.Modal.getInstance(modalElement);
+                            if (!modalInstance) {
+                                modalInstance = new bootstrap.Modal(
+                                    modalElement
+                                );
+                            }
+                            modalInstance.show();
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("Failed to load Bootstrap:", err);
+                        this.showModalFallback("paymentDetailsModal");
+                    });
+            } catch (error) {
+                console.error("Error showing payment details modal:", error);
+                this.showModalFallback("paymentDetailsModal");
+            }
+        },
+        // เพิ่ม fallback method สำหรับกรณีที่ Bootstrap ไม่ทำงาน
+        showModalFallback(modalId) {
+            const modalElement = document.getElementById(modalId);
+            if (modalElement) {
+                modalElement.classList.add("show");
+                modalElement.style.display = "block";
+                document.body.classList.add("modal-open");
+
+                // เพิ่ม backdrop
+                const backdrop = document.createElement("div");
+                backdrop.classList.add("modal-backdrop", "fade", "show");
+                document.body.appendChild(backdrop);
             }
         },
 
-        // เพิ่ม Navigation methods
+        // เพิ่ม method สำหรับปิด modal
+        hideModal(modalId) {
+            try {
+                import("bootstrap/dist/js/bootstrap.bundle.min.js")
+                    .then((bootstrap) => {
+                        const modalElement = document.getElementById(modalId);
+                        if (modalElement) {
+                            const modalInstance =
+                                bootstrap.Modal.getInstance(modalElement);
+                            if (modalInstance) {
+                                modalInstance.hide();
+                            } else {
+                                this.hideModalFallback(modalId);
+                            }
+                        }
+                    })
+                    .catch(() => {
+                        this.hideModalFallback(modalId);
+                    });
+            } catch (error) {
+                this.hideModalFallback(modalId);
+            }
+        },
+
+        // เพิ่ม fallback method สำหรับปิด modal
+        hideModalFallback(modalId) {
+            const modalElement = document.getElementById(modalId);
+            if (modalElement) {
+                modalElement.classList.remove("show");
+                modalElement.style.display = "none";
+                document.body.classList.remove("modal-open");
+
+                // ลบ backdrop
+                const backdrop = document.querySelector(".modal-backdrop");
+                if (backdrop) {
+                    backdrop.remove();
+                }
+            }
+        },
+
         navigateToServiceDetail(payment) {
             try {
                 // ปิด modal ก่อนนำทาง
-                if (this.dayDetailsModal) {
-                    this.dayDetailsModal.hide();
-                }
+                this.hideModal("dayDetailsModal");
 
                 // บันทึกสถานะปัจจุบันก่อนนำทาง
                 this.saveCurrentState();
 
-                // นำทางไปยัง Details_Phieutrinhthanhtoan (แก้ไขชื่อ route)
+                // นำทางไปยัง Details_Phieutrinhthanhtoan
                 if (payment.ma_trinh_thanh_toan) {
                     this.$router.push(
                         `/Details_Phieutrinhthanhtoan/${payment.ma_trinh_thanh_toan}`
                     );
                 } else if (payment.payment_request_id) {
-                    // ถ้าไม่มี ma_trinh_thanh_toan ให้ใช้ payment_request_id
                     this.$router.push(
                         `/Details_Phieudenghithanhtoandichvu/${payment.payment_request_id}`
                     );
@@ -1125,20 +1221,17 @@ export default {
         navigateToSeedDetail(payment) {
             try {
                 // ปิด modal ก่อนนำทาง
-                if (this.dayDetailsModal) {
-                    this.dayDetailsModal.hide();
-                }
+                this.hideModal("dayDetailsModal");
 
                 // บันทึกสถานะปัจจุบันก่อนนำทาง
                 this.saveCurrentState();
 
-                // นำทางไปยัง Details_Phieutrinhthanhtoanhomgiong (แก้ไขชื่อ route)
+                // นำทางไปยัง Details_Phieutrinhthanhtoanhomgiong
                 if (payment.ma_trinh_thanh_toan) {
                     this.$router.push(
                         `/Details_Phieutrinhthanhtoanhomgiong/${payment.ma_trinh_thanh_toan}`
                     );
                 } else if (payment.payment_request_id) {
-                    // ถ้าไม่มี ma_trinh_thanh_toan ให้ใช้ payment_request_id
                     this.$router.push(
                         `/Details_Phieudenghithanhtoanhomgiong/${payment.payment_request_id}`
                     );
@@ -1150,13 +1243,11 @@ export default {
                 this.showError("Đã xảy ra lỗi khi điều hướng");
             }
         },
-        // Navigation method สำหรับ modal "Xem chi tiết đầy đủ" button
+
         navigateToDetailFromModal(payment) {
             try {
                 // ปิด modal ก่อน
-                if (this.paymentDetailsModal) {
-                    this.paymentDetailsModal.hide();
-                }
+                this.hideModal("paymentDetailsModal");
 
                 this.saveCurrentState();
 
@@ -1229,16 +1320,6 @@ export default {
     },
     async mounted() {
         try {
-            // Initialize Bootstrap modals
-            this.paymentDetailsModal = new Modal(
-                document.getElementById("paymentDetailsModal")
-            );
-
-            // เพิ่ม Day Details Modal
-            this.dayDetailsModal = new Modal(
-                document.getElementById("dayDetailsModal")
-            );
-
             // Load saved state if available
             const stateLoaded = this.loadSavedState();
 
@@ -1262,6 +1343,12 @@ export default {
             this.showError("Lỗi khởi tạo trang lịch thanh toán");
         }
     },
+    // เพิ่ม beforeUnmount để cleanup
+    beforeUnmount() {
+        // ปิด modal ทั้งหมดก่อนที่ component จะถูกทำลาย
+        this.hideModal("dayDetailsModal");
+        this.hideModal("paymentDetailsModal");
+    },
 };
 </script>
 
@@ -1273,7 +1360,7 @@ export default {
 }
 
 /* Header Styles */
-.page-header {
+.page-header-calander {
     background: linear-gradient(90deg, #10b981 0%, #059669 50%, #10b981 100%);
     color: white;
     padding: 2rem;
@@ -1562,7 +1649,7 @@ export default {
         padding: 1rem;
     }
 
-    .page-header {
+    .page-header-calander {
         padding: 1.5rem;
     }
 

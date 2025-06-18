@@ -13,7 +13,7 @@
         <!-- Header Section -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="page-header">
+                <div class="page-header-calander">
                     <div
                         class="d-flex justify-content-between align-items-center flex-wrap"
                     >
@@ -549,7 +549,6 @@
 </template>
 
 <script>
-import { Modal } from "bootstrap";
 import { useStore } from "../../Store/Auth";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -571,6 +570,7 @@ export default {
             isLoading: false,
             calendarEvents: [],
             documentTransactions: [],
+            bootstrap: null,
         };
     },
     computed: {
@@ -745,10 +745,9 @@ export default {
             }
         },
 
-        showDayDetailsModal() {
-            if (this.dayDetailsModal) {
-                this.dayDetailsModal.show();
-            }
+        // Modified showDayDetailsModal method
+        async showDayDetailsModal() {
+            await this.showModal("dayDetailsModal");
         },
 
         goToToday() {
@@ -819,19 +818,107 @@ export default {
             }
         },
 
-        viewDocumentDetails(document) {
+        // Modified viewDocumentDetails method
+        async viewDocumentDetails(document) {
             this.selectedDocument = document;
-            this.documentDetailsModal.show();
+            await this.showModal("documentDetailsModal");
         },
-
-        navigateToDocument(document) {
+        // New method to handle showing modals
+        async showModal(modalId) {
             try {
-                // ปิด modal ก่อนนำทาง
-                if (this.dayDetailsModal) {
-                    this.dayDetailsModal.hide();
+                if (!this.bootstrap) {
+                    // Dynamically import Bootstrap only when needed
+                    this.bootstrap = await import(
+                        "bootstrap/dist/js/bootstrap.bundle.min.js"
+                    );
                 }
 
-                // นำทางไปยังหน้ารายละเอียดเอกสาร
+                const modalElement = document.getElementById(modalId);
+                if (!modalElement) return;
+
+                // Check if there's an existing instance
+                let modalInstance =
+                    this.bootstrap.Modal.getInstance(modalElement);
+
+                // If no instance exists, create a new one
+                if (!modalInstance) {
+                    modalInstance = new this.bootstrap.Modal(modalElement, {
+                        backdrop: "static",
+                        keyboard: false,
+                    });
+                }
+
+                // Show the modal
+                modalInstance.show();
+            } catch (error) {
+                console.error(`Error showing ${modalId}:`, error);
+                // Fallback if Bootstrap fails
+                this.showModalFallback(modalId);
+            }
+        },
+        // New method to hide modals
+        async hideModal(modalId) {
+            try {
+                if (!this.bootstrap) {
+                    this.bootstrap = await import(
+                        "bootstrap/dist/js/bootstrap.bundle.min.js"
+                    );
+                }
+
+                const modalElement = document.getElementById(modalId);
+                if (!modalElement) return;
+
+                const modalInstance =
+                    this.bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            } catch (error) {
+                console.error(`Error hiding ${modalId}:`, error);
+                this.hideModalFallback(modalId);
+            }
+        },
+
+        // Fallback methods if Bootstrap fails
+        showModalFallback(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add("show");
+                modal.style.display = "block";
+                document.body.classList.add("modal-open");
+
+                // Create backdrop if it doesn't exist
+                let backdrop = document.querySelector(".modal-backdrop");
+                if (!backdrop) {
+                    backdrop = document.createElement("div");
+                    backdrop.classList.add("modal-backdrop", "fade", "show");
+                    document.body.appendChild(backdrop);
+                }
+            }
+        },
+
+        hideModalFallback(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove("show");
+                modal.style.display = "none";
+                document.body.classList.remove("modal-open");
+
+                // Remove backdrop
+                const backdrop = document.querySelector(".modal-backdrop");
+                if (backdrop) {
+                    backdrop.parentNode.removeChild(backdrop);
+                }
+            }
+        },
+
+        // Modified navigateToDocument method
+        async navigateToDocument(document) {
+            try {
+                // Close modal before navigation
+                await this.hideModal("dayDetailsModal");
+
+                // Navigate to document details
                 if (document.document_id) {
                     this.$router.push(`/Danhsachhoso/${document.document_id}`);
                 } else {
@@ -843,25 +930,18 @@ export default {
             }
         },
     },
-
     async mounted() {
-        // Initialize Bootstrap modals
-        this.documentDetailsModal = new Modal(
-            document.getElementById("documentDetailsModal")
-        );
-
-        // เพิ่ม Day Details Modal
-        this.dayDetailsModal = new Modal(
-            document.getElementById("dayDetailsModal")
-        );
-
         // Set today as initially selected
         this.selectedDate = new Date().toISOString().split("T")[0];
 
         // Load initial data
         await this.loadCalendarData();
     },
-
+    beforeUnmount() {
+        // Clean up modals before component destruction
+        this.hideModal("documentDetailsModal");
+        this.hideModal("dayDetailsModal");
+    },
     watch: {
         // Watch for currentDate changes to reload data
         currentDate: {
@@ -889,7 +969,7 @@ export default {
 }
 
 /* Header Styles */
-.page-header {
+.page-header-calander {
     background: linear-gradient(90deg, #10b981 0%, #059669 50%, #10b981 100%);
     color: white;
     padding: 2rem;
@@ -1178,7 +1258,7 @@ export default {
         padding: 1rem;
     }
 
-    .page-header {
+    .page-header-calander {
         padding: 1.5rem;
     }
 
@@ -1425,7 +1505,7 @@ export default {
         margin-bottom: 2rem;
     }
 
-    .page-header .d-flex {
+    .page-header-calander .d-flex {
         flex-direction: column;
         gap: 1rem;
     }
@@ -1480,7 +1560,7 @@ export default {
         padding: 0.5rem;
     }
 
-    .page-header {
+    .page-header-calander {
         padding: 1rem;
     }
 
@@ -1555,7 +1635,7 @@ export default {
         display: none !important;
     }
 
-    .page-header {
+    .page-header-calander {
         background: #f8f9fa !important;
         color: #000 !important;
     }

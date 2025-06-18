@@ -289,8 +289,9 @@ public function getReportTableSection(Request $request)
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        // Get period from request (week, month, year)
+        // Get period and station filter from request
         $period = $request->input('period', 'week');
+        $stationFilter = $request->input('station', null); // เพิ่ม station filter
         
         // Calculate date range based on period
         $dateRange = $this->getDateRange($period);
@@ -304,13 +305,14 @@ public function getReportTableSection(Request $request)
         $jobCategories = [];
         
         if (in_array($userPosition, ['department_head', 'office_workers'])) {
-            // Get all data without station/employee filter
-            $jobCategories = $this->getJobCategoriesData($period, $dateRange);
+            // Get all data, but apply station filter if provided
+            $effectiveStation = $stationFilter; // ใช้ station filter ถ้ามี
+            $jobCategories = $this->getJobCategoriesData($period, $dateRange, $effectiveStation);
         } elseif ($userPosition === 'Station_Chief') {
-            // Filter by user's station
+            // Filter by user's station (ignore station filter for Station_Chief)
             $jobCategories = $this->getJobCategoriesData($period, $dateRange, $userStation);
         } elseif ($userPosition === 'Farm_worker') {
-            // Filter by user's ma_nhan_vien
+            // Filter by user's ma_nhan_vien (ignore station filter for Farm_worker)
             $jobCategories = $this->getJobCategoriesData($period, $dateRange, null, $userMaNhanVien);
         }
 
@@ -320,7 +322,9 @@ public function getReportTableSection(Request $request)
                 'jobCategories' => $jobCategories,
                 'period' => $period,
                 'dateRange' => $dateRange,
-                'userPosition' => $userPosition
+                'userPosition' => $userPosition,
+                'stationFilter' => $stationFilter, // ส่งกลับ station filter ที่ใช้
+                'availableStations' => $this->getAvailableStations($userPosition, $userStation) // เพิ่มรายการ stations ที่ใช้ได้
             ]
         ]);
 
@@ -329,6 +333,40 @@ public function getReportTableSection(Request $request)
             'success' => false,
             'error' => 'Failed to fetch table data: ' . $e->getMessage()
         ], 500);
+    }
+}
+
+// เพิ่ม method ใหม่สำหรับดึงรายการ stations ที่ใช้ได้
+private function getAvailableStations($userPosition, $userStation)
+{
+    if (in_array($userPosition, ['department_head', 'office_workers'])) {
+        // ผู้บริหารและเจ้าหน้าที่สำนักงานสามารถดูทุก station
+        return [
+            ['code' => null, 'name' => 'Tất cả các trạm'],
+            ['code' => 'TTCA-TRAM01', 'name' => 'TRẠM 1'],
+            ['code' => 'TTCA-TRAM02', 'name' => 'TRẠM 2'],
+            ['code' => 'TTCA-TRAM03', 'name' => 'TRẠM 3'],
+            ['code' => 'TTCA-TRAM04', 'name' => 'TRẠM 4'],
+            ['code' => 'TTCA-TRAM05', 'name' => 'TRẠM 5'],
+            ['code' => 'TTCA-TRAM06', 'name' => 'TRẠM 6']
+        ];
+    } elseif ($userPosition === 'Station_Chief') {
+        // หัวหน้าสถานีเห็นแค่สถานีของตัวเอง
+        $stationMapping = [
+            'TTCA-TRAM01' => 'TRẠM 1',
+            'TTCA-TRAM02' => 'TRẠM 2',
+            'TTCA-TRAM03' => 'TRẠM 3',
+            'TTCA-TRAM04' => 'TRẠM 4',
+            'TTCA-TRAM05' => 'TRẠM 5',
+            'TTCA-TRAM06' => 'TRẠM 6'
+        ];
+        
+        return [
+            ['code' => $userStation, 'name' => $stationMapping[$userStation] ?? 'TRẠM']
+        ];
+    } else {
+        // พนักงานไร่ไม่มี filter
+        return [];
     }
 }
 
