@@ -342,7 +342,12 @@ Route::get('/payment-requests-homgiong/{id}/chitiet-giaonhan', [PhieuDNTTHomgion
     Route::get('/payment-requests-homgiong/{id}/processing-history', [PhieuDNTTHomgiongControllers::class, 'getDisbursementProcessingHistoryHomgiong']);
     Route::put('/payment-requests-homgiong/{id}/update', [PhieuDNTTHomgiongControllers::class, 'updateDocumentHomgiong']);
     Route::get('/payment-requests-homgiong/{id}/check-access', [PhieuDNTTHomgiongControllers::class, 'checkAccessHomgiong']);
-
+// Farmer Dashboard Routes
+    Route::get('/farmer/dashboard/financial-summary', [App\Http\Controllers\Report\DashboardFarmerReportControllers::class, 'getFinancialSummary']);
+    Route::get('/farmer/dashboard/debt-vs-interest', [App\Http\Controllers\Report\DashboardFarmerReportControllers::class, 'getDebtPaymentVsInterestData']);
+    Route::get('/farmer/dashboard/payment-type-distribution', [App\Http\Controllers\Report\DashboardFarmerReportControllers::class, 'getDebtPaymentTypeDistribution']);
+    Route::get('/farmer/dashboard/payment-requests', [App\Http\Controllers\Report\DashboardFarmerReportControllers::class, 'getPaymentRequests']);
+    
 
 });
 

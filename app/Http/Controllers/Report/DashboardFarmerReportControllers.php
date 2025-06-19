@@ -1,0 +1,647 @@
+<?php
+
+
+namespace App\Http\Controllers\Report;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Tymon\JWTAuth\Facades\JWTAuth;
+
+class DashboardFarmerReportControllers extends Controller
+{
+    /**
+ * Get financial summary for farmer dashboard
+ * 
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getFinancialSummary(Request $request)
+{
+    try {
+        // Get supplier ID from request header
+        $supplierId = $request->header('X-Supplier-Number');
+        
+        // Try to get supplier ID from JWT token if not in header
+        if (!$supplierId) {
+            try {
+                $user = JWTAuth::parseToken()->authenticate();
+                if (isset($user->supplier_number)) {
+                    $supplierId = $user->supplier_number;
+                    Log::info('Using supplier ID from JWT token: ' . $supplierId);
+                } else {
+                    // Try to get from user_farmer relation if exists
+                    $farmer = DB::table('user_farmer')
+                        ->where('user_id', $user->id)
+                        ->first();
+                        
+                    if ($farmer && isset($farmer->supplier_number)) {
+                        $supplierId = $farmer->supplier_number;
+                        Log::info('Using supplier ID from user_farmer relation: ' . $supplierId);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Could not get supplier ID from JWT token: ' . $e->getMessage());
+            }
+        }
+        
+        if (!$supplierId) {
+            Log::warning('No supplier ID provided in header or JWT token');
+            return response()->json([
+                'success' => false,
+                'message' => 'Supplier ID not provided in header or JWT token'
+            ], 400);
+        }
+        
+        // Add debug logging
+        Log::info('Looking up farmer with supplier number: ' . $supplierId);
+
+        // Get farmer user data from user_farmer table - check in multiple fields
+        $farmer = DB::table('user_farmer')
+            ->where('supplier_number', $supplierId)
+            ->orWhere('ma_kh_ca_nhan', $supplierId)
+            ->orWhere('ma_kh_doanh_nghiep', $supplierId)
+            ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep', 'id')
+            ->first();
+
+        if (!$farmer) {
+            Log::warning('Farmer not found with any ID matching: ' . $supplierId);
+            
+            // Get the available supplier numbers for debugging
+            $availableSuppliers = DB::table('user_farmer')
+                ->select('supplier_number', 'ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
+                ->whereNotNull('supplier_number')
+                ->orWhereNotNull('ma_kh_ca_nhan')
+                ->orWhereNotNull('ma_kh_doanh_nghiep')
+                ->limit(10)
+                ->get();
+            
+            Log::info('Available IDs (sample): ' . json_encode($availableSuppliers));
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy nông dân với mã số: ' . $supplierId,
+                'debug_info' => [
+                    'supplier_number' => $supplierId,
+                    'sample_available_suppliers' => $availableSuppliers
+                ]
+            ], 404);
+        }
+        
+        Log::info('Found farmer with ID: ' . $farmer->id);
+
+        // Calculate totals for service payments (dich vu)
+        $servicePayments = $this->getServicePaymentsTotal($farmer);
+        
+        // Calculate totals for seed payments (hom giong)
+        $seedPayments = $this->getSeedPaymentsTotal($farmer);
+        
+        // Return the financial summary
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'processing' => $servicePayments['processing'] + $seedPayments['processing'],
+                'pending' => $servicePayments['pending'] + $seedPayments['pending'],
+                'received' => $servicePayments['received'] + $seedPayments['received']
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error getting farmer financial summary: ' . $e->getMessage());
+        Log::error($e->getTraceAsString());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to retrieve financial summary: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+    /**
+     * Get service payments totals by status
+     * 
+     * @param object $farmer
+     * @return array
+     */
+    private function getServicePaymentsTotal($farmer)
+    {
+        // Initialize totals
+        $totals = [
+            'processing' => 0,
+            'pending' => 0,
+            'received' => 0,
+        ];
+        
+        // Build query based on farmer's customer IDs
+        $query = DB::table('tb_de_nghi_thanhtoan_dv');
+        
+        // Apply filtering by farmer's customer IDs
+        $query->where(function($q) use ($farmer) {
+            if (!empty($farmer->ma_kh_ca_nhan)) {
+                $q->where('ma_khach_hang_ca_nhan', $farmer->ma_kh_ca_nhan);
+            }
+            
+            if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                $q->orWhere('ma_khach_hang_doanh_nghiep', $farmer->ma_kh_doanh_nghiep);
+            }
+        });
+        
+        // Get processing total (status = 'processing')
+        $totals['processing'] = $query->clone()
+            ->where('trang_thai_thanh_toan', 'processing')
+            ->sum('tong_tien_thanh_toan_con_lai');
+            
+        // Get pending total (status = 'submitted')
+        $totals['pending'] = $query->clone()
+            ->where('trang_thai_thanh_toan', 'submitted')
+            ->sum('tong_tien_thanh_toan_con_lai');
+            
+        // Get received total (status = 'paid')
+        $totals['received'] = $query->clone()
+            ->where('trang_thai_thanh_toan', 'paid')
+            ->sum('tong_tien_thanh_toan_con_lai');
+            
+        return $totals;
+    }
+
+    /**
+     * Get seed payments totals by status
+     * 
+     * @param object $farmer
+     * @return array
+     */
+    private function getSeedPaymentsTotal($farmer)
+    {
+        // Initialize totals
+        $totals = [
+            'processing' => 0,
+            'pending' => 0,
+            'received' => 0,
+        ];
+        
+        // Build query based on farmer's customer IDs
+        $query = DB::table('tb_de_nghi_thanhtoan_homgiong');
+        
+        // Apply filtering by farmer's customer IDs
+        $query->where(function($q) use ($farmer) {
+            if (!empty($farmer->ma_kh_ca_nhan)) {
+                $q->where('ma_khach_hang_ca_nhan', $farmer->ma_kh_ca_nhan);
+            }
+            
+            if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                $q->orWhere('ma_khach_hang_doanh_nghiep', $farmer->ma_kh_doanh_nghiep);
+            }
+        });
+        
+        // Get processing total (status = 'processing')
+        $totals['processing'] = $query->clone()
+            ->where('trang_thai_thanh_toan', 'processing')
+            ->sum('tong_tien_thanh_toan_con_lai');
+            
+        // Get pending total (status = 'submitted')
+        $totals['pending'] = $query->clone()
+            ->where('trang_thai_thanh_toan', 'submitted')
+            ->sum('tong_tien_thanh_toan_con_lai');
+            
+        // Get received total (status = 'paid')
+        $totals['received'] = $query->clone()
+            ->where('trang_thai_thanh_toan', 'paid')
+            ->sum('tong_tien_thanh_toan_con_lai');
+            
+        return $totals;
+    }
+
+
+/**
+ * Get debt payment vs interest data for farmer dashboard
+ * 
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getDebtPaymentVsInterestData(Request $request)
+{
+    try {
+        // Get the requested year (default to current year if not provided)
+        $year = $request->input('year', date('Y'));
+        
+        // Get supplier ID from request header
+        $supplierId = $request->header('X-Supplier-Number');
+        
+        // Try to get supplier ID from JWT token if not in header
+        if (!$supplierId) {
+            try {
+                $user = JWTAuth::parseToken()->authenticate();
+                if (isset($user->supplier_number)) {
+                    $supplierId = $user->supplier_number;
+                    Log::info('Using supplier ID from JWT token: ' . $supplierId);
+                } else {
+                    // Try to get from user_farmer relation if exists
+                    $farmer = DB::table('user_farmer')
+                        ->where('user_id', $user->id)
+                        ->first();
+                        
+                    if ($farmer && isset($farmer->supplier_number)) {
+                        $supplierId = $farmer->supplier_number;
+                        Log::info('Using supplier ID from user_farmer relation: ' . $supplierId);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Could not get supplier ID from JWT token: ' . $e->getMessage());
+            }
+        }
+        
+        if (!$supplierId) {
+            Log::warning('No supplier ID provided in header or JWT token');
+            return response()->json([
+                'success' => false,
+                'message' => 'Supplier ID not provided in header or JWT token'
+            ], 400);
+        }
+        
+        // Get farmer user data from user_farmer table - check in multiple fields
+        $farmer = DB::table('user_farmer')
+            ->where('supplier_number', $supplierId)
+            ->orWhere('ma_kh_ca_nhan', $supplierId)
+            ->orWhere('ma_kh_doanh_nghiep', $supplierId)
+            ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
+            ->first();
+
+        if (!$farmer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Farmer not found'
+            ], 404);
+        }
+        
+        // Initialize arrays for all months
+        $months = range(1, 12);
+        $labels = [];
+        $principalData = array_fill(0, 12, 0);
+        $interestData = array_fill(0, 12, 0);
+        
+        // Generate labels for each month (e.g. "T1/2023")
+        foreach ($months as $month) {
+            $labels[] = "T{$month}/{$year}";
+        }
+        
+        // Build query to get payment data grouped by month
+        $query = DB::table('Logs_Phieu_Tinh_Lai_dv')
+            ->whereYear('Ngay_Tra', $year)
+            ->where(function($q) use ($farmer) {
+                if (!empty($farmer->ma_kh_ca_nhan)) {
+                    $q->where('Ma_Khach_Hang_Ca_Nhan', $farmer->ma_kh_ca_nhan);
+                }
+                
+                if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                    $q->orWhere('Ma_Khach_Hang_Doanh_Nghiep', $farmer->ma_kh_doanh_nghiep);
+                }
+            })
+            ->select(
+                DB::raw('MONTH(Ngay_Tra) as month'),
+                DB::raw('SUM(Da_Tra_Goc) as principal_paid'),
+                DB::raw('SUM(Tien_Lai) as interest_paid')
+            )
+            ->groupBy(DB::raw('MONTH(Ngay_Tra)'))
+            ->orderBy(DB::raw('MONTH(Ngay_Tra)'));
+        
+        $results = $query->get();
+        
+        // Fill in the data arrays with actual values
+        foreach ($results as $result) {
+            $monthIndex = $result->month - 1; // Arrays are 0-indexed
+            $principalData[$monthIndex] = (float)$result->principal_paid;
+            $interestData[$monthIndex] = (float)$result->interest_paid;
+        }
+        
+        // Prepare the response
+        $response = [
+            'success' => true,
+            'data' => [
+                'labels' => $labels,
+                'principalPaid' => $principalData,
+                'interestPaid' => $interestData,
+                'year' => $year
+            ]
+        ];
+        
+        // Also fetch available years for dropdown selection
+        $availableYears = DB::table('Logs_Phieu_Tinh_Lai_dv')
+            ->where(function($q) use ($farmer) {
+                if (!empty($farmer->ma_kh_ca_nhan)) {
+                    $q->where('Ma_Khach_Hang_Ca_Nhan', $farmer->ma_kh_ca_nhan);
+                }
+                
+                if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                    $q->orWhere('Ma_Khach_Hang_Doanh_Nghiep', $farmer->ma_kh_doanh_nghiep);
+                }
+            })
+            ->select(DB::raw('DISTINCT YEAR(Ngay_Tra) as year'))
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+            
+        $response['data']['availableYears'] = $availableYears;
+        
+        return response()->json($response);
+        
+    } catch (\Exception $e) {
+        Log::error('Error getting debt payment vs interest data: ' . $e->getMessage());
+        Log::error($e->getTraceAsString());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to retrieve data: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Get debt payment type distribution for farmer dashboard
+ * 
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getDebtPaymentTypeDistribution(Request $request)
+{
+    try {
+        // Get the requested year (default to current year if not provided)
+        $year = $request->input('year', date('Y'));
+        
+        // Get requested month (optional, if user clicked on a specific month in the chart)
+        $month = $request->input('month');
+        
+        // Get supplier ID from request header
+        $supplierId = $request->header('X-Supplier-Number');
+        
+        // Try to get supplier ID from JWT token if not in header
+        if (!$supplierId) {
+            try {
+                $user = JWTAuth::parseToken()->authenticate();
+                if (isset($user->supplier_number)) {
+                    $supplierId = $user->supplier_number;
+                    Log::info('Using supplier ID from JWT token: ' . $supplierId);
+                } else {
+                    // Try to get from user_farmer relation if exists
+                    $farmer = DB::table('user_farmer')
+                        ->where('user_id', $user->id)
+                        ->first();
+                        
+                    if ($farmer && isset($farmer->supplier_number)) {
+                        $supplierId = $farmer->supplier_number;
+                        Log::info('Using supplier ID from user_farmer relation: ' . $supplierId);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Could not get supplier ID from JWT token: ' . $e->getMessage());
+            }
+        }
+        
+        if (!$supplierId) {
+            Log::warning('No supplier ID provided in header or JWT token');
+            return response()->json([
+                'success' => false,
+                'message' => 'Supplier ID not provided in header or JWT token'
+            ], 400);
+        }
+        
+        // Get farmer user data from user_farmer table - check in multiple fields
+        $farmer = DB::table('user_farmer')
+            ->where('supplier_number', $supplierId)
+            ->orWhere('ma_kh_ca_nhan', $supplierId)
+            ->orWhere('ma_kh_doanh_nghiep', $supplierId)
+            ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
+            ->first();
+
+        if (!$farmer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Farmer not found'
+            ], 404);
+        }
+        
+        // Build query to get payment type distribution
+        $query = DB::table('Logs_Phieu_Tinh_Lai_dv')
+            ->whereYear('Ngay_Tra', $year)
+            ->where(function($q) use ($farmer) {
+                if (!empty($farmer->ma_kh_ca_nhan)) {
+                    $q->where('Ma_Khach_Hang_Ca_Nhan', $farmer->ma_kh_ca_nhan);
+                }
+                
+                if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                    $q->orWhere('Ma_Khach_Hang_Doanh_Nghiep', $farmer->ma_kh_doanh_nghiep);
+                }
+            })
+            ->select(
+                'Category_Debt',
+                DB::raw('SUM(Da_Tra_Goc) as total_paid'),
+                DB::raw('COUNT(*) as transaction_count')
+            )
+            ->groupBy('Category_Debt');
+        
+        // Apply month filter if specified
+        if ($month) {
+            $query->whereMonth('Ngay_Tra', $month);
+        }
+        
+        $results = $query->get();
+        
+        // Format results for pie chart
+        $pieChartData = [];
+        $totalAmount = 0;
+        $colorPalette = [
+            'rgba(75, 192, 192, 0.8)',    // teal
+            'rgba(255, 159, 64, 0.8)',    // orange
+            'rgba(255, 99, 132, 0.8)',    // red
+            'rgba(54, 162, 235, 0.8)',    // blue
+            'rgba(153, 102, 255, 0.8)',   // purple
+            'rgba(255, 205, 86, 0.8)',    // yellow
+            'rgba(201, 203, 207, 0.8)'    // grey
+        ];
+        $colorIndex = 0;
+        
+        foreach ($results as $result) {
+            // Skip empty categories
+            if (empty($result->Category_Debt)) continue;
+            
+            $amount = (float)$result->total_paid;
+            $totalAmount += $amount;
+            
+            $pieChartData[] = [
+                'label' => $result->Category_Debt,
+                'value' => $amount,
+                'count' => $result->transaction_count,
+                'color' => $colorPalette[$colorIndex % count($colorPalette)]
+            ];
+            
+            $colorIndex++;
+        }
+        
+        // Calculate percentages
+        foreach ($pieChartData as &$item) {
+            $item['percentage'] = $totalAmount > 0 ? round(($item['value'] / $totalAmount) * 100, 1) : 0;
+        }
+        
+        // Prepare the response
+        $response = [
+            'success' => true,
+            'data' => [
+                'items' => $pieChartData,
+                'totalAmount' => $totalAmount,
+                'year' => $year,
+                'month' => $month
+            ]
+        ];
+        
+        return response()->json($response);
+        
+    } catch (\Exception $e) {
+        Log::error('Error getting debt payment type distribution: ' . $e->getMessage());
+        Log::error($e->getTraceAsString());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to retrieve data: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+/**
+ * Get payment requests for farmer dashboard
+ * 
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getPaymentRequests(Request $request)
+{
+    try {
+        // Get supplier ID from request header
+        $supplierId = $request->header('X-Supplier-Number');
+        
+        // Try to get supplier ID from JWT token if not in header
+        if (!$supplierId) {
+            try {
+                $user = JWTAuth::parseToken()->authenticate();
+                if (isset($user->supplier_number)) {
+                    $supplierId = $user->supplier_number;
+                    Log::info('Using supplier ID from JWT token: ' . $supplierId);
+                } else {
+                    // Try to get from user_farmer relation if exists
+                    $farmer = DB::table('user_farmer')
+                        ->where('user_id', $user->id)
+                        ->first();
+                        
+                    if ($farmer && isset($farmer->supplier_number)) {
+                        $supplierId = $farmer->supplier_number;
+                        Log::info('Using supplier ID from user_farmer relation: ' . $supplierId);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Could not get supplier ID from JWT token: ' . $e->getMessage());
+            }
+        }
+        
+        if (!$supplierId) {
+            Log::warning('No supplier ID provided in header or JWT token');
+            return response()->json([
+                'success' => false,
+                'message' => 'Supplier ID not provided in header or JWT token'
+            ], 400);
+        }
+        
+        // Get farmer user data from user_farmer table - check in multiple fields
+        $farmer = DB::table('user_farmer')
+            ->where('supplier_number', $supplierId)
+            ->orWhere('ma_kh_ca_nhan', $supplierId)
+            ->orWhere('ma_kh_doanh_nghiep', $supplierId)
+            ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep', 'id')
+            ->first();
+
+        if (!$farmer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Farmer not found'
+            ], 404);
+        }
+        
+        // Query service payment requests
+        $servicePayments = DB::table('tb_de_nghi_thanhtoan_dv')
+            ->where(function($query) use ($farmer) {
+                if (!empty($farmer->ma_kh_ca_nhan)) {
+                    $query->orWhere('ma_khach_hang_ca_nhan', $farmer->ma_kh_ca_nhan);
+                }
+                if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                    $query->orWhere('ma_khach_hang_doanh_nghiep', $farmer->ma_kh_doanh_nghiep);
+                }
+            })
+            ->select(
+                'ma_giai_ngan as code',
+                'loai_thanh_toan as type',
+                'tong_tien_thanh_toan_con_lai as amount',
+                'trang_thai_thanh_toan as status'
+            )
+            ->get();
+        
+        // Query seed payment requests
+        $seedPayments = DB::table('tb_de_nghi_thanhtoan_homgiong')
+            ->where(function($query) use ($farmer) {
+                if (!empty($farmer->ma_kh_ca_nhan)) {
+                    $query->orWhere('ma_khach_hang_ca_nhan', $farmer->ma_kh_ca_nhan);
+                }
+                if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                    $query->orWhere('ma_khach_hang_doanh_nghiep', $farmer->ma_kh_doanh_nghiep);
+                }
+            })
+            ->select(
+                'ma_giai_ngan as code',
+                'loai_thanh_toan as type',
+                'tong_tien_thanh_toan_con_lai as amount',
+                'trang_thai_thanh_toan as status'
+            )
+            ->get();
+        
+        // Combine results
+        $allPayments = $servicePayments->concat($seedPayments);
+        
+        // Map status values from English to Vietnamese
+        foreach ($allPayments as $payment) {
+            switch ($payment->status) {
+                case 'processing':
+                    $payment->status = 'Đang xử lý';
+                    break;
+                case 'submitted':
+                    $payment->status = 'Chờ thanh toán';
+                    break;
+                case 'paid':
+                    $payment->status = 'Đã thanh toán';
+                    break;
+                case 'rejected':
+                    $payment->status = 'Từ chối';
+                    break;
+                default:
+                    // Keep original status if not matched
+                    break;
+            }
+        }
+        
+        // Sort by code (descending order to show newest first)
+        $sorted = $allPayments->sortByDesc('code')->values()->all();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $sorted
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error getting farmer payment requests: ' . $e->getMessage());
+        Log::error($e->getTraceAsString());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to retrieve payment requests: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+}

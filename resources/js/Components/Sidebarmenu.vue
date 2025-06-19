@@ -21,6 +21,42 @@
             <div class="sidebar-menu">
                 <ul>
                     <li class="header-menu">General</li>
+
+                    <li
+                        class="sidebar-dropdown"
+                        :class="{ active: activeDropdowns.dashboard }"
+                    >
+                        <router-link
+                            to="/Dashboard"
+                            :class="
+                                $route.path === '/Dashboard'
+                                    ? 'current-page'
+                                    : ''
+                            "
+                            @click="closeSidebar"
+                        >
+                            <i class="fa-solid fa-house"></i>
+                            <span class="menu-text">Dashboard</span>
+                        </router-link>
+                    </li>
+                    <li
+                        class="sidebar-dropdown"
+                        :class="{ active: activeDropdowns.dashboardFarmer }"
+                    >
+                        <router-link
+                            to="/DashboardFarmer"
+                            :class="
+                                $route.path === '/DashboardFarmer'
+                                    ? 'current-page'
+                                    : ''
+                            "
+                            @click="closeSidebar"
+                        >
+                            <i class="fa-solid fa-house"></i>
+                            <span class="menu-text">Dashboard</span>
+                        </router-link>
+                    </li>
+
                     <li
                         class="sidebar-dropdown"
                         :class="{ active: activeDropdowns.documents }"
