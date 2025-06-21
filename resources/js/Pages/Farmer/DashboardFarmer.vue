@@ -20,6 +20,45 @@
                         Theo dõi và phân tích dữ liệu tài chính của bạn
                     </p>
                 </div>
+                <div class="col-lg-4">
+                    <div class="d-flex justify-content-lg-end">
+                        <div class="investment-selector">
+                            <label
+                                for="investmentProjectSelect"
+                                class="form-label fw-medium mb-1"
+                                >Vụ đầu tư:</label
+                            >
+                            <select
+                                id="investmentProjectSelect"
+                                class="form-select"
+                                v-model="selectedInvestmentProject"
+                                @change="handleInvestmentProjectChange"
+                                :disabled="
+                                    isLoading || investmentProjectsLoading
+                                "
+                            >
+                                <option value="" disabled>
+                                    Chọn vụ đầu tư
+                                </option>
+                                <option value="all">Tất cả vụ đầu tư</option>
+                                <option
+                                    v-for="project in investmentProjects"
+                                    :key="project.id"
+                                    :value="project.id"
+                                >
+                                    {{ project.Ten_Vudautu }}
+                                </option>
+                            </select>
+                            <div
+                                v-if="investmentProjectsLoading"
+                                class="spinner-border spinner-border-sm text-primary mt-1"
+                                role="status"
+                            >
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -565,6 +604,7 @@
                 </div>
 
                 <!-- Work Items Table -->
+                <!-- อัปเดตส่วน Work Items Table ในใน template -->
                 <div class="col-xl-5 col-lg-6">
                     <div class="card shadow-sm border-0 h-100">
                         <div
@@ -592,7 +632,41 @@
                             </div>
                         </div>
                         <div class="card-body p-0">
-                            <div class="table-responsive work-table">
+                            <!-- Loading State -->
+                            <div
+                                v-if="workItemsLoading"
+                                class="text-center py-5"
+                            >
+                                <i
+                                    class="fas fa-spinner fa-spin fa-2x text-primary"
+                                ></i>
+                                <p class="mt-2">
+                                    Đang tải dữ liệu công việc...
+                                </p>
+                            </div>
+
+                            <!-- Error State -->
+                            <div
+                                v-else-if="workItemsError"
+                                class="text-center py-5"
+                            >
+                                <i
+                                    class="fas fa-exclamation-circle fa-2x text-danger"
+                                ></i>
+                                <p class="mt-2 text-danger">
+                                    {{ workItemsError }}
+                                </p>
+                                <button
+                                    class="btn btn-sm btn-outline-primary mt-2"
+                                    @click="fetchWorkItems"
+                                >
+                                    <i class="fas fa-redo me-1"></i>
+                                    Thử lại
+                                </button>
+                            </div>
+
+                            <!-- Table Content -->
+                            <div v-else class="table-responsive work-table">
                                 <table
                                     class="table table-hover align-middle mb-0"
                                 >
@@ -615,6 +689,7 @@
                                     <tbody>
                                         <tr
                                             v-if="
+                                                !workItemsLoading &&
                                                 filteredWorkItems.length === 0
                                             "
                                         >
@@ -624,12 +699,16 @@
                                             >
                                                 <div class="empty-state">
                                                     <i
-                                                        class="fas fa-search empty-icon"
+                                                        class="fas fa-tasks empty-icon"
                                                     ></i>
                                                     <p>
                                                         Không tìm thấy dữ liệu
                                                         công việc
                                                     </p>
+                                                    <small class="text-muted">
+                                                        Vui lòng kiểm tra bộ lọc
+                                                        hoặc thử lại sau
+                                                    </small>
                                                 </div>
                                             </td>
                                         </tr>
@@ -647,12 +726,22 @@
                                                     1
                                                 }}
                                             </td>
-                                            <td>{{ item.name }}</td>
+                                            <td>
+                                                <div class="work-name">
+                                                    <span class="fw-medium">{{
+                                                        item.name
+                                                    }}</span>
+                                                </div>
+                                            </td>
                                             <td class="text-center">
                                                 <span
                                                     class="badge bg-info text-white rounded-pill"
                                                 >
-                                                    {{ item.quantity }}
+                                                    {{
+                                                        formatNumber(
+                                                            item.quantity
+                                                        )
+                                                    }}
                                                 </span>
                                             </td>
                                             <td>
@@ -677,7 +766,10 @@
                                     </tbody>
                                     <tfoot
                                         class="table-light"
-                                        v-if="filteredWorkItems.length > 0"
+                                        v-if="
+                                            !workItemsLoading &&
+                                            filteredWorkItems.length > 0
+                                        "
                                     >
                                         <tr>
                                             <td
@@ -706,7 +798,10 @@
                             <!-- Pagination -->
                             <div
                                 class="pagination-container p-3"
-                                v-if="filteredWorkItems.length > 0"
+                                v-if="
+                                    !workItemsLoading &&
+                                    filteredWorkItems.length > 0
+                                "
                             >
                                 <div
                                     class="d-flex justify-content-between align-items-center"
@@ -819,7 +914,7 @@
                                                     class="page-link"
                                                     href="#"
                                                     @click.prevent="
-                                                        currentPaymentPage =
+                                                        currentWorkPage =
                                                             totalWorkPages
                                                     "
                                                 >
@@ -971,10 +1066,142 @@ export default {
         // Work items
         const workSearch = ref("");
         const currentWorkPage = ref(1);
-        const workItems = ref([
-            // ... existing work items data ...
-        ]);
+        const workItems = ref([]);
+        const workItemsLoading = ref(false);
+        const workItemsError = ref(null);
 
+        // Investment projects data
+        const investmentProjects = ref([]);
+        const selectedInvestmentProject = ref("all");
+        const investmentProjectsLoading = ref(false);
+
+        const fetchWorkItems = async () => {
+            workItemsLoading.value = true;
+            workItemsError.value = null;
+
+            try {
+                const headers = store.getAuthHeaders();
+                const params = {};
+
+                // Add investment project filter if selected
+                if (
+                    selectedInvestmentProject.value &&
+                    selectedInvestmentProject.value !== "all"
+                ) {
+                    // Find the selected project object to get Ten_Vudautu
+                    const selectedProject = investmentProjects.value.find(
+                        (project) =>
+                            project.id === selectedInvestmentProject.value
+                    );
+
+                    if (selectedProject) {
+                        params.investment_project = selectedProject.Ten_Vudautu;
+                    } else {
+                        console.log(
+                            "Selected project not found in investmentProjects list"
+                        );
+                    }
+                } else {
+                    console.log(
+                        'No investment project filter applied (value is "all" or empty)'
+                    );
+                }
+
+                const response = await axios.get(
+                    "/api/farmer/dashboard/work-items",
+                    {
+                        headers,
+                        params,
+                    }
+                );
+
+                if (response.data.success) {
+                    workItems.value = response.data.data.map((item, index) => ({
+                        ...item,
+                        id: item.id || `work_${index}_${Date.now()}`,
+                    }));
+                } else {
+                    workItemsError.value =
+                        response.data.message ||
+                        "Không thể tải dữ liệu công việc";
+                    workItems.value = [];
+                    console.error("API returned error:", response.data.message);
+                }
+            } catch (error) {
+                console.error("Error fetching work items:", error);
+                console.error("Error response:", error.response?.data);
+                workItemsError.value =
+                    "Đã xảy ra lỗi khi tải dữ liệu công việc";
+                workItems.value = [];
+            } finally {
+                workItemsLoading.value = false;
+            }
+        };
+
+        const handleInvestmentProjectChange = async () => {
+            if (selectedInvestmentProject.value) {
+                // Reload work items data when investment project changes
+                await fetchWorkItems();
+
+                // Also reload other data if needed
+                await Promise.all([
+                    fetchFinancialSummary(),
+                    fetchDebtVsInterestData(),
+                    fetchPaymentTypeDistribution(),
+                ]);
+            }
+        };
+
+        // Function to fetch investment projects
+        const fetchInvestmentProjects = async () => {
+            investmentProjectsLoading.value = true;
+            try {
+                const headers = store.getAuthHeaders();
+                const response = await axios.get("/api/investment-projects", {
+                    headers,
+                });
+
+                // แก้ไขการตรวจสอบโครงสร้างข้อมูล
+                if (
+                    response.data &&
+                    response.data.success &&
+                    Array.isArray(response.data.data)
+                ) {
+                    investmentProjects.value = response.data.data.map(
+                        (project) => ({
+                            id: project.Ma_Vudautu,
+                            Ten_Vudautu: project.Ten_Vudautu,
+                        })
+                    );
+
+                    // Set default selection to "all" if no specific project is selected
+                    if (!selectedInvestmentProject.value) {
+                        selectedInvestmentProject.value = "all";
+                    }
+                } else if (response.data && Array.isArray(response.data)) {
+                    // Handle case where data is directly an array (backward compatibility)
+                    investmentProjects.value = response.data.map((project) => ({
+                        id: project.Ma_Vudautu,
+                        Ten_Vudautu: project.Ten_Vudautu,
+                    }));
+
+                    if (!selectedInvestmentProject.value) {
+                        selectedInvestmentProject.value = "all";
+                    }
+                } else {
+                    console.error(
+                        "Invalid response format for investment projects:",
+                        response.data
+                    );
+                    investmentProjects.value = [];
+                }
+            } catch (error) {
+                console.error("Error fetching investment projects:", error);
+                investmentProjects.value = [];
+            } finally {
+                investmentProjectsLoading.value = false;
+            }
+        };
         const handleYearChange = async () => {
             // Update both charts when year changes
             await fetchDebtVsInterestData();
@@ -1002,6 +1229,16 @@ export default {
             } catch (error) {
                 console.error("Error fetching payment requests:", error);
             }
+        };
+
+        const formatNumber = (number) => {
+            if (isNaN(number) || number === null || number === undefined) {
+                return "0";
+            }
+            return new Intl.NumberFormat("lo-LA", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+            }).format(number);
         };
 
         // Add to the methods section
@@ -1124,10 +1361,33 @@ export default {
         const fetchFinancialSummary = async () => {
             try {
                 const headers = store.getAuthHeaders();
+                const params = {};
+
+                // Add investment project filter if selected
+                if (
+                    selectedInvestmentProject.value &&
+                    selectedInvestmentProject.value !== "all"
+                ) {
+                    // Find the selected project object to get Ten_Vudautu
+                    const selectedProject = investmentProjects.value.find(
+                        (project) =>
+                            project.id === selectedInvestmentProject.value
+                    );
+
+                    if (selectedProject) {
+                        params.investment_project = selectedProject.id;
+                    }
+                    console.log(
+                        "Fetching financial summary for project:",
+                        selectedProject.id
+                    );
+                }
+
                 const response = await axios.get(
                     "/api/farmer/dashboard/financial-summary",
                     {
                         headers,
+                        params,
                     }
                 );
 
@@ -1143,7 +1403,6 @@ export default {
                 console.error("Error fetching financial summary:", error);
             }
         };
-
         // Filtered and paginated data
         const filteredPayments = computed(() => {
             if (!paymentSearch.value) return payments.value;
@@ -1715,10 +1974,14 @@ export default {
             isLoading.value = true;
 
             try {
+                // Add this line to fetch investment projects first
+                await fetchInvestmentProjects();
+
                 // Fetch data first
                 await Promise.all([
                     fetchFinancialSummary(),
                     fetchPaymentRequests(),
+                    fetchWorkItems(), // เพิ่มบรรทัดนี้
                     new Promise((resolve) => setTimeout(resolve, 500)),
                 ]);
 
@@ -1769,9 +2032,9 @@ export default {
             isLoading,
             chartLoading,
             chartError,
-            debtInterestChart, // ตรวจสอบว่ามีใน return
+            debtInterestChart,
             statusChart,
-            debtChart, // ถ้าไม่ใช้จริงสามารถลบออกได้
+            debtChart,
             selectedPeriod,
             periods,
             financialSummary,
@@ -1785,6 +2048,11 @@ export default {
             selectedYear,
             availableYears,
 
+            // Work Items State - เพิ่มส่วนนี้
+            workItems,
+            workItemsLoading,
+            workItemsError,
+
             // Computed
             filteredPayments,
             paginatedPayments,
@@ -1796,6 +2064,7 @@ export default {
 
             // Methods
             formatCurrency,
+            formatNumber, // เพิ่มบรรทัดนี้
             getProgressColor,
             getPaymentTypeBadge,
             getStatusBadge,
@@ -1806,12 +2075,20 @@ export default {
             fetchDebtVsInterestData,
             fetchPaymentTypeDistribution,
             handleYearChange,
+            fetchWorkItems, // เพิ่มบรรทัดนี้
+            handleInvestmentProjectChange, // เพิ่มบรรทัดนี้
 
             // Add new properties for payment type chart
             paymentTypeDistChartRef,
             paymentTypeChartLoading,
             paymentTypeChartError,
             paymentTypeData,
+
+            // New properties
+            investmentProjects,
+            selectedInvestmentProject,
+            investmentProjectsLoading,
+            fetchInvestmentProjects,
         };
     },
 };
@@ -2280,5 +2557,46 @@ export default {
     padding-right: 2rem;
     background-position: right 0.5rem center;
     background-size: 16px 12px;
+}
+
+.investment-selector {
+    max-width: 280px;
+    position: relative;
+}
+
+.investment-selector .form-label {
+    font-size: 0.85rem;
+    color: #4a5568;
+}
+
+.investment-selector .form-select {
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.investment-selector .form-select:hover {
+    border-color: #cbd5e0;
+}
+
+.investment-selector .form-select:focus {
+    border-color: #4299e1;
+    box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.2);
+}
+
+.investment-selector .spinner-border {
+    position: absolute;
+    right: 2.5rem;
+    top: 2.35rem;
+    width: 1rem;
+    height: 1rem;
+}
+
+@media (max-width: 991.98px) {
+    .investment-selector {
+        margin-top: 1rem;
+        max-width: 100%;
+    }
 }
 </style>
