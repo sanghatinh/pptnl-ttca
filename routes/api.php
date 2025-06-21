@@ -193,7 +193,7 @@ Route::post('/disbursements/import', [PhieudenghithanhtoandvControllers::class, 
 // เพิ่มเส้นทาง API สำหรับอัปเดตข้อมูลทางการเงินของพิศูเญเงี้ยม
 Route::post('/disbursements/update-financial', [PhieudenghithanhtoandvControllers::class, 'updateFinancialData']);
 //Phiếu thu nợ dịch vụ
-Route::get('/phieu-thu-no-dich-vu', [App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController::class, 'index']);
+
 Route::get('/phieu-thu-no-dich-vu/{id}', [App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController::class, 'show']);
 Route::get('/phieu-thu-no-dich-vu/{id}/check-access', [App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController::class, 'checkAccess']);
 // Import Phieu Thu No Dich Vu routes
@@ -237,7 +237,7 @@ Route::delete('/payment-requests-homgiong/{id}', [PhieuDNTTHomgiongControllers::
 //Công nợ dịch vụ khấu trừ
 Route::get('/import-congno-dichvu-khautru-progress/{importId}', [DeductibleServiceDebtController::class, 'checkImportProgress']);
 Route::post('/import-congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'startImport']);
-Route::get('/congno-dichvu-khautru/{invoicenumber}', [DeductibleServiceDebtController::class, 'showDetails']);
+
 // Farmer Users Management
     Route::get('/farmer-users', [App\Http\Controllers\Farmer\UserFarmerController::class, 'index']);
     Route::get('/farmer-users/filter-options', [App\Http\Controllers\Farmer\UserFarmerController::class, 'getFilterOptions']);
@@ -295,6 +295,10 @@ Route::match(['GET', 'POST'], '/generate-report-table-phieuthuno', [Phieuthunodi
 // Middleware for JWT authentication เพื่อป้องกันการเข้าถึง API ที่ต้องการการยืนยันตัวตน ให้ใช้ได้ ทั้ง ผู้ดูแลระบบและเกษตรกร
 Route::middleware([\App\Http\Middleware\JwtMiddleware::class])->group(function () {
 Route::get('/congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'index']);
+Route::get('/congno-dichvu-khautru/{invoicenumber}', [DeductibleServiceDebtController::class, 'showDetails']);
+Route::get('/congno-dichvu-khautru/{invoicenumber}/check-access', [DeductibleServiceDebtController::class, 'checkAccess']);
+//Phieu thu nợ dịch vụ
+Route::get('/phieu-thu-no-dich-vu', [App\Http\Controllers\QuanlyTaichinh\PhieuthunodichvuController::class, 'index']);
 //Load ข้อมูลตาลาง tb_bien_ban_nghiemthu_dv
 Route::get('/bien-ban-nghiem-thu', [BienBanNghiemThuController::class, 'index']);
 //Load details ข้อมูลตาลาง tb_bien_ban_nghiemthu_dv
@@ -347,6 +351,7 @@ Route::get('/payment-requests-homgiong/{id}/chitiet-giaonhan', [PhieuDNTTHomgion
     Route::get('/farmer/dashboard/debt-vs-interest', [App\Http\Controllers\Report\DashboardFarmerReportControllers::class, 'getDebtPaymentVsInterestData']);
     Route::get('/farmer/dashboard/payment-type-distribution', [App\Http\Controllers\Report\DashboardFarmerReportControllers::class, 'getDebtPaymentTypeDistribution']);
     Route::get('/farmer/dashboard/payment-requests', [App\Http\Controllers\Report\DashboardFarmerReportControllers::class, 'getPaymentRequests']);
+    Route::get('/farmer/dashboard/work-items', [App\Http\Controllers\Report\DashboardFarmerReportControllers::class, 'getWorkItems']);
     
 
 });
