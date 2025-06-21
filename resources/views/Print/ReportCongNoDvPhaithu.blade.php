@@ -572,11 +572,12 @@
                             <th>Khách hàng</th>
                             <th>Mã khách hàng</th>
                             <th>Nội dung</th>
+                            <th class="text-center hide-on-portrait">Ngày phát sinh</th>
                             <th class="text-right">Tổng nợ gốc (KIP)</th>
                             <th class="text-right">Đã trả gốc (KIP)</th>
                             <th class="text-right">Số tiền còn lại (KIP)</th>
                             <th class="text-right">Tiền lãi (KIP)</th>
-                            <th class="text-center hide-on-portrait">Ngày phát sinh</th>
+                            
                             <!-- <th class="text-center hide-on-portrait">Loại tiền</th>
                             <th class="hide-on-portrait">Trạm</th> -->
                         </tr>
@@ -591,13 +592,14 @@
                                 <td>{{ $item['khach_hang'] }}</td>
                                 <td>{{ $item['ma_khach_hang'] }}</td>
                                 <td>{{ $item['noi_dung'] }}</td>
+                                  <td class="text-center hide-on-portrait">
+                                    {{ $item['ngay_phat_sinh'] ? date('d/m/Y', strtotime($item['ngay_phat_sinh'])) : 'N/A' }}
+                                </td>
                                 <td class="text-right amount">{{ number_format($item['tong_no_goc']) }}</td>
                                 <td class="text-right amount">{{ number_format($item['da_tra_goc']) }}</td>
                                 <td class="text-right amount">{{ number_format($item['so_tien_con_lai']) }}</td>
                                 <td class="text-right amount">{{ number_format($item['tien_lai']) }}</td>
-                                <td class="text-center hide-on-portrait">
-                                    {{ $item['ngay_phat_sinh'] ? date('d/m/Y', strtotime($item['ngay_phat_sinh'])) : 'N/A' }}
-                                </td>
+                              
                                 <!-- <td class="text-center hide-on-portrait">{{ $item['loai_tien'] }}</td>
                                 <td class="hide-on-portrait">{{ $item['tram'] }}</td> -->
                             </tr>

@@ -259,7 +259,7 @@
         <!-- Main data table -->
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <!-- Desktop view table -->
-            <div v-if="!isMobile" class="card">
+            <div v-if="!isMobile" class="desktop-controls-container card">
                 <div class="card-body">
                     <span
                         class="reset-all-filters-btn"
@@ -297,48 +297,55 @@
                                             </div>
                                         </th>
                                         <!-- Trạm -->
-                                        <th @click="sortTable('tram')">
-                                            Trạm
-                                            <span class="sort-icon">
-                                                <i
-                                                    class="fas"
-                                                    :class="{
-                                                        'fa-sort':
-                                                            sortField !==
-                                                            'tram',
-                                                        'fa-sort-up':
-                                                            sortField ===
-                                                                'tram' &&
-                                                            sortOrder === 'asc',
-                                                        'fa-sort-down':
-                                                            sortField ===
-                                                                'tram' &&
-                                                            sortOrder ===
-                                                                'desc',
-                                                        'sort-active':
-                                                            sortField ===
-                                                            'tram',
-                                                    }"
+                                        <th>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="sortTable('tram')"
                                                 >
-                                                </i>
-                                            </span>
-                                            <button
-                                                @click.stop="
-                                                    toggleFilter('tram')
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.tram &&
-                                                            selectedFilterValues
-                                                                .tram.length >
-                                                                0,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                                    Trạm
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'tram',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'tram' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'tram' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'tram',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter('tram')
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                selectedFilterValues.tram &&
+                                                                selectedFilterValues
+                                                                    .tram
+                                                                    .length > 0,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="activeFilter === 'tram'"
                                                 class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
@@ -422,23 +429,57 @@
                                         </th>
                                         <!-- Invoice Number -->
                                         <th>
-                                            Invoice Number
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'invoicenumber'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.invoicenumber,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'invoicenumber'
+                                                        )
+                                                    "
+                                                >
+                                                    Invoice Number
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'invoicenumber',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'invoicenumber' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'invoicenumber' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'invoicenumber',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'invoicenumber'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.invoicenumber,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -482,48 +523,59 @@
                                         </th>
 
                                         <!-- Vụ đầu tư -->
-                                        <th @click="sortTable('vu_dau_tu')">
-                                            Vụ đầu tư
-                                            <span class="sort-icon">
-                                                <i
-                                                    class="fas"
-                                                    :class="{
-                                                        'fa-sort':
-                                                            sortField !==
-                                                            'vu_dau_tu',
-                                                        'fa-sort-up':
-                                                            sortField ===
-                                                                'vu_dau_tu' &&
-                                                            sortOrder === 'asc',
-                                                        'fa-sort-down':
-                                                            sortField ===
-                                                                'vu_dau_tu' &&
-                                                            sortOrder ===
-                                                                'desc',
-                                                        'sort-active':
-                                                            sortField ===
-                                                            'vu_dau_tu',
-                                                    }"
+                                        <th>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable('vu_dau_tu')
+                                                    "
                                                 >
-                                                </i>
-                                            </span>
-                                            <button
-                                                @click.stop="
-                                                    toggleFilter('vu_dau_tu')
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.vu_dau_tu &&
-                                                            selectedFilterValues
-                                                                .vu_dau_tu
-                                                                .length > 0,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                                    Vụ đầu tư
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'vu_dau_tu',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'vu_dau_tu' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'vu_dau_tu' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'vu_dau_tu',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'vu_dau_tu'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                selectedFilterValues.vu_dau_tu &&
+                                                                selectedFilterValues
+                                                                    .vu_dau_tu
+                                                                    .length > 0,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter === 'vu_dau_tu'
@@ -558,7 +610,7 @@
                                                     </div>
                                                 </div>
                                                 <div
-                                                    class="flex justify-between"
+                                                    class="flex justify-between mt-2"
                                                 >
                                                     <button
                                                         @click="
@@ -585,50 +637,61 @@
                                         </th>
 
                                         <!-- Category Debt -->
-                                        <th @click="sortTable('category_debt')">
-                                            Category Debt
-                                            <span class="sort-icon">
-                                                <i
-                                                    class="fas"
-                                                    :class="{
-                                                        'fa-sort':
-                                                            sortField !==
-                                                            'category_debt',
-                                                        'fa-sort-up':
-                                                            sortField ===
-                                                                'category_debt' &&
-                                                            sortOrder === 'asc',
-                                                        'fa-sort-down':
-                                                            sortField ===
-                                                                'category_debt' &&
-                                                            sortOrder ===
-                                                                'desc',
-                                                        'sort-active':
-                                                            sortField ===
-                                                            'category_debt',
-                                                    }"
+                                        <th>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'category_debt'
+                                                        )
+                                                    "
                                                 >
-                                                </i>
-                                            </span>
-                                            <button
-                                                @click.stop="
-                                                    toggleFilter(
-                                                        'category_debt'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.category_debt &&
-                                                            selectedFilterValues
-                                                                .category_debt
-                                                                .length > 0,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                                    Category Debt
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'category_debt',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'category_debt' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'category_debt' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'category_debt',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'category_debt'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                selectedFilterValues.category_debt &&
+                                                                selectedFilterValues
+                                                                    .category_debt
+                                                                    .length > 0,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -664,7 +727,7 @@
                                                     </div>
                                                 </div>
                                                 <div
-                                                    class="flex justify-between"
+                                                    class="flex justify-between mt-2"
                                                 >
                                                     <button
                                                         @click="
@@ -692,21 +755,55 @@
 
                                         <!-- Description -->
                                         <th>
-                                            Description
-                                            <button
-                                                @click="
-                                                    toggleFilter('description')
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.description,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable('description')
+                                                    "
+                                                >
+                                                    Description
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'description',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'description' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'description' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'description',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'description'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.description,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -750,49 +847,58 @@
                                         </th>
 
                                         <!-- Ngày phát sinh -->
-                                        <th
-                                            @click="sortTable('ngay_phat_sinh')"
-                                        >
-                                            Ngày phát sinh
-                                            <span class="sort-icon">
-                                                <i
-                                                    class="fas"
-                                                    :class="{
-                                                        'fa-sort':
-                                                            sortField !==
-                                                            'ngay_phat_sinh',
-                                                        'fa-sort-up':
-                                                            sortField ===
-                                                                'ngay_phat_sinh' &&
-                                                            sortOrder === 'asc',
-                                                        'fa-sort-down':
-                                                            sortField ===
-                                                                'ngay_phat_sinh' &&
-                                                            sortOrder ===
-                                                                'desc',
-                                                        'sort-active':
-                                                            sortField ===
-                                                            'ngay_phat_sinh',
-                                                    }"
+                                        <th>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'ngay_phat_sinh'
+                                                        )
+                                                    "
                                                 >
-                                                </i>
-                                            </span>
-                                            <button
-                                                @click.stop="
-                                                    toggleFilter(
-                                                        'ngay_phat_sinh'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.ngay_phat_sinh,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                                    Ngày phát sinh
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'ngay_phat_sinh',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'ngay_phat_sinh' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'ngay_phat_sinh' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'ngay_phat_sinh',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'ngay_phat_sinh'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.ngay_phat_sinh,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -835,48 +941,59 @@
                                         </th>
 
                                         <!-- Loại tiền -->
-                                        <th @click="sortTable('loai_tien')">
-                                            Loại tiền
-                                            <span class="sort-icon">
-                                                <i
-                                                    class="fas"
-                                                    :class="{
-                                                        'fa-sort':
-                                                            sortField !==
-                                                            'loai_tien',
-                                                        'fa-sort-up':
-                                                            sortField ===
-                                                                'loai_tien' &&
-                                                            sortOrder === 'asc',
-                                                        'fa-sort-down':
-                                                            sortField ===
-                                                                'loai_tien' &&
-                                                            sortOrder ===
-                                                                'desc',
-                                                        'sort-active':
-                                                            sortField ===
-                                                            'loai_tien',
-                                                    }"
+                                        <th>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable('loai_tien')
+                                                    "
                                                 >
-                                                </i>
-                                            </span>
-                                            <button
-                                                @click.stop="
-                                                    toggleFilter('loai_tien')
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.loai_tien &&
-                                                            selectedFilterValues
-                                                                .loai_tien
-                                                                .length > 0,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                                    Loại tiền
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'loai_tien',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'loai_tien' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'loai_tien' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'loai_tien',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'loai_tien'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                selectedFilterValues.loai_tien &&
+                                                                selectedFilterValues
+                                                                    .loai_tien
+                                                                    .length > 0,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter === 'loai_tien'
@@ -911,7 +1028,7 @@
                                                     </div>
                                                 </div>
                                                 <div
-                                                    class="flex justify-between"
+                                                    class="flex justify-between mt-2"
                                                 >
                                                     <button
                                                         @click="
@@ -939,23 +1056,57 @@
 
                                         <!-- Tỷ giá quy đổi -->
                                         <th>
-                                            Tỷ giá quy đổi
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'ty_gia_quy_doi'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.ty_gia_quy_doi,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'ty_gia_quy_doi'
+                                                        )
+                                                    "
+                                                >
+                                                    Tỷ giá quy đổi
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'ty_gia_quy_doi',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'ty_gia_quy_doi' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'ty_gia_quy_doi' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'ty_gia_quy_doi',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'ty_gia_quy_doi'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.ty_gia_quy_doi,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1000,23 +1151,57 @@
 
                                         <!-- Số tiền theo giá trị đầu tư -->
                                         <th>
-                                            Số tiền theo giá trị đầu tư
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'so_tien_theo_gia_tri_dau_tu'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.so_tien_theo_gia_tri_dau_tu,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'so_tien_theo_gia_tri_dau_tu'
+                                                        )
+                                                    "
+                                                >
+                                                    Số tiền theo giá trị đầu tư
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'so_tien_theo_gia_tri_dau_tu',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'so_tien_theo_gia_tri_dau_tu' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'so_tien_theo_gia_tri_dau_tu' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'so_tien_theo_gia_tri_dau_tu',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'so_tien_theo_gia_tri_dau_tu'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.so_tien_theo_gia_tri_dau_tu,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1061,23 +1246,57 @@
 
                                         <!-- Số tiền nợ gốc đã quy -->
                                         <th>
-                                            Số tiền nợ gốc đã quy
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'so_tien_no_goc_da_quy'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.so_tien_no_goc_da_quy,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'so_tien_no_goc_da_quy'
+                                                        )
+                                                    "
+                                                >
+                                                    Số tiền nợ gốc đã quy
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'so_tien_no_goc_da_quy',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'so_tien_no_goc_da_quy' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'so_tien_no_goc_da_quy' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'so_tien_no_goc_da_quy',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'so_tien_no_goc_da_quy'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.so_tien_no_goc_da_quy,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1121,45 +1340,56 @@
                                         </th>
 
                                         <!-- Đã trả gốc -->
-                                        <th @click="sortTable('da_tra_goc')">
-                                            Đã trả gốc
-                                            <span class="sort-icon">
-                                                <i
-                                                    class="fas"
-                                                    :class="{
-                                                        'fa-sort':
-                                                            sortField !==
-                                                            'da_tra_goc',
-                                                        'fa-sort-up':
-                                                            sortField ===
-                                                                'da_tra_goc' &&
-                                                            sortOrder === 'asc',
-                                                        'fa-sort-down':
-                                                            sortField ===
-                                                                'da_tra_goc' &&
-                                                            sortOrder ===
-                                                                'desc',
-                                                        'sort-active':
-                                                            sortField ===
-                                                            'da_tra_goc',
-                                                    }"
+                                        <th>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable('da_tra_goc')
+                                                    "
                                                 >
-                                                </i>
-                                            </span>
-                                            <button
-                                                @click.stop="
-                                                    toggleFilter('da_tra_goc')
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.da_tra_goc,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                                    Đã trả gốc
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'da_tra_goc',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'da_tra_goc' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'da_tra_goc' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'da_tra_goc',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'da_tra_goc'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.da_tra_goc,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1203,51 +1433,58 @@
                                         </th>
 
                                         <!-- Số tiền còn lại -->
-                                        <th
-                                            @click="
-                                                sortTable('so_tien_con_lai')
-                                            "
-                                        >
-                                            Số tiền còn lại
-                                            <span class="sort-icon">
-                                                <i
-                                                    class="fas"
-                                                    :class="{
-                                                        'fa-sort':
-                                                            sortField !==
-                                                            'so_tien_con_lai',
-                                                        'fa-sort-up':
-                                                            sortField ===
-                                                                'so_tien_con_lai' &&
-                                                            sortOrder === 'asc',
-                                                        'fa-sort-down':
-                                                            sortField ===
-                                                                'so_tien_con_lai' &&
-                                                            sortOrder ===
-                                                                'desc',
-                                                        'sort-active':
-                                                            sortField ===
-                                                            'so_tien_con_lai',
-                                                    }"
+                                        <th>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'so_tien_con_lai'
+                                                        )
+                                                    "
                                                 >
-                                                </i>
-                                            </span>
-                                            <button
-                                                @click.stop="
-                                                    toggleFilter(
-                                                        'so_tien_con_lai'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.so_tien_con_lai,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                                    Số tiền còn lại
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'so_tien_con_lai',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'so_tien_con_lai' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'so_tien_con_lai' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'so_tien_con_lai',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'so_tien_con_lai'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.so_tien_con_lai,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1292,21 +1529,53 @@
 
                                         <!-- Tiền lãi -->
                                         <th>
-                                            Tiền lãi
-                                            <button
-                                                @click="
-                                                    toggleFilter('tien_lai')
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.tien_lai,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable('tien_lai')
+                                                    "
+                                                >
+                                                    Tiền lãi
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'tien_lai',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'tien_lai' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'tien_lai' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'tien_lai',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter('tien_lai')
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.tien_lai,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter === 'tien_lai'
@@ -1348,25 +1617,59 @@
                                             </div>
                                         </th>
 
-                                        <!-- Mã khách hàng cá nhân -->
+                                        <!-- Mã KH cá nhân -->
                                         <th>
-                                            Mã KH cá nhân
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'ma_khach_hang_ca_nhan'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.ma_khach_hang_ca_nhan,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'ma_khach_hang_ca_nhan'
+                                                        )
+                                                    "
+                                                >
+                                                    Mã KH cá nhân
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'ma_khach_hang_ca_nhan',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'ma_khach_hang_ca_nhan' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'ma_khach_hang_ca_nhan' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'ma_khach_hang_ca_nhan',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'ma_khach_hang_ca_nhan'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.ma_khach_hang_ca_nhan,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1411,23 +1714,57 @@
 
                                         <!-- Khách hàng cá nhân -->
                                         <th>
-                                            Khách hàng cá nhân
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'khach_hang_ca_nhan'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.khach_hang_ca_nhan,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'khach_hang_ca_nhan'
+                                                        )
+                                                    "
+                                                >
+                                                    Khách hàng cá nhân
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'khach_hang_ca_nhan',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'khach_hang_ca_nhan' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'khach_hang_ca_nhan' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'khach_hang_ca_nhan',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'khach_hang_ca_nhan'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.khach_hang_ca_nhan,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1470,25 +1807,59 @@
                                             </div>
                                         </th>
 
-                                        <!-- Mã khách hàng doanh nghiệp -->
+                                        <!-- Mã KH doanh nghiệp -->
                                         <th>
-                                            Mã KH DN
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'ma_khach_hang_doanh_nghiep'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.ma_khach_hang_doanh_nghiep,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'ma_khach_hang_doanh_nghiep'
+                                                        )
+                                                    "
+                                                >
+                                                    Mã KH DN
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'ma_khach_hang_doanh_nghiep',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'ma_khach_hang_doanh_nghiep' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'ma_khach_hang_doanh_nghiep' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'ma_khach_hang_doanh_nghiep',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'ma_khach_hang_doanh_nghiep'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.ma_khach_hang_doanh_nghiep,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1531,25 +1902,59 @@
                                             </div>
                                         </th>
 
-                                        <!-- Khách hàng doanh nghiệp -->
+                                        <!-- KH doanh nghiệp -->
                                         <th>
-                                            KH doanh nghiệp
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'khach_hang_doanh_nghiep'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.khach_hang_doanh_nghiep,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'khach_hang_doanh_nghiep'
+                                                        )
+                                                    "
+                                                >
+                                                    KH doanh nghiệp
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'khach_hang_doanh_nghiep',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'khach_hang_doanh_nghiep' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'khach_hang_doanh_nghiep' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'khach_hang_doanh_nghiep',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'khach_hang_doanh_nghiep'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.khach_hang_doanh_nghiep,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1594,21 +1999,53 @@
 
                                         <!-- Lãi suất -->
                                         <th>
-                                            Lãi suất
-                                            <button
-                                                @click="
-                                                    toggleFilter('lai_suat')
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            columnFilters.lai_suat,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable('lai_suat')
+                                                    "
+                                                >
+                                                    Lãi suất
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'lai_suat',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'lai_suat' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'lai_suat' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'lai_suat',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter('lai_suat')
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                columnFilters.lai_suat,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter === 'lai_suat'
@@ -1652,26 +2089,60 @@
 
                                         <!-- Loại lãi suất -->
                                         <th>
-                                            Loại lãi suất
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'loai_lai_suat'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.loai_lai_suat &&
-                                                            selectedFilterValues
-                                                                .loai_lai_suat
-                                                                .length > 0,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'loai_lai_suat'
+                                                        )
+                                                    "
+                                                >
+                                                    Loại lãi suất
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'loai_lai_suat',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'loai_lai_suat' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'loai_lai_suat' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'loai_lai_suat',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'loai_lai_suat'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                selectedFilterValues.loai_lai_suat &&
+                                                                selectedFilterValues
+                                                                    .loai_lai_suat
+                                                                    .length > 0,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1707,7 +2178,7 @@
                                                     </div>
                                                 </div>
                                                 <div
-                                                    class="flex justify-between"
+                                                    class="flex justify-between mt-2"
                                                 >
                                                     <button
                                                         @click="
@@ -1735,26 +2206,60 @@
 
                                         <!-- Vụ thanh toán -->
                                         <th>
-                                            Vụ thanh toán
-                                            <button
-                                                @click="
-                                                    toggleFilter(
-                                                        'vu_thanh_toan'
-                                                    )
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.vu_thanh_toan &&
-                                                            selectedFilterValues
-                                                                .vu_thanh_toan
-                                                                .length > 0,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable(
+                                                            'vu_thanh_toan'
+                                                        )
+                                                    "
+                                                >
+                                                    Vụ thanh toán
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'vu_thanh_toan',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'vu_thanh_toan' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'vu_thanh_toan' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'vu_thanh_toan',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'vu_thanh_toan'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                selectedFilterValues.vu_thanh_toan &&
+                                                                selectedFilterValues
+                                                                    .vu_thanh_toan
+                                                                    .length > 0,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1790,7 +2295,7 @@
                                                     </div>
                                                 </div>
                                                 <div
-                                                    class="flex justify-between"
+                                                    class="flex justify-between mt-2"
                                                 >
                                                     <button
                                                         @click="
@@ -1818,24 +2323,58 @@
 
                                         <!-- Loại đầu tư -->
                                         <th>
-                                            Loại đầu tư
-                                            <button
-                                                @click="
-                                                    toggleFilter('loai_dau_tu')
-                                                "
-                                                class="filter-btn"
-                                            >
-                                                <i
-                                                    class="fas fa-filter"
-                                                    :class="{
-                                                        'text-green-500':
-                                                            selectedFilterValues.loai_dau_tu &&
-                                                            selectedFilterValues
-                                                                .loai_dau_tu
-                                                                .length > 0,
-                                                    }"
-                                                ></i>
-                                            </button>
+                                            <div class="th-content">
+                                                <div
+                                                    class="sort-section"
+                                                    @click="
+                                                        sortTable('loai_dau_tu')
+                                                    "
+                                                >
+                                                    Loại đầu tư
+                                                    <span class="sort-icon">
+                                                        <i
+                                                            class="fas"
+                                                            :class="{
+                                                                'fa-sort':
+                                                                    sortField !==
+                                                                    'loai_dau_tu',
+                                                                'fa-sort-up':
+                                                                    sortField ===
+                                                                        'loai_dau_tu' &&
+                                                                    sortOrder ===
+                                                                        'asc',
+                                                                'fa-sort-down':
+                                                                    sortField ===
+                                                                        'loai_dau_tu' &&
+                                                                    sortOrder ===
+                                                                        'desc',
+                                                                'sort-active':
+                                                                    sortField ===
+                                                                    'loai_dau_tu',
+                                                            }"
+                                                        ></i>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    @click.stop="
+                                                        toggleFilter(
+                                                            'loai_dau_tu'
+                                                        )
+                                                    "
+                                                    class="filter-btn"
+                                                >
+                                                    <i
+                                                        class="fas fa-filter"
+                                                        :class="{
+                                                            'text-green-500':
+                                                                selectedFilterValues.loai_dau_tu &&
+                                                                selectedFilterValues
+                                                                    .loai_dau_tu
+                                                                    .length > 0,
+                                                        }"
+                                                    ></i>
+                                                </button>
+                                            </div>
                                             <div
                                                 v-if="
                                                     activeFilter ===
@@ -1871,7 +2410,7 @@
                                                     </div>
                                                 </div>
                                                 <div
-                                                    class="flex justify-between"
+                                                    class="flex justify-between mt-2"
                                                 >
                                                     <button
                                                         @click="
@@ -1929,9 +2468,17 @@
                                                 :class="
                                                     getCategoryBadgeClass(
                                                         item.category_debt
-                                                    )
+                                                    ).class
                                                 "
                                             >
+                                                <i
+                                                    :class="
+                                                        getCategoryBadgeClass(
+                                                            item.category_debt
+                                                        ).icon
+                                                    "
+                                                    class="me-1"
+                                                ></i>
                                                 {{ item.category_debt }}
                                             </span>
                                         </td>
@@ -1958,26 +2505,49 @@
                                             }}
                                         </td>
                                         <td>
-                                            {{
-                                                formatCurrency(
-                                                    item.so_tien_no_goc_da_quy
-                                                )
-                                            }}
+                                            <span
+                                                class="badge bg-success text-white"
+                                            >
+                                                {{
+                                                    formatCurrency(
+                                                        item.so_tien_no_goc_da_quy
+                                                    )
+                                                }}
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <span
+                                                class="badge bg-info text-white"
+                                            >
+                                                {{
+                                                    formatCurrency(
+                                                        item.da_tra_goc
+                                                    )
+                                                }}
+                                            </span>
                                         </td>
                                         <td>
-                                            {{
-                                                formatCurrency(item.da_tra_goc)
-                                            }}
+                                            <span
+                                                class="badge bg-danger text-white"
+                                            >
+                                                {{
+                                                    formatCurrency(
+                                                        item.so_tien_con_lai
+                                                    )
+                                                }}
+                                            </span>
                                         </td>
                                         <td>
-                                            {{
-                                                formatCurrency(
-                                                    item.so_tien_con_lai
-                                                )
-                                            }}
-                                        </td>
-                                        <td>
-                                            {{ formatCurrency(item.tien_lai) }}
+                                            <span
+                                                class="badge bg-warning text-dark"
+                                            >
+                                                {{
+                                                    formatCurrency(
+                                                        item.tien_lai
+                                                    )
+                                                }}
+                                            </span>
                                         </td>
                                         <td>
                                             {{ item.ma_khach_hang_ca_nhan }}
@@ -2000,8 +2570,8 @@
                             </table>
                         </div>
                     </div>
-                    <div class="flex justify-center mt-0 pagination-wrapper">
-                        <div class="pagination-card">
+                    <div class="flex justify-center mt-4 pagination-wrapper">
+                        <div class="">
                             <Bootstrap5Pagination
                                 :data="paginatedItems"
                                 @pagination-change-page="pageChanged"
@@ -2029,9 +2599,20 @@
                     <div class="flex items-center">
                         <div class="badge-container mr-2">
                             <span
-                                class="badge bg-green-500 text-green-800 text-xs px-2 py-1 rounded"
+                                :class="
+                                    getCategoryBadgeClass(item.category_debt)
+                                        .class
+                                "
                             >
-                                {{ item.category_debt || "N/A" }}
+                                <i
+                                    :class="
+                                        getCategoryBadgeClass(
+                                            item.category_debt
+                                        ).icon
+                                    "
+                                    class="me-1"
+                                ></i>
+                                {{ item.category_debt }}
                             </span>
                         </div>
                         <h5 class="text-green-900 font-medium mb-0 text-sm">
@@ -2126,14 +2707,69 @@
             </div>
 
             <!-- Pagination for mobile -->
-            <div class="flex justify-center mt-0">
-                <div class="pagination-card">
-                    <Bootstrap5Pagination
-                        :data="paginatedItems"
-                        @pagination-change-page="pageChanged"
-                        :limit="3"
-                        :classes="paginationClasses"
-                    />
+            <div class="mobile-pagination-card" v-if="isMobile">
+                <div class="pagination-info">
+                    <span class="page-info"
+                        >Trang {{ currentPage }} của
+                        {{ paginatedItems.last_page }}</span
+                    >
+                    <span class="record-info"
+                        >{{ paginatedItems.from }}-{{ paginatedItems.to }} của
+                        {{ paginatedItems.total }} bản ghi</span
+                    >
+                </div>
+
+                <div class="pagination-controls">
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(1)"
+                        :disabled="currentPage === 1"
+                    >
+                        <i class="fas fa-angle-double-left"></i>
+                    </button>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(currentPage - 1)"
+                        :disabled="currentPage === 1"
+                    >
+                        <i class="fas fa-angle-left"></i>
+                    </button>
+
+                    <div class="current-page">{{ currentPage }}</div>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(currentPage + 1)"
+                        :disabled="currentPage === paginatedItems.last_page"
+                    >
+                        <i class="fas fa-angle-right"></i>
+                    </button>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(paginatedItems.last_page)"
+                        :disabled="currentPage === paginatedItems.last_page"
+                    >
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
+                </div>
+
+                <!-- Quick jump for many pages -->
+                <div class="quick-jump" v-if="paginatedItems.last_page > 5">
+                    <span>Đi đến trang:</span>
+                    <select
+                        :value="currentPage"
+                        @change="pageChanged(parseInt($event.target.value))"
+                    >
+                        <option
+                            v-for="page in paginatedItems.last_page"
+                            :key="page"
+                            :value="page"
+                        >
+                            {{ page }}
+                        </option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -2384,9 +3020,7 @@
                         <button
                             @click="generateReportAllData"
                             class="btn btn-danger"
-                            :disabled="
-                                isGeneratingReport || filteredItems.length === 0
-                            "
+                            :disabled="isGeneratingReport"
                         >
                             <div
                                 v-if="
@@ -2406,9 +3040,7 @@
                             </div>
                             <div v-else class="d-flex align-items-center">
                                 <i class="fas fa-table me-2"></i>
-                                Báo cáo tất cả dữ liệu ({{
-                                    filteredItems.length
-                                }})
+                                Báo cáo tất cả dữ liệu
                             </div>
                         </button>
                     </div>
@@ -2917,7 +3549,10 @@ export default {
                 this.isGeneratingReport = true;
                 this.reportType = "all";
 
-                if (this.filteredItems.length === 0) {
+                // ใช้ applyFilters() เพื่อให้ได้ข้อมูลที่กรองทั้งหมดจาก allCongnoList
+                const filteredData = this.applyFilters();
+
+                if (filteredData.length === 0) {
                     Swal.fire({
                         icon: "warning",
                         title: "Không có dữ liệu",
@@ -2928,11 +3563,11 @@ export default {
                 }
 
                 // Show confirmation for large datasets
-                if (this.filteredItems.length > 100) {
+                if (filteredData.length > 100) {
                     const result = await Swal.fire({
                         icon: "question",
                         title: "Xác nhận tạo báo cáo",
-                        text: `Bạn đang tạo báo cáo cho ${this.filteredItems.length} bản ghi. Quá trình này có thể mất thời gian. Bạn có muốn tiếp tục?`,
+                        text: `Bạn đang tạo báo cáo cho ${filteredData.length} bản ghi. Quá trình này có thể mất thời gian. Bạn có muốn tiếp tục?`,
                         showCancelButton: true,
                         confirmButtonText: "Tiếp tục",
                         cancelButtonText: "Hủy",
@@ -2943,15 +3578,15 @@ export default {
                     }
                 }
 
-                // Get all filtered items
-                const allInvoiceNumbers = this.filteredItems.map(
+                // Get invoice numbers from all filtered data
+                const allInvoiceNumbers = filteredData.map(
                     (item) => item.invoicenumber
                 );
 
                 await this.generateReport(
                     allInvoiceNumbers,
                     "all_data",
-                    this.filteredItems.length
+                    filteredData.length
                 );
             } catch (error) {
                 console.error("Error generating all data report:", error);
@@ -3164,21 +3799,43 @@ export default {
             this.saveFilterState();
         },
         getCategoryBadgeClass(category) {
-            if (!category) return "badge bg-secondary text-white";
+            if (!category)
+                return {
+                    class: "badge bg-secondary text-white",
+                    icon: "fas fa-question-circle",
+                };
 
-            // Map different categories to different colors
-            const categoryColors = {
-                "Ứng dầu": "bg-blue-100 text-blue-800",
-                MMTB: "bg-red-100 text-red-800",
-                "Sữa chữa": "bg-purple-100 text-purple-800",
-                "Ứng tiền trồng": "bg-amber-100 text-amber-800",
-                "Ứng tiền chăm sóc": "bg-green-100 text-green-700",
+            // Map different categories to different colors and icons
+            const categoryConfig = {
+                "Ứng dầu": {
+                    class: "badge bg-blue-600 text-white",
+                    icon: "fas fa-oil-can",
+                },
+                MMTB: {
+                    class: "badge bg-red-600 text-white",
+                    icon: "fas fa-tools",
+                },
+                "Sữa chữa": {
+                    class: "badge bg-purple-600 text-white",
+                    icon: "fas fa-wrench",
+                },
+                "Ứng tiền trồng": {
+                    class: "badge bg-amber-600 text-white",
+                    icon: "fas fa-seedling",
+                },
+                "Ứng tiền chăm sóc": {
+                    class: "badge bg-green-600 text-white",
+                    icon: "fas fa-hand-holding-heart",
+                },
             };
 
-            // Return the corresponding class or a default one
-            return categoryColors[category]
-                ? `badge ${categoryColors[category]}`
-                : "badge bg-gray-100 text-gray-800";
+            // Return the corresponding config or a default one
+            return (
+                categoryConfig[category] || {
+                    class: "badge bg-gray-600 text-white",
+                    icon: "fas fa-tag",
+                }
+            );
         },
         formatDate(date) {
             if (!date) return "";
@@ -5190,12 +5847,17 @@ export default {
 .card:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
+.desktop-controls-container.card {
+    /* ให้ card มีความสูงเต็ม */
+    height: calc(100vh - 260px);
+    /* height: auto; */
+}
 
 /* Table container with fixed header */
 .table-container-wrapper {
     position: relative;
     width: 100%;
-    min-height: 410px; /* Set minimum height for the table container */
+
     display: flex;
     flex-direction: column;
     border-radius: 0.5rem;
@@ -5206,8 +5868,8 @@ export default {
 
 .table-scroll-container {
     position: relative;
-    min-height: 410px; /* Minimum height for content area */
-    max-height: calc(100vh - 240px);
+    max-height: calc(100vh - 365px);
+    height: calc(100vh - 260px);
     overflow: auto;
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
@@ -5468,6 +6130,8 @@ export default {
 .absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
     position: absolute;
     top: calc(100% + 5px);
+    max-height: 180px;
+    overflow-x: auto;
     left: 0;
     min-width: 250px;
     max-width: 300px;
@@ -6093,5 +6757,165 @@ export default {
 
 .sort-active {
     color: #10b981;
+}
+.th-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    padding-right: 8px;
+}
+
+.sort-section {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    flex-grow: 1;
+}
+
+.sort-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 4px;
+    width: 14px;
+}
+
+.sort-active {
+    color: #10b981; /* สีเขียวเมื่อคอลัมน์กำลังถูก sort */
+}
+
+.filter-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    margin-left: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    background-color: rgba(16, 185, 129, 0.1);
+}
+
+.filter-btn:focus {
+    outline: none;
+}
+/* Mobile Pagination - Simple & Clean */
+.mobile-pagination-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.pagination-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.page-info {
+    font-weight: 600;
+    color: #374151;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.page-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: white;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: #10b981;
+    color: #10b981;
+    transform: translateY(-1px);
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.current-page {
+    background: #10b981;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin: 0 8px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.quick-jump {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.quick-jump select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+}
+
+.quick-jump select:focus {
+    outline: none;
+    border-color: #10b981;
+}
+
+@media (max-width: 480px) {
+    .pagination-info {
+        flex-direction: column;
+        gap: 4px;
+        text-align: center;
+    }
+
+    .page-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .current-page {
+        padding: 6px 12px;
+        margin: 0 4px;
+    }
 }
 </style>

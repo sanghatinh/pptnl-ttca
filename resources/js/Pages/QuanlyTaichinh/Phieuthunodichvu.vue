@@ -14,6 +14,7 @@
                     <select
                         v-model="statusFilter"
                         class="form-select status-select"
+                        @change="applyStatusFilter"
                     >
                         <option
                             v-for="option in statusOptionsWithCount"
@@ -129,6 +130,7 @@
                     type="text"
                     placeholder="Tìm kiếm phiếu..."
                     class="search-input px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                    @input="handleSearchInput"
                 />
             </div>
         </div>
@@ -195,6 +197,7 @@
                             type="text"
                             placeholder="Tìm kiếm phiếu..."
                             class="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                            @input="handleSearchInput"
                         />
                     </div>
 
@@ -225,6 +228,7 @@
                     <select
                         v-model="statusFilter"
                         class="form-select status-select flex-1"
+                        @change="applyStatusFilter"
                     >
                         <option
                             v-for="option in statusOptionsWithCount"
@@ -240,7 +244,14 @@
                         class="form-select status-select flex-1"
                         @change="applyFilter('vu_dau_tu')"
                     >
-                        <option value="">Vụ đầu tư</option>
+                        <option value="">
+                            {{
+                                uniqueValues.vu_dau_tu &&
+                                uniqueValues.vu_dau_tu.length > 0
+                                    ? "Vụ đầu tư"
+                                    : "Đang tải..."
+                            }}
+                        </option>
                         <option
                             v-for="(option, index) in uniqueValues.vu_dau_tu"
                             :key="index"
@@ -1514,8 +1525,12 @@
                                 </thead>
                                 <tbody>
                                     <tr
-                                        v-for="item in paginatedItems.data"
-                                        :key="item.id"
+                                        v-for="(
+                                            item, index
+                                        ) in paginatedItems.data"
+                                        :key="`table-row-${
+                                            item.id || item.ma_so_phieu
+                                        }-${index}`"
                                         class="desktop-row cursor-pointer"
                                     >
                                         <!-- เพิ่มคอลัมน์ checkbox -->
@@ -1562,15 +1577,29 @@
                                             </span>
                                         </td>
                                         <td>
-                                            {{
-                                                formatCurrency(item.da_tra_goc)
-                                            }}
+                                            <span
+                                                class="badge bg-info text-white"
+                                            >
+                                                {{
+                                                    formatCurrency(
+                                                        item.da_tra_goc
+                                                    )
+                                                }}
+                                            </span>
                                         </td>
                                         <td>{{ formatDate(item.ngay_vay) }}</td>
                                         <td>{{ formatDate(item.ngay_tra) }}</td>
                                         <td>{{ item.lai_suat }}%</td>
                                         <td>
-                                            {{ formatCurrency(item.tien_lai) }}
+                                            <span
+                                                class="badge bg-warning text-dark"
+                                            >
+                                                {{
+                                                    formatCurrency(
+                                                        item.tien_lai
+                                                    )
+                                                }}
+                                            </span>
                                         </td>
                                         <td>{{ item.vu_dau_tu }}</td>
                                         <td>{{ item.vu_thanh_toan }}</td>
@@ -1633,8 +1662,8 @@
         <!-- Mobile view cards -->
         <div v-if="isMobile" class="card-container">
             <div
-                v-for="item in paginatedItems.data"
-                :key="item.id"
+                v-for="(item, index) in paginatedItems.data"
+                :key="`mobile-card-${item.id || item.ma_so_phieu}-${index}`"
                 class="card border p-4 mb-4 rounded shadow hover:shadow-green-500 transition-shadow duration-300"
             >
                 <div
@@ -2130,6 +2159,7 @@ export default {
     },
     data() {
         return {
+            searchTimeout: null,
             isGeneratingReport: false,
             selectedItems: [], // Array to store selected items for report
             reportType: "",
@@ -2532,7 +2562,7 @@ export default {
                         item.so_tro_trinh
                             .toLowerCase()
                             .includes(this.search.toLowerCase())) ||
-                    (item.ma_giai_ngan && // Add this condition
+                    (item.ma_giai_ngan &&
                         item.ma_giai_ngan
                             .toLowerCase()
                             .includes(this.search.toLowerCase()));
@@ -2546,12 +2576,7 @@ export default {
                         new Date(this.formatDateForComparison(item.ngay_tra)) <=
                             new Date(this.dateRange.endDate));
 
-                // Apply Vụ đầu tư filter
-                const matchesVuDauTu =
-                    !this.selectedFilterValues.vu_dau_tu ||
-                    item.vu_dau_tu === this.selectedFilterValues.vu_dau_tu;
-
-                // Apply status filter - now filtering by category_debt instead of tinh_trang
+                // Apply status filter - filtering by category_debt
                 let matchesStatus = true;
                 if (this.statusFilter !== "all") {
                     matchesStatus = item.category_debt === this.statusFilter;
@@ -2708,7 +2733,7 @@ export default {
                             this.selectedFilterValues.xoa_no.includes(
                                 item.xoa_no
                             ))) &&
-                    // Vụ đầu tư (dropdown filter)
+                    // Vụ đầu tư (dropdown filter) - แก้ไขตรงนี้
                     (this.selectedFilterValues.vu_dau_tu.length === 0 ||
                         (item.vu_dau_tu &&
                             this.selectedFilterValues.vu_dau_tu.includes(
@@ -2796,6 +2821,48 @@ export default {
         },
     },
     methods: {
+        handleSearchInputDebounced(event) {
+            // Clear any existing timeout
+            clearTimeout(this.searchTimeout);
+
+            // Set a new timeout
+            this.searchTimeout = setTimeout(() => {
+                this.search = event.target.value;
+                this.currentPage = 1;
+
+                // Force UI update
+                this.$forceUpdate();
+                this.$nextTick(() => this.updateScrollbar());
+            }, 300); // Wait 300ms before applying the search
+        },
+        // Add this method to methods section
+        handleSearchInput(event) {
+            // Update search value immediately
+            this.search = event.target.value;
+
+            // Reset to first page
+            this.currentPage = 1;
+
+            // Force filteredItems to recalculate with debounce for better performance
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                // Force UI update
+                this.$forceUpdate();
+                this.updateScrollbar();
+            }, 50); // Very short timeout for responsive feel
+        },
+        applyStatusFilter() {
+            this.currentPage = 1;
+            this.activeFilter = null;
+
+            // Force recalculation of computed properties
+            this.$nextTick(() => {
+                this.$forceUpdate();
+                if (this.ps) {
+                    this.ps.update();
+                }
+            });
+        },
         /**
          * Apply filters and update pagination after data is loaded
          */
@@ -3543,11 +3610,14 @@ export default {
             }
         },
         resetAllFilters() {
-            // Also reset date range
-            this.dateRange.startDate = "";
-            this.dateRange.endDate = "";
-            this.dateRange.active = false;
+            // Reset date range
+            this.dateRange = {
+                startDate: "",
+                endDate: "",
+                active: false,
+            };
             this.showDateFilter = false;
+
             // Reset global search
             this.search = "";
 
@@ -3555,20 +3625,45 @@ export default {
             this.statusFilter = "all";
 
             // Reset all column filters
-            for (const key in this.columnFilters) {
+            Object.keys(this.columnFilters).forEach((key) => {
                 this.columnFilters[key] = "";
-            }
+            });
 
-            // Reset dropdown filters
-            for (const key in this.selectedFilterValues) {
+            // Reset dropdown filters - FIXED: direct assignment instead of $set
+            Object.keys(this.selectedFilterValues).forEach((key) => {
                 this.selectedFilterValues[key] = [];
-            }
+            });
 
             // Reset active filter (close any open filter dropdown)
             this.activeFilter = null;
 
             // Reset to first page
             this.currentPage = 1;
+
+            // Force recalculation by updating some reactive dependencies
+            this.$nextTick(() => {
+                // Force component update
+                this.$forceUpdate();
+
+                // Update perfect scrollbar if exists
+                if (this.ps) {
+                    this.ps.update();
+                }
+
+                // Show success toast
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: "top-end",
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                });
+
+                Toast.fire({
+                    icon: "success",
+                    title: "Đã xóa tất cả bộ lọc",
+                });
+            });
         },
 
         handleAuthError() {
@@ -3639,6 +3734,42 @@ export default {
         applyFilter(column) {
             this.activeFilter = null;
             this.currentPage = 1;
+
+            // For dropdown filters, make sure arrays are handled properly
+            if (
+                [
+                    "tinh_trang",
+                    "tinh_trang_duyet",
+                    "da_ho_tro_lai",
+                    "vu_thanh_toan",
+                    "vu_dau_tu",
+                    "category_debt",
+                    "xoa_no",
+                ].includes(column)
+            ) {
+                // Handle string to array conversion - FIXED: direct assignment instead of $set
+                if (
+                    typeof this.selectedFilterValues[column] === "string" &&
+                    this.selectedFilterValues[column] !== ""
+                ) {
+                    this.selectedFilterValues[column] = [
+                        this.selectedFilterValues[column],
+                    ];
+                } else if (this.selectedFilterValues[column] === "") {
+                    this.selectedFilterValues[column] = [];
+                }
+            }
+
+            // Ensure reactivity for nested objects
+            this.$nextTick(() => {
+                // Force recalculation of computed properties
+                this.$forceUpdate();
+
+                // Update scrollbar if needed
+                if (this.ps) {
+                    this.ps.update();
+                }
+            });
         },
         // Export methods
         showExportModal() {
@@ -4379,11 +4510,29 @@ export default {
         },
     },
     watch: {
+        isMobile: {
+            handler(newValue) {
+                // When view changes, ensure filter updates are synchronized
+                this.$nextTick(() => {
+                    if (this.ps) {
+                        this.ps.update();
+                    }
+                });
+            },
+        },
         phieuList: {
             handler() {
                 this.extractUniqueValues();
                 this.extractCategoryOptions();
                 this.updateScrollbar();
+            },
+            deep: true,
+        },
+        selectedFilterValues: {
+            handler() {
+                // Update when any filter value changes
+                this.currentPage = 1;
+                this.$nextTick(() => this.updateScrollbar());
             },
             deep: true,
         },
@@ -4394,15 +4543,38 @@ export default {
             },
             deep: true,
         },
+        statusFilter: {
+            handler(newVal) {
+                // Update the filtered items when status filter changes
+                this.currentPage = 1;
+                this.$nextTick(() => this.updateScrollbar());
+            },
+        },
+        columnFilters: {
+            handler() {
+                // Update when any column filter changes
+                this.currentPage = 1;
+                this.$nextTick(() => this.updateScrollbar());
+            },
+            deep: true,
+        },
 
         // Clear selections when page changes
         currentPage() {
             // เคลียร์การเลือกเมื่อเปลี่ยนหน้า (ตัวเลือก)
             // this.selectedItems = [];
         },
-        search() {
-            this.currentPage = 1;
-            this.updateScrollbar();
+        search: {
+            handler(newValue) {
+                console.log("Search changed:", newValue);
+                this.currentPage = 1;
+
+                // Force recalculation immediately
+                this.$forceUpdate();
+                this.$nextTick(() => {
+                    this.updateScrollbar();
+                });
+            },
         },
         statusFilter() {
             this.currentPage = 1;
