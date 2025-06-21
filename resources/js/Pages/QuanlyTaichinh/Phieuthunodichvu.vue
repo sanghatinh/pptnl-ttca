@@ -28,10 +28,17 @@
                     <div class="relative">
                         <select
                             v-model="selectedFilterValues.vu_dau_tu"
-                            class="form-select status-select w-full"
+                            class="form-select status-select flex-1"
                             @change="applyFilter('vu_dau_tu')"
                         >
-                            <option value="">Tất cả</option>
+                            <option value="">
+                                {{
+                                    uniqueValues.vu_dau_tu &&
+                                    uniqueValues.vu_dau_tu.length > 0
+                                        ? "Vụ đầu tư"
+                                        : "Đang tải..."
+                                }}
+                            </option>
                             <option
                                 v-for="(
                                     option, index
@@ -256,7 +263,7 @@
         <!-- Main data table -->
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <!-- Desktop view table -->
-            <div v-if="!isMobile" class="card">
+            <div v-if="!isMobile" class="desktop-controls-container card">
                 <div class="card-body">
                     <span
                         class="reset-all-filters-btn"
@@ -1610,7 +1617,7 @@
                         </div>
                     </div>
                     <div class="flex justify-center mt-4 pagination-wrapper">
-                        <div class="pagination-card">
+                        <div class="">
                             <Bootstrap5Pagination
                                 :data="paginatedItems"
                                 @pagination-change-page="pageChanged"
@@ -1734,14 +1741,77 @@
                 </div>
             </div>
 
-            <div class="flex justify-center mt-4">
-                <div class="pagination-card">
-                    <Bootstrap5Pagination
-                        :data="paginatedItems"
-                        @pagination-change-page="pageChanged"
-                        :limit="3"
-                        :classes="paginationClasses"
-                    />
+            <div class="mobile-pagination-card" v-if="isMobile">
+                <div class="pagination-info">
+                    <span class="page-info"
+                        >Trang {{ paginatedItems.current_page }} của
+                        {{ paginatedItems.last_page }}</span
+                    >
+                    <span class="record-info"
+                        >{{ paginatedItems.from }}-{{ paginatedItems.to }} của
+                        {{ paginatedItems.total }} bản ghi</span
+                    >
+                </div>
+
+                <div class="pagination-controls">
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(1)"
+                        :disabled="paginatedItems.current_page === 1"
+                    >
+                        <i class="fas fa-angle-double-left"></i>
+                    </button>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(paginatedItems.current_page - 1)"
+                        :disabled="paginatedItems.current_page === 1"
+                    >
+                        <i class="fas fa-angle-left"></i>
+                    </button>
+
+                    <div class="current-page">
+                        {{ paginatedItems.current_page }}
+                    </div>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(paginatedItems.current_page + 1)"
+                        :disabled="
+                            paginatedItems.current_page ===
+                            paginatedItems.last_page
+                        "
+                    >
+                        <i class="fas fa-angle-right"></i>
+                    </button>
+
+                    <button
+                        class="page-btn"
+                        @click="pageChanged(paginatedItems.last_page)"
+                        :disabled="
+                            paginatedItems.current_page ===
+                            paginatedItems.last_page
+                        "
+                    >
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
+                </div>
+
+                <!-- Quick jump for many pages -->
+                <div class="quick-jump" v-if="paginatedItems.last_page > 5">
+                    <span>Đi đến trang:</span>
+                    <select
+                        :value="paginatedItems.current_page"
+                        @change="pageChanged(parseInt($event.target.value))"
+                    >
+                        <option
+                            v-for="page in paginatedItems.last_page"
+                            :key="page"
+                            :value="page"
+                        >
+                            {{ page }}
+                        </option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -2727,6 +2797,99 @@ export default {
     },
     methods: {
         /**
+         * Apply filters and update pagination after data is loaded
+         */
+        applyFiltersAndPagination(page) {
+            // Update current page
+            this.currentPage = page || 1;
+
+            // If any filter was previously set, it will be automatically applied
+            // through the computed properties (filteredItems, paginatedItems)
+
+            // Recalculate totals based on filtered items
+            this.calculateTotals();
+
+            // Update the PerfectScrollbar if it exists
+            this.$nextTick(() => {
+                if (this.ps) {
+                    this.ps.update();
+                }
+            });
+        },
+        // Add to methods section
+        extractUniqueValues() {
+            // Reset uniqueValues
+            this.uniqueValues = {
+                tinh_trang: [],
+                tinh_trang_duyet: [],
+                da_ho_tro_lai: [],
+                vu_thanh_toan: [],
+                vu_dau_tu: [],
+                category_debt: [],
+                xoa_no: [],
+            };
+
+            // Populate all uniqueValues fields at once
+            if (this.phieuList && this.phieuList.length > 0) {
+                // Extract Vụ đầu tư values
+                this.uniqueValues.vu_dau_tu = [
+                    ...new Set(
+                        this.phieuList
+                            .map((item) => item.vu_dau_tu)
+                            .filter(Boolean) // Remove null/undefined values
+                    ),
+                ].sort();
+
+                // Extract other unique values
+                this.uniqueValues.tinh_trang = [
+                    ...new Set(
+                        this.phieuList
+                            .map((item) => item.tinh_trang)
+                            .filter(Boolean)
+                    ),
+                ].sort();
+
+                this.uniqueValues.vu_thanh_toan = [
+                    ...new Set(
+                        this.phieuList
+                            .map((item) => item.vu_thanh_toan)
+                            .filter(Boolean)
+                    ),
+                ].sort();
+
+                this.uniqueValues.category_debt = [
+                    ...new Set(
+                        this.phieuList
+                            .map((item) => item.category_debt)
+                            .filter(Boolean)
+                    ),
+                ].sort();
+
+                // Continue for other fields...
+            }
+        },
+        extractCategoryOptions() {
+            // Get unique category_debt values
+            const uniqueCategories = [
+                ...new Set(
+                    this.phieuList
+                        .map((item) => item.category_debt)
+                        .filter(Boolean) // Remove null/undefined
+                ),
+            ];
+
+            // Clear existing options except "all"
+            this.statusOptions = [{ code: "all", name: "Tất cả" }];
+
+            // Add each unique category as an option
+            uniqueCategories.forEach((category) => {
+                this.statusOptions.push({
+                    code: category,
+                    name: category,
+                });
+            });
+        },
+        /**
          * Toggle Select All Checkbox
          */
         toggleSelectAll(event) {
@@ -3006,19 +3169,19 @@ export default {
                 <div class="date-input-groups mb-3">
                     <div class="date-input-group mb-3">
                         <label class="date-label text-start d-block mb-1">Từ ngày</label>
-                        <input 
-                            type="date" 
-                            id="swal-date-from" 
-                            class="form-control date-input" 
+                        <input
+                            type="date"
+                            id="swal-date-from"
+                            class="form-control date-input"
                             value="${this.dateRange.startDate}"
                         />
                     </div>
                     <div class="date-input-group">
                         <label class="date-label text-start d-block mb-1">Đến ngày</label>
-                        <input 
-                            type="date" 
-                            id="swal-date-to" 
-                            class="form-control date-input" 
+                        <input
+                            type="date"
+                            id="swal-date-to"
+                            class="form-control date-input"
                             value="${this.dateRange.endDate}"
                         />
                     </div>
@@ -3178,6 +3341,9 @@ export default {
             <button onclick="exportToExcel()" class="btn btn-outline-success mb-2">
                 <i class="fas fa-file-excel text-success me-2"></i> Export to Excel
             </button>
+            <button onclick="showReportModal()" class="btn btn-outline-danger mb-2">
+                <i class="fas fa-file-pdf text-danger me-2"></i> Report Data
+            </button>
             <button onclick="importData()" class="btn btn-outline-primary mb-2">
                 <i class="fas fa-upload text-primary me-2"></i> Import Data
             </button>
@@ -3194,6 +3360,10 @@ export default {
                         Swal.close();
                         this.showExportModal();
                     };
+                    window.showReportModal = () => {
+                        Swal.close();
+                        this.showReportModal();
+                    };
                     window.importData = () => {
                         Swal.close();
                         this.importData();
@@ -3206,6 +3376,7 @@ export default {
                 willClose: () => {
                     // Clean up global functions
                     delete window.exportToExcel;
+                    delete window.showReportModal;
                     delete window.importData;
                     delete window.downloadTemplate;
                 },
@@ -3309,97 +3480,62 @@ export default {
         pageChanged(page) {
             this.currentPage = page;
         },
-        async fetchData(page = 1) {
+        async fetchData(page = 1, initialFetch = false, callback = null) {
             this.isLoading = true;
             try {
+                // Only request all data on initial fetch
+                const params = initialFetch ? { all: true } : { page: page };
+
+                // Use the store's getAuthHeaders method
+                const headers = this.store.getAuthHeaders();
+
                 const response = await axios.get("/api/phieu-thu-no-dich-vu", {
-                    params: {
-                        page,
-                    },
-                    headers: {
-                        Authorization: "Bearer " + this.store.getToken,
-                    },
+                    params: params,
+                    headers: headers, // ใช้ headers จาก store ที่มี JWT token และ user info
                 });
 
-                if (response.data.success) {
-                    this.allPhieuList = response.data.data;
-                    this.phieuList = this.allPhieuList;
-                    this.currentPage = page;
+                // Process successful response
+                const responseData = response.data;
 
-                    // Extract unique values for dropdown filters
-                    this.uniqueValues.tinh_trang = [
-                        ...new Set(
-                            this.allPhieuList
-                                .map((item) => item.tinh_trang)
-                                .filter(Boolean)
-                        ),
-                    ];
-                    this.uniqueValues.tinh_trang_duyet = [
-                        ...new Set(
-                            this.allPhieuList
-                                .map((item) => item.tinh_trang_duyet)
-                                .filter(Boolean)
-                        ),
-                    ];
-                    this.uniqueValues.da_ho_tro_lai = [
-                        ...new Set(
-                            this.allPhieuList
-                                .map((item) => item.da_ho_tro_lai)
-                                .filter(Boolean)
-                        ),
-                    ];
-                    this.uniqueValues.vu_thanh_toan = [
-                        ...new Set(
-                            this.allPhieuList
-                                .map((item) => item.vu_thanh_toan)
-                                .filter(Boolean)
-                        ),
-                    ];
-                    this.uniqueValues.vu_dau_tu = [
-                        ...new Set(
-                            this.allPhieuList
-                                .map((item) => item.vu_dau_tu)
-                                .filter(Boolean)
-                        ),
-                    ];
-                    this.uniqueValues.category_debt = [
-                        ...new Set(
-                            this.allPhieuList
-                                .map((item) => item.category_debt)
-                                .filter(Boolean)
-                        ),
-                    ];
-                    this.uniqueValues.xoa_no = [
-                        ...new Set(
-                            this.allPhieuList
-                                .map((item) => item.xoa_no)
-                                .filter(Boolean)
-                        ),
-                    ];
+                if (responseData && responseData.success) {
+                    if (initialFetch) {
+                        // Store all data for client-side filtering
+                        this.allPhieuList = responseData.data || [];
+                        this.phieuList = [...this.allPhieuList];
+                        this.dataInitialized = true;
+                        // Add this line right after:
+                        this.extractCategoryOptions();
+                        // Extract unique values after data is loaded
+                        this.extractUniqueValues();
 
-                    // Update statusOptions based on unique category_debt values
-                    this.statusOptions = [
-                        { code: "all", name: "Tất cả" }, // Keep "All" option
-                        ...this.uniqueValues.category_debt.map((category) => ({
-                            code: category,
-                            name: category,
-                        })),
-                    ];
+                        // Apply any restored filters
+                        this.applyFiltersAndPagination(this.currentPage);
+
+                        // Execute callback if provided
+                        if (callback) {
+                            callback();
+                        }
+                    } else {
+                        // Handle paginated response if needed
+                        this.phieuList = responseData.data || [];
+                    }
                 } else {
-                    throw new Error(response.data.message);
+                    console.error("API response error:", responseData);
+                    throw new Error(
+                        responseData.message || "Unknown error occurred"
+                    );
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
                 if (error.response?.status === 401) {
                     this.handleAuthError();
                 } else {
+                    // Show user-friendly error message
                     Swal.fire({
-                        title: "Lỗi",
-                        text:
-                            error.response?.data?.message ||
-                            "Đã xảy ra lỗi khi tải dữ liệu",
                         icon: "error",
-                        confirmButtonText: "OK",
+                        title: "Lỗi tải dữ liệu",
+                        text: "Không thể tải dữ liệu. Vui lòng thử lại sau.",
+                        confirmButtonText: "Đồng ý",
                     });
                 }
             } finally {
@@ -4243,6 +4379,14 @@ export default {
         },
     },
     watch: {
+        phieuList: {
+            handler() {
+                this.extractUniqueValues();
+                this.extractCategoryOptions();
+                this.updateScrollbar();
+            },
+            deep: true,
+        },
         // เพิ่ม watcher สำหรับ selectedItems
         selectedItems: {
             handler(newVal) {
@@ -4279,7 +4423,10 @@ export default {
         },
     },
     mounted() {
-        this.fetchData();
+        this.fetchData(1, true, () => {
+            // This will run after data is fetched
+            this.extractUniqueValues();
+        });
 
         // Initialize unique values for dropdown filters
         [
@@ -4348,6 +4495,12 @@ export default {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+.desktop-controls-container.card {
+    /* ให้ card มีความสูงเต็ม */
+    height: calc(100vh - 270px);
+    /* height: auto; */
+}
+
 /* Table container with fixed header */
 .table-container-wrapper {
     position: relative;
@@ -4356,11 +4509,11 @@ export default {
 
 .table-scroll-container {
     position: relative;
-    max-height: calc(100vh - 240px);
+    max-height: calc(100vh - 385px);
+    height: calc(100vh - 270px);
     overflow: auto;
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
-    min-height: 410px; /* Added minimum height */
 }
 
 .table-auto {
@@ -5225,5 +5378,115 @@ export default {
 }
 .transition-colors {
     transition: color 0.2s ease;
+}
+/* Mobile Pagination - Simple & Clean */
+.mobile-pagination-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.pagination-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.page-info {
+    font-weight: 600;
+    color: #374151;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.page-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: white;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: #10b981;
+    color: #10b981;
+    transform: translateY(-1px);
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.current-page {
+    background: #10b981;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin: 0 8px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.quick-jump {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.quick-jump select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+}
+
+.quick-jump select:focus {
+    outline: none;
+    border-color: #10b981;
+}
+
+@media (max-width: 480px) {
+    .pagination-info {
+        flex-direction: column;
+        gap: 4px;
+        text-align: center;
+    }
+
+    .page-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    .current-page {
+        padding: 6px 12px;
+        margin: 0 4px;
+    }
 }
 </style>

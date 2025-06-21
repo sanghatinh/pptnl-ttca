@@ -16,163 +16,174 @@ use Tymon\JWTAuth\Facades\JWTAuth; // เพิ่ม import นี้
 
 class DeductibleServiceDebtController extends Controller
 {
-    /**
+  /**
      * Display a listing of the deductible service debts.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-
-
-public function index(Request $request)
-{
-    try {
-        // Get user type and customer information
-        $userType = $request->header('X-User-Type', 'employee');
-        $supplierId = $request->header('X-Supplier-Number');
-        
-        // Initialize base query
-        $query = DeductibleServiceDebt::query();
-        
-        // Apply user-based filtering
-        if ($userType === 'farmer' && $supplierId) {
-            // Get farmer customer information
-            $farmer = DB::table('user_farmer')
-                ->where('supplier_number', $supplierId)
-                ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
-                ->first();
-                
-            if ($farmer) {
-                $query->where(function($q) use ($farmer) {
-                    // Filter by individual customer ID if exists
-                    if (!empty($farmer->ma_kh_ca_nhan)) {
-                        $q->where('ma_khach_hang_ca_nhan', $farmer->ma_kh_ca_nhan);
-                    }
-                    // Filter by business customer ID if exists
-                    if (!empty($farmer->ma_kh_doanh_nghiep)) {
-                        $q->orWhere('ma_khach_hang_doanh_nghiep', $farmer->ma_kh_doanh_nghiep);
-                    }
-                });
-            } else {
-                // If farmer not found, return empty result
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'No data found for this farmer',
-                    'data' => [],
-                    'unique_filters' => [],
-                    'totals' => [
-                        'total_debt' => 0,
-                        'total_paid' => 0,
-                        'total_remaining' => 0,
-                        'total_interest' => 0
-                    ]
-                ]);
-            }
-        }
-        // For employee userType, no additional filtering is applied (see all data)
-        
-        // Check if client requests all data (for client-side processing)
-        if ($request->has('all') && $request->all) {
-            // Apply basic filters if provided (optional for security/performance)
-            if ($request->has('search') && $request->search) {
-                $search = $request->search;
-                $query->where(function($q) use ($search) {
-                    $q->where('invoicenumber', 'like', "%{$search}%")
-                      ->orWhere('vu_dau_tu', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%")
-                      ->orWhere('tram', 'like', "%{$search}%")
-                      ->orWhere('khach_hang_ca_nhan', 'like', "%{$search}%")
-                      ->orWhere('khach_hang_doanh_nghiep', 'like', "%{$search}%");
-                });
-            }
+   public function index(Request $request)
+    {
+        try {
+            // ดึงข้อมูล user type และ user ID จาก headers ที่ JwtMiddleware ส่งมา
+            $userType = $request->header('X-User-Type');
+            $userId = $request->header('X-User-ID');
             
-            // Apply sorting
-            $sortField = $request->input('sort_by', 'ngay_phat_sinh');
-            $sortOrder = $request->input('sort_order', 'desc');
-            $query->orderBy($sortField, $sortOrder);
+            // Initialize base query
+            $query = DeductibleServiceDebt::query();
             
-            // Get all filtered data
-            $allData = $query->get();
-
-            // Get unique values for filters (create separate query without ORDER BY for DISTINCT)
-            $filterQuery = DeductibleServiceDebt::query();
-            if ($userType === 'farmer' && $supplierId) {
+            // Apply user-based filtering
+            if ($userType === 'farmer' && $userId) {
+                // ดึงข้อมูล farmer จาก user_farmer table
                 $farmer = DB::table('user_farmer')
-                    ->where('supplier_number', $supplierId)
+                    ->where('id', $userId)
                     ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
                     ->first();
                     
                 if ($farmer) {
-                    $filterQuery->where(function($q) use ($farmer) {
+                    $query->where(function($q) use ($farmer) {
+                        // Filter by individual customer ID if exists
                         if (!empty($farmer->ma_kh_ca_nhan)) {
                             $q->where('ma_khach_hang_ca_nhan', $farmer->ma_kh_ca_nhan);
                         }
+                        // Filter by business customer ID if exists
                         if (!empty($farmer->ma_kh_doanh_nghiep)) {
                             $q->orWhere('ma_khach_hang_doanh_nghiep', $farmer->ma_kh_doanh_nghiep);
                         }
                     });
+                } else {
+                    // If farmer not found, return empty result with proper structure
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'No data found for this farmer',
+                        'data' => [],
+                        'unique_filters' => [
+                            'tram' => [],
+                            'vu_dau_tu' => [],
+                            'category_debt' => [],
+                            'loai_tien' => [],
+                            'loai_lai_suat' => [],
+                            'vu_thanh_toan' => [],
+                            'loai_dau_tu' => [],
+                        ],
+                        'totals' => [
+                            'total_debt' => 0,
+                            'total_paid' => 0,
+                            'total_remaining' => 0,
+                            'total_interest' => 0
+                        ]
+                    ]);
                 }
             }
+            // สำหรับ employee ไม่ต้องกรองข้อมูล (แสดงทั้งหมด)
             
-            $uniqueFilters = [
-                'tram' => $filterQuery->distinct()->pluck('tram')->filter()->values(),
-                'vu_dau_tu' => $filterQuery->distinct()->pluck('vu_dau_tu')->filter()->values(),
-                'category_debt' => $filterQuery->distinct()->pluck('category_debt')->filter()->values(),
-                'loai_tien' => $filterQuery->distinct()->pluck('loai_tien')->filter()->values(),
-                'loai_lai_suat' => $filterQuery->distinct()->pluck('loai_lai_suat')->filter()->values(),
-                'vu_thanh_toan' => $filterQuery->distinct()->pluck('vu_thanh_toan')->filter()->values(),
-                'loai_dau_tu' => $filterQuery->distinct()->pluck('loai_dau_tu')->filter()->values(),
-            ];
-            
-            // Calculate overall totals
-            $totals = [
-                'total_debt' => $allData->sum('so_tien_no_goc_da_quy'),
-                'total_paid' => $allData->sum('da_tra_goc'),
-                'total_remaining' => $allData->sum('so_tien_con_lai'),
-                'total_interest' => $allData->sum('tien_lai')
-            ];
-            
-            return response()->json([
-                'status' => 'success',
-                'message' => 'All data retrieved successfully',
-                'data' => $allData,
-                'unique_filters' => $uniqueFilters,
-                'totals' => $totals
-            ]);
-        } else {
-            // Apply additional filters for paginated results
-            if ($request->has('search') && $request->search) {
-                $search = $request->search;
-                $query->where(function($q) use ($search) {
-                    $q->where('invoicenumber', 'like', "%{$search}%")
-                      ->orWhere('vu_dau_tu', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%")
-                      ->orWhere('tram', 'like', "%{$search}%")
-                      ->orWhere('khach_hang_ca_nhan', 'like', "%{$search}%")
-                      ->orWhere('khach_hang_doanh_nghiep', 'like', "%{$search}%");
-                });
-            }
+            // Check if client requests all data (for client-side processing)
+            if ($request->has('all') && $request->all) {
+                // Apply basic filters if provided (optional for security/performance)
+                if ($request->has('search') && $request->search) {
+                    $search = $request->search;
+                    $query->where(function($q) use ($search) {
+                        $q->where('invoicenumber', 'like', "%{$search}%")
+                          ->orWhere('vu_dau_tu', 'like', "%{$search}%")
+                          ->orWhere('description', 'like', "%{$search}%")
+                          ->orWhere('tram', 'like', "%{$search}%")
+                          ->orWhere('khach_hang_ca_nhan', 'like', "%{$search}%")
+                          ->orWhere('khach_hang_doanh_nghiep', 'like', "%{$search}%");
+                    });
+                }
+                
+                // Apply sorting
+                $sortField = $request->input('sort_by', 'ngay_phat_sinh');
+                $sortOrder = $request->input('sort_order', 'desc');
+                $query->orderBy($sortField, $sortOrder);
+                
+                // Get all filtered data
+                $allData = $query->get();
 
-            // Apply sorting
-            $sortField = $request->input('sort_by', 'ngay_phat_sinh');
-            $sortOrder = $request->input('sort_order', 'desc');
-            $query->orderBy($sortField, $sortOrder);
-            
-            // Paginate the results
-            $perPage = $request->input('per_page', 15);
-            $page = $request->input('page', 1);
-            
-            $debts = $query->paginate($perPage, ['*'], 'page', $page);
-            
-            // Get unique values for filters (create separate query without ORDER BY for DISTINCT)
-            $baseQuery = DeductibleServiceDebt::query();
-            if ($userType === 'farmer' && $supplierId) {
-                $farmer = DB::table('user_farmer')
-                    ->where('supplier_number', $supplierId)
-                    ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
-                    ->first();
-                    
-                if ($farmer) {
+                // Get unique values for filters (ปรับปรุงให้กรองตาม user type ด้วย)
+                $uniqueTram = DeductibleServiceDebt::query();
+                $uniqueVuDauTu = DeductibleServiceDebt::query();
+                $uniqueCategoryDebt = DeductibleServiceDebt::query();
+                $uniqueLoaiTien = DeductibleServiceDebt::query();
+                $uniqueLoaiLaiSuat = DeductibleServiceDebt::query();
+                $uniqueVuThanhToan = DeductibleServiceDebt::query();
+                $uniqueLoaiDauTu = DeductibleServiceDebt::query();
+
+                // ถ้าเป็น farmer ให้กรองข้อมูล unique values ด้วย
+                if ($userType === 'farmer' && isset($farmer)) {
+                    $filterCondition = function($query) use ($farmer) {
+                        $query->where(function($q) use ($farmer) {
+                            if (!empty($farmer->ma_kh_ca_nhan)) {
+                                $q->where('ma_khach_hang_ca_nhan', $farmer->ma_kh_ca_nhan);
+                            }
+                            if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                                $q->orWhere('ma_khach_hang_doanh_nghiep', $farmer->ma_kh_doanh_nghiep);
+                            }
+                        });
+                    };
+
+                    $uniqueTram = $uniqueTram->where($filterCondition);
+                    $uniqueVuDauTu = $uniqueVuDauTu->where($filterCondition);
+                    $uniqueCategoryDebt = $uniqueCategoryDebt->where($filterCondition);
+                    $uniqueLoaiTien = $uniqueLoaiTien->where($filterCondition);
+                    $uniqueLoaiLaiSuat = $uniqueLoaiLaiSuat->where($filterCondition);
+                    $uniqueVuThanhToan = $uniqueVuThanhToan->where($filterCondition);
+                    $uniqueLoaiDauTu = $uniqueLoaiDauTu->where($filterCondition);
+                }
+
+                $uniqueFilters = [
+                    'tram' => $uniqueTram->distinct()->pluck('tram')->filter()->values(),
+                    'vu_dau_tu' => $uniqueVuDauTu->distinct()->pluck('vu_dau_tu')->filter()->values(),
+                    'category_debt' => $uniqueCategoryDebt->distinct()->pluck('category_debt')->filter()->values(),
+                    'loai_tien' => $uniqueLoaiTien->distinct()->pluck('loai_tien')->filter()->values(),
+                    'loai_lai_suat' => $uniqueLoaiLaiSuat->distinct()->pluck('loai_lai_suat')->filter()->values(),
+                    'vu_thanh_toan' => $uniqueVuThanhToan->distinct()->pluck('vu_thanh_toan')->filter()->values(),
+                    'loai_dau_tu' => $uniqueLoaiDauTu->distinct()->pluck('loai_dau_tu')->filter()->values(),
+                ];
+                
+                // Calculate overall totals
+                $totals = [
+                    'total_debt' => $allData->sum('so_tien_no_goc_da_quy'),
+                    'total_paid' => $allData->sum('da_tra_goc'),
+                    'total_remaining' => $allData->sum('so_tien_con_lai'),
+                    'total_interest' => $allData->sum('tien_lai')
+                ];
+                
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'All data retrieved successfully',
+                    'data' => $allData,
+                    'unique_filters' => $uniqueFilters,
+                    'totals' => $totals
+                ]);
+            } else {
+                // Apply additional filters for paginated results
+                if ($request->has('search') && $request->search) {
+                    $search = $request->search;
+                    $query->where(function($q) use ($search) {
+                        $q->where('invoicenumber', 'like', "%{$search}%")
+                          ->orWhere('vu_dau_tu', 'like', "%{$search}%")
+                          ->orWhere('description', 'like', "%{$search}%")
+                          ->orWhere('tram', 'like', "%{$search}%")
+                          ->orWhere('khach_hang_ca_nhan', 'like', "%{$search}%")
+                          ->orWhere('khach_hang_doanh_nghiep', 'like', "%{$search}%");
+                    });
+                }
+
+                // Apply sorting
+                $sortField = $request->input('sort_by', 'ngay_phat_sinh');
+                $sortOrder = $request->input('sort_order', 'desc');
+                $query->orderBy($sortField, $sortOrder);
+                
+                // Paginate the results
+                $perPage = $request->input('per_page', 15);
+                $page = $request->input('page', 1);
+                
+                $debts = $query->paginate($perPage, ['*'], 'page', $page);
+                
+                // Get unique values for filters (ปรับปรุงให้กรองตาม user type ด้วย)
+                $baseQuery = DeductibleServiceDebt::query();
+                if ($userType === 'farmer' && isset($farmer)) {
                     $baseQuery->where(function($q) use ($farmer) {
                         if (!empty($farmer->ma_kh_ca_nhan)) {
                             $q->where('ma_khach_hang_ca_nhan', $farmer->ma_kh_ca_nhan);
@@ -182,45 +193,59 @@ public function index(Request $request)
                         }
                     });
                 }
+                
+                $uniqueFilters = [
+                    'tram' => $baseQuery->distinct()->pluck('tram')->filter()->values(),
+                    'vu_dau_tu' => $baseQuery->distinct()->pluck('vu_dau_tu')->filter()->values(),
+                    'category_debt' => $baseQuery->distinct()->pluck('category_debt')->filter()->values(),
+                    'loai_tien' => $baseQuery->distinct()->pluck('loai_tien')->filter()->values(),
+                    'loai_lai_suat' => $baseQuery->distinct()->pluck('loai_lai_suat')->filter()->values(),
+                    'vu_thanh_toan' => $baseQuery->distinct()->pluck('vu_thanh_toan')->filter()->values(),
+                    'loai_dau_tu' => $baseQuery->distinct()->pluck('loai_dau_tu')->filter()->values(),
+                ];
+                
+                // Calculate totals based on current query
+                $totalsQuery = clone $query;
+                $totals = [
+                    'total_debt' => $totalsQuery->sum('so_tien_no_goc_da_quy'),
+                    'total_paid' => $totalsQuery->sum('da_tra_goc'),
+                    'total_remaining' => $totalsQuery->sum('so_tien_con_lai'),
+                    'total_interest' => $totalsQuery->sum('tien_lai')
+                ];
+                
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Data retrieved successfully',
+                    'data' => $debts,
+                    'unique_filters' => $uniqueFilters,
+                    'totals' => $totals
+                ]);
             }
-            
-            $uniqueFilters = [
-                'tram' => $baseQuery->distinct()->pluck('tram')->filter()->values(),
-                'vu_dau_tu' => $baseQuery->distinct()->pluck('vu_dau_tu')->filter()->values(),
-                'category_debt' => $baseQuery->distinct()->pluck('category_debt')->filter()->values(),
-                'loai_tien' => $baseQuery->distinct()->pluck('loai_tien')->filter()->values(),
-                'loai_lai_suat' => $baseQuery->distinct()->pluck('loai_lai_suat')->filter()->values(),
-                'vu_thanh_toan' => $baseQuery->distinct()->pluck('vu_thanh_toan')->filter()->values(),
-                'loai_dau_tu' => $baseQuery->distinct()->pluck('loai_dau_tu')->filter()->values(),
-            ];
-            
-            // Calculate totals based on current query
-            $totalsQuery = clone $query;
-            $totals = [
-                'total_debt' => $totalsQuery->sum('so_tien_no_goc_da_quy'),
-                'total_paid' => $totalsQuery->sum('da_tra_goc'),
-                'total_remaining' => $totalsQuery->sum('so_tien_con_lai'),
-                'total_interest' => $totalsQuery->sum('tien_lai')
-            ];
+        } catch (\Exception $e) {
+            Log::error('Error fetching deductible service debts: ' . $e->getMessage());
             
             return response()->json([
-                'status' => 'success',
-                'message' => 'Data retrieved successfully',
-                'data' => $debts,
-                'unique_filters' => $uniqueFilters,
-                'totals' => $totals
-            ]);
+                'status' => 'error',
+                'message' => 'Failed to retrieve data: ' . $e->getMessage(),
+                'data' => null,
+                'unique_filters' => [
+                    'tram' => [],
+                    'vu_dau_tu' => [],
+                    'category_debt' => [],
+                    'loai_tien' => [],
+                    'loai_lai_suat' => [],
+                    'vu_thanh_toan' => [],
+                    'loai_dau_tu' => [],
+                ],
+                'totals' => [
+                    'total_debt' => 0,
+                    'total_paid' => 0,
+                    'total_remaining' => 0,
+                    'total_interest' => 0
+                ]
+            ], 500);
         }
-    } catch (\Exception $e) {
-        Log::error('Error fetching deductible service debts: ' . $e->getMessage());
-        
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Failed to retrieve data: ' . $e->getMessage(),
-            'data' => null
-        ], 500);
     }
-}
 
 private function getUniqueValues()
 {
@@ -610,11 +635,22 @@ public function checkImportProgress($importId)
  * Show the specified debt details by invoicenumber.
  *
  * @param  string  $invoicenumber
+ * @param  \Illuminate\Http\Request  $request
  * @return \Illuminate\Http\Response
  */
-public function showDetails($invoicenumber)
+public function showDetails($invoicenumber, Request $request)
 {
     try {
+        // ดึงข้อมูล user type และ user ID จาก headers ที่ JwtMiddleware ส่งมา
+        $userType = $request->header('X-User-Type');
+        $userId = $request->header('X-User-ID');
+        
+        \Log::info('DeductibleServiceDebt showDetails - Headers received:', [
+            'X-User-Type' => $userType,
+            'X-User-ID' => $userId,
+            'invoicenumber' => $invoicenumber
+        ]);
+        
         // Fetch debt details
         $debt = DB::table('deductible_service_debt')
             ->where('invoicenumber', $invoicenumber)
@@ -627,8 +663,57 @@ public function showDetails($invoicenumber)
             ], 404);
         }
         
+        // ตัวแปรสำหรับเก็บข้อมูล farmer (จะใช้ในการกรองประวัติการชำระเงิน)
+        $farmer = null;
+        
+        // ถ้าเป็น farmer ให้ตรวจสอบสิทธิ์การเข้าถึง
+        if ($userType === 'farmer' && $userId) {
+            // ดึงข้อมูล farmer จาก user_farmer table
+            $farmer = DB::table('user_farmer')
+                ->where('id', $userId)
+                ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
+                ->first();
+                
+            if (!$farmer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Farmer data not found'
+                ], 404);
+            }
+            
+            // ตรวจสอบว่า farmer มีสิทธิ์เข้าถึงข้อมูลนี้หรือไม่
+            $hasAccess = false;
+            
+            // ตรวจสอบ ma_khach_hang_ca_nhan
+            if (!empty($farmer->ma_kh_ca_nhan) && 
+                $debt->ma_khach_hang_ca_nhan === $farmer->ma_kh_ca_nhan) {
+                $hasAccess = true;
+            }
+            
+            // ตรวจสอบ ma_khach_hang_doanh_nghiep
+            if (!empty($farmer->ma_kh_doanh_nghiep) && 
+                $debt->ma_khach_hang_doanh_nghiep === $farmer->ma_kh_doanh_nghiep) {
+                $hasAccess = true;
+            }
+            
+            if (!$hasAccess) {
+                \Log::warning('Farmer access denied for debt details:', [
+                    'farmer_id' => $userId,
+                    'farmer_ma_kh_ca_nhan' => $farmer->ma_kh_ca_nhan,
+                    'farmer_ma_kh_doanh_nghiep' => $farmer->ma_kh_doanh_nghiep,
+                    'debt_ma_khach_hang_ca_nhan' => $debt->ma_khach_hang_ca_nhan,
+                    'debt_ma_khach_hang_doanh_nghiep' => $debt->ma_khach_hang_doanh_nghiep
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền truy cập thông tin công nợ này.'
+                ], 403);
+            }
+        }
+        
         // Fetch payment history with additional information
-        $paymentHistory = DB::table('Logs_Phieu_Tinh_Lai_dv as l')
+        $paymentHistoryQuery = DB::table('Logs_Phieu_Tinh_Lai_dv as l')
             ->where('l.Invoice_Number_Phan_Bo_Dau_Tu', $invoicenumber)
             ->leftJoin('tb_phieu_trinh_thanh_toan as pt', 'l.So_Tro_Trinh', '=', 'pt.so_to_trinh')
             ->leftJoin('tb_de_nghi_thanhtoan_dv as dv', function($join) use ($debt) {
@@ -640,7 +725,31 @@ public function showDetails($invoicenumber)
                 } else if (!empty($debt->ma_khach_hang_doanh_nghiep)) {
                     $join->where('dv.ma_khach_hang_doanh_nghiep', '=', $debt->ma_khach_hang_doanh_nghiep);
                 }
-            })
+            });
+            
+        // ถ้าเป็น farmer ให้กรองประวัติการชำระเงินด้วย
+        if ($userType === 'farmer' && $farmer) {
+            $paymentHistoryQuery->where(function($q) use ($farmer) {
+                if (!empty($farmer->ma_kh_ca_nhan)) {
+                    $q->where('dv.ma_khach_hang_ca_nhan', $farmer->ma_kh_ca_nhan);
+                }
+                if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                    $q->orWhere('dv.ma_khach_hang_doanh_nghiep', $farmer->ma_kh_doanh_nghiep);
+                }
+            });
+        }
+        
+        // Log query สำหรับ debug
+        \Log::info('Payment history query debug:', [
+            'invoicenumber' => $invoicenumber,
+            'debt_ma_khach_hang_ca_nhan' => $debt->ma_khach_hang_ca_nhan ?? 'null',
+            'debt_ma_khach_hang_doanh_nghiep' => $debt->ma_khach_hang_doanh_nghiep ?? 'null',
+            'farmer_ma_kh_ca_nhan' => $farmer->ma_kh_ca_nhan ?? 'null',
+            'farmer_ma_kh_doanh_nghiep' => $farmer->ma_kh_doanh_nghiep ?? 'null',
+            'user_type' => $userType
+        ]);
+        
+        $paymentHistory = $paymentHistoryQuery
             ->select(
                 'l.Ma_So_Phieu_PDN_Thu_No as receipt_code',
                 'l.Invoice_Number_Phan_Bo_Dau_Tu as invoice_number',
@@ -648,24 +757,179 @@ public function showDetails($invoicenumber)
                 'l.Tien_Lai as interest_paid',
                 'l.Ngay_Tra as payment_date',
                 'l.Category_Debt as category_debt',
-                'l.So_Tro_Trinh as proposal_number', // Added field for Số tờ trình
-                'dv.ma_giai_ngan as disbursement_code' // Added field for Mã giải ngân
+                'l.So_Tro_Trinh as proposal_number',
+                'dv.ma_giai_ngan as disbursement_code'
             )
             ->orderBy('l.Ngay_Tra', 'desc')
             ->get();
+        
+        // Log ผลลัพธ์ payment history สำหรับ debug
+        \Log::info('Payment history result:', [
+            'count' => $paymentHistory->count(),
+            'first_record' => $paymentHistory->first()
+        ]);
+        
+        // ถ้าไม่มีข้อมูลใน payment history ให้ลองค้นหาแบบง่ายกว่า
+        if ($paymentHistory->isEmpty()) {
+            \Log::info('No payment history found, trying simple query');
+            
+            $simplePaymentHistory = DB::table('Logs_Phieu_Tinh_Lai_dv')
+                ->where('Invoice_Number_Phan_Bo_Dau_Tu', $invoicenumber)
+                ->select(
+                    'Ma_So_Phieu_PDN_Thu_No as receipt_code',
+                    'Invoice_Number_Phan_Bo_Dau_Tu as invoice_number',
+                    'Da_Tra_Goc as principal_paid',
+                    'Tien_Lai as interest_paid',
+                    'Ngay_Tra as payment_date',
+                    'Category_Debt as category_debt',
+                    'So_Tro_Trinh as proposal_number',
+                    DB::raw('NULL as disbursement_code')
+                )
+                ->orderBy('Ngay_Tra', 'desc')
+                ->get();
+            
+            \Log::info('Simple payment history result:', [
+                'count' => $simplePaymentHistory->count(),
+                'first_record' => $simplePaymentHistory->first()
+            ]);
+            
+            // ถ้าเป็น farmer ให้กรองผลลัพธ์ที่ได้
+            if ($userType === 'farmer' && $farmer && $simplePaymentHistory->isNotEmpty()) {
+                // สำหรับ simple query ที่ไม่มี join ให้ใช้ข้อมูลจาก debt record เพื่อกรอง
+                // เนื่องจากไม่สามารถ join กับ table dv ได้ในขั้นตอนนี้
+                $paymentHistory = $simplePaymentHistory;
+            } else {
+                $paymentHistory = $simplePaymentHistory;
+            }
+        }
             
         return response()->json([
             'success' => true,
             'document' => $debt,
-            'paymentHistory' => $paymentHistory
+            'paymentHistory' => $paymentHistory,
+            'user_type' => $userType,
+            'debug_info' => [
+                'payment_history_count' => $paymentHistory->count(),
+                'debt_customer_ca_nhan' => $debt->ma_khach_hang_ca_nhan ?? 'null',
+                'debt_customer_doanh_nghiep' => $debt->ma_khach_hang_doanh_nghiep ?? 'null',
+                'farmer_ca_nhan' => $farmer->ma_kh_ca_nhan ?? 'null',
+                'farmer_doanh_nghiep' => $farmer->ma_kh_doanh_nghiep ?? 'null'
+            ]
         ]);
         
     } catch (\Exception $e) {
-        Log::error('Error retrieving debt details: ' . $e->getMessage());
+        Log::error('Error retrieving debt details: ' . $e->getMessage(), [
+            'invoicenumber' => $invoicenumber,
+            'user_type' => $userType ?? 'unknown',
+            'user_id' => $userId ?? 'unknown',
+            'trace' => $e->getTraceAsString()
+        ]);
+        
         return response()->json([
             'success' => false,
             'message' => 'Đã xảy ra lỗi khi tải dữ liệu công nợ.',
             'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Check access permission for debt details
+ *
+ * @param string $invoicenumber
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function checkAccess($invoicenumber, Request $request)
+{
+    try {
+        // Get user type and authentication info from headers set by JwtMiddleware
+        $userType = $request->header('X-User-Type', 'employee');
+        $userId = $request->header('X-User-ID');
+        
+        \Log::info('Check access for debt details:', [
+            'invoicenumber' => $invoicenumber,
+            'userType' => $userType,
+            'userId' => $userId
+        ]);
+        
+        // ค้นหาเอกสารที่ต้องการเข้าถึง
+        $document = DB::table('deductible_service_debt')
+            ->where('invoicenumber', $invoicenumber)
+            ->first();
+            
+        if (!$document) {
+            return response()->json([
+                'hasAccess' => false,
+                'message' => 'Document not found'
+            ], 404);
+        }
+        
+        // ถ้าเป็น employee ให้เข้าถึงได้ทั้งหมด
+        if ($userType === 'employee') {
+            return response()->json([
+                'hasAccess' => true,
+                'userType' => 'employee'
+            ]);
+        }
+        
+        // ถ้าเป็น farmer ให้ตรวจสอบสิทธิ์การเข้าถึงตาม customer ID
+        if ($userType === 'farmer') {
+            // ดึงข้อมูล farmer จาก user_farmer table
+            $farmer = DB::table('user_farmer')
+                ->where('id', $userId)
+                ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
+                ->first();
+                
+            if (!$farmer) {
+                return response()->json([
+                    'hasAccess' => false,
+                    'message' => 'Farmer data not found'
+                ], 404);
+            }
+            
+            // ตรวจสอบว่า farmer มีสิทธิ์เข้าถึงเอกสารนี้หรือไม่
+            $hasAccess = false;
+            
+            // ตรวจสอบ ma_khach_hang_ca_nhan
+            if (!empty($farmer->ma_kh_ca_nhan) && 
+                $document->ma_khach_hang_ca_nhan === $farmer->ma_kh_ca_nhan) {
+                $hasAccess = true;
+            }
+            
+            // ตรวจสอบ ma_khach_hang_doanh_nghiep
+            if (!empty($farmer->ma_kh_doanh_nghiep) && 
+                $document->ma_khach_hang_doanh_nghiep === $farmer->ma_kh_doanh_nghiep) {
+                $hasAccess = true;
+            }
+            
+            return response()->json([
+                'hasAccess' => $hasAccess,
+                'userType' => 'farmer',
+                'debug_info' => [
+                    'farmer_ma_kh_ca_nhan' => $farmer->ma_kh_ca_nhan,
+                    'farmer_ma_kh_doanh_nghiep' => $farmer->ma_kh_doanh_nghiep,
+                    'document_ma_khach_hang_ca_nhan' => $document->ma_khach_hang_ca_nhan,
+                    'document_ma_khach_hang_doanh_nghiep' => $document->ma_khach_hang_doanh_nghiep
+                ]
+            ]);
+        }
+        
+        // กรณีอื่นๆ ไม่อนุญาต
+        return response()->json([
+            'hasAccess' => false,
+            'message' => 'Access denied'
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error checking debt access: ' . $e->getMessage(), [
+            'invoicenumber' => $invoicenumber,
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'hasAccess' => false,
+            'message' => 'Server error: ' . $e->getMessage()
         ], 500);
     }
 }

@@ -266,6 +266,7 @@ export default {
                 });
 
                 this.handleLoginSuccess(response.data);
+                this.$router.push("/Dashboard");
             } catch (error) {
                 this.handleLoginError(error);
             } finally {
@@ -329,7 +330,7 @@ export default {
                 this.store.loadPermissionsAndComponents().then(() => {
                     // นำทางไปยังหน้า dashboard
 
-                    this.$router.push("/");
+                    this.$router.push("/DashboardFarmer");
                     // เพิ่มโค้ดนี้เพื่อ initialize sidebar toggle หลังจาก login สำเร็จ
                     this.$nextTick(() => {
                         this.initializeSidebarToggle();
