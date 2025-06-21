@@ -18,109 +18,143 @@ class PhieuthunodichvuController extends Controller
      * Display a listing of all records
      */
 
-public function index(Request $request)
-{
-    try {
-        $query = Phieuthunodichvu::query();
-
-        // Apply pagination
-        $perPage = $request->input('per_page', 50);
-        $page = $request->input('page', 1);
-        
-        // Get all records first
-        $phieuthunoRecords = $query->get();
-        
-        // Extract all So_Tro_Trinh values to use for mapping
-        $soToTrinhValues = $phieuthunoRecords->pluck('So_Tro_Trinh')->filter()->unique()->toArray();
-        
-        // Get the ma_trinh_thanh_toan values associated with so_to_trinh
-        $trinhThanhToanMapping = [];
-        if (!empty($soToTrinhValues)) {
-            $trinhThanhToanRecords = DB::table('tb_phieu_trinh_thanh_toan')
-                ->whereIn('so_to_trinh', $soToTrinhValues)
-                ->select('so_to_trinh', 'ma_trinh_thanh_toan')
-                ->get();
-                
-            foreach ($trinhThanhToanRecords as $record) {
-                $trinhThanhToanMapping[$record->so_to_trinh] = $record->ma_trinh_thanh_toan;
-            }
-        }
-        
-        // Get all ma_trinh_thanh_toan values to fetch ma_giai_ngan
-        $maTrinhThanhToanValues = array_values($trinhThanhToanMapping);
-        
-        // Prepare mapping for ma_giai_ngan
-        $giaiNganMapping = [];
-        if (!empty($maTrinhThanhToanValues)) {
-            // Get all de_nghi_thanhtoan_dv records with matching ma_trinh_thanh_toan
-            $deNghiThanhToanRecords = DB::table('tb_de_nghi_thanhtoan_dv')
-                ->whereIn('ma_trinh_thanh_toan', $maTrinhThanhToanValues)
-                ->select('ma_trinh_thanh_toan', 'ma_giai_ngan', 'ma_khach_hang_ca_nhan', 'ma_khach_hang_doanh_nghiep')
-                ->get();
-                
-            foreach ($deNghiThanhToanRecords as $record) {
-                $giaiNganMapping[$record->ma_trinh_thanh_toan] = $record->ma_giai_ngan;
-            }
-        }
-        
-        // Map to final response format
-        $records = $phieuthunoRecords->map(function ($item) use ($trinhThanhToanMapping, $giaiNganMapping) {
-            // Get ma_trinh_thanh_toan from so_to_trinh
-            $maTrinhThanhToan = $trinhThanhToanMapping[$item->So_Tro_Trinh] ?? null;
+  /**
+     * Display a listing of all records
+     */
+    public function index(Request $request)
+    {
+        try {
+            // ดึงข้อมูล user type และ user ID จาก headers ที่ JwtMiddleware ส่งมา
+            $userType = $request->header('X-User-Type');
+            $userId = $request->header('X-User-ID');
             
-            // Get ma_giai_ngan from ma_trinh_thanh_toan
-            $maGiaiNgan = null;
-            if ($maTrinhThanhToan) {
-                $maGiaiNgan = $giaiNganMapping[$maTrinhThanhToan] ?? null;
+            // Initialize base query
+            $query = DB::table('Logs_Phieu_Tinh_Lai_dv');
+            
+            // Apply user-based filtering
+            if ($userType === 'farmer' && $userId) {
+                // ดึงข้อมูล farmer จาก user_farmer table
+                $farmer = DB::table('user_farmer')
+                    ->where('id', $userId)
+                    ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
+                    ->first();
+                    
+                if ($farmer) {
+                    $query->where(function($q) use ($farmer) {
+                        // Filter by individual customer ID if exists
+                        if (!empty($farmer->ma_kh_ca_nhan)) {
+                            $q->where('Ma_Khach_Hang_Ca_Nhan', $farmer->ma_kh_ca_nhan);
+                        }
+                        // Filter by business customer ID if exists
+                        if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                            $q->orWhere('Ma_Khach_Hang_Doanh_Nghiep', $farmer->ma_kh_doanh_nghiep);
+                        }
+                    });
+                } else {
+                    // If farmer not found, return empty result with proper structure
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'No data found for this farmer',
+                        'data' => []
+                    ]);
+                }
+            }
+            // สำหรับ employee ไม่ต้องกรองข้อมูล (แสดงทั้งหมด)
+            
+            // Get all filtered records
+            $phieuthunoRecords = $query->get();
+            
+            // Extract all So_Tro_Trinh values to use for mapping
+            $soToTrinhValues = $phieuthunoRecords->pluck('So_Tro_Trinh')->filter()->unique()->toArray();
+            
+            // Get the ma_trinh_thanh_toan values associated with so_to_trinh
+            $trinhThanhToanMapping = [];
+            if (!empty($soToTrinhValues)) {
+                $trinhThanhToanRecords = DB::table('tb_phieu_trinh_thanh_toan')
+                    ->whereIn('so_to_trinh', $soToTrinhValues)
+                    ->select('so_to_trinh', 'ma_trinh_thanh_toan')
+                    ->get();
+                    
+                foreach ($trinhThanhToanRecords as $record) {
+                    $trinhThanhToanMapping[$record->so_to_trinh] = $record->ma_trinh_thanh_toan;
+                }
             }
             
-            return [
-                'id' => $item->Ma_So_Phieu_PDN_Thu_No,
-                'ma_so_phieu' => $item->Ma_So_Phieu_PDN_Thu_No,
-                'ma_so_phieu_phan_bo' => $item->Ma_So_Phieu_Phan_Bo_Dau_Tu,
-                'phan_bo_dau_tu' => $item->Phan_Bo_Dau_Tu,
-                'so_phieu_phan_bo_dau_tu' => $item->So_Phieu_Phan_Bo_Dau_Tu,
-                'invoice_number' => $item->Invoice_Number_Phan_Bo_Dau_Tu,
-                'da_tra_goc' => $item->Da_Tra_Goc,
-                'ngay_vay' => $item->Ngay_Vay,
-                'ngay_tra' => $item->Ngay_Tra,
-                'lai_suat' => $item->Lai_Suat_Phan_Bo_Dau_Tu,
-                'tien_lai' => $item->Tien_Lai,
-                'tinh_trang' => $item->Tinh_Trang_PDN_Thu_No,
-                'tinh_trang_duyet' => $item->Tinh_Trang_Duyet_PDN_Thu_No,
-                'da_ho_tro_lai' => $item->Da_Ho_Tro_Lai,
-                'phieu_tinh_tien_mia' => $item->Phieu_Tinh_Tien_Mia_PDN_Thu_No,
-                'created_on' => $item->Created_On,
-                'vu_thanh_toan' => $item->Vu_Thanh_Toan_Phan_Bo_Dau_Tu,
-                'khach_hang' => $item->Khach_Hang_PDN_Thu_No,
-                'khach_hang_ca_nhan' => $item->Khach_Hang_Ca_Nhan_PDN_Thu_No,
-                'khach_hang_doanh_nghiep' => $item->Khach_Hang_Doanh_Nghiep_PDN_Thu_No,
-                'xoa_no' => $item->Xoa_No_Phan_Bo_Dau_Tu,
-                'vu_dau_tu' => $item->Vu_Dau_Tu_Phan_Bo_Dau_Tu,
-                'owner' => $item->Owner_PDN_Thu_No,
-                'so_tro_trinh' => $item->So_Tro_Trinh,
-                'category_debt' => $item->Category_Debt,
-                'description' => $item->Description,
-                'ma_khach_hang_ca_nhan' => $item->Ma_Khach_Hang_Ca_Nhan,
-                'ma_khach_hang_doanh_nghiep' => $item->Ma_Khach_Hang_Doanh_Nghiep,
-                'ma_giai_ngan' => $maGiaiNgan // New field added
-            ];
-        });
+            // Get all ma_trinh_thanh_toan values to fetch ma_giai_ngan
+            $maTrinhThanhToanValues = array_values($trinhThanhToanMapping);
+            
+            // Prepare mapping for ma_giai_ngan
+            $giaiNganMapping = [];
+            if (!empty($maTrinhThanhToanValues)) {
+                // Get all de_nghi_thanhtoan_dv records with matching ma_trinh_thanh_toan
+                $deNghiThanhToanRecords = DB::table('tb_de_nghi_thanhtoan_dv')
+                    ->whereIn('ma_trinh_thanh_toan', $maTrinhThanhToanValues)
+                    ->select('ma_trinh_thanh_toan', 'ma_giai_ngan', 'ma_khach_hang_ca_nhan', 'ma_khach_hang_doanh_nghiep')
+                    ->get();
+                    
+                foreach ($deNghiThanhToanRecords as $record) {
+                    $giaiNganMapping[$record->ma_trinh_thanh_toan] = $record->ma_giai_ngan;
+                }
+            }
+            
+            // Map to final response format
+            $records = $phieuthunoRecords->map(function ($item) use ($trinhThanhToanMapping, $giaiNganMapping) {
+                // Get ma_trinh_thanh_toan from so_to_trinh
+                $maTrinhThanhToan = $trinhThanhToanMapping[$item->So_Tro_Trinh] ?? null;
+                
+                // Get ma_giai_ngan from ma_trinh_thanh_toan
+                $maGiaiNgan = null;
+                if ($maTrinhThanhToan) {
+                    $maGiaiNgan = $giaiNganMapping[$maTrinhThanhToan] ?? null;
+                }
+                
+                return [
+                    'id' => $item->Ma_So_Phieu_PDN_Thu_No,
+                    'ma_so_phieu' => $item->Ma_So_Phieu_PDN_Thu_No,
+                    'ma_so_phieu_phan_bo' => $item->Ma_So_Phieu_Phan_Bo_Dau_Tu,
+                    'phan_bo_dau_tu' => $item->Phan_Bo_Dau_Tu,
+                    'so_phieu_phan_bo_dau_tu' => $item->So_Phieu_Phan_Bo_Dau_Tu,
+                    'invoice_number' => $item->Invoice_Number_Phan_Bo_Dau_Tu,
+                    'da_tra_goc' => $item->Da_Tra_Goc,
+                    'ngay_vay' => $item->Ngay_Vay,
+                    'ngay_tra' => $item->Ngay_Tra,
+                    'lai_suat' => $item->Lai_Suat_Phan_Bo_Dau_Tu,
+                    'tien_lai' => $item->Tien_Lai,
+                    'tinh_trang' => $item->Tinh_Trang_PDN_Thu_No,
+                    'tinh_trang_duyet' => $item->Tinh_Trang_Duyet_PDN_Thu_No,
+                    'da_ho_tro_lai' => $item->Da_Ho_Tro_Lai,
+                    'phieu_tinh_tien_mia' => $item->Phieu_Tinh_Tien_Mia_PDN_Thu_No,
+                    'created_on' => $item->Created_On,
+                    'vu_thanh_toan' => $item->Vu_Thanh_Toan_Phan_Bo_Dau_Tu,
+                    'khach_hang' => $item->Khach_Hang_PDN_Thu_No,
+                    'khach_hang_ca_nhan' => $item->Khach_Hang_Ca_Nhan_PDN_Thu_No,
+                    'khach_hang_doanh_nghiep' => $item->Khach_Hang_Doanh_Nghiep_PDN_Thu_No,
+                    'xoa_no' => $item->Xoa_No_Phan_Bo_Dau_Tu,
+                    'vu_dau_tu' => $item->Vu_Dau_Tu_Phan_Bo_Dau_Tu,
+                    'owner' => $item->Owner_PDN_Thu_No,
+                    'so_tro_trinh' => $item->So_Tro_Trinh,
+                    'category_debt' => $item->Category_Debt,
+                    'description' => $item->Description,
+                    'ma_khach_hang_ca_nhan' => $item->Ma_Khach_Hang_Ca_Nhan,
+                    'ma_khach_hang_doanh_nghiep' => $item->Ma_Khach_Hang_Doanh_Nghiep,
+                    'ma_giai_ngan' => $maGiaiNgan // New field added
+                ];
+            });
 
-        return response()->json([
-            'success' => true,
-            'data' => $records
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $records
+            ]);
 
-    } catch (\Exception $e) {
-        Log::error('Failed to fetch phieu thu no dich vu: ' . $e->getMessage());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to fetch records: ' . $e->getMessage()
-        ], 500);
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch phieu thu no dich vu: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch records: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
 
     /**
      * Show details for a specific record
