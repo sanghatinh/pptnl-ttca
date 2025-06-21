@@ -11,120 +11,119 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class DashboardFarmerReportControllers extends Controller
 {
-    /**
- * Get financial summary for farmer dashboard
- * 
- * @param Request $request
- * @return \Illuminate\Http\JsonResponse
- */
-public function getFinancialSummary(Request $request)
-{
-    try {
-        // Get supplier ID from request header
-        $supplierId = $request->header('X-Supplier-Number');
-        
-        // Try to get supplier ID from JWT token if not in header
-        if (!$supplierId) {
-            try {
-                $user = JWTAuth::parseToken()->authenticate();
-                if (isset($user->supplier_number)) {
-                    $supplierId = $user->supplier_number;
-                    Log::info('Using supplier ID from JWT token: ' . $supplierId);
-                } else {
-                    // Try to get from user_farmer relation if exists
-                    $farmer = DB::table('user_farmer')
-                        ->where('user_id', $user->id)
-                        ->first();
-                        
-                    if ($farmer && isset($farmer->supplier_number)) {
-                        $supplierId = $farmer->supplier_number;
-                        Log::info('Using supplier ID from user_farmer relation: ' . $supplierId);
+   public function getFinancialSummary(Request $request)
+    {
+        try {
+            // Get supplier ID from request header
+            $supplierId = $request->header('X-Supplier-Number');
+            
+            // Get selected investment project from request
+            $selectedInvestmentProject = $request->input('investment_project', 'all');
+            
+            // Try to get supplier ID from JWT token if not in header
+            if (!$supplierId) {
+                try {
+                    $user = JWTAuth::parseToken()->authenticate();
+                    if (isset($user->supplier_number)) {
+                        $supplierId = $user->supplier_number;
+                        Log::info('Using supplier ID from JWT token: ' . $supplierId);
+                    } else {
+                        // Try to get from user_farmer relation if exists
+                        $farmer = DB::table('user_farmer')
+                            ->where('user_id', $user->id)
+                            ->first();
+                            
+                        if ($farmer && isset($farmer->supplier_number)) {
+                            $supplierId = $farmer->supplier_number;
+                            Log::info('Using supplier ID from user_farmer relation: ' . $supplierId);
+                        }
                     }
+                } catch (\Exception $e) {
+                    Log::warning('Could not get supplier ID from JWT token: ' . $e->getMessage());
                 }
-            } catch (\Exception $e) {
-                Log::warning('Could not get supplier ID from JWT token: ' . $e->getMessage());
             }
-        }
-        
-        if (!$supplierId) {
-            Log::warning('No supplier ID provided in header or JWT token');
-            return response()->json([
-                'success' => false,
-                'message' => 'Supplier ID not provided in header or JWT token'
-            ], 400);
-        }
-        
-        // Add debug logging
-        Log::info('Looking up farmer with supplier number: ' . $supplierId);
+            
+            if (!$supplierId) {
+                Log::warning('No supplier ID provided in header or JWT token');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Supplier ID not provided in header or JWT token'
+                ], 400);
+            }
+            
+            // Add debug logging
+            Log::info('Looking up farmer with supplier number: ' . $supplierId);
+            Log::info('Investment project filter: ' . $selectedInvestmentProject);
 
-        // Get farmer user data from user_farmer table - check in multiple fields
-        $farmer = DB::table('user_farmer')
-            ->where('supplier_number', $supplierId)
-            ->orWhere('ma_kh_ca_nhan', $supplierId)
-            ->orWhere('ma_kh_doanh_nghiep', $supplierId)
-            ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep', 'id')
-            ->first();
+            // Get farmer user data from user_farmer table - check in multiple fields
+            $farmer = DB::table('user_farmer')
+                ->where('supplier_number', $supplierId)
+                ->orWhere('ma_kh_ca_nhan', $supplierId)
+                ->orWhere('ma_kh_doanh_nghiep', $supplierId)
+                ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep', 'id')
+                ->first();
 
-        if (!$farmer) {
-            Log::warning('Farmer not found with any ID matching: ' . $supplierId);
+            if (!$farmer) {
+                Log::warning('Farmer not found with any ID matching: ' . $supplierId);
+                
+                // Get the available supplier numbers for debugging
+                $availableSuppliers = DB::table('user_farmer')
+                    ->select('supplier_number', 'ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
+                    ->whereNotNull('supplier_number')
+                    ->orWhereNotNull('ma_kh_ca_nhan')
+                    ->orWhereNotNull('ma_kh_doanh_nghiep')
+                    ->limit(10)
+                    ->get();
+                
+                Log::info('Available IDs (sample): ' . json_encode($availableSuppliers));
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy nông dân với mã số: ' . $supplierId,
+                    'debug_info' => [
+                        'supplier_number' => $supplierId,
+                        'sample_available_suppliers' => $availableSuppliers
+                    ]
+                ], 404);
+            }
             
-            // Get the available supplier numbers for debugging
-            $availableSuppliers = DB::table('user_farmer')
-                ->select('supplier_number', 'ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
-                ->whereNotNull('supplier_number')
-                ->orWhereNotNull('ma_kh_ca_nhan')
-                ->orWhereNotNull('ma_kh_doanh_nghiep')
-                ->limit(10)
-                ->get();
+            Log::info('Found farmer with ID: ' . $farmer->id);
+
+            // Calculate totals for service payments (dich vu)
+            $servicePayments = $this->getServicePaymentsTotal($farmer, $selectedInvestmentProject);
             
-            Log::info('Available IDs (sample): ' . json_encode($availableSuppliers));
+            // Calculate totals for seed payments (hom giong)
+            $seedPayments = $this->getSeedPaymentsTotal($farmer, $selectedInvestmentProject);
             
+            // Return the financial summary
             return response()->json([
-                'success' => false,
-                'message' => 'Không tìm thấy nông dân với mã số: ' . $supplierId,
-                'debug_info' => [
-                    'supplier_number' => $supplierId,
-                    'sample_available_suppliers' => $availableSuppliers
+                'success' => true,
+                'data' => [
+                    'processing' => $servicePayments['processing'] + $seedPayments['processing'],
+                    'pending' => $servicePayments['pending'] + $seedPayments['pending'],
+                    'received' => $servicePayments['received'] + $seedPayments['received']
                 ]
-            ], 404);
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error getting farmer financial summary: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve financial summary: ' . $e->getMessage()
+            ], 500);
         }
-        
-        Log::info('Found farmer with ID: ' . $farmer->id);
-
-        // Calculate totals for service payments (dich vu)
-        $servicePayments = $this->getServicePaymentsTotal($farmer);
-        
-        // Calculate totals for seed payments (hom giong)
-        $seedPayments = $this->getSeedPaymentsTotal($farmer);
-        
-        // Return the financial summary
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'processing' => $servicePayments['processing'] + $seedPayments['processing'],
-                'pending' => $servicePayments['pending'] + $seedPayments['pending'],
-                'received' => $servicePayments['received'] + $seedPayments['received']
-            ]
-        ]);
-        
-    } catch (\Exception $e) {
-        Log::error('Error getting farmer financial summary: ' . $e->getMessage());
-        Log::error($e->getTraceAsString());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to retrieve financial summary: ' . $e->getMessage()
-        ], 500);
     }
-}
 
     /**
      * Get service payments totals by status
      * 
      * @param object $farmer
+     * @param string $selectedInvestmentProject
      * @return array
      */
-    private function getServicePaymentsTotal($farmer)
+    private function getServicePaymentsTotal($farmer, $selectedInvestmentProject = 'all')
     {
         // Initialize totals
         $totals = [
@@ -146,6 +145,11 @@ public function getFinancialSummary(Request $request)
                 $q->orWhere('ma_khach_hang_doanh_nghiep', $farmer->ma_kh_doanh_nghiep);
             }
         });
+        
+        // Apply investment project filter if not "all"
+        if ($selectedInvestmentProject !== 'all') {
+            $query->where('vu_dau_tu', $selectedInvestmentProject);
+        }
         
         // Get processing total (status = 'processing')
         $totals['processing'] = $query->clone()
@@ -169,9 +173,10 @@ public function getFinancialSummary(Request $request)
      * Get seed payments totals by status
      * 
      * @param object $farmer
+     * @param string $selectedInvestmentProject
      * @return array
      */
-    private function getSeedPaymentsTotal($farmer)
+    private function getSeedPaymentsTotal($farmer, $selectedInvestmentProject = 'all')
     {
         // Initialize totals
         $totals = [
@@ -194,6 +199,11 @@ public function getFinancialSummary(Request $request)
             }
         });
         
+        // Apply investment project filter if not "all"
+        if ($selectedInvestmentProject !== 'all') {
+            $query->where('vu_dau_tu', $selectedInvestmentProject);
+        }
+        
         // Get processing total (status = 'processing')
         $totals['processing'] = $query->clone()
             ->where('trang_thai_thanh_toan', 'processing')
@@ -211,7 +221,6 @@ public function getFinancialSummary(Request $request)
             
         return $totals;
     }
-
 
 /**
  * Get debt payment vs interest data for farmer dashboard
@@ -644,4 +653,191 @@ public function getPaymentRequests(Request $request)
     }
 }
 
+/**
+ * Get work items for farmer dashboard
+ * 
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getWorkItems(Request $request)
+{
+    try {
+        // Get supplier ID from request header
+        $supplierId = $request->header('X-Supplier-Number');
+        
+        // Get selected investment project from request
+        $selectedInvestmentProject = $request->input('investment_project', 'all');
+        
+        // Try to get supplier ID from JWT token if not in header
+        if (!$supplierId) {
+            try {
+                $user = JWTAuth::parseToken()->authenticate();
+                if (isset($user->supplier_number)) {
+                    $supplierId = $user->supplier_number;
+                    Log::info('Using supplier ID from JWT token: ' . $supplierId);
+                } else {
+                    // Try to get from user_farmer relation if exists
+                    $farmer = DB::table('user_farmer')
+                        ->where('user_id', $user->id)
+                        ->first();
+                        
+                    if ($farmer && isset($farmer->supplier_number)) {
+                        $supplierId = $farmer->supplier_number;
+                        Log::info('Using supplier ID from user_farmer relation: ' . $supplierId);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Could not get supplier ID from JWT token: ' . $e->getMessage());
+            }
+        }
+        
+        if (!$supplierId) {
+            Log::warning('No supplier ID provided in header or JWT token');
+            return response()->json([
+                'success' => false,
+                'message' => 'Supplier ID not provided in header or JWT token'
+            ], 400);
+        }
+        
+        // Get farmer user data from user_farmer table - check in multiple fields
+        $farmer = DB::table('user_farmer')
+            ->where('supplier_number', $supplierId)
+            ->orWhere('ma_kh_ca_nhan', $supplierId)
+            ->orWhere('ma_kh_doanh_nghiep', $supplierId)
+            ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep', 'id')
+            ->first();
+
+        if (!$farmer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Farmer not found'
+            ], 404);
+        }
+        
+        // Get service work items
+        $serviceWorkItems = $this->getServiceWorkItems($farmer, $selectedInvestmentProject);
+        
+        // Get seed work items (Hom giống)
+        $seedWorkItems = $this->getSeedWorkItems($farmer, $selectedInvestmentProject);
+        
+        // Combine and return results
+        $allWorkItems = array_merge($serviceWorkItems, $seedWorkItems);
+        
+        return response()->json([
+            'success' => true,
+            'data' => $allWorkItems
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error getting farmer work items: ' . $e->getMessage());
+        Log::error($e->getTraceAsString());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to retrieve work items: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Get service work items for farmer
+ * 
+ * @param object $farmer
+ * @param string $selectedInvestmentProject
+ * @return array
+ */
+private function getServiceWorkItems($farmer, $selectedInvestmentProject)
+{
+    $query = DB::table('tb_chitiet_dichvu_nt as chitiet')
+        ->join('tb_bien_ban_nghiemthu_dv as bb', 'chitiet.ma_nghiem_thu', '=', 'bb.ma_nghiem_thu')
+        ->join('Logs_phieu_trinh_thanh_toan as logs', 'bb.ma_nghiem_thu', '=', 'logs.ma_nghiem_thu')
+        ->join('tb_phieu_trinh_thanh_toan as pttt', 'logs.ma_trinh_thanh_toan', '=', 'pttt.ma_trinh_thanh_toan')
+        ->where(function($q) use ($farmer) {
+            if (!empty($farmer->ma_kh_ca_nhan)) {
+                $q->where('bb.MaKH_Chumia_Canhan', $farmer->ma_kh_ca_nhan);
+            }
+            
+            if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                $q->orWhere('bb.MaKH_Chumia_DN', $farmer->ma_kh_doanh_nghiep);
+            }
+        })
+        ->whereIn('pttt.trang_thai_thanh_toan', ['processing', 'submitted', 'paid']);
+        
+    // Apply investment project filter if not "all"
+    if ($selectedInvestmentProject !== 'all') {
+        $query->where('bb.vu_dau_tu', $selectedInvestmentProject);
+    }
+    
+    $results = $query->select(
+            'chitiet.dich_vu',
+            'chitiet.don_vi_tinh',
+            DB::raw('SUM(chitiet.khoi_luong_thuc_hien) as total_quantity'),
+            DB::raw('SUM(chitiet.thanh_tien) as total_amount')
+        )
+        ->groupBy('chitiet.dich_vu', 'chitiet.don_vi_tinh')
+        ->get();
+    
+    $workItems = [];
+    foreach ($results as $result) {
+        $workItems[] = [
+            'id' => 'service_' . md5($result->dich_vu),
+            'name' => $result->dich_vu,
+            'quantity' => (float)$result->total_quantity,
+            'unit' => $result->don_vi_tinh,
+            'amount' => (float)$result->total_amount
+        ];
+    }
+    
+    return $workItems;
+}
+
+/**
+ * Get seed work items for farmer (Hom giống)
+ * 
+ * @param object $farmer
+ * @param string $selectedInvestmentProject
+ * @return array
+ */
+private function getSeedWorkItems($farmer, $selectedInvestmentProject)
+{
+    $query = DB::table('bien_ban_nghiem_thu_hom_giong as bb')
+        ->join('logs_phieu_trinh_thanh_toan_homgiong as logs', 'bb.ma_so_phieu', '=', 'logs.ma_so_phieu')
+        ->join('tb_phieu_trinh_thanh_toan_homgiong as pttt', 'logs.ma_trinh_thanh_toan', '=', 'pttt.ma_trinh_thanh_toan')
+        ->where(function($q) use ($farmer) {
+            if (!empty($farmer->ma_kh_ca_nhan)) {
+                $q->where('bb.ma_khach_hang_giao_hom', $farmer->ma_kh_ca_nhan);
+            }
+            
+            if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                $q->orWhere('bb.ma_khach_hang_giao_hom_DN', $farmer->ma_kh_doanh_nghiep);
+            }
+        })
+        ->whereIn('pttt.trang_thai_thanh_toan', ['processing', 'submitted', 'paid']);
+        
+    // Apply investment project filter if not "all"
+    if ($selectedInvestmentProject !== 'all') {
+        $query->where('bb.vu_dau_tu', $selectedInvestmentProject);
+    }
+    
+    $result = $query->select(
+            DB::raw('SUM(bb.tong_thuc_nhan) as total_quantity'),
+            DB::raw('SUM(bb.tong_tien) as total_amount')
+        )
+        ->first();
+    
+    $workItems = [];
+    
+    // Only add if there's data
+    if ($result && ($result->total_quantity > 0 || $result->total_amount > 0)) {
+        $workItems[] = [
+            'id' => 'seed_homgiong',
+            'name' => 'Hom giống',
+            'quantity' => (float)$result->total_quantity,
+            'unit' => 'Tấn',
+            'amount' => (float)$result->total_amount
+        ];
+    }
+    
+    return $workItems;
+}
 }
