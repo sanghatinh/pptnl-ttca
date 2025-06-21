@@ -1101,10 +1101,21 @@ export default {
             this.isLoading = true;
             this.error = null;
 
+            // ตรวจสอบ token ก่อนเรียก API
+            const token =
+                localStorage.getItem("web_token") || this.store.getToken;
+            if (!token) {
+                // ถ้าไม่มี token ให้ไปหน้า login ทันที
+                this.$router.replace("/login");
+                return;
+            }
+
             axios
                 .get(`/api/congno-dichvu-khautru/${invoicenumber}`, {
                     headers: {
                         Authorization: "Bearer " + this.store.getToken,
+                        Accept: "application/json",
+                        "Content-Type": "application/json",
                     },
                 })
                 .then((response) => {
@@ -1123,26 +1134,37 @@ export default {
                 })
                 .catch((error) => {
                     console.error("Error fetching debt details:", error);
-                    this.error =
-                        error.response?.data?.message ||
-                        "Đã xảy ra lỗi khi tải dữ liệu công nợ";
 
                     if (error.response?.status === 401) {
                         this.handleAuthError();
+                    } else if (error.response?.status === 403) {
+                        this.error =
+                            "Bạn không có quyền truy cập thông tin công nợ này.";
+                        // Optionally redirect to unauthorized page
+                        // this.$router.push("/unauthorized");
+                    } else if (error.response?.status === 404) {
+                        this.error = "Không tìm thấy thông tin công nợ.";
+                    } else {
+                        this.error =
+                            error.response?.data?.message ||
+                            "Đã xảy ra lỗi khi tải dữ liệu công nợ";
                     }
                 })
                 .finally(() => {
                     this.isLoading = false;
                 });
         },
+
         handleAuthError() {
             // Clear authentication data
             localStorage.removeItem("web_token");
             localStorage.removeItem("web_user");
+            this.store.logout();
 
             // Navigate to login page
             this.$router.push("/login");
         },
+
         formatDate(dateString) {
             if (!dateString) return "N/A";
             const date = new Date(dateString);
