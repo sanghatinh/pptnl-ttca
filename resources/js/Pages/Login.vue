@@ -266,6 +266,7 @@ export default {
                 });
 
                 this.handleLoginSuccess(response.data);
+                this.$router.push("/Dashboard");
             } catch (error) {
                 this.handleLoginError(error);
             } finally {
@@ -334,6 +335,10 @@ export default {
                             : "/Dashboard";
                     this.$router.push(dashboardPath);
 
+<<<<<<< HEAD
+=======
+                    this.$router.push("/DashboardFarmer");
+>>>>>>> 7f6d39fa9c768abd47f52baaf1c264341439542d
                     // เพิ่มโค้ดนี้เพื่อ initialize sidebar toggle หลังจาก login สำเร็จ
                     this.$nextTick(() => {
                         this.initializeSidebarToggle();
