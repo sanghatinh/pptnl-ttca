@@ -78,6 +78,19 @@
                                     Import Data
                                 </a>
                             </li>
+                            <!-- Add new Import Chi tiết HG option -->
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="#"
+                                    @click.prevent="importChiTietHG"
+                                >
+                                    <i
+                                        class="fas fa-file-import text-info me-2"
+                                    ></i>
+                                    Import Chi tiết HG
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -1696,6 +1709,112 @@
         </div>
     </div>
 
+    <!-- Add Chi tiết HG Import Modal -->
+    <div
+        class="modal fade"
+        id="chiTietHGImportModal"
+        tabindex="-1"
+        aria-labelledby="chiTietHGImportModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="chiTietHGImportModalLabel">
+                        <i class="fas fa-file-import me-2"></i> Import Chi tiết
+                        Hom Giống
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        @click="closeChiTietHGImportModal"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info text-white" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Chọn tệp Excel (.xls, .xlsx) hoặc CSV để import dữ liệu
+                        chi tiết hom giống.
+                        <br /><strong>Lưu ý:</strong> Tất cả dữ liệu hiện tại sẽ
+                        bị xóa và thay thế bằng dữ liệu mới.
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="chiTietHGFileInput" class="form-label"
+                            >Chọn tệp</label
+                        >
+                        <input
+                            type="file"
+                            class="form-control"
+                            id="chiTietHGFileInput"
+                            @change="handleChiTietHGFileSelected"
+                            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                        />
+                    </div>
+
+                    <div v-if="isImportingChiTietHG">
+                        <div class="progress mb-3">
+                            <div
+                                class="progress-bar bg-success"
+                                role="progressbar"
+                                :style="{
+                                    width: importChiTietHGProgress + '%',
+                                }"
+                                :aria-valuenow="importChiTietHGProgress"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                {{ importChiTietHGProgress }}%
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <small class="text-muted">{{
+                                importChiTietHGStatus
+                            }}</small>
+                        </div>
+                    </div>
+
+                    <div
+                        v-if="importChiTietHGErrors.length > 0"
+                        class="mt-3 alert alert-danger"
+                    >
+                        <p><strong>Các lỗi sau đã xảy ra:</strong></p>
+                        <ul>
+                            <li
+                                v-for="(error, index) in importChiTietHGErrors"
+                                :key="index"
+                            >
+                                {{ error }}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                        @click="closeChiTietHGImportModal"
+                    >
+                        <i class="fas fa-times me-2"></i> Đóng
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        @click="startChiTietHGImport"
+                        :disabled="
+                            !selectedChiTietHGFile || isImportingChiTietHG
+                        "
+                    >
+                        <i class="fas fa-file-import me-2"></i> Import
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Payment Request Modal -->
     <div
         class="modal fade"
@@ -2138,6 +2257,18 @@ export default {
                 proposal_number: "",
                 created_date: new Date().toISOString().split("T")[0], // Default to today
             },
+            // Add data for Chi tiết HG Import
+            selectedChiTietHGFile: null,
+            isImportingChiTietHG: false,
+            importChiTietHGProgress: 0,
+            importChiTietHGStatus: "",
+            importChiTietHGId: null,
+            importChiTietHGErrors: [],
+            processingRecords: false,
+            processingProgress: 0,
+            processedRecords: 0,
+            totalRecords: 0,
+            // Add data for export/import
             activeFilter: null,
             selectedFile: null,
             uploadProgress: 0,
@@ -3722,6 +3853,213 @@ export default {
                         this.importErrors.push(error.response.data.message);
                     }
                 }
+            }
+        },
+        // Show the Chi tiết HG Import modal
+        importChiTietHG() {
+            this.resetChiTietHGImportState();
+            const modal = new bootstrap.Modal(
+                document.getElementById("chiTietHGImportModal")
+            );
+            modal.show();
+        },
+
+        // Handle file selection
+        handleChiTietHGFileSelected(event) {
+            this.selectedChiTietHGFile = event.target.files[0];
+        },
+
+        // Reset import state
+        resetChiTietHGImportState() {
+            this.selectedChiTietHGFile = null;
+            this.isImportingChiTietHG = false;
+            this.importChiTietHGProgress = 0;
+            this.importChiTietHGStatus = "";
+            this.importChiTietHGId = null;
+            this.importChiTietHGErrors = [];
+
+            // Also reset the file input if it exists
+            const fileInput = document.getElementById("chiTietHGFileInput");
+            if (fileInput) {
+                fileInput.value = "";
+            }
+        },
+
+        // Close the modal
+       closeChiTietHGImportModal() {
+    try {
+        const modalElement = document.getElementById('chiTietHGImportModal');
+        if (modalElement) {
+            // Try multiple approaches to close the modal
+            
+            // Approach 1: Try using bootstrap directly if available
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                    return;
+                }
+            }
+            
+            // Approach 2: Try using window.bootstrap if available
+            if (window.bootstrap && typeof window.bootstrap.Modal !== 'undefined') {
+                try {
+                    const modalInstance = new window.bootstrap.Modal(modalElement);
+                    modalInstance.hide();
+                    return;
+                } catch (e) {
+                    console.log("Could not use window.bootstrap.Modal:", e);
+                }
+            }
+            
+            // Approach 3: Manual DOM manipulation fallback
+            modalElement.classList.remove('show');
+            modalElement.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            
+            // Remove backdrop if it exists
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
+            
+            // Handle ARIA attributes
+            modalElement.setAttribute('aria-hidden', 'true');
+            modalElement.removeAttribute('aria-modal');
+        }
+        
+        // Only reset if not currently importing
+        if (!this.isImportingChiTietHG) {
+            this.resetChiTietHGImportState();
+        }
+    } catch (error) {
+        console.error('Error closing Chi tiết HG Import modal:', error);
+        
+        // Ultimate fallback - force close via direct manipulation
+        try {
+            const modalElement = document.getElementById('chiTietHGImportModal');
+            if (modalElement) {
+                modalElement.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+            }
+        } catch (e) {
+            console.error('Final fallback failed:', e);
+        }
+    }
+},
+
+        // Start import process
+        async startChiTietHGImport() {
+            if (!this.selectedChiTietHGFile) return;
+
+            this.isImportingChiTietHG = true;
+            this.importChiTietHGProgress = 0;
+            this.importChiTietHGStatus = "Đang tải file lên...";
+            this.importChiTietHGErrors = [];
+
+            try {
+                const formData = new FormData();
+                formData.append("file", this.selectedChiTietHGFile);
+
+                const response = await axios.post(
+                    "/api/import-chitiet-hg",
+                    formData,
+                    {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                        },
+                    }
+                );
+
+                if (response.data.success && response.data.importId) {
+                    this.importChiTietHGId = response.data.importId;
+                    this.importChiTietHGStatus = "Đang xử lý...";
+                    this.checkChiTietHGImportProgress();
+                } else {
+                    this.importChiTietHGErrors.push(
+                        "Không thể bắt đầu quá trình import"
+                    );
+                    this.isImportingChiTietHG = false;
+                }
+            } catch (error) {
+                this.isImportingChiTietHG = false;
+                if (
+                    error.response &&
+                    error.response.data &&
+                    error.response.data.errors
+                ) {
+                    this.importChiTietHGErrors = error.response.data.errors;
+                } else {
+                    this.importChiTietHGErrors.push(
+                        error.message || "Đã xảy ra lỗi khi tải lên"
+                    );
+                }
+            }
+        },
+
+        // Check import progress
+        async checkChiTietHGImportProgress() {
+            if (!this.importChiTietHGId || !this.isImportingChiTietHG) return;
+
+            try {
+                const response = await axios.get(
+                    `/api/import-chitiet-hg-progress/${this.importChiTietHGId}`
+                );
+
+                const data = response.data;
+
+                if (data.total > 0) {
+                    this.importChiTietHGProgress = Math.round(
+                        (data.processed / data.total) * 100
+                    );
+                } else {
+                    this.importChiTietHGProgress =
+                        data.status === "processing" ? 50 : 0;
+                }
+
+                this.importChiTietHGStatus = `${data.processed} / ${data.total} bản ghi đã xử lý`;
+
+                if (data.errors && data.errors.length > 0) {
+                    this.importChiTietHGErrors = data.errors;
+                }
+
+                if (data.finished) {
+                    this.isImportingChiTietHG = false;
+
+                    if (data.success) {
+                        this.importChiTietHGStatus = "Import thành công";
+                        // Reload data after successful import
+                        this.fetchPhieuData();
+
+                        Swal.fire({
+                            icon: "success",
+                            title: "Import thành công!",
+                            text: `Đã import ${data.processed} bản ghi chi tiết hom giống.`,
+                            confirmButtonText: "OK",
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Import thất bại!",
+                            text: "Đã xảy ra lỗi trong quá trình import.",
+                            confirmButtonText: "OK",
+                        });
+                    }
+                } else {
+                    // Continue checking progress
+                    setTimeout(() => {
+                        this.checkChiTietHGImportProgress();
+                    }, 1000);
+                }
+            } catch (error) {
+                this.isImportingChiTietHG = false;
+                this.importChiTietHGErrors.push(
+                    "Lỗi kiểm tra tiến trình: " +
+                        (error.message || "Không xác định")
+                );
             }
         },
 

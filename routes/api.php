@@ -21,6 +21,7 @@ use App\Http\Controllers\QuanlyCongno\DeductibleServiceDebtController;
 use App\Http\Controllers\QuanlyTaichinh\PhieutrinhthanhtoanHomgiongControllers;
 use App\Http\Controllers\QuanlyTaichinh\PhieuDNTTHomgiongControllers;
 use App\Http\Controllers\UserProfileController;
+use App\Http\Controllers\QuanlyHS\ChiTietBienBanNghiemThuController;
 
 
 
@@ -133,11 +134,15 @@ Route::get('/get-role-by-position', function(Request $request) {
 // Import data routes for BienBanNghiemThu
 Route::post('/import-bienban-nghiemthu', [BienBanNghiemThuController::class, 'importData']);
 Route::get('/import-progress/{importId}', [BienBanNghiemThuController::class, 'importProgress']);
-
+Route::post('/import-chitiet-nghiemthu', [ChiTietBienBanNghiemThuController::class, 'importData']);
+Route::get('/import-chitiet-nt-progress/{importId}', [ChiTietBienBanNghiemThuController::class, 'importProgress']);
 // Routes for Phieu Giao Nhan Hom Giong
 
 Route::post('/import-phieu-giao-nhan', [PhieuGiaoNhanHomGiongController::class, 'importData']);
 Route::get('/import-homgiong-progress/{importId}', [PhieuGiaoNhanHomGiongController::class, 'importProgress']);
+// Add these routes to the appropriate section (inside middleware group)
+Route::post('/import-chitiet-hg', [App\Http\Controllers\QuanlyHS\ChiTietPhieugiaonhanHGController::class, 'importData']);
+Route::get('/import-chitiet-hg-progress/{importId}', [App\Http\Controllers\QuanlyHS\ChiTietPhieugiaonhanHGController::class, 'importProgress']);
 
 
 // ตรวจสอบรายการซ้ำซ้อน

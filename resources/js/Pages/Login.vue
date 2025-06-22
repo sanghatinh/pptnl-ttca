@@ -266,7 +266,7 @@ export default {
                 });
 
                 this.handleLoginSuccess(response.data);
-                this.$router.push("/Dashboard");
+               
             } catch (error) {
                 this.handleLoginError(error);
             } finally {
@@ -296,59 +296,52 @@ export default {
         },
 
         // ในฟังก์ชัน handleLoginSuccess ของหน้า Login.vue
-        handleLoginSuccess(data) {
-            if (data.success) {
-                // บันทึกข้อมูลการรับรองความถูกต้องลงใน localStorage
-                localStorage.setItem("web_token", data.token);
-                localStorage.setItem("web_user", JSON.stringify(data.user));
-                localStorage.setItem("user_type", this.activeTab);
+       handleLoginSuccess(data) {
+    if (data.success) {
+        // บันทึกข้อมูลการรับรองความถูกต้องลงใน localStorage
+        localStorage.setItem("web_token", data.token);
+        localStorage.setItem("web_user", JSON.stringify(data.user));
+        localStorage.setItem("user_type", this.activeTab);
 
-                // บันทึกลงใน store
-                this.store.setToken(data.token);
-                this.store.setUser(data.user);
-                this.store.setUserType(this.activeTab);
+        // บันทึกลงใน store
+        this.store.setToken(data.token);
+        this.store.setUser(data.user);
+        this.store.setUserType(this.activeTab);
 
-                // เพิ่มเก็บข้อมูล supplier_number กรณีเป็น farmer
-                if (this.activeTab === "farmer" && data.user.ma_kh_ca_nhan) {
-                    this.store.setSupplierId(data.user.ma_kh_ca_nhan);
-                    localStorage.setItem(
-                        "supplier_id",
-                        data.user.ma_kh_ca_nhan
-                    );
-                } else if (
-                    this.activeTab === "farmer" &&
-                    data.user.ma_kh_doanh_nghiep
-                ) {
-                    this.store.setSupplierId(data.user.ma_kh_doanh_nghiep);
-                    localStorage.setItem(
-                        "supplier_id",
-                        data.user.ma_kh_doanh_nghiep
-                    );
-                }
+        // เพิ่มเก็บข้อมูล supplier_number กรณีเป็น farmer
+        if (this.activeTab === "farmer" && data.user.ma_kh_ca_nhan) {
+            this.store.setSupplierId(data.user.ma_kh_ca_nhan);
+            localStorage.setItem(
+                "supplier_id",
+                data.user.ma_kh_ca_nhan
+            );
+        } else if (
+            this.activeTab === "farmer" &&
+            data.user.ma_kh_doanh_nghiep
+        ) {
+            this.store.setSupplierId(data.user.ma_kh_doanh_nghiep);
+            localStorage.setItem(
+                "supplier_id",
+                data.user.ma_kh_doanh_nghiep
+            );
+        }
 
-                // โหลดสิทธิ์และ components
-                this.store.loadPermissionsAndComponents().then(() => {
-                    // นำทางไปยังหน้า dashboard ตามประเภทผู้ใช้
-                    const dashboardPath =
-                        this.activeTab === "farmer"
-                            ? "/DashboardFarmer"
-                            : "/Dashboard";
-                    this.$router.push(dashboardPath);
-
-<<<<<<< HEAD
-=======
-                    this.$router.push("/DashboardFarmer");
->>>>>>> 7f6d39fa9c768abd47f52baaf1c264341439542d
-                    // เพิ่มโค้ดนี้เพื่อ initialize sidebar toggle หลังจาก login สำเร็จ
-                    this.$nextTick(() => {
-                        this.initializeSidebarToggle();
-                    });
-                });
-            } else {
-                this.errorMessage =
-                    data.message || "Đăng nhập không thành công";
-            }
-        },
+        // โหลดสิทธิ์และ components
+        this.store.loadPermissionsAndComponents().then(() => {
+            // นำทางไปยังหน้า dashboard ตามประเภทผู้ใช้
+            const dashboardPath = this.activeTab === "farmer" ? "/DashboardFarmer" : "/Dashboard";
+            this.$router.push(dashboardPath);
+            
+            // เพิ่มโค้ดนี้เพื่อ initialize sidebar toggle หลังจาก login สำเร็จ
+            this.$nextTick(() => {
+                this.initializeSidebarToggle();
+            });
+        });
+    } else {
+        this.errorMessage =
+            data.message || "Đăng nhập không thành công";
+    }
+},
 
         handleLoginError(error) {
             console.error("Login error:", error);

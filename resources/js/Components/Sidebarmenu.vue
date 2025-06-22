@@ -23,8 +23,11 @@
                     <li class="header-menu">General</li>
 
                     <li
-                        class="sidebar-dropdown"
-                        :class="{ active: activeDropdowns.dashboard }"
+                        class="mb-2"
+                        :class="{
+                            active: $route.path === '/Dashboard',
+                        }"
+                        v-if="canViewComponent('Dashboard')"
                     >
                         <router-link
                             to="/Dashboard"
@@ -40,8 +43,11 @@
                         </router-link>
                     </li>
                     <li
-                        class="sidebar-dropdown"
-                        :class="{ active: activeDropdowns.dashboardFarmer }"
+                        class="mb-2"
+                        :class="{
+                            active: $route.path === '/DashboardFarmer',
+                        }"
+                        v-if="canViewComponent('DashboardFarmer')"
                     >
                         <router-link
                             to="/DashboardFarmer"
@@ -497,6 +503,8 @@ export default {
             isMobile: false,
             // เพิ่ม state สำหรับควบคุม dropdown
             activeDropdowns: {
+                dashboard: false,
+                dashboardFarmer: false,
                 documents: false,
                 finance: false,
                 debt: false,
@@ -538,6 +546,10 @@ export default {
             Object.keys(this.activeDropdowns).forEach((key) => {
                 this.activeDropdowns[key] = false;
             });
+
+            // Set dashboard active flags
+            this.activeDropdowns.dashboard = path === "/Dashboard";
+            this.activeDropdowns.dashboardFarmer = path === "/DashboardFarmer";
 
             // เปิด dropdown ตาม route ปัจจุบัน
             if (
@@ -658,5 +670,26 @@ export default {
     font-weight: 900;
     float: right;
     transition: transform 0.3s ease;
+}
+
+/* Dashboard active styles */
+li.active > a,
+li.active > router-link {
+    color: #4caf50 !important;
+    font-weight: bold;
+}
+
+li.active > a i,
+li.active > router-link i {
+    color: #4caf50 !important;
+}
+
+.current-page {
+    color: #4caf50 !important;
+    font-weight: bold;
+}
+
+.current-page i {
+    color: #4caf50 !important;
 }
 </style>

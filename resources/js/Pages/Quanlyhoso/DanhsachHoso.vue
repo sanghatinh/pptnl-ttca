@@ -199,7 +199,7 @@
                                 <thead>
                                     <tr>
                                         <!-- Checkbox column header -->
-                                        <th class="px-4 py-2">
+                                        <th class="px-4 py-2 clickable-cell">
                                             <input
                                                 type="checkbox"
                                                 @click="toggleSelectAll($event)"
@@ -209,7 +209,7 @@
                                         </th>
 
                                         <!-- Mã số phiếu with text search filter -->
-                                        <th class="px-4 py-2">
+                                        <th class="px-4 py-2 clickable-cell">
                                             Mã số phiếu
                                             <button
                                                 @click="
@@ -270,7 +270,7 @@
                                         </th>
 
                                         <!-- Trạm with unique dropdown filter -->
-                                        <th class="px-4 py-2">
+                                        <th class="px-4 py-2 clickable-cell">
                                             <div class="column-header">
                                                 <div
                                                     class="header-content"
@@ -365,7 +365,7 @@
                                         </th>
 
                                         <!-- Tiều đề with text search filter -->
-                                        <th class="px-4 py-2">
+                                        <th class="px-4 py-2 clickable-cell">
                                             Tiều đề
                                             <button
                                                 @click="toggleFilter('title')"
@@ -415,7 +415,7 @@
                                         </th>
 
                                         <!-- Vụ đầu tư with unique dropdown filter -->
-                                        <th class="px-4 py-2">
+                                        <th class="px-4 py-2 clickable-cell">
                                             <div class="column-header">
                                                 <div
                                                     class="header-content"
@@ -515,7 +515,7 @@
 
                                         <!-- Số lượng hồ sơ - no filter -->
                                         <th
-                                            class="px-4 py-2"
+                                            class="px-4 py-2 clickable-cell"
                                             @click="sortTable('file_count')"
                                         >
                                             <i
@@ -528,7 +528,7 @@
                                         </th>
 
                                         <!-- Loại hồ sơ with unique dropdown filter -->
-                                        <th class="px-4 py-2">
+                                        <th class="px-4 py-2 clickable-cell">
                                             Loại hồ sơ
                                             <button
                                                 @click="
@@ -608,7 +608,7 @@
                                         </th>
 
                                         <!-- Ngày lập with date filter -->
-                                        <th class="px-4 py-2">
+                                        <th class="px-4 py-2 clickable-cell">
                                             <div class="column-header">
                                                 <div
                                                     class="header-content"
@@ -691,7 +691,7 @@
                                         </th>
 
                                         <!-- Người tạo with text search filter -->
-                                        <th class="px-4 py-2">
+                                        <th class="px-4 py-2 clickable-cell">
                                             Người tạo
                                             <button
                                                 @click="toggleFilter('creator')"
@@ -747,7 +747,7 @@
                                         </th>
 
                                         <!-- Người nhận with text search filter -->
-                                        <th class="px-4 py-2">
+                                        <th class="px-4 py-2 clickable-cell">
                                             Người nhận
                                             <button
                                                 @click="
@@ -805,7 +805,7 @@
                                         </th>
 
                                         <!-- Ngày nhận with date filter -->
-                                        <th class="px-4 py-2">
+                                        <th class="px-4 py-2 clickable-cell">
                                             <div class="column-header">
                                                 <div
                                                     class="header-content"
@@ -887,7 +887,7 @@
                                         </th>
 
                                         <!-- Trạng thái with unique dropdown filter -->
-                                        <th class="px-4 py-2">
+                                        <th class="px-4 py-2 clickable-cell">
                                             <div class="column-header">
                                                 <div
                                                     class="header-content"
@@ -986,7 +986,7 @@
                                         class="desktop-row"
                                     >
                                         <!-- New checkbox column for each row -->
-                                        <td class="px-4 py-2">
+                                        <td class="px-4 py-2 clickable-cell">
                                             <input
                                                 type="checkbox"
                                                 v-model="selectedItems"
@@ -998,45 +998,45 @@
                                             class="px-4 py-2 clickable-cell"
                                             @click="goToEditPage(item.id)"
                                         >
-                                            <span class="document-code">{{
+                                            <span>{{
                                                 item.document_code
                                             }}</span>
                                         </td>
                                         <td
-                                            class="px-4 py-2"
+                                            class="px-4 py-2 clickable-cell"
                                             @click="goToEditPage(item.id)"
                                         >
                                             {{ item.station }}
                                         </td>
 
                                         <td
-                                            class="px-4 py-2"
+                                            class="px-4 py-2 clickable-cell"
                                             @click="goToEditPage(item.id)"
                                         >
                                             {{ item.title }}
                                         </td>
                                         <td
-                                            class="px-4 py-2"
+                                            class="px-4 py-2 clickable-cell"
                                             @click="goToEditPage(item.id)"
                                         >
                                             {{ item.investment_project }}
                                         </td>
                                         <td
-                                            class="px-4 py-2"
+                                            class="px-4 py-2 clickable-cell"
                                             @click="goToEditPage(item.id)"
                                         >
                                             {{ item.file_count }}
                                         </td>
                                         <td
-                                            class="px-4 py-2"
+                                            class="px-4 py-2 clickable-cell"
                                             @click="goToEditPage(item.id)"
                                         >
                                             {{ item.document_type }}
                                         </td>
-                                        <td class="px-4 py-2">
+                                        <td class="px-4 py-2 clickable-cell">
                                             {{ formatDate(item.created_date) }}
                                         </td>
-                                        <td class="px-4 py-2">
+                                        <td class="px-4 py-2 clickable-cell">
                                             <i
                                                 class="fas fa-user text-blue-500"
                                             ></i>
@@ -1044,7 +1044,7 @@
                                                 item.creator?.full_name || "N/A"
                                             }}
                                         </td>
-                                        <td class="px-4 py-2">
+                                        <td class="px-4 py-2 clickable-cell">
                                             <template v-if="item.receiver">
                                                 <i
                                                     class="fas fa-user text-green-500"
@@ -1057,7 +1057,7 @@
                                                 >
                                             </template>
                                         </td>
-                                        <td class="px-4 py-2">
+                                        <td class="px-4 py-2 clickable-cell">
                                             {{
                                                 item.received_date
                                                     ? formatDate(
@@ -1066,7 +1066,7 @@
                                                     : "-"
                                             }}
                                         </td>
-                                        <td class="px-4 py-2">
+                                        <td class="px-4 py-2 clickable-cell">
                                             <span
                                                 :class="
                                                     statusClass(

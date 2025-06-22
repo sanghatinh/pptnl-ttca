@@ -13,7 +13,7 @@
             <div class="row align-items-center">
                 <div class="col-lg-8">
                     <h1 class="dashboard-title mb-2">
-                        <i class="fas fa-chart-line me-3 text-primary"></i>
+                        <i class="fas fa-chart-line me-3 text-success"></i>
                         Dashboard Analytics
                     </h1>
                     <p class="dashboard-subtitle text-muted">
@@ -2505,7 +2505,7 @@ export default {
 }
 
 .stat-card {
-    background: linear-gradient(135deg, #01902d 0%, #04b13a 50%, #016d24 100%);
+    background: #01902d;
     color: white;
     padding: 1rem;
     border-radius: 12px;
@@ -2788,7 +2788,7 @@ export default {
 }
 
 .time-selector .btn-check:checked + .btn {
-    background: linear-gradient(135deg, #01902d 0%, #04b13a 50%, #016d24 100%);
+    background: #01902d;
     border-color: transparent;
     color: white;
 }
