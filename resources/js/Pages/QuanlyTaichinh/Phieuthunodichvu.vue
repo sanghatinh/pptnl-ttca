@@ -28,18 +28,11 @@
                 <div class="filter-section">
                     <div class="relative">
                         <select
-                            v-model="selectedFilterValues.vu_dau_tu"
+                            v-model="vuDauTuDisplay"
                             class="form-select status-select flex-1"
-                            @change="applyFilter('vu_dau_tu')"
+                            @change="handleVuDauTuChange"
                         >
-                            <option value="">
-                                {{
-                                    uniqueValues.vu_dau_tu &&
-                                    uniqueValues.vu_dau_tu.length > 0
-                                        ? "Vụ đầu tư"
-                                        : "Đang tải..."
-                                }}
-                            </option>
+                            <option value="">Tất cả vụ đầu tư</option>
                             <option
                                 v-for="(
                                     option, index
@@ -94,7 +87,7 @@
                                     Report PDF
                                 </a>
                             </li>
-                            <li>
+                            <li v-if="hasPermission('import phiếu thu nợ')">
                                 <a
                                     class="dropdown-item"
                                     href="#"
@@ -240,18 +233,11 @@
                     </select>
 
                     <select
-                        v-model="selectedFilterValues.vu_dau_tu"
+                        v-model="vuDauTuDisplay"
                         class="form-select status-select flex-1"
-                        @change="applyFilter('vu_dau_tu')"
+                        @change="handleVuDauTuChange"
                     >
-                        <option value="">
-                            {{
-                                uniqueValues.vu_dau_tu &&
-                                uniqueValues.vu_dau_tu.length > 0
-                                    ? "Vụ đầu tư"
-                                    : "Đang tải..."
-                            }}
-                        </option>
+                        <option value="">Tất cả vụ đầu tư</option>
                         <option
                             v-for="(option, index) in uniqueValues.vu_dau_tu"
                             :key="index"
@@ -2146,6 +2132,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Swal from "sweetalert2";
 import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
+import { usePermissions } from "../../Composables/usePermissions";
 
 export default {
     components: {
@@ -2153,12 +2140,15 @@ export default {
     },
     setup() {
         const store = useStore();
+        const { hasPermission } = usePermissions();
         return {
             store,
+            hasPermission,
         };
     },
     data() {
         return {
+            vuDauTuDisplay: "",
             searchTimeout: null,
             isGeneratingReport: false,
             selectedItems: [], // Array to store selected items for report
@@ -2821,6 +2811,12 @@ export default {
         },
     },
     methods: {
+        handleVuDauTuChange(event) {
+            const value = event.target.value;
+            // Convert to array for the filter logic
+            this.selectedFilterValues.vu_dau_tu = value ? [value] : [];
+            this.applyFilter("vu_dau_tu");
+        },
         handleSearchInputDebounced(event) {
             // Clear any existing timeout
             clearTimeout(this.searchTimeout);
@@ -3411,12 +3407,8 @@ export default {
             <button onclick="showReportModal()" class="btn btn-outline-danger mb-2">
                 <i class="fas fa-file-pdf text-danger me-2"></i> Report Data
             </button>
-            <button onclick="importData()" class="btn btn-outline-primary mb-2">
-                <i class="fas fa-upload text-primary me-2"></i> Import Data
-            </button>
-            <button onclick="downloadTemplate()" class="btn btn-outline-info mb-2">
-                <i class="fas fa-file-download text-info me-2"></i> Download Template
-            </button>
+           
+           
         </div>
         `,
                 showConfirmButton: false,
@@ -3714,13 +3706,15 @@ export default {
             }
         },
         resetFilter(column) {
-            if (
+            if (column === "vu_dau_tu") {
+                this.vuDauTuDisplay = "";
+                this.selectedFilterValues.vu_dau_tu = [];
+            } else if (
                 [
                     "tinh_trang",
                     "tinh_trang_duyet",
                     "da_ho_tro_lai",
                     "vu_thanh_toan",
-                    "vu_dau_tu",
                     "category_debt",
                     "xoa_no",
                 ].includes(column)
@@ -3856,9 +3850,12 @@ export default {
                             "Phân bổ đầu tư": item.phan_bo_dau_tu || "",
                             "Số phiếu PB đầu tư":
                                 item.so_phieu_phan_bo_dau_tu || "",
-                            "Mã giải ngân": item.ma_giai_ngan || "", // Add this line
+                            "Mã giải ngân": item.ma_giai_ngan || "",
                             "Invoice Number": item.invoice_number || "",
-                            "Đã trả gốc": item.da_tra_goc || 0,
+                            // Export as number without comma formatting
+                            "Đã trả gốc": item.da_tra_goc
+                                ? Number(item.da_tra_goc)
+                                : 0,
                             "Ngày vay": item.ngay_vay
                                 ? new Date(item.ngay_vay).toLocaleDateString(
                                       "vi-VN"
@@ -3870,7 +3867,10 @@ export default {
                                   )
                                 : "",
                             "Lãi suất": item.lai_suat || 0,
-                            "Tiền lãi": item.tien_lai || 0,
+                            // Export as number without comma formatting
+                            "Tiền lãi": item.tien_lai
+                                ? Number(item.tien_lai)
+                                : 0,
                             "Tình trạng":
                                 this.formatStatus(item.tinh_trang) || "",
                             "Tình trạng duyệt":

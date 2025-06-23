@@ -19,6 +19,47 @@
             </div>
             <!-- ส่วนที่ 3: Login Form -->
             <div class="login-form-modern">
+                <!-- Language Dropdown -->
+                <div class="language-dropdown-container">
+                    <div
+                        class="language-dropdown"
+                        @click="toggleLanguageDropdown"
+                        ref="languageDropdownToggle"
+                    >
+                        <span class="language-display">
+                            <img
+                                :src="languages[currentLanguage].flag"
+                                class="flag-icon"
+                            />
+                            {{ languages[currentLanguage].name }}
+                        </span>
+                        <i
+                            class="fas fa-chevron-down"
+                            :class="{ rotated: isLanguageDropdownOpen }"
+                        ></i>
+                    </div>
+                    <transition name="slide">
+                        <div
+                            class="language-options"
+                            v-if="isLanguageDropdownOpen"
+                        >
+                            <div
+                                v-for="(lang, code) in languages"
+                                :key="code"
+                                class="language-option"
+                                :class="{ active: currentLanguage === code }"
+                                @click="changeLanguage(code)"
+                            >
+                                <img
+                                    :src="lang.flag"
+                                    :alt="lang.name"
+                                    class="flag-icon"
+                                />
+                                <span>{{ lang.name }}</span>
+                            </div>
+                        </div>
+                    </transition>
+                </div>
                 <h2 class="login-title">Login</h2>
                 <p class="login-welcome">
                     Vui lòng đăng nhập vào tài khoản của bạn
@@ -188,6 +229,19 @@ export default {
             showPassword: false,
             isLoading: false,
             errorMessage: "",
+            // Language dropdown
+            isLanguageDropdownOpen: false,
+            currentLanguage: "vi", // Default language is Vietnamese
+            languages: {
+                vi: {
+                    name: "Tiếng Việt",
+                    flag: "https://flagcdn.com/vn.svg",
+                },
+                la: {
+                    name: "ພາສາລາວ",
+                    flag: "https://flagcdn.com/la.svg",
+                },
+            },
 
             employee: {
                 username: "",
@@ -214,6 +268,31 @@ export default {
     },
 
     methods: {
+        // Language dropdown methods
+        toggleLanguageDropdown() {
+            this.isLanguageDropdownOpen = !this.isLanguageDropdownOpen;
+        },
+
+        changeLanguage(langCode) {
+            this.currentLanguage = langCode;
+            this.isLanguageDropdownOpen = false;
+            console.log(
+                `Language changed to: ${this.languages[langCode].name}`
+            );
+            // Here you would normally implement actual language change functionality
+        },
+
+        closeLanguageDropdownOnClickOutside(event) {
+            // Close dropdown when clicking outside
+            if (
+                this.isLanguageDropdownOpen &&
+                this.$refs.languageDropdownToggle &&
+                !this.$refs.languageDropdownToggle.contains(event.target)
+            ) {
+                this.isLanguageDropdownOpen = false;
+            }
+        },
+
         initializeSidebarToggle() {
             // รอให้ DOM โหลดเสร็จแล้วค่อย initialize
             setTimeout(() => {
@@ -266,7 +345,6 @@ export default {
                 });
 
                 this.handleLoginSuccess(response.data);
-               
             } catch (error) {
                 this.handleLoginError(error);
             } finally {
@@ -296,52 +374,55 @@ export default {
         },
 
         // ในฟังก์ชัน handleLoginSuccess ของหน้า Login.vue
-       handleLoginSuccess(data) {
-    if (data.success) {
-        // บันทึกข้อมูลการรับรองความถูกต้องลงใน localStorage
-        localStorage.setItem("web_token", data.token);
-        localStorage.setItem("web_user", JSON.stringify(data.user));
-        localStorage.setItem("user_type", this.activeTab);
+        handleLoginSuccess(data) {
+            if (data.success) {
+                // บันทึกข้อมูลการรับรองความถูกต้องลงใน localStorage
+                localStorage.setItem("web_token", data.token);
+                localStorage.setItem("web_user", JSON.stringify(data.user));
+                localStorage.setItem("user_type", this.activeTab);
 
-        // บันทึกลงใน store
-        this.store.setToken(data.token);
-        this.store.setUser(data.user);
-        this.store.setUserType(this.activeTab);
+                // บันทึกลงใน store
+                this.store.setToken(data.token);
+                this.store.setUser(data.user);
+                this.store.setUserType(this.activeTab);
 
-        // เพิ่มเก็บข้อมูล supplier_number กรณีเป็น farmer
-        if (this.activeTab === "farmer" && data.user.ma_kh_ca_nhan) {
-            this.store.setSupplierId(data.user.ma_kh_ca_nhan);
-            localStorage.setItem(
-                "supplier_id",
-                data.user.ma_kh_ca_nhan
-            );
-        } else if (
-            this.activeTab === "farmer" &&
-            data.user.ma_kh_doanh_nghiep
-        ) {
-            this.store.setSupplierId(data.user.ma_kh_doanh_nghiep);
-            localStorage.setItem(
-                "supplier_id",
-                data.user.ma_kh_doanh_nghiep
-            );
-        }
+                // เพิ่มเก็บข้อมูล supplier_number กรณีเป็น farmer
+                if (this.activeTab === "farmer" && data.user.ma_kh_ca_nhan) {
+                    this.store.setSupplierId(data.user.ma_kh_ca_nhan);
+                    localStorage.setItem(
+                        "supplier_id",
+                        data.user.ma_kh_ca_nhan
+                    );
+                } else if (
+                    this.activeTab === "farmer" &&
+                    data.user.ma_kh_doanh_nghiep
+                ) {
+                    this.store.setSupplierId(data.user.ma_kh_doanh_nghiep);
+                    localStorage.setItem(
+                        "supplier_id",
+                        data.user.ma_kh_doanh_nghiep
+                    );
+                }
 
-        // โหลดสิทธิ์และ components
-        this.store.loadPermissionsAndComponents().then(() => {
-            // นำทางไปยังหน้า dashboard ตามประเภทผู้ใช้
-            const dashboardPath = this.activeTab === "farmer" ? "/DashboardFarmer" : "/Dashboard";
-            this.$router.push(dashboardPath);
-            
-            // เพิ่มโค้ดนี้เพื่อ initialize sidebar toggle หลังจาก login สำเร็จ
-            this.$nextTick(() => {
-                this.initializeSidebarToggle();
-            });
-        });
-    } else {
-        this.errorMessage =
-            data.message || "Đăng nhập không thành công";
-    }
-},
+                // โหลดสิทธิ์และ components
+                this.store.loadPermissionsAndComponents().then(() => {
+                    // นำทางไปยังหน้า dashboard ตามประเภทผู้ใช้
+                    const dashboardPath =
+                        this.activeTab === "farmer"
+                            ? "/DashboardFarmer"
+                            : "/Dashboard";
+                    this.$router.push(dashboardPath);
+
+                    // เพิ่มโค้ดนี้เพื่อ initialize sidebar toggle หลังจาก login สำเร็จ
+                    this.$nextTick(() => {
+                        this.initializeSidebarToggle();
+                    });
+                });
+            } else {
+                this.errorMessage =
+                    data.message || "Đăng nhập không thành công";
+            }
+        },
 
         handleLoginError(error) {
             console.error("Login error:", error);
@@ -360,6 +441,21 @@ export default {
                     "Không thể kết nối đến máy chủ. Vui lòng thử lại sau.";
             }
         },
+    },
+    mounted() {
+        // Add click outside event listener
+        document.addEventListener(
+            "click",
+            this.closeLanguageDropdownOnClickOutside
+        );
+    },
+
+    beforeUnmount() {
+        // Remove event listener when component is destroyed
+        document.removeEventListener(
+            "click",
+            this.closeLanguageDropdownOnClickOutside
+        );
     },
 };
 </script>
@@ -636,5 +732,125 @@ export default {
         width: 80px;
         height: 80px;
     }
+}
+
+/* Language Dropdown Styles */
+.language-dropdown-container {
+    position: absolute;
+    top: 14px;
+    right: 20px;
+    z-index: 10;
+}
+
+.language-dropdown {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #01902d;
+    border: 1px solid rgba(1, 144, 45, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.language-dropdown:hover {
+    background-color: #f8f8f8;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.language-dropdown .fa-chevron-down {
+    transition: transform 0.3s ease;
+}
+
+.language-dropdown .fa-chevron-down.rotated {
+    transform: rotate(180deg);
+}
+
+.language-options {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 5px;
+    background-color: white;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 160px;
+    overflow: hidden;
+    z-index: 20;
+}
+
+.language-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.language-option:hover {
+    background-color: #f5f5f5;
+}
+
+.language-option.active {
+    background-color: rgba(1, 144, 45, 0.1);
+    color: #01902d;
+    font-weight: 500;
+}
+
+.flag-icon {
+    width: 16px;
+    height: 12px;
+    object-fit: cover;
+    border-radius: 2px;
+}
+
+/* Animation for dropdown */
+.slide-enter-active,
+.slide-leave-active {
+    transition: all 0.3s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 540px) {
+    .language-dropdown-container {
+        top: 10px;
+        right: 14px;
+    }
+
+    .language-dropdown {
+        padding: 5px 8px;
+        font-size: 0.8rem;
+    }
+
+    .language-options {
+        width: 150px;
+    }
+
+    .language-option {
+        padding: 8px 12px;
+    }
+}
+.language-display {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.language-dropdown .flag-icon {
+    width: 16px;
+    height: 12px;
+    object-fit: cover;
+    border-radius: 2px;
 }
 </style>

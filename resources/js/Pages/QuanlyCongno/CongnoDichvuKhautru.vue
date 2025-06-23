@@ -64,7 +64,7 @@
                                     Report PDF
                                 </a>
                             </li>
-                            <li>
+                            <li v-if="hasPermission('import công nợ phải thu')">
                                 <a
                                     class="dropdown-item"
                                     href="#"
@@ -3081,6 +3081,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Swal from "sweetalert2";
 import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
+import { usePermissions } from "../../Composables/usePermissions";
 
 export default {
     components: {
@@ -3088,8 +3089,10 @@ export default {
     },
     setup() {
         const store = useStore();
+        const { hasPermission } = usePermissions();
         return {
             store,
+            hasPermission,
         };
     },
     data() {
@@ -5630,12 +5633,7 @@ export default {
                     <button onclick="showReportPdf()" class="list-group-item list-group-item-action">
                         <i class="fas fa-file-pdf text-danger me-2"></i> Report PDF
                     </button>
-                    <button onclick="downloadTemplate()" class="list-group-item list-group-item-action">
-                        <i class="fas fa-download text-primary me-2"></i> Download Template
-                    </button>
-                    <button onclick="importData()" class="list-group-item list-group-item-action">
-                        <i class="fas fa-file-import text-info me-2"></i> Import Data
-                    </button>
+                 
                 </div>
                 `,
                 showConfirmButton: false,

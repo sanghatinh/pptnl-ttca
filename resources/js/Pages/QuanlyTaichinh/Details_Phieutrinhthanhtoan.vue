@@ -294,7 +294,11 @@
                                     type="button"
                                     class="button-30"
                                     @click="saveBasicInfo"
-                                    v-if="hasPermission('save')"
+                                    v-if="
+                                        hasPermission(
+                                            'lưu phiếu trình thanh thanh toán'
+                                        )
+                                    "
                                 >
                                     <i class="bx bxs-save"></i>
                                     <span>Lưu</span>
@@ -347,7 +351,9 @@
                                 <button
                                     v-if="
                                         document.status === 'submitted' &&
-                                        hasPermission('đã thanh toán')
+                                        hasPermission(
+                                            'đã thanh toán phiếu trình thanh toán'
+                                        )
                                     "
                                     type="button"
                                     class="button-30-save"
@@ -382,7 +388,7 @@
                                     v-if="
                                         document.status !== 'paid' &&
                                         hasPermission(
-                                            'delete_phieu_trinh_thanhtoan_dv'
+                                            'xóa thanh toán phiếu trình thanh toán'
                                         )
                                     "
                                     type="button"
@@ -394,12 +400,12 @@
                                 </button>
 
                                 <button
-                                    type="button"
-                                    class="button-30"
+                                    class="btn btn-outline-danger"
                                     @click="printDocument"
+                                    title="In báo cáo"
+                                    :disabled="isLoading"
                                 >
-                                    <i class="bx bxs-printer"></i>
-                                    <span>Print</span>
+                                    <i class="fas fa-print me-1"></i> In báo cáo
                                 </button>
                             </div>
                             <div class="row align-items-center mb-2"></div>
@@ -4680,6 +4686,55 @@ export default {
     },
 
     methods: {
+       printDocument() {
+    if (!this.isAuthenticated()) return;
+    
+    try {
+        // Get the payment request ID
+        const paymentRequestId = this.$route.params.id;
+        if (!paymentRequestId) {
+            this.showError("Không tìm thấy mã phiếu trình thanh toán");
+            return;
+        }
+        
+        // Show loading message
+        Swal.fire({
+            title: "Đang tạo báo cáo",
+            text: "Vui lòng đợi...",
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Open the report in a new window
+        const reportUrl = `/api/print-report-phieu-trinh-tt?payment_code=${encodeURIComponent(paymentRequestId)}`;
+        const printWindow = window.open(reportUrl, "_blank");
+        
+        if (printWindow) {
+            // Close the loading message
+            Swal.close();
+        } else {
+            // Show popup blocked message
+            Swal.fire({
+                icon: "error",
+                title: "Lỗi",
+                text: "Trình duyệt đã chặn popup. Vui lòng cho phép popup để xem báo cáo",
+                confirmButtonText: "Đồng ý"
+            });
+        }
+    } catch (error) {
+        console.error("Error generating report:", error);
+        
+        // Show error message
+        Swal.fire({
+            icon: "error",
+            title: "Lỗi",
+            text: "Đã xảy ra lỗi khi tạo báo cáo",
+            confirmButtonText: "Đồng ý"
+        });
+    }
+},
         /**
          * Search individual customers for edit modal
          */
@@ -5201,11 +5256,12 @@ export default {
                     "Mã KH cá nhân": item.individual_customer_code || "",
                     "Khách hàng doanh nghiệp": item.corporate_customer || "",
                     "Mã KH doanh nghiệp": item.corporate_customer_code || "",
-                    "Tổng tiền": item.total_amount,
-                    "Tổng tiền tạm giữ": item.total_hold_amount,
-                    "Tổng tiền khấu trừ": item.total_deduction,
-                    "Tổng tiền lãi suất": item.total_interest,
-                    "Tổng tiền còn lại": item.total_remaining,
+                    "Tổng tiền": parseFloat(item.total_amount) || 0,
+                    "Tổng tiền tạm giữ":
+                        parseFloat(item.total_hold_amount) || 0,
+                    "Tổng tiền khấu trừ": parseFloat(item.total_deduction) || 0,
+                    "Tổng tiền lãi suất": parseFloat(item.total_interest) || 0,
+                    "Tổng tiền còn lại": parseFloat(item.total_remaining) || 0,
                     "Ngày thanh toán": this.formatDate(item.payment_date),
                     "Số tờ trình": item.proposal_number,
                     "Đợt thanh toán": item.installment,

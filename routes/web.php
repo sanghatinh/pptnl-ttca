@@ -24,3 +24,6 @@ Route::get('/unauthorized', function () {
 Route::get('/print/giaonhan-hoso/{document_code}', [PrintGiaoNhanHSController::class, 'print'])
     ->name('print.giaonhan-hoso');
 
+// Add this to your existing routes in web.php
+Route::get('/print-report-phieu-trinh-tt-homgiong', [App\Http\Controllers\Print\PrintPhieuTrinhThanhtoanControllers::class, 'generateReportPhieuTrinhTTHomgiong']);
+

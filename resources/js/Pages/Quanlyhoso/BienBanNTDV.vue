@@ -89,16 +89,20 @@
                                 </a>
                             </li>
                             <!-- Add this new menu item -->
-<li v-if="hasPermission('import biên bản nghiệm thu')">
-    <a
-        class="dropdown-item"
-        href="#"
-        @click.prevent="importChiTietNT"
-    >
-        <i class="fas fa-upload text-info me-2"></i>
-        Import Chi tiết NT
-    </a>
-</li>
+                            <li
+                                v-if="
+                                    hasPermission('import biên bản nghiệm thu')
+                                "
+                            >
+                                <a
+                                    class="dropdown-item"
+                                    href="#"
+                                    @click.prevent="importChiTietNT"
+                                >
+                                    <i class="fas fa-upload text-info me-2"></i>
+                                    Import Chi tiết NT
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -199,30 +203,18 @@
                                     </a>
                                 </li>
                                 <li>
-                                     <li>
-                                <a
-                                    class="dropdown-item"
-                                    href="#"
-                                    @click.prevent="showReportModal"
-                                >
-                                    <i
-                                        class="fas fa-file-pdf text-danger me-2"
-                                    ></i>
-                                    Report PDF
-                                </a>
-                            </li>
-
                                     <a
                                         class="dropdown-item"
                                         href="#"
-                                        @click.prevent="importData"
+                                        @click.prevent="showReportModal"
                                     >
                                         <i
-                                            class="fas fa-upload text-primary me-2"
+                                            class="fas fa-file-pdf text-danger me-2"
                                         ></i>
-                                        Import Data
+                                        Report PDF
                                     </a>
                                 </li>
+
                                 <li v-if="selectedItems.length > 0">
                                     <a
                                         class="dropdown-item"
@@ -2105,124 +2097,141 @@
     </div>
 
     <!-- Import Chi tiết NT Modal -->
-<div
-    class="modal fade"
-    id="importChiTietModal"
-    tabindex="-1"
-    aria-labelledby="importChiTietModalLabel"
-    aria-hidden="true"
->
-    <div class="modal-dialog modal-md">
-        <div class="modal-content">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title text-info" id="importChiTietModalLabel">
-                    <i class="fas fa-upload text-info me-2"></i>
-                    Import Chi tiết NT
-                </h5>
-                <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"
-                    @click="closeImportChiTietModal"
-                ></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-warning mb-3">
-    <i class="fas fa-exclamation-triangle me-2"></i>
-    <small>
-        <strong>Cảnh báo:</strong> Import chi tiết NT sẽ xóa <u>tất cả</u> dữ liệu hiện có trong bảng chi tiết và thay thế bằng dữ liệu mới từ file. 
-        Vui lòng xác minh thông tin là chính xác trước khi tiếp tục.
-    </small>
-</div>
-
-                <div class="mb-3">
-                    <button
-                        class="btn btn-outline-secondary mb-3 w-100"
-                        @click="downloadImportChiTietTemplate"
+    <div
+        class="modal fade"
+        id="importChiTietModal"
+        tabindex="-1"
+        aria-labelledby="importChiTietModalLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5
+                        class="modal-title text-info"
+                        id="importChiTietModalLabel"
                     >
-                        <i class="fas fa-download me-2"></i> Tải mẫu nhập liệu
+                        <i class="fas fa-upload text-info me-2"></i>
+                        Import Chi tiết NT
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        @click="closeImportChiTietModal"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning mb-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <small>
+                            <strong>Cảnh báo:</strong> Import chi tiết NT sẽ xóa
+                            <u>tất cả</u> dữ liệu hiện có trong bảng chi tiết và
+                            thay thế bằng dữ liệu mới từ file. Vui lòng xác minh
+                            thông tin là chính xác trước khi tiếp tục.
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <button
+                            class="btn btn-outline-secondary mb-3 w-100"
+                            @click="downloadImportChiTietTemplate"
+                        >
+                            <i class="fas fa-download me-2"></i> Tải mẫu nhập
+                            liệu
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="importChiTietFile" class="form-label"
+                            >Select file</label
+                        >
+                        <input
+                            class="form-control"
+                            type="file"
+                            id="importChiTietFile"
+                            @change="handleChiTietFileSelected"
+                            accept=".csv,.xlsx"
+                        />
+                        <div class="form-text">Support files: .csv, .xlsx</div>
+                    </div>
+
+                    <div v-if="chiTietUploadProgress > 0" class="mb-3">
+                        <label class="form-label">Upload progress</label>
+                        <div class="progress">
+                            <div
+                                class="progress-bar bg-info"
+                                role="progressbar"
+                                :style="{ width: chiTietUploadProgress + '%' }"
+                                :aria-valuenow="chiTietUploadProgress"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                {{ chiTietUploadProgress }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="chiTietProcessingRecords" class="mb-3">
+                        <label class="form-label">Processing data</label>
+                        <div class="progress">
+                            <div
+                                class="progress-bar bg-info"
+                                role="progressbar"
+                                :style="{
+                                    width: chiTietProcessingProgress + '%',
+                                }"
+                                :aria-valuenow="chiTietProcessingProgress"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
+                                {{ chiTietProcessedRecords }}/{{
+                                    chiTietTotalRecords
+                                }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="chiTietImportErrors.length > 0" class="mt-3">
+                        <div class="alert alert-danger">
+                            <h6 class="alert-heading">Lỗi khi nhập dữ liệu:</h6>
+                            <ul class="mb-0">
+                                <li
+                                    v-for="(
+                                        error, index
+                                    ) in chiTietImportErrors"
+                                    :key="index"
+                                >
+                                    {{ error }}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                        @click="closeImportChiTietModal"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-info"
+                        @click="startImportChiTiet"
+                        :disabled="!selectedChiTietFile || isImportingChiTiet"
+                    >
+                        <i class="fas fa-upload me-2"></i>
+                        <span v-if="isImportingChiTiet">Importing...</span>
+                        <span v-else>Import</span>
                     </button>
                 </div>
-
-                <div class="mb-3">
-                    <label for="importChiTietFile" class="form-label">Select file</label>
-                    <input
-                        class="form-control"
-                        type="file"
-                        id="importChiTietFile"
-                        @change="handleChiTietFileSelected"
-                        accept=".csv,.xlsx"
-                    />
-                    <div class="form-text">Support files: .csv, .xlsx</div>
-                </div>
-
-                <div v-if="chiTietUploadProgress > 0" class="mb-3">
-                    <label class="form-label">Upload progress</label>
-                    <div class="progress">
-                        <div
-                            class="progress-bar bg-info"
-                            role="progressbar"
-                            :style="{ width: chiTietUploadProgress + '%' }"
-                            :aria-valuenow="chiTietUploadProgress"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                        >
-                            {{ chiTietUploadProgress }}%
-                        </div>
-                    </div>
-                </div>
-
-                <div v-if="chiTietProcessingRecords" class="mb-3">
-                    <label class="form-label">Processing data</label>
-                    <div class="progress">
-                        <div
-                            class="progress-bar bg-info"
-                            role="progressbar"
-                            :style="{ width: chiTietProcessingProgress + '%' }"
-                            :aria-valuenow="chiTietProcessingProgress"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                        >
-                            {{ chiTietProcessedRecords }}/{{ chiTietTotalRecords }}
-                        </div>
-                    </div>
-                </div>
-
-                <div v-if="chiTietImportErrors.length > 0" class="mt-3">
-                    <div class="alert alert-danger">
-                        <h6 class="alert-heading">Lỗi khi nhập dữ liệu:</h6>
-                        <ul class="mb-0">
-                            <li v-for="(error, index) in chiTietImportErrors" :key="index">
-                                {{ error }}
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button
-                    type="button"
-                    class="btn btn-secondary"
-                    data-bs-dismiss="modal"
-                    @click="closeImportChiTietModal"
-                >
-                    Cancel
-                </button>
-                <button
-                    type="button"
-                    class="btn btn-info"
-                    @click="startImportChiTiet"
-                    :disabled="!selectedChiTietFile || isImportingChiTiet"
-                >
-                    <i class="fas fa-upload me-2"></i>
-                    <span v-if="isImportingChiTiet">Importing...</span>
-                    <span v-else>Import</span>
-                </button>
             </div>
         </div>
     </div>
-</div>
 
     <!-- Payment Request Modal -->
     <div
@@ -2731,17 +2740,16 @@ export default {
                 trang_thai_thanh_toan: [],
             },
 
-             // Add these new properties for Chi tiết NT import
-        importChiTietModal: null,
-        selectedChiTietFile: null,
-        chiTietUploadProgress: 0,
-        chiTietProcessingRecords: false,
-        chiTietProcessingProgress: 0,
-        chiTietProcessedRecords: 0,
-        chiTietTotalRecords: 0,
-        chiTietImportErrors: [],
-        isImportingChiTiet: false,
-
+            // Add these new properties for Chi tiết NT import
+            importChiTietModal: null,
+            selectedChiTietFile: null,
+            chiTietUploadProgress: 0,
+            chiTietProcessingRecords: false,
+            chiTietProcessingProgress: 0,
+            chiTietProcessedRecords: 0,
+            chiTietTotalRecords: 0,
+            chiTietImportErrors: [],
+            isImportingChiTiet: false,
 
             exportModal: null, // Add this to store modal reference
             selectedFile: null,
@@ -4550,73 +4558,74 @@ export default {
         },
 
         async checkImportProgress(importId) {
-    if (!importId) {
-        this.importErrors = ["Invalid import ID. Please try again."];
-        return;
-    }
-
-    try {
-        const response = await axios.get(
-            `/api/import-progress/${importId}`,
-            {
-                headers: {
-                    Authorization: "Bearer " + this.store.getToken,
-                },
+            if (!importId) {
+                this.importErrors = ["Invalid import ID. Please try again."];
+                return;
             }
-        );
 
-        const data = response.data;
-
-        if (data.finished) {
-            // Make sure we update our local state with the values from the API response
-            this.processedRecords = data.processed || 0;
-            this.totalRecords = data.total || 0;
-            this.processingProgress = 100;
-
-            if (data.success) {
-                // Important: Use data.processed directly instead of this.processedRecords
-                setTimeout(() => {
-                    this.isImporting = false;
-                    this.closeImportModal();
-
-                    // Show success toast notification with SweetAlert2
-                    Swal.fire({
-                        title: "Thành công",
-                        text: `Đã tải lên thành công ${data.processed} bản ghi` +
-                            (this.importErrors.length > 0
-                                ? ` với ${this.importErrors.length} lỗi`
-                                : ""),
-                        icon: "success",
-                        toast: true,
-                        position: "top-end",
-                        showConfirmButton: false,
-                        timer: 5000,
-                        timerProgressBar: true,
-                        didOpen: (toast) => {
-                            toast.addEventListener(
-                                "mouseenter",
-                                Swal.stopTimer
-                            );
-                            toast.addEventListener(
-                                "mouseleave",
-                                Swal.resumeTimer
-                            );
+            try {
+                const response = await axios.get(
+                    `/api/import-progress/${importId}`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
                         },
-                    });
+                    }
+                );
 
-                    // Refresh data to get the latest changes
-                    this.fetchBienBanData();
-                }, 1000);
-            } else {
-                // Rest of the existing code for error handling...
+                const data = response.data;
+
+                if (data.finished) {
+                    // Make sure we update our local state with the values from the API response
+                    this.processedRecords = data.processed || 0;
+                    this.totalRecords = data.total || 0;
+                    this.processingProgress = 100;
+
+                    if (data.success) {
+                        // Important: Use data.processed directly instead of this.processedRecords
+                        setTimeout(() => {
+                            this.isImporting = false;
+                            this.closeImportModal();
+
+                            // Show success toast notification with SweetAlert2
+                            Swal.fire({
+                                title: "Thành công",
+                                text:
+                                    `Đã tải lên thành công ${data.processed} bản ghi` +
+                                    (this.importErrors.length > 0
+                                        ? ` với ${this.importErrors.length} lỗi`
+                                        : ""),
+                                icon: "success",
+                                toast: true,
+                                position: "top-end",
+                                showConfirmButton: false,
+                                timer: 5000,
+                                timerProgressBar: true,
+                                didOpen: (toast) => {
+                                    toast.addEventListener(
+                                        "mouseenter",
+                                        Swal.stopTimer
+                                    );
+                                    toast.addEventListener(
+                                        "mouseleave",
+                                        Swal.resumeTimer
+                                    );
+                                },
+                            });
+
+                            // Refresh data to get the latest changes
+                            this.fetchBienBanData();
+                        }, 1000);
+                    } else {
+                        // Rest of the existing code for error handling...
+                    }
+                } else {
+                    // Rest of the existing code for progress handling...
+                }
+            } catch (error) {
+                // Rest of the existing error handling code...
             }
-        } else {
-            // Rest of the existing code for progress handling...
-        }
-    } catch (error) {
-        // Rest of the existing error handling code...
-    }
-},
+        },
         toggleSelectAll(event) {
             if (event.target.checked) {
                 // Select all eligible items
@@ -4878,196 +4887,237 @@ export default {
         },
 
         // Method to show the Import Chi tiết NT modal
-    importChiTietNT() {
-        // Show the import modal
-        try {
-            // Initialize Bootstrap modal if not already initialized
-            if (!this.importChiTietModal) {
-                import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
-                    (bootstrap) => {
-                        window.bootstrap = bootstrap;
-                        this.importChiTietModal = new bootstrap.Modal(
-                            document.getElementById("importChiTietModal")
-                        );
-                        this.importChiTietModal.show();
-                    }
-                );
-            } else {
-                this.importChiTietModal.show();
-            }
+        importChiTietNT() {
+            // Show the import modal
+            try {
+                // Initialize Bootstrap modal if not already initialized
+                if (!this.importChiTietModal) {
+                    import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
+                        (bootstrap) => {
+                            window.bootstrap = bootstrap;
+                            this.importChiTietModal = new bootstrap.Modal(
+                                document.getElementById("importChiTietModal")
+                            );
+                            this.importChiTietModal.show();
+                        }
+                    );
+                } else {
+                    this.importChiTietModal.show();
+                }
 
-            // Initialize with empty state
-            this.selectedChiTietFile = null;
-            this.chiTietUploadProgress = 0;
-            this.chiTietProcessingRecords = false;
-            this.chiTietProcessingProgress = 0;
-            this.chiTietProcessedRecords = 0;
-            this.chiTietTotalRecords = 0;
-            this.chiTietImportErrors = [];
-            this.isImportingChiTiet = false;
-
-            // Get file input element and reset it
-            const fileInput = document.getElementById("importChiTietFile");
-            if (fileInput) {
-                fileInput.value = "";
-            }
-
-            // Create backdrop if needed
-            if (!document.querySelector(".modal-backdrop")) {
-                const backdrop = document.createElement("div");
-                backdrop.classList.add(
-                    "modal-backdrop",
-                    "fade",
-                    "show"
-                );
-                document.body.appendChild(backdrop);
-            }
-        } catch (error) {
-            console.error("Error showing import Chi tiết NT modal:", error);
-        }
-    },
-
-    handleChiTietFileSelected(event) {
-        const file = event.target.files[0];
-        if (file) {
-            // Validate file type
-            const fileType = file.name.split(".").pop().toLowerCase();
-            if (!["csv", "xlsx"].includes(fileType)) {
-                alert("Vui lòng chọn đúng tập tin. (CSV hoặc Excel)");
-                event.target.value = ""; // Clear the file input
+                // Initialize with empty state
                 this.selectedChiTietFile = null;
+                this.chiTietUploadProgress = 0;
+                this.chiTietProcessingRecords = false;
+                this.chiTietProcessingProgress = 0;
+                this.chiTietProcessedRecords = 0;
+                this.chiTietTotalRecords = 0;
+                this.chiTietImportErrors = [];
+                this.isImportingChiTiet = false;
+
+                // Get file input element and reset it
+                const fileInput = document.getElementById("importChiTietFile");
+                if (fileInput) {
+                    fileInput.value = "";
+                }
+
+                // Create backdrop if needed
+                if (!document.querySelector(".modal-backdrop")) {
+                    const backdrop = document.createElement("div");
+                    backdrop.classList.add("modal-backdrop", "fade", "show");
+                    document.body.appendChild(backdrop);
+                }
+            } catch (error) {
+                console.error("Error showing import Chi tiết NT modal:", error);
+            }
+        },
+
+        handleChiTietFileSelected(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Validate file type
+                const fileType = file.name.split(".").pop().toLowerCase();
+                if (!["csv", "xlsx"].includes(fileType)) {
+                    alert("Vui lòng chọn đúng tập tin. (CSV hoặc Excel)");
+                    event.target.value = ""; // Clear the file input
+                    this.selectedChiTietFile = null;
+                    return;
+                }
+
+                this.selectedChiTietFile = file;
+                this.chiTietImportErrors = [];
+                console.log("Chi tiết NT file selected:", file.name);
+            } else {
+                this.selectedChiTietFile = null;
+            }
+        },
+
+        closeImportChiTietModal() {
+            try {
+                const modalElement =
+                    document.getElementById("importChiTietModal");
+                if (modalElement) {
+                    if (window.bootstrap) {
+                        const modalInstance =
+                            window.bootstrap.Modal.getInstance(modalElement);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                    } else {
+                        // Fallback if bootstrap is not available
+                        modalElement.classList.remove("show");
+                        modalElement.style.display = "none";
+                        document.body.classList.remove("modal-open");
+
+                        // Remove backdrop
+                        const backdrop =
+                            document.querySelector(".modal-backdrop");
+                        if (backdrop) {
+                            backdrop.remove();
+                        }
+                    }
+                }
+
+                // Reset import state
+                this.selectedChiTietFile = null;
+                this.chiTietUploadProgress = 0;
+                this.chiTietProcessingRecords = false;
+                this.chiTietProcessingProgress = 0;
+                this.chiTietProcessedRecords = 0;
+                this.chiTietTotalRecords = 0;
+                this.chiTietImportErrors = [];
+            } catch (error) {
+                console.error("Error closing import Chi tiết NT modal:", error);
+            }
+        },
+
+        async startImportChiTiet() {
+            if (!this.selectedChiTietFile) {
+                Swal.fire({
+                    title: "Cảnh báo",
+                    text: "Vui lòng chọn tệp để tải lên",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
                 return;
             }
 
-            this.selectedChiTietFile = file;
-            this.chiTietImportErrors = [];
-            console.log("Chi tiết NT file selected:", file.name);
-        } else {
-            this.selectedChiTietFile = null;
-        }
-    },
+            // Confirm before proceeding with SweetAlert2
+            const result = await Swal.fire({
+                title: "Xác nhận tải lên",
+                text: "Cảnh báo: Việc nhập dữ liệu Chi tiết NT sẽ xóa dữ liệu hiện có và thay thế bằng dữ liệu mới. Bạn có chắc chắn muốn tiếp tục không?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "OK",
+                cancelButtonText: "Hủy",
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-success me-2",
+                    cancelButton: "btn btn-outline-success",
+                },
+            });
 
-    closeImportChiTietModal() {
-        try {
-            const modalElement = document.getElementById("importChiTietModal");
-            if (modalElement) {
-                if (window.bootstrap) {
-                    const modalInstance = window.bootstrap.Modal.getInstance(modalElement);
-                    if (modalInstance) {
-                        modalInstance.hide();
-                    }
-                } else {
-                    // Fallback if bootstrap is not available
-                    modalElement.classList.remove("show");
-                    modalElement.style.display = "none";
-                    document.body.classList.remove("modal-open");
-
-                    // Remove backdrop
-                    const backdrop = document.querySelector(".modal-backdrop");
-                    if (backdrop) {
-                        backdrop.remove();
-                    }
-                }
+            if (!result.isConfirmed) {
+                return;
             }
 
-            // Reset import state
-            this.selectedChiTietFile = null;
+            this.isImportingChiTiet = true;
             this.chiTietUploadProgress = 0;
             this.chiTietProcessingRecords = false;
             this.chiTietProcessingProgress = 0;
             this.chiTietProcessedRecords = 0;
             this.chiTietTotalRecords = 0;
             this.chiTietImportErrors = [];
-        } catch (error) {
-            console.error("Error closing import Chi tiết NT modal:", error);
-        }
-    },
 
-    async startImportChiTiet() {
-        if (!this.selectedChiTietFile) {
-            Swal.fire({
-                title: "Cảnh báo",
-                text: "Vui lòng chọn tệp để tải lên",
-                icon: "warning",
-                confirmButtonText: "OK",
-                buttonsStyling: false,
-                customClass: {
-                    confirmButton: "btn btn-success",
-                },
-            });
-            return;
-        }
+            try {
+                const formData = new FormData();
+                formData.append("file", this.selectedChiTietFile);
 
-        // Confirm before proceeding with SweetAlert2
-        const result = await Swal.fire({
-            title: "Xác nhận tải lên",
-            text: "Cảnh báo: Việc nhập dữ liệu Chi tiết NT sẽ xóa dữ liệu hiện có và thay thế bằng dữ liệu mới. Bạn có chắc chắn muốn tiếp tục không?",
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonText: "OK",
-            cancelButtonText: "Hủy",
-            buttonsStyling: false,
-            customClass: {
-                confirmButton: "btn btn-success me-2",
-                cancelButton: "btn btn-outline-success",
-            },
-        });
+                // Start file upload with progress tracking
+                const response = await axios.post(
+                    "/api/import-chitiet-nghiemthu",
+                    formData,
+                    {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                        onUploadProgress: (progressEvent) => {
+                            if (progressEvent.total) {
+                                this.chiTietUploadProgress = Math.round(
+                                    (progressEvent.loaded * 100) /
+                                        progressEvent.total
+                                );
+                            } else {
+                                this.chiTietUploadProgress = 50; // Show 50% if total is unknown
+                            }
+                        },
+                    }
+                );
 
-        if (!result.isConfirmed) {
-            return;
-        }
+                if (response.data.success) {
+                    this.chiTietProcessingRecords = true;
+                    this.chiTietTotalRecords = response.data.totalRecords || 0;
 
-        this.isImportingChiTiet = true;
-        this.chiTietUploadProgress = 0;
-        this.chiTietProcessingRecords = false;
-        this.chiTietProcessingProgress = 0;
-        this.chiTietProcessedRecords = 0;
-        this.chiTietTotalRecords = 0;
-        this.chiTietImportErrors = [];
+                    // Start tracking processing status
+                    this.checkImportChiTietProgress(response.data.importId);
+                } else {
+                    this.isImportingChiTiet = false;
+                    this.chiTietImportErrors = response.data.errors || [
+                        "Đã xảy ra lỗi không xác định trong quá trình nhập.",
+                    ];
+                    console.error("Import Chi tiết NT failed:", response.data);
 
-        try {
-            const formData = new FormData();
-            formData.append("file", this.selectedChiTietFile);
-
-            // Start file upload with progress tracking
-            const response = await axios.post(
-                "/api/import-chitiet-nghiemthu",
-                formData,
-                {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                        Authorization: "Bearer " + this.store.getToken,
-                    },
-                    onUploadProgress: (progressEvent) => {
-                        if (progressEvent.total) {
-                            this.chiTietUploadProgress = Math.round(
-                                (progressEvent.loaded * 100) /
-                                progressEvent.total
-                            );
-                        } else {
-                            this.chiTietUploadProgress = 50; // Show 50% if total is unknown
-                        }
-                    },
+                    // Use SweetAlert2 to show failure
+                    Swal.fire({
+                        title: "Thất bại",
+                        text: "Nhập dữ liệu Chi tiết NT không thành công. Vui lòng kiểm tra lỗi và thử lại.",
+                        icon: "error",
+                        confirmButtonText: "OK",
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: "btn btn-success",
+                        },
+                    });
                 }
-            );
-
-            if (response.data.success) {
-                this.chiTietProcessingRecords = true;
-                this.chiTietTotalRecords = response.data.totalRecords || 0;
-
-                // Start tracking processing status
-                this.checkImportChiTietProgress(response.data.importId);
-            } else {
+            } catch (error) {
                 this.isImportingChiTiet = false;
-                this.chiTietImportErrors = response.data.errors || [
-                    "Đã xảy ra lỗi không xác định trong quá trình nhập.",
-                ];
-                console.error("Import Chi tiết NT failed:", response.data);
+                console.error("Import Chi tiết NT error:", error);
 
-                // Use SweetAlert2 to show failure
+                if (error.response) {
+                    if (error.response.status === 401) {
+                        this.handleAuthError();
+                    } else {
+                        this.chiTietImportErrors =
+                            error.response.data.errors ||
+                            Array.isArray(error.response.data.message)
+                                ? error.response.data.message
+                                : [
+                                      error.response.data.message ||
+                                          "Lỗi máy chủ",
+                                  ];
+                    }
+                } else if (error.request) {
+                    // Request made but no response received
+                    this.chiTietImportErrors = [
+                        "Không có phản hồi từ máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.",
+                    ];
+                } else {
+                    // Error setting up the request
+                    this.chiTietImportErrors = [
+                        "Lỗi mạng. Vui lòng kiểm tra kết nối của bạn và thử lại: " +
+                            error.message,
+                    ];
+                }
+
+                // Use SweetAlert2 to show error
                 Swal.fire({
-                    title: "Thất bại",
-                    text: "Nhập dữ liệu Chi tiết NT không thành công. Vui lòng kiểm tra lỗi và thử lại.",
+                    title: "Lỗi",
+                    text: "Lỗi khi nhập dữ liệu Chi tiết NT. Vui lòng kiểm tra chi tiết lỗi hiển thị bên dưới.",
                     icon: "error",
                     confirmButtonText: "OK",
                     buttonsStyling: false,
@@ -5076,181 +5126,146 @@ export default {
                     },
                 });
             }
-        } catch (error) {
-            this.isImportingChiTiet = false;
-            console.error("Import Chi tiết NT error:", error);
+        },
 
-            if (error.response) {
-                if (error.response.status === 401) {
-                    this.handleAuthError();
-                } else {
-                    this.chiTietImportErrors =
-                        error.response.data.errors ||
-                        Array.isArray(error.response.data.message)
-                            ? error.response.data.message
-                            : [
-                                error.response.data.message ||
-                                "Lỗi máy chủ",
-                            ];
-                }
-            } else if (error.request) {
-                // Request made but no response received
+        async checkImportChiTietProgress(importId) {
+            if (!importId) {
                 this.chiTietImportErrors = [
-                    "Không có phản hồi từ máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.",
+                    "Invalid import ID. Please try again.",
                 ];
-            } else {
-                // Error setting up the request
-                this.chiTietImportErrors = [
-                    "Lỗi mạng. Vui lòng kiểm tra kết nối của bạn và thử lại: " +
-                    error.message,
-                ];
+                return;
             }
 
-            // Use SweetAlert2 to show error
-            Swal.fire({
-                title: "Lỗi",
-                text: "Lỗi khi nhập dữ liệu Chi tiết NT. Vui lòng kiểm tra chi tiết lỗi hiển thị bên dưới.",
-                icon: "error",
-                confirmButtonText: "OK",
-                buttonsStyling: false,
-                customClass: {
-                    confirmButton: "btn btn-success",
-                },
-            });
-        }
-    },
-
-    async checkImportChiTietProgress(importId) {
-    if (!importId) {
-        this.chiTietImportErrors = ["Invalid import ID. Please try again."];
-        return;
-    }
-
-    try {
-        const response = await axios.get(
-            `/api/import-chitiet-nt-progress/${importId}`,
-            {
-                headers: {
-                    Authorization: "Bearer " + this.store.getToken,
-                },
-            }
-        );
-
-        const data = response.data;
-
-        if (data.finished) {
-            // Make sure we update our local state with the values from the API response
-            this.chiTietProcessedRecords = data.processed || 0;
-            this.chiTietTotalRecords = data.total || 0;
-            this.chiTietProcessingProgress = 100;
-
-            if (data.success) {
-                // Important: Use data.processed directly instead of this.chiTietProcessedRecords
-                setTimeout(() => {
-                    this.isImportingChiTiet = false;
-                    this.closeImportChiTietModal();
-
-                    // Show success toast notification with SweetAlert2
-                    Swal.fire({
-                        title: "Thành công",
-                        text: `Đã tải lên thành công ${data.processed} bản ghi Chi tiết NT` +
-                            (this.chiTietImportErrors.length > 0
-                                ? ` với ${this.chiTietImportErrors.length} lỗi`
-                                : ""),
-                        icon: "success",
-                        toast: true,
-                        position: "top-end",
-                        showConfirmButton: false,
-                        timer: 5000,
-                        timerProgressBar: true,
-                        didOpen: (toast) => {
-                            toast.addEventListener(
-                                "mouseenter",
-                                Swal.stopTimer
-                            );
-                            toast.addEventListener(
-                                "mouseleave",
-                                Swal.resumeTimer
-                            );
+            try {
+                const response = await axios.get(
+                    `/api/import-chitiet-nt-progress/${importId}`,
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
                         },
+                    }
+                );
+
+                const data = response.data;
+
+                if (data.finished) {
+                    // Make sure we update our local state with the values from the API response
+                    this.chiTietProcessedRecords = data.processed || 0;
+                    this.chiTietTotalRecords = data.total || 0;
+                    this.chiTietProcessingProgress = 100;
+
+                    if (data.success) {
+                        // Important: Use data.processed directly instead of this.chiTietProcessedRecords
+                        setTimeout(() => {
+                            this.isImportingChiTiet = false;
+                            this.closeImportChiTietModal();
+
+                            // Show success toast notification with SweetAlert2
+                            Swal.fire({
+                                title: "Thành công",
+                                text:
+                                    `Đã tải lên thành công ${data.processed} bản ghi Chi tiết NT` +
+                                    (this.chiTietImportErrors.length > 0
+                                        ? ` với ${this.chiTietImportErrors.length} lỗi`
+                                        : ""),
+                                icon: "success",
+                                toast: true,
+                                position: "top-end",
+                                showConfirmButton: false,
+                                timer: 5000,
+                                timerProgressBar: true,
+                                didOpen: (toast) => {
+                                    toast.addEventListener(
+                                        "mouseenter",
+                                        Swal.stopTimer
+                                    );
+                                    toast.addEventListener(
+                                        "mouseleave",
+                                        Swal.resumeTimer
+                                    );
+                                },
+                            });
+
+                            // Refresh data to get the latest changes
+                            this.fetchBienBanData();
+                        }, 1000);
+                    } else {
+                        // Rest of the existing code for error handling...
+                    }
+                } else {
+                    // Rest of the existing code for progress handling...
+                }
+            } catch (error) {
+                // Rest of the existing error handling code...
+            }
+        },
+
+        downloadImportChiTietTemplate() {
+            try {
+                // Create a simple Excel template
+                import("xlsx").then((XLSX) => {
+                    // Define the headers based on the model fields
+                    const headers = [
+                        "tram",
+                        "ma_nghiem_thu",
+                        "chi_tiet_hd_mia",
+                        "khach_hang_doanh_nghiep",
+                        "khach_hang_ca_nhan",
+                        "doi_tac_ca_nhan_dv",
+                        "doi_tac_cung_cap_dv",
+                        "ma_so_thua",
+                        "hinh_thuc_thuc_hien_dv",
+                        "dich_vu",
+                        "nghiem_thu_dich_vu",
+                        "don_vi_tinh",
+                        "khoi_luong_thuc_hien",
+                        "don_gia",
+                        "thanh_tien",
+                        "tien_thanh_toan",
+                        "tien_con_lai",
+                        "so_lan_thuc_hien",
+                        "da_thanh_toan",
+                        "vu_dau_tu",
+                        "tinh_trang_duyet",
+                        "ma_nhan_vien",
+                    ];
+
+                    // Create a sample data row with descriptions
+                    const sampleRow = {};
+                    headers.forEach((header) => {
+                        sampleRow[header] = `Example ${header}`;
                     });
 
-                    // Refresh data to get the latest changes
-                    this.fetchBienBanData();
-                }, 1000);
-            } else {
-                // Rest of the existing code for error handling...
+                    // Create worksheet
+                    const ws = XLSX.utils.json_to_sheet([sampleRow], {
+                        header: headers,
+                    });
+
+                    // Create workbook
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(
+                        wb,
+                        ws,
+                        "Chi tiết NT Template"
+                    );
+
+                    // Write to file
+                    XLSX.writeFile(wb, "Chi_tiet_NT_Template.xlsx");
+                });
+            } catch (error) {
+                console.error("Error generating template:", error);
+                Swal.fire({
+                    title: "Error",
+                    text: "Không thể tạo mẫu Excel. Vui lòng thử lại sau.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: "btn btn-success",
+                    },
+                });
             }
-        } else {
-            // Rest of the existing code for progress handling...
-        }
-    } catch (error) {
-        // Rest of the existing error handling code...
-    }
-},
-
-    downloadImportChiTietTemplate() {
-        try {
-            // Create a simple Excel template
-            import("xlsx").then((XLSX) => {
-                // Define the headers based on the model fields
-                const headers = [
-                    'tram',
-                    'ma_nghiem_thu',
-                    'chi_tiet_hd_mia',
-                    'khach_hang_doanh_nghiep',
-                    'khach_hang_ca_nhan',
-                    'doi_tac_ca_nhan_dv',
-                    'doi_tac_cung_cap_dv',
-                    'ma_so_thua',
-                    'hinh_thuc_thuc_hien_dv',
-                    'dich_vu',
-                    'nghiem_thu_dich_vu',
-                    'don_vi_tinh',
-                    'khoi_luong_thuc_hien',
-                    'don_gia',
-                    'thanh_tien',
-                    'tien_thanh_toan',
-                    'tien_con_lai',
-                    'so_lan_thuc_hien',
-                    'da_thanh_toan',
-                    'vu_dau_tu',
-                    'tinh_trang_duyet',
-                    'ma_nhan_vien'
-                ];
-
-                // Create a sample data row with descriptions
-                const sampleRow = {};
-                headers.forEach(header => {
-                    sampleRow[header] = `Example ${header}`;
-                });
-
-                // Create worksheet
-                const ws = XLSX.utils.json_to_sheet([sampleRow], { 
-                    header: headers 
-                });
-
-                // Create workbook
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Chi tiết NT Template");
-
-                // Write to file
-                XLSX.writeFile(wb, "Chi_tiet_NT_Template.xlsx");
-            });
-        } catch (error) {
-            console.error("Error generating template:", error);
-            Swal.fire({
-                title: "Error",
-                text: "Không thể tạo mẫu Excel. Vui lòng thử lại sau.",
-                icon: "error",
-                confirmButtonText: "OK",
-                buttonsStyling: false,
-                customClass: {
-                    confirmButton: "btn btn-success",
-                },
-            });
-        }
-    },
+        },
     },
     watch: {
         paginatedItems: {
@@ -5327,18 +5342,17 @@ export default {
                     this.exportModal = new bootstrap.Modal(exportModalElement);
                 }
                 // Initialize the import Chi tiết NT modal
-            const importChiTietModalElement = document.getElementById("importChiTietModal");
-            if (importChiTietModalElement) {
-                this.importChiTietModal = new bootstrap.Modal(importChiTietModalElement);
-            }
+                const importChiTietModalElement =
+                    document.getElementById("importChiTietModal");
+                if (importChiTietModalElement) {
+                    this.importChiTietModal = new bootstrap.Modal(
+                        importChiTietModalElement
+                    );
+                }
             })
             .catch((err) => {
                 console.error("Failed to load Bootstrap:", err);
             });
-
-            
-
-
 
         this.fetchInvestmentProjects();
     },
@@ -5911,7 +5925,6 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     margin: 0.125rem 0 0;
     border-radius: 0.375rem;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    
 }
 
 .dropdown-item {
@@ -7211,31 +7224,31 @@ button:hover .fas.fa-filter:not(.text-green-500) {
             0 4px 6px -2px rgba(0, 0, 0, 0.05);
         background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
     } */
-     .dropdown-menu {
-    max-height: 70px; /* กำหนดความสูงสูงสุด */
-    overflow-y: auto; /* เพิ่ม scroll แนวตั้ง */
-    overflow-x: hidden; /* ซ่อน scroll แนวนอน */
-    -webkit-overflow-scrolling: touch; /* ทำให้ scroll ลื่นบนมือถือ */
-  }
-  
-  /* ปรับแต่ง scrollbar สำหรับมือถือ */
-  .dropdown-menu::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  .dropdown-menu::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-  }
-  
-  .dropdown-menu::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 3px;
-  }
-  
-  .dropdown-menu::-webkit-scrollbar-thumb:hover {
-    background: #555;
-  }
+    .dropdown-menu {
+        max-height: 70px; /* กำหนดความสูงสูงสุด */
+        overflow-y: auto; /* เพิ่ม scroll แนวตั้ง */
+        overflow-x: hidden; /* ซ่อน scroll แนวนอน */
+        -webkit-overflow-scrolling: touch; /* ทำให้ scroll ลื่นบนมือถือ */
+    }
+
+    /* ปรับแต่ง scrollbar สำหรับมือถือ */
+    .dropdown-menu::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .dropdown-menu::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+
+    .dropdown-menu::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+
+    .dropdown-menu::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
 
     .dropdown-item {
         padding: 0.75rem 1rem;
@@ -7302,8 +7315,6 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         font-size: 0.8rem;
     }
 }
-
-
 
 /* Mobile Pagination - Simple & Clean */
 .mobile-pagination-card {

@@ -239,6 +239,8 @@ Route::delete('/payment-requests-homgiong/{id}', [PhieuDNTTHomgiongControllers::
 
 
 
+
+
 //Công nợ dịch vụ khấu trừ
 Route::get('/import-congno-dichvu-khautru-progress/{importId}', [DeductibleServiceDebtController::class, 'checkImportProgress']);
 Route::post('/import-congno-dichvu-khautru', [DeductibleServiceDebtController::class, 'startImport']);
@@ -296,6 +298,13 @@ Route::match(['GET', 'POST'], '/generate-report-phieu-dntt-hg', [PhieuDNTTHomgio
 Route::match(['GET', 'POST'], '/generate-report-congno-phaithu', [DeductibleServiceDebtController::class, 'generateReportTableCongnoPhaithu']);
 // เพิ่ม Route สำหรับ Report PDF Phieu Thu No Dich Vu
 Route::match(['GET', 'POST'], '/generate-report-table-phieuthuno', [PhieuthunodichvuController::class, 'generateReportTablePhieuthuno']);
+
+//Báo cáo phiếu trình thanh toán
+Route::get('/print-report-phieu-trinh-tt', [App\Http\Controllers\Print\PrintPhieuTrinhThanhtoanControllers::class, 'generateReportPhieuTrinhTT']);
+Route::get('/print-report-phieu-trinh-tt-homgiong', [App\Http\Controllers\Print\PrintPhieuTrinhThanhtoanControllers::class, 'generateReportPhieuTrinhTTHomgiong']);
+
+
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Middleware for JWT authentication เพื่อป้องกันการเข้าถึง API ที่ต้องการการยืนยันตัวตน ให้ใช้ได้ ทั้ง ผู้ดูแลระบบและเกษตรกร
 Route::middleware([\App\Http\Middleware\JwtMiddleware::class])->group(function () {

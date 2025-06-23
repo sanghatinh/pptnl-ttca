@@ -2867,12 +2867,19 @@ export default {
                             item.khach_hang_doanh_nghiep || "",
                         "Mã KH doanh nghiệp":
                             item.ma_khach_hang_doanh_nghiep || "",
-                        "Tổng tiền": item.tong_tien || 0,
-                        "Tổng tiền tạm giữ": item.tong_tien_tam_giu || 0,
-                        "Tổng tiền khấu trừ": item.tong_tien_khau_tru || 0,
-                        "Tổng tiền lãi suất": item.tong_tien_lai_suat || 0,
-                        "Tổng tiền thanh toán còn lại":
-                            item.tong_tien_thanh_toan_con_lai || 0,
+                        "Tổng tiền": parseFloat(item.tong_tien || 0),
+                        "Tổng tiền tạm giữ": parseFloat(
+                            item.tong_tien_tam_giu || 0
+                        ),
+                        "Tổng tiền khấu trừ": parseFloat(
+                            item.tong_tien_khau_tru || 0
+                        ),
+                        "Tổng tiền lãi suất": parseFloat(
+                            item.tong_tien_lai_suat || 0
+                        ),
+                        "Tổng tiền thanh toán còn lại": parseFloat(
+                            item.tong_tien_thanh_toan_con_lai || 0
+                        ),
                         "Số tờ trình": item.so_to_trinh || "",
                         "Đợt thanh toán": item.so_dot_thanh_toan || "",
                     };
@@ -2901,6 +2908,43 @@ export default {
                     { wch: 15 }, // Đợt thanh toán
                 ];
                 ws["!cols"] = wscols;
+
+                // Format numbers without decimal places (for columns 10-14 which are the money values)
+                // XLSX.js uses 0-based indexing for columns
+                for (let i = 0; i < exportData.length; i++) {
+                    const row = i + 1; // XLSX starts rows at 1
+
+                    // Format number cells (Tổng tiền and other money columns)
+                    // Column J (10): Tổng tiền
+                    if (ws[XLSX.utils.encode_cell({ r: row, c: 9 })]) {
+                        ws[XLSX.utils.encode_cell({ r: row, c: 9 })].z =
+                            "#,##0";
+                    }
+
+                    // Column K (11): Tổng tiền tạm giữ
+                    if (ws[XLSX.utils.encode_cell({ r: row, c: 10 })]) {
+                        ws[XLSX.utils.encode_cell({ r: row, c: 10 })].z =
+                            "#,##0";
+                    }
+
+                    // Column L (12): Tổng tiền khấu trừ
+                    if (ws[XLSX.utils.encode_cell({ r: row, c: 11 })]) {
+                        ws[XLSX.utils.encode_cell({ r: row, c: 11 })].z =
+                            "#,##0";
+                    }
+
+                    // Column M (13): Tổng tiền lãi suất
+                    if (ws[XLSX.utils.encode_cell({ r: row, c: 12 })]) {
+                        ws[XLSX.utils.encode_cell({ r: row, c: 12 })].z =
+                            "#,##0";
+                    }
+
+                    // Column N (14): Tổng tiền thanh toán còn lại
+                    if (ws[XLSX.utils.encode_cell({ r: row, c: 13 })]) {
+                        ws[XLSX.utils.encode_cell({ r: row, c: 13 })].z =
+                            "#,##0";
+                    }
+                }
 
                 // Create workbook and add worksheet
                 const wb = XLSX.utils.book_new();

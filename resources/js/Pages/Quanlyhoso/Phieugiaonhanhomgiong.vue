@@ -66,7 +66,13 @@
                                     Report PDF
                                 </a>
                             </li>
-                            <li>
+                            <li
+                                v-if="
+                                    hasPermission(
+                                        'import phiếu giao nhận hom giống'
+                                    )
+                                "
+                            >
                                 <a
                                     class="dropdown-item"
                                     href="#"
@@ -79,7 +85,13 @@
                                 </a>
                             </li>
                             <!-- Add new Import Chi tiết HG option -->
-                            <li>
+                            <li
+                                v-if="
+                                    hasPermission(
+                                        'import chi tiết giao nhận hom giống'
+                                    )
+                                "
+                            >
                                 <a
                                     class="dropdown-item"
                                     href="#"
@@ -96,6 +108,7 @@
                 </div>
                 <!-- Add this button next to actions-menu in the toolbar -->
                 <button
+                    v-if="hasPermission('tạo phiếu trình thanh thanh toán')"
                     class="modern-create-payment-btn"
                     @click="showCreatePaymentRequestModal"
                     :disabled="selectedItems.length === 0"
@@ -196,17 +209,6 @@
                                             class="fas fa-file-pdf text-danger me-2"
                                         ></i>
                                         Report PDF
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="dropdown-item"
-                                        href="#"
-                                        @click.prevent="importData"
-                                    >
-                                        <i class="fas fa-upload me-2"></i>
-                                        Import Data
                                     </a>
                                 </li>
                             </ul>
@@ -2195,6 +2197,7 @@ import { Bootstrap5Pagination } from "laravel-vue-pagination";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Swal from "sweetalert2";
+import { usePermissions } from "../../Composables/usePermissions";
 // Add PerfectScrollbar imports
 import PerfectScrollbar from "perfect-scrollbar";
 import "perfect-scrollbar/css/perfect-scrollbar.css";
@@ -2204,8 +2207,10 @@ export default {
     },
     setup() {
         const store = useStore();
+        const { hasPermission } = usePermissions();
         return {
             store,
+            hasPermission,
         };
     },
     data() {
@@ -3385,7 +3390,9 @@ export default {
                             "Hợp đồng đầu tư mía bên nhận":
                                 item.ma_hop_dong || "",
                             "Tổng thực nhận": item.tong_thuc_nhan || 0,
-                            "Tổng tiền": item.tong_tien || 0,
+                            "Tổng tiền": item.tong_tien
+                                ? Math.round(item.tong_tien)
+                                : 0,
                             "Người giao hồ sơ": item.nguoi_giao_ho_so || "",
                             "Người nhận hồ sơ": item.nguoi_nhan_ho_so || "",
                             "Ngày nhận hồ sơ": item.ngay_nhan_ho_so
@@ -3886,70 +3893,84 @@ export default {
         },
 
         // Close the modal
-       closeChiTietHGImportModal() {
-    try {
-        const modalElement = document.getElementById('chiTietHGImportModal');
-        if (modalElement) {
-            // Try multiple approaches to close the modal
-            
-            // Approach 1: Try using bootstrap directly if available
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                if (modalInstance) {
-                    modalInstance.hide();
-                    return;
+        closeChiTietHGImportModal() {
+            try {
+                const modalElement = document.getElementById(
+                    "chiTietHGImportModal"
+                );
+                if (modalElement) {
+                    // Try multiple approaches to close the modal
+
+                    // Approach 1: Try using bootstrap directly if available
+                    if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
+                        const modalInstance =
+                            bootstrap.Modal.getInstance(modalElement);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                            return;
+                        }
+                    }
+
+                    // Approach 2: Try using window.bootstrap if available
+                    if (
+                        window.bootstrap &&
+                        typeof window.bootstrap.Modal !== "undefined"
+                    ) {
+                        try {
+                            const modalInstance = new window.bootstrap.Modal(
+                                modalElement
+                            );
+                            modalInstance.hide();
+                            return;
+                        } catch (e) {
+                            console.log(
+                                "Could not use window.bootstrap.Modal:",
+                                e
+                            );
+                        }
+                    }
+
+                    // Approach 3: Manual DOM manipulation fallback
+                    modalElement.classList.remove("show");
+                    modalElement.style.display = "none";
+                    document.body.classList.remove("modal-open");
+
+                    // Remove backdrop if it exists
+                    const backdrop = document.querySelector(".modal-backdrop");
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+
+                    // Handle ARIA attributes
+                    modalElement.setAttribute("aria-hidden", "true");
+                    modalElement.removeAttribute("aria-modal");
                 }
-            }
-            
-            // Approach 2: Try using window.bootstrap if available
-            if (window.bootstrap && typeof window.bootstrap.Modal !== 'undefined') {
+
+                // Only reset if not currently importing
+                if (!this.isImportingChiTietHG) {
+                    this.resetChiTietHGImportState();
+                }
+            } catch (error) {
+                console.error("Error closing Chi tiết HG Import modal:", error);
+
+                // Ultimate fallback - force close via direct manipulation
                 try {
-                    const modalInstance = new window.bootstrap.Modal(modalElement);
-                    modalInstance.hide();
-                    return;
+                    const modalElement = document.getElementById(
+                        "chiTietHGImportModal"
+                    );
+                    if (modalElement) {
+                        modalElement.style.display = "none";
+                        document.body.classList.remove("modal-open");
+
+                        const backdrops =
+                            document.querySelectorAll(".modal-backdrop");
+                        backdrops.forEach((backdrop) => backdrop.remove());
+                    }
                 } catch (e) {
-                    console.log("Could not use window.bootstrap.Modal:", e);
+                    console.error("Final fallback failed:", e);
                 }
             }
-            
-            // Approach 3: Manual DOM manipulation fallback
-            modalElement.classList.remove('show');
-            modalElement.style.display = 'none';
-            document.body.classList.remove('modal-open');
-            
-            // Remove backdrop if it exists
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) {
-                backdrop.remove();
-            }
-            
-            // Handle ARIA attributes
-            modalElement.setAttribute('aria-hidden', 'true');
-            modalElement.removeAttribute('aria-modal');
-        }
-        
-        // Only reset if not currently importing
-        if (!this.isImportingChiTietHG) {
-            this.resetChiTietHGImportState();
-        }
-    } catch (error) {
-        console.error('Error closing Chi tiết HG Import modal:', error);
-        
-        // Ultimate fallback - force close via direct manipulation
-        try {
-            const modalElement = document.getElementById('chiTietHGImportModal');
-            if (modalElement) {
-                modalElement.style.display = 'none';
-                document.body.classList.remove('modal-open');
-                
-                const backdrops = document.querySelectorAll('.modal-backdrop');
-                backdrops.forEach(backdrop => backdrop.remove());
-            }
-        } catch (e) {
-            console.error('Final fallback failed:', e);
-        }
-    }
-},
+        },
 
         // Start import process
         async startChiTietHGImport() {
