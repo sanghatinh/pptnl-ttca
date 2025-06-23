@@ -2438,17 +2438,11 @@
                                             Chọn loại thanh toán...
                                         </option>
                                         <option value="Nghiệm thu dịch vụ">
-                                            <i
-                                                class="fas fa-clipboard-check me-2"
-                                            ></i>
                                             Nghiệm thu dịch vụ
                                         </option>
                                         <option
                                             value="Phiếu giao nhận hom giống"
                                         >
-                                            <i
-                                                class="fas fa-exchange-alt me-2"
-                                            ></i>
                                             Phiếu giao nhận hom giống
                                         </option>
                                     </select>
@@ -7425,5 +7419,17 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         padding: 6px 12px;
         margin: 0 4px;
     }
+}
+/* Add this to your style section */
+.payment-type-select {
+    position: relative;
+}
+
+/* Add the icons via CSS before the selected value is displayed */
+.payment-type-select select option[value="Nghiệm thu dịch vụ"] {
+    background-image: url("path-to-your-icon.svg");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    padding-left: 30px;
 }
 </style>

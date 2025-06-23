@@ -10,12 +10,12 @@
             <h1 class="display-1 fw-bold text-danger">404</h1>
             <h2 class="fs-1">Quyền truy cập bị từ chối</h2>
             <p class="lead">Bạn không có quyền truy cập vào tài liệu này.</p>
-            <div class="mt-4">
+            <!-- <div class="mt-4">
                 <router-link to="/Danhsachhoso" class="btn btn-primary btn-lg">
                     <i class="fas fa-arrow-left me-2"></i>Quay lại danh sách tài
                     liệu
                 </router-link>
-            </div>
+            </div> -->
         </div>
     </div>
 </template>

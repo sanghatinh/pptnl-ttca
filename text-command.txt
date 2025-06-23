@@ -25,7 +25,7 @@ Git
     - git push                   = ຄຳສັ່ງ ອັບໂຫຼດໂປຼເຈັກຂື້ນ github 
     - git pull                   = ຄຳສັ່ງ ອັບເດດ ໂຄດລ່າສຸດຈາກ github
 
-    - git add . && git commit -m "v1.6.6.3" && git push
+    - git add . && git commit -m "v1.6.6.4" && git push
 
 
     -cls = ຄຳສັ່ງ clear cmd
@@ -37,3 +37,10 @@ Git
 
     #SQL
 - DESCRIBE tb_chitiet_dichvu_nt;    ตรวจสอบโครงสร้างของตาราง 
+- TRUNCATE TABLE document_logs;  ลบข้อมูลทั้งหมดและรีเซ็ต ID ใหม่
+*ວີທີ2
++ DELETE FROM document_delivery;
+ALTER TABLE document_delivery AUTO_INCREMENT = 1;
+ตาราง document_delivery จะยังคงอยู่เหมือนเดิมทุกประการ (โครงสร้าง ตาราง คอลัมน์ และข้อกำหนดต่างๆ ยังเหมือนเดิม)
+ข้อมูล (records/rows) ในตารางจะถูกลบออกทั้งหมด
+ค่า AUTO_INCREMENT ของ primary key (เช่น id) จะถูกรีเซ็ตให้กลับไปเริ่มต้นที่ 1 (หรือค่าตั้งต้นที่กำหนดไว้)

@@ -120,6 +120,8 @@ const routes = [
         component: AddUser,
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Quản lý hệ thống",
         },
     },
     {
@@ -128,6 +130,8 @@ const routes = [
         component: () => import("../Pages/Admin/EditUser.vue"),
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Quản lý hệ thống",
         },
     },
     {

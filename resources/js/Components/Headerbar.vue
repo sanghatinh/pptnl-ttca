@@ -65,9 +65,9 @@
                             >
                                 <i class="icon-users"></i>Tài Khoản Nông dân
                             </a>
-                            <a href="account-settings.html">
+                            <!-- <a href="account-settings.html">
                                 <i class="icon-settings1"></i> Account Settings
-                            </a>
+                            </a> -->
                             <a href="#" @click="Logout()">
                                 <i class="icon-log-out1"></i> Log Out
                             </a>
