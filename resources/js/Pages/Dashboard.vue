@@ -607,10 +607,7 @@
                                                         <span
                                                             class="unit-badge"
                                                         >
-                                                            {{
-                                                                job.unit ||
-                                                                "Đơn vị"
-                                                            }}
+                                                            {{ job.unit || "" }}
                                                         </span>
                                                     </td>
                                                     <td class="text-end">
@@ -634,7 +631,7 @@
                                                             class="amount-display"
                                                         >
                                                             <span
-                                                                class="amount-value text-warning fw-medium"
+                                                                class="amount-value text-danger fw-medium"
                                                             >
                                                                 {{
                                                                     formatCurrency(
@@ -671,7 +668,7 @@
                                                         }}
                                                     </td>
                                                     <td
-                                                        class="text-end fw-bold text-warning"
+                                                        class="text-end fw-bold text-danger"
                                                     >
                                                         {{
                                                             formatCurrency(
@@ -2845,9 +2842,9 @@ export default {
 .unit-badge {
     background: #e9ecef;
     color: #495057;
-    padding: 0.25rem 0.5rem;
+    padding: 0.25rem 0.25rem;
     border-radius: 6px;
-    font-size: 0.75rem;
+    /* font-size: 0.75rem; */
     font-weight: 500;
 }
 

@@ -118,7 +118,7 @@ class PhieudenghithanhtoandvControllers extends Controller
                 $totalHoldAmount = $totals->total_hold_amount ?? 0;
                 $totalDeduction = $debtAndInterest['total_deduction'];
                 $totalInterest = $debtAndInterest['total_interest'];
-                $totalRemaining = $totalAmount - $totalHoldAmount - $totalDeduction + $totalInterest;
+                $totalRemaining = $totalAmount - $totalHoldAmount - $totalDeduction - $totalInterest;
                 
                 // Create the result item with all required fields
                 $result[] = [
@@ -1069,7 +1069,7 @@ class PhieudenghithanhtoandvControllers extends Controller
                 $totalHoldAmount = $totals->total_hold_amount ?? 0;
                 $totalDeduction = $debtAndInterest['total_deduction'];
                 $totalInterest = $debtAndInterest['total_interest'];
-                $totalRemaining = $totalAmount - $totalHoldAmount - $totalDeduction + $totalInterest;
+                $totalRemaining = $totalAmount - $totalHoldAmount - $totalDeduction - $totalInterest;
                 
                 // Update the financial information
                 $request->tong_tien = $totalAmount;

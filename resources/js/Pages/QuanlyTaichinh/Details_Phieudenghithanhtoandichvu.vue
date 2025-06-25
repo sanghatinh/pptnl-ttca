@@ -305,6 +305,11 @@
                                         type="button"
                                         class="button-30-yellow"
                                         @click="toggleEditing"
+                                        v-if="
+                                            hasPermission(
+                                                'điều chỉnh đề nghị thanh toán'
+                                            )
+                                        "
                                     >
                                         <i
                                             class="fa-solid fa-pen-to-square"
@@ -1625,11 +1630,13 @@ import { useStore } from "../../Store/Auth";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { ResizableColumns } from "../../Directives/ResizableColumns";
+import { usePermissions } from "../../Composables/usePermissions";
 
 export default {
     setup() {
         const store = useStore();
-        return { store };
+        const { hasPermission } = usePermissions();
+        return { store, hasPermission };
     },
     directives: {
         "resizable-columns": ResizableColumns,

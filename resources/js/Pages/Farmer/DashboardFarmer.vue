@@ -421,6 +421,8 @@
                                                 payment, index
                                             ) in paginatedPayments"
                                             :key="payment.id"
+                                            @click="goToPaymentDetail(payment)"
+                                            style="cursor: pointer"
                                         >
                                             <td class="text-center">
                                                 {{
@@ -443,11 +445,15 @@
                                                 </span>
                                             </td>
                                             <td class="text-end">
-                                                {{
-                                                    formatCurrency(
-                                                        payment.amount
-                                                    )
-                                                }}
+                                                <span
+                                                    class="text-success fw-medium"
+                                                >
+                                                    {{
+                                                        formatCurrency(
+                                                            payment.amount
+                                                        )
+                                                    }}
+                                                </span>
                                             </td>
                                             <td>
                                                 <span
@@ -939,6 +945,7 @@
 import axios from "axios";
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { useStore } from "../../Store/Auth";
+import { useRouter } from "vue-router";
 import {
     Chart,
     CategoryScale,
@@ -976,6 +983,7 @@ Chart.register(
 export default {
     name: "DashboardFarmer",
     setup() {
+        const router = useRouter();
         const store = useStore();
         const isLoading = ref(false);
         const isComponentMounted = ref(false);
@@ -998,7 +1006,19 @@ export default {
         let debtInterestChartInstance = null;
         let statusChartInstance = null;
         let debtChartInstance = null; // เพิ่มตัวนี้ที่หายไป
-
+        const goToPaymentDetail = (payment) => {
+            if (payment.type === "Phiếu giao nhận hom giống") {
+                window.open(
+                    `/Details_PhieudenghithanhtoanHomgiong/${payment.code}`,
+                    "_blank"
+                );
+            } else if (payment.type === "Nghiệm thu dịch vụ") {
+                window.open(
+                    `/Details_Phieudenghithanhtoandichvu/${payment.code}`,
+                    "_blank"
+                );
+            }
+        };
         // Time period selection
         const selectedPeriod = ref("month");
         const periods = [
@@ -2027,6 +2047,7 @@ export default {
         });
 
         return {
+            goToPaymentDetail,
             // State
             store,
             isLoading,
