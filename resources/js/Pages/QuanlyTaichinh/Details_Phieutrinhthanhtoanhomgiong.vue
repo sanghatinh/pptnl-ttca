@@ -1197,11 +1197,6 @@
                                         Import
                                     </button>
                                     <button
-                                        v-if="
-                                            hasPermission(
-                                                'export_phieu_trinh_thanhtoan_dv'
-                                            )
-                                        "
                                         class="btn btn-success btn-sm"
                                         title="Export Excel"
                                         @click="exportPaymentRequestsToExcel"
@@ -1898,11 +1893,6 @@
                                         Import
                                     </button>
                                     <button
-                                        v-if="
-                                            hasPermission(
-                                                'export_phieu_trinh_thanhtoan_dv'
-                                            )
-                                        "
                                         class="btn btn-success btn-sm"
                                         title="Export Excel"
                                         @click="exportToExcel"
@@ -8795,7 +8785,7 @@ export default {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 100;
+        z-index: 10;
     }
     .main-content-wrapper {
         margin-top: 10px;
@@ -9183,7 +9173,7 @@ export default {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 100;
+        z-index: 10;
     }
 
     .main-content-wrapper {
@@ -11261,7 +11251,7 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 100;
+        z-index: 10;
     }
 
     .main-content-wrapper {

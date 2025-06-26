@@ -1179,11 +1179,6 @@
                                         Import
                                     </button>
                                     <button
-                                        v-if="
-                                            hasPermission(
-                                                'export_phieu_trinh_thanhtoan_dv'
-                                            )
-                                        "
                                         class="btn btn-success btn-sm"
                                         title="Export Excel"
                                         @click="exportPaymentRequestsToExcel"
@@ -1845,11 +1840,6 @@
                                         Import
                                     </button>
                                     <button
-                                        v-if="
-                                            hasPermission(
-                                                'export_phieu_trinh_thanhtoan_dv'
-                                            )
-                                        "
                                         class="btn btn-success btn-sm"
                                         title="Export Excel"
                                         @click="exportToExcel"
@@ -4686,55 +4676,57 @@ export default {
     },
 
     methods: {
-       printDocument() {
-    if (!this.isAuthenticated()) return;
-    
-    try {
-        // Get the payment request ID
-        const paymentRequestId = this.$route.params.id;
-        if (!paymentRequestId) {
-            this.showError("Không tìm thấy mã phiếu trình thanh toán");
-            return;
-        }
-        
-        // Show loading message
-        Swal.fire({
-            title: "Đang tạo báo cáo",
-            text: "Vui lòng đợi...",
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
+        printDocument() {
+            if (!this.isAuthenticated()) return;
+
+            try {
+                // Get the payment request ID
+                const paymentRequestId = this.$route.params.id;
+                if (!paymentRequestId) {
+                    this.showError("Không tìm thấy mã phiếu trình thanh toán");
+                    return;
+                }
+
+                // Show loading message
+                Swal.fire({
+                    title: "Đang tạo báo cáo",
+                    text: "Vui lòng đợi...",
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    },
+                });
+
+                // Open the report in a new window
+                const reportUrl = `/api/print-report-phieu-trinh-tt?payment_code=${encodeURIComponent(
+                    paymentRequestId
+                )}`;
+                const printWindow = window.open(reportUrl, "_blank");
+
+                if (printWindow) {
+                    // Close the loading message
+                    Swal.close();
+                } else {
+                    // Show popup blocked message
+                    Swal.fire({
+                        icon: "error",
+                        title: "Lỗi",
+                        text: "Trình duyệt đã chặn popup. Vui lòng cho phép popup để xem báo cáo",
+                        confirmButtonText: "Đồng ý",
+                    });
+                }
+            } catch (error) {
+                console.error("Error generating report:", error);
+
+                // Show error message
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi",
+                    text: "Đã xảy ra lỗi khi tạo báo cáo",
+                    confirmButtonText: "Đồng ý",
+                });
             }
-        });
-        
-        // Open the report in a new window
-        const reportUrl = `/api/print-report-phieu-trinh-tt?payment_code=${encodeURIComponent(paymentRequestId)}`;
-        const printWindow = window.open(reportUrl, "_blank");
-        
-        if (printWindow) {
-            // Close the loading message
-            Swal.close();
-        } else {
-            // Show popup blocked message
-            Swal.fire({
-                icon: "error",
-                title: "Lỗi",
-                text: "Trình duyệt đã chặn popup. Vui lòng cho phép popup để xem báo cáo",
-                confirmButtonText: "Đồng ý"
-            });
-        }
-    } catch (error) {
-        console.error("Error generating report:", error);
-        
-        // Show error message
-        Swal.fire({
-            icon: "error",
-            title: "Lỗi",
-            text: "Đã xảy ra lỗi khi tạo báo cáo",
-            confirmButtonText: "Đồng ý"
-        });
-    }
-},
+        },
         /**
          * Search individual customers for edit modal
          */
@@ -7799,7 +7791,7 @@ export default {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 100;
+        z-index: 10;
     }
     .main-content-wrapper {
         margin-top: 10px;
@@ -8187,7 +8179,7 @@ export default {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 100;
+        z-index: 10;
     }
 
     .main-content-wrapper {
@@ -10265,7 +10257,7 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 100;
+        z-index: 10;
     }
 
     .main-content-wrapper {

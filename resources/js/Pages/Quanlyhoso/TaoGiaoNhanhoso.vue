@@ -2838,6 +2838,11 @@ export default {
     .step-label {
         font-size: 0.75rem;
     }
+    .section-body .table-responsive {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 400px; /* ปรับความสูงตามต้องการ */
+    }
 }
 
 /* Perfect scrollbar custom styling */

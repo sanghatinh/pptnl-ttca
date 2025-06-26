@@ -1653,6 +1653,8 @@ export default {
 .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+    max-height: 400px;
 }
 
 .table {
@@ -2000,7 +2002,7 @@ export default {
 }
 
 /* Responsive Design */
-@media (max-width: 767px) {
+@media (max-width: 480px) {
     .timeline-card {
         height: 80vh;
         max-height: none;
@@ -2033,6 +2035,13 @@ export default {
 
     .timeline-item {
         padding-left: 35px;
+    }
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        /* เพิ่มเติม */
+        overflow-y: auto;
+        max-height: 300px; /* ปรับความสูงตามต้องการ */
     }
 }
 

@@ -2929,7 +2929,7 @@ export default {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 100;
+        z-index: 10;
     }
 
     .main-content-wrapper {
@@ -3042,7 +3042,7 @@ export default {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 100;
+        z-index: 10;
     }
 
     .main-content-wrapper {
