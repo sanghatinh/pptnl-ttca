@@ -1579,54 +1579,41 @@ export default {
             if (this.isDestroying) return;
             this.isDestroying = true;
 
-            console.log("Destroying charts...");
-
-            // ปิด animation loops ก่อน
+            // Destroy Bar Chart
             if (this.chartInstance) {
                 try {
-                    // หยุด animation และ clear canvas อย่างปลอดภัย
                     if (this.chartInstance.canvas && this.chartInstance.ctx) {
-                        // หยุด animation loops
-                        this.chartInstance.stop();
-                        // ลบ event listeners
-                        this.chartInstance.unbindEvents();
-                        // ทำลาย chart
-                        this.chartInstance.destroy();
+                        this.chartInstance.stop && this.chartInstance.stop();
+                        this.chartInstance.destroy &&
+                            this.chartInstance.destroy();
                     }
-                    console.log("Bar chart destroyed successfully");
                 } catch (error) {
                     console.warn("Error destroying bar chart:", error);
-                } finally {
-                    this.chartInstance = null;
                 }
+                this.chartInstance = null;
             }
 
+            // Destroy Donut Chart
             if (this.donutChartInstance) {
                 try {
-                    // หยุด animation และ clear canvas อย่างปลอดภัย
                     if (
                         this.donutChartInstance.canvas &&
                         this.donutChartInstance.ctx
                     ) {
-                        // หยุด animation loops
-                        this.donutChartInstance.stop();
-                        // ลบ event listeners
-                        this.donutChartInstance.unbindEvents();
-                        // ทำลาย chart
-                        this.donutChartInstance.destroy();
+                        this.donutChartInstance.stop &&
+                            this.donutChartInstance.stop();
+                        this.donutChartInstance.destroy &&
+                            this.donutChartInstance.destroy();
                     }
-                    console.log("Donut chart destroyed successfully");
                 } catch (error) {
                     console.warn("Error destroying donut chart:", error);
-                } finally {
-                    this.donutChartInstance = null;
                 }
+                this.donutChartInstance = null;
             }
 
             this.chartsReady = false;
             this.isDestroying = false;
         },
-
         // แก้ไข fetchChartData method
         async fetchChartData() {
             // ป้องกันการเรียกใช้หลายครั้งพร้อมกัน
@@ -1661,30 +1648,22 @@ export default {
                 );
 
                 console.log("API Response:", response.data);
-
                 if (response.data.success) {
                     this.stations = response.data.data.stations || [];
                     this.dateRange = response.data.data.dateRange;
 
-                    console.log("Stations data:", this.stations);
-
                     // Wait for DOM updates
                     await this.$nextTick();
 
-                    // ตรวจสอบว่า component ยังคง mounted
-                    if (!this.isComponentMounted || this.isDestroying) {
-                        console.log(
-                            "Component no longer mounted, skipping chart initialization"
-                        );
-                        return;
-                    }
+                    // Destroy charts again to be extra safe
+                    this.destroyCharts();
 
-                    // Wait a bit more และตรวจสอบอีกครั้ง
-                    setTimeout(() => {
-                        if (this.isComponentMounted && !this.isDestroying) {
-                            this.initializeCharts();
-                        }
-                    }, 150);
+                    // Wait for DOM updates again
+                    await this.$nextTick();
+
+                    if (!this.isComponentMounted || this.isDestroying) return;
+
+                    this.initializeCharts();
                 } else {
                     this.error = response.data.error || "Không thể tải dữ liệu";
                 }
@@ -1707,28 +1686,18 @@ export default {
 
         // แก้ไข initializeCharts method
         initializeCharts() {
-            console.log("Initializing charts with stations:", this.stations);
+            // ตรวจสอบว่า component ยัง mounted และไม่กำลัง destroy
+            if (!this.isComponentMounted || this.isDestroying) return;
 
-            // ตรวจสอบว่า component ยังคง mounted
-            if (!this.isComponentMounted || this.isDestroying) {
-                console.log(
-                    "Component not mounted or being destroyed, skipping chart initialization"
-                );
-                return;
-            }
+            // ป้องกันการสร้าง chart ซ้ำ
+            if (this.chartsReady) return;
 
-            // Check if charts are already ready
-            if (this.chartsReady) {
-                console.log("Charts already initialized, skipping...");
-                return;
-            }
-
-            // Check if DOM elements are available
+            // ตรวจสอบว่า canvas element พร้อมหรือยัง
             const chartCanvas = this.$refs.chartCanvas;
             const donutCanvas = this.$refs.donutCanvas;
 
+            // ถ้ายังไม่มี canvas ให้รอแล้วเรียกซ้ำ
             if (!chartCanvas || !donutCanvas) {
-                console.warn("Canvas elements not ready, retrying in 200ms...");
                 setTimeout(() => {
                     if (this.isComponentMounted && !this.isDestroying) {
                         this.initializeCharts();
@@ -1737,30 +1706,20 @@ export default {
                 return;
             }
 
-            // Verify canvas elements are in DOM and have valid context
+            // ตรวจสอบ context
+            let chartCtx, donutCtx;
             try {
-                const chartCtx = chartCanvas.getContext("2d");
-                const donutCtx = donutCanvas.getContext("2d");
-
-                if (!chartCtx || !donutCtx) {
-                    console.warn("Cannot get canvas context, retrying...");
-                    setTimeout(() => {
-                        if (this.isComponentMounted && !this.isDestroying) {
-                            this.initializeCharts();
-                        }
-                    }, 200);
-                    return;
-                }
-            } catch (error) {
-                console.warn("Error getting canvas context:", error);
+                chartCtx = chartCanvas.getContext("2d");
+                donutCtx = donutCanvas.getContext("2d");
+            } catch (e) {
+                setTimeout(() => {
+                    if (this.isComponentMounted && !this.isDestroying) {
+                        this.initializeCharts();
+                    }
+                }, 200);
                 return;
             }
-
-            if (
-                !document.contains(chartCanvas) ||
-                !document.contains(donutCanvas)
-            ) {
-                console.warn("Canvas elements not in DOM, retrying...");
+            if (!chartCtx || !donutCtx) {
                 setTimeout(() => {
                     if (this.isComponentMounted && !this.isDestroying) {
                         this.initializeCharts();

@@ -473,9 +473,11 @@
                         </div>
                     </li>
                 </ul>
+                <div class="sidebar-version">Ver 1.6</div>
             </div>
             <!-- sidebar menu end -->
         </div>
+
         <!-- Sidebar content end -->
     </nav>
     <!-- Sidebar wrapper end -->
@@ -691,5 +693,14 @@ li.active > router-link i {
 
 .current-page i {
     color: #4caf50 !important;
+}
+.sidebar-version {
+    justify-content: center;
+    justify-items: center;
+    font-size: 11px;
+    color: #535353;
+    margin-left: 10px;
+    margin-top: 2px;
+    opacity: 0.7;
 }
 </style>

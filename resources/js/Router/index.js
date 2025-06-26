@@ -1,32 +1,14 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useStore } from "../Store/Auth";
 import axios from "axios"; // เพิ่มบรรทัดนี้ถ้ายังไม่มี
-import AddUser from "../Pages/Admin/AddUser.vue";
-import Home from "../Pages/Dashboard.vue";
-import Taohoso from "../Pages/Quanlyhoso/TaoGiaoNhanhoso.vue";
-import Danhsachhoso from "../Pages/Quanlyhoso/DanhsachHoso.vue";
-import EditGiaoNhanhoso from "../Pages/Quanlyhoso/EditGiaoNhanhoso.vue";
-import BienBanNTDV from "../Pages/Quanlyhoso/BienBanNTDV.vue";
-import Details_NghiemthuDV from "../Pages/Quanlyhoso/Details_NghiemthuDV.vue";
-import Details_Phieugiaonhanhomgiong from "../Pages/Quanlyhoso/Details_Phieugiaonhanhomgiong.vue";
-import Phieugiaonhanhomgiong from "../Pages/Quanlyhoso/Phieugiaonhanhomgiong.vue";
-import Phieutrinhthanhtoan from "../Pages/QuanlyTaichinh/Phieutrinhthanhtoan.vue";
-import Phieudenghithanhtoandichvu from "../Pages/QuanlyTaichinh/Phieudenghithanhtoan_dichvu.vue";
-import Details_PhieuDNTTDV from "../Pages/QuanlyTaichinh/Details_Phieudenghithanhtoandichvu.vue";
-import Phieuthunodichvu from "../Pages/QuanlyTaichinh/Phieuthunodichvu.vue";
-import Details_Phieutrinhthanhtoan from "../Pages/QuanlyTaichinh/Details_Phieutrinhthanhtoan.vue";
-import CongnoDichvuKhautru from "../Pages/QuanlyCongno/CongnoDichvuKhautru.vue";
-import Details_CongnoDichvuKhautru from "../Pages/QuanlyCongno/Details_CongnoDichvuKhautru.vue";
+
 import login from "../Pages/Login.vue";
 import Nopage from "../Pages/404.vue";
-import Register from "../Pages/Register.vue";
-
 import ListUser from "../Pages/Admin/User.vue";
 import Permission from "../Pages/Admin/Permission.vue";
 import Role from "../Pages/Admin/Role.vue";
 import Profile from "../Pages/Admin/UserProfile.vue";
 import Unauthorized from "../Pages/Unauthorized.vue";
-import PhieutrinhthanhtoanHomgiong from "../Pages/QuanlyTaichinh/PhieutrinhthanhtoanHomgiong.vue";
 
 const authMiddleware = async (to, from, next) => {
     const store = useStore();
@@ -69,7 +51,7 @@ const routes = [
     {
         name: "Home",
         path: "/Dashboard",
-        component: Home,
+        component: () => import("../Pages/Dashboard.vue"),
         meta: {
             middleware: [authMiddleware],
         },
@@ -88,6 +70,8 @@ const routes = [
         component: () => import("../Pages/Farmer/UserFarmer.vue"),
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Quản lý hệ thống",
         },
     },
     {
@@ -96,6 +80,8 @@ const routes = [
         component: () => import("../Pages/Farmer/EditUserFarmer.vue"),
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Quản lý hệ thống",
         },
     },
     {
@@ -117,7 +103,7 @@ const routes = [
     {
         name: "AddUser",
         path: "/AddUser",
-        component: AddUser,
+        component: () => import("../Pages/Admin/AddUser.vue"),
         meta: {
             middleware: [authMiddleware],
             requiresComponent: true,
@@ -137,7 +123,7 @@ const routes = [
     {
         name: "Taohoso",
         path: "/Taonewhoso",
-        component: Taohoso,
+        component: () => import("../Pages/Quanlyhoso/TaoGiaoNhanhoso.vue"),
         meta: {
             middleware: [authMiddleware],
             requiresComponent: true,
@@ -147,10 +133,12 @@ const routes = [
     {
         path: "/Danhsachhoso/:id",
         name: "EditGiaoNhanhoso",
-        component: EditGiaoNhanhoso,
+        component: () => import("../Pages/Quanlyhoso/EditGiaoNhanhoso.vue"),
         meta: {
             middleware: [authMiddleware],
             requiresAccess: true,
+            requiresComponent: true,
+            componentName: "Quản lý hồ sơ",
         },
         beforeEnter: async (to, from, next) => {
             // ดึงค่า id จาก route parameters
@@ -212,7 +200,7 @@ const routes = [
     {
         name: "Danhsachhoso",
         path: "/Danhsachhoso",
-        component: Danhsachhoso,
+        component: () => import("../Pages/Quanlyhoso/DanhsachHoso.vue"),
         meta: {
             middleware: [authMiddleware],
             requiresComponent: true,
@@ -222,7 +210,7 @@ const routes = [
     {
         name: "BienBanNTDV",
         path: "/Bienbannghiemthudichvu",
-        component: BienBanNTDV,
+        component: () => import("../Pages/Quanlyhoso/BienBanNTDV.vue"),
         meta: {
             middleware: [authMiddleware],
         },
@@ -230,7 +218,7 @@ const routes = [
     {
         name: "Details_NghiemthuDV",
         path: "/Details_NghiemthuDV/:id",
-        component: Details_NghiemthuDV,
+        component: () => import("../Pages/Quanlyhoso/Details_NghiemthuDV.vue"),
         meta: {
             middleware: [authMiddleware],
             requiresAccess: true, // เพิ่ม flag นี้เพื่อบอกว่าต้องตรวจสอบสิทธิ์
@@ -295,7 +283,8 @@ const routes = [
     {
         name: "Phieugiaonhanhomgiong",
         path: "/Phieugiaonhanhomgiong",
-        component: Phieugiaonhanhomgiong,
+        component: () =>
+            import("../Pages/Quanlyhoso/Phieugiaonhanhomgiong.vue"),
         meta: {
             middleware: [authMiddleware],
         },
@@ -303,7 +292,8 @@ const routes = [
     {
         name: "Details_Phieugiaonhanhomgiong",
         path: "/Details_Phieugiaonhanhomgiong/:id",
-        component: Details_Phieugiaonhanhomgiong,
+        component: () =>
+            import("../Pages/Quanlyhoso/Details_Phieugiaonhanhomgiong.vue"),
         meta: {
             middleware: [authMiddleware],
             requiresAccess: true,
@@ -371,6 +361,8 @@ const routes = [
         component: () => import("../Pages/Catalog/LichThanhtoan.vue"),
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Lịch thanh toán",
         },
     },
     {
@@ -379,6 +371,8 @@ const routes = [
         component: () => import("../Pages/Catalog/LichGiaoNhanHoso.vue"),
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Lịch giao nhận hồ sơ",
         },
     },
     {
@@ -387,20 +381,26 @@ const routes = [
         component: () => import("../Pages/Catalog/PlanNopHoso.vue"),
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Kế hoạch nộp hồ sơ",
         },
     },
     {
         name: "Phieutrinhthanhtoan",
         path: "/Phieutrinhthanhtoan",
-        component: Phieutrinhthanhtoan,
+        component: () =>
+            import("../Pages/QuanlyTaichinh/Phieutrinhthanhtoan.vue"),
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Phiếu trình TT dịch vụ",
         },
     },
     {
         name: "Details_Phieutrinhthanhtoan",
         path: "/Details_Phieutrinhthanhtoan/:id",
-        component: Details_Phieutrinhthanhtoan,
+        component: () =>
+            import("../Pages/QuanlyTaichinh/Details_Phieutrinhthanhtoan.vue"),
         meta: {
             middleware: [authMiddleware],
         },
@@ -412,6 +412,8 @@ const routes = [
             import("../Pages/QuanlyTaichinh/PhieutrinhthanhtoanHomgiong.vue"),
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Phiếu trình TT hom giống",
         },
     },
     {
@@ -505,7 +507,8 @@ const routes = [
     {
         name: "Phieudenghithanhtoandichvu",
         path: "/Phieudenghithanhtoandichvu",
-        component: Phieudenghithanhtoandichvu,
+        component: () =>
+            import("../Pages/QuanlyTaichinh/Phieudenghithanhtoan_dichvu.vue"),
         meta: {
             middleware: [authMiddleware],
         },
@@ -513,7 +516,10 @@ const routes = [
     {
         name: "Details_Phieudenghithanhtoandichvu",
         path: "/Details_Phieudenghithanhtoandichvu/:id",
-        component: Details_PhieuDNTTDV,
+        component: () =>
+            import(
+                "../Pages/QuanlyTaichinh/Details_Phieudenghithanhtoandichvu.vue"
+            ),
         meta: {
             middleware: [authMiddleware],
             requiresAccess: true, // เพิ่ม flag นี้
@@ -579,7 +585,7 @@ const routes = [
     {
         name: "Phieuthunodichvu",
         path: "/Phieuthunodichvu",
-        component: Phieuthunodichvu,
+        component: () => import("../Pages/QuanlyTaichinh/Phieuthunodichvu.vue"),
         meta: {
             middleware: [authMiddleware],
         },
@@ -587,7 +593,8 @@ const routes = [
     {
         CongnoDichvuKhautru: "CongnoDichvuKhautru",
         path: "/CongnoDichvuKhautru",
-        component: CongnoDichvuKhautru,
+        component: () =>
+            import("../Pages/QuanlyCongno/CongnoDichvuKhautru.vue"),
         meta: {
             middleware: [authMiddleware],
         },
@@ -595,7 +602,8 @@ const routes = [
     {
         name: "Details_CongnoDichvuKhautru",
         path: "/Details_CongnoDichvuKhautru/:id",
-        component: Details_CongnoDichvuKhautru,
+        component: () =>
+            import("../Pages/QuanlyCongno/Details_CongnoDichvuKhautru.vue"),
         meta: {
             middleware: [authMiddleware],
             requiresAccess: true, // เพิ่ม flag นี้
@@ -662,11 +670,7 @@ const routes = [
         path: "/login",
         component: login,
     },
-    {
-        name: "Register",
-        path: "/register",
-        component: Register,
-    },
+
     {
         name: "404",
         path: "/:pathMatch(.*)*",
@@ -681,6 +685,8 @@ const routes = [
         component: ListUser,
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Quản lý hệ thống",
         },
     },
     {
@@ -689,6 +695,8 @@ const routes = [
         component: Permission,
         meta: {
             middleware: [authMiddleware],
+            requiresComponent: true,
+            componentName: "Quản lý hệ thống",
         },
     },
     {

@@ -38,6 +38,8 @@ export default {
                 Details_Phieutrinhthanhtoan: "Phiếu trình thanh toán",
                 Details_PhieutrinhthanhtoanHomgiong:
                     "Phiếu trình thanh toán hom giống",
+                Details_Phieudenghithanhtoanhomgiong:
+                    "Phiếu đề nghị thanh toán hom giống",
                 Details_CongnoDichVuKhauTru: "Công nợ dịch vụ phải thu",
             },
             customPathMap: {
@@ -47,6 +49,8 @@ export default {
                     "/Phieudenghithanhtoandichvu",
                 Details_PhieudenghithanhtoanHomgiong:
                     "/PhieudenghithanhtoanHomgiong",
+                Details_Phieudenghithanhtoanhomgiong:
+                    "/Phieudenghithanhtoanhomgiong",
                 Details_Phieutrinhthanhtoan: "/Phieutrinhthanhtoan",
                 Details_PhieutrinhthanhtoanHomgiong:
                     "/PhieutrinhthanhtoanHomgiong",

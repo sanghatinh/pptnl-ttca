@@ -959,7 +959,7 @@ export default {
                 // Load all necessary data
                 await Promise.all([
                     this.fetchBanks(),
-                    this.fetchRoles(),
+                    // this.fetchRoles(),
                     this.loadMyProfileData(),
                 ]);
             } catch (error) {
@@ -972,12 +972,10 @@ export default {
 
         async loadMyProfileData() {
             try {
-                // Get farmer profile using JWT token
-                // The backend will use X-Supplier-Number header to identify the farmer
+                // Use store's getAuthHeaders for consistent header management
+                const headers = this.store.getAuthHeaders();
                 const response = await axios.get("/api/farmer/my-profile", {
-                    headers: {
-                        Authorization: "Bearer " + this.store.getToken,
-                    },
+                    headers,
                 });
 
                 if (response.data.success) {
@@ -990,7 +988,7 @@ export default {
                         image_public_id: farmerData.url_image || "",
                         tram: farmerData.tram || "",
                         ma_nhan_vien: farmerData.ma_nhan_vien || "",
-                        employee_name: farmerData.employee_name || "", // เพิ่มบรรทัดนี้
+                        employee_name: farmerData.employee_name || "",
                         supplier_number: farmerData.supplier_number || "",
                         ma_kh_ca_nhan: farmerData.ma_kh_ca_nhan || "",
                         khach_hang_ca_nhan: farmerData.khach_hang_ca_nhan || "",
@@ -1029,8 +1027,9 @@ export default {
         // Data fetching methods
         async fetchBanks() {
             try {
+                const headers = this.store.getAuthHeaders();
                 const response = await axios.get("/api/farmer/banks", {
-                    headers: { Authorization: "Bearer " + this.store.getToken },
+                    headers,
                 });
 
                 if (response.data.success) {
@@ -1045,18 +1044,18 @@ export default {
             }
         },
 
-        async fetchRoles() {
-            try {
-                const response = await axios.get("/api/roles", {
-                    headers: { Authorization: "Bearer " + this.store.getToken },
-                });
-                this.roles = response.data;
-            } catch (error) {
-                console.error("Error fetching roles:", error);
-                this.roles = [];
-                this.handleAuthError(error);
-            }
-        },
+        // async fetchRoles() {
+        //     try {
+        //         const response = await axios.get("/api/roles", {
+        //             headers: { Authorization: "Bearer " + this.store.getToken },
+        //         });
+        //         this.roles = response.data;
+        //     } catch (error) {
+        //         console.error("Error fetching roles:", error);
+        //         this.roles = [];
+        //         this.handleAuthError(error);
+        //     }
+        // },
 
         // Validation methods
         validateForm() {

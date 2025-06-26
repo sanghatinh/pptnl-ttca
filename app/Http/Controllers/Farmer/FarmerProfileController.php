@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Farmer\UserFarmer;
 use App\Services\CloudinaryService;
 use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Facades\JWTAuth; 
 
 class FarmerProfileController extends Controller
 {

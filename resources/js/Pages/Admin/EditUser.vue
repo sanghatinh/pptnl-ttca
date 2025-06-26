@@ -47,7 +47,9 @@
                     <div class="bg-white rounded-lg overflow-hidden shadow-2xl">
                         <div class="relative">
                             <img
-                                :src="imagePreview || user.image"
+                                :src="
+                                    getCloudinaryUrl(imagePreview || user.image)
+                                "
                                 alt="Profile Image"
                                 class="max-w-full max-h-[70vh] object-contain"
                                 @click.stop
@@ -136,8 +138,14 @@
                                     title="Click to view image"
                                 >
                                     <img
-                                        v-if="imagePreview || user.image"
-                                        :src="imagePreview || user.image"
+                                        v-if="imagePreview"
+                                        :src="imagePreview"
+                                        alt="Profile"
+                                        class="w-full h-full rounded-full object-cover"
+                                    />
+                                    <img
+                                        v-else-if="user.image"
+                                        :src="getCloudinaryUrl(user.image)"
                                         alt="Profile"
                                         class="w-full h-full rounded-full object-cover"
                                     />
@@ -739,6 +747,34 @@ export default {
     },
 
     methods: {
+        getCloudinaryUrl(publicId, transformation = {}) {
+            if (!publicId) return null;
+            // ถ้าเป็น URL อยู่แล้ว ให้ return ตรงๆ
+            if (publicId.includes("http")) return publicId;
+            // สร้าง transformation string
+            const defaultTransform = {
+                width: 400,
+                height: 400,
+                crop: "fill",
+                gravity: "face",
+                quality: "auto:good",
+            };
+            const transform = { ...defaultTransform, ...transformation };
+            const transformString = Object.entries(transform)
+                .map(([key, value]) => {
+                    const keyMap = {
+                        width: "w",
+                        height: "h",
+                        crop: "c",
+                        gravity: "g",
+                        quality: "q",
+                    };
+                    return `${keyMap[key] || key}_${value}`;
+                })
+                .join(",");
+            const cloudName = "dhtgcccax"; // เปลี่ยนตาม config จริง
+            return `https://res.cloudinary.com/${cloudName}/image/upload/${transformString}/${publicId}`;
+        },
         // Add new methods for modal handling
         openImageModal() {
             if (this.imagePreview || this.user.image) {

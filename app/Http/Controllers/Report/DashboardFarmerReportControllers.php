@@ -662,45 +662,33 @@ public function getPaymentRequests(Request $request)
 public function getWorkItems(Request $request)
 {
     try {
-        // Get supplier ID from request header
         $supplierId = $request->header('X-Supplier-Number');
-        
-        // Get selected investment project from request
         $selectedInvestmentProject = $request->input('investment_project', 'all');
-        
+
         // Try to get supplier ID from JWT token if not in header
         if (!$supplierId) {
             try {
-                $user = JWTAuth::parseToken()->authenticate();
+                $user = \Tymon\JWTAuth\Facades\JWTAuth::parseToken()->authenticate();
                 if (isset($user->supplier_number)) {
                     $supplierId = $user->supplier_number;
-                    Log::info('Using supplier ID from JWT token: ' . $supplierId);
                 } else {
-                    // Try to get from user_farmer relation if exists
-                    $farmer = DB::table('user_farmer')
-                        ->where('user_id', $user->id)
-                        ->first();
-                        
+                    $farmer = \DB::table('user_farmer')->where('user_id', $user->id)->first();
                     if ($farmer && isset($farmer->supplier_number)) {
                         $supplierId = $farmer->supplier_number;
-                        Log::info('Using supplier ID from user_farmer relation: ' . $supplierId);
                     }
                 }
-            } catch (\Exception $e) {
-                Log::warning('Could not get supplier ID from JWT token: ' . $e->getMessage());
-            }
+            } catch (\Exception $e) {}
         }
-        
+
         if (!$supplierId) {
-            Log::warning('No supplier ID provided in header or JWT token');
             return response()->json([
                 'success' => false,
-                'message' => 'Supplier ID not provided in header or JWT token'
+                'message' => 'Supplier ID not provided'
             ], 400);
         }
-        
+
         // Get farmer user data from user_farmer table - check in multiple fields
-        $farmer = DB::table('user_farmer')
+        $farmer = \DB::table('user_farmer')
             ->where('supplier_number', $supplierId)
             ->orWhere('ma_kh_ca_nhan', $supplierId)
             ->orWhere('ma_kh_doanh_nghiep', $supplierId)
@@ -713,25 +701,95 @@ public function getWorkItems(Request $request)
                 'message' => 'Farmer not found'
             ], 404);
         }
-        
-        // Get service work items
-        $serviceWorkItems = $this->getServiceWorkItems($farmer, $selectedInvestmentProject);
-        
-        // Get seed work items (Hom giống)
-        $seedWorkItems = $this->getSeedWorkItems($farmer, $selectedInvestmentProject);
-        
-        // Combine and return results
+
+        // --- Service Work Items (Dịch vụ) ---
+        $serviceCacheKey = "farmer_service_workitems_{$farmer->id}_{$selectedInvestmentProject}";
+        if (function_exists('apcu_exists') && apcu_exists($serviceCacheKey)) {
+            $serviceWorkItems = apcu_fetch($serviceCacheKey);
+        } else {
+            $serviceQuery = \DB::table('tb_chitiet_dichvu_nt as ct')
+                ->join('tb_bien_ban_nghiemthu_dv as bb', 'ct.ma_nghiem_thu', '=', 'bb.ma_nghiem_thu')
+                ->where(function($q) use ($farmer) {
+                    if (!empty($farmer->ma_kh_ca_nhan)) {
+                        $q->where('bb.MaKH_Chumia_Canhan', $farmer->ma_kh_ca_nhan);
+                    }
+                    if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                        $q->orWhere('bb.MaKH_Chumia_DN', $farmer->ma_kh_doanh_nghiep);
+                    }
+                });
+            if ($selectedInvestmentProject !== 'all') {
+                $serviceQuery->where('bb.vu_dau_tu', $selectedInvestmentProject);
+            }
+            $serviceQuery->select(
+                'ct.dich_vu as name',
+                'ct.don_vi_tinh as unit',
+                \DB::raw('SUM(ct.khoi_luong_thuc_hien) as quantity'),
+                \DB::raw('SUM(ct.thanh_tien) as amount')
+            )
+            ->groupBy('ct.dich_vu', 'ct.don_vi_tinh');
+
+            $serviceWorkItems = $serviceQuery->get()->map(function($item, $idx) {
+                return [
+                    'id' => 'service_' . md5($item->name . $item->unit),
+                    'name' => $item->name,
+                    'quantity' => (float)$item->quantity,
+                    'unit' => $item->unit,
+                    'amount' => (float)$item->amount,
+                ];
+            })->toArray();
+
+            if (function_exists('apcu_store')) {
+                apcu_store($serviceCacheKey, $serviceWorkItems, 600);
+            }
+        }
+
+        // --- Seed Work Items (Hom giống) ---
+        $seedCacheKey = "farmer_seed_workitems_{$farmer->id}_{$selectedInvestmentProject}";
+        if (function_exists('apcu_exists') && apcu_exists($seedCacheKey)) {
+            $seedWorkItems = apcu_fetch($seedCacheKey);
+        } else {
+            $seedQuery = \DB::table('bien_ban_nghiem_thu_hom_giong as bb')
+                ->where(function($q) use ($farmer) {
+                    if (!empty($farmer->ma_kh_ca_nhan)) {
+                        $q->where('bb.ma_khach_hang_giao_hom', $farmer->ma_kh_ca_nhan);
+                    }
+                    if (!empty($farmer->ma_kh_doanh_nghiep)) {
+                        $q->orWhere('bb.ma_khach_hang_giao_hom_DN', $farmer->ma_kh_doanh_nghiep);
+                    }
+                });
+            if ($selectedInvestmentProject !== 'all') {
+                $seedQuery->where('bb.vu_dau_tu', $selectedInvestmentProject);
+            }
+            $seedResult = $seedQuery->select(
+                \DB::raw('SUM(bb.tong_thuc_nhan) as quantity'),
+                \DB::raw('SUM(bb.tong_tien) as amount')
+            )->first();
+
+            $seedWorkItems = [];
+            if ($seedResult && ($seedResult->quantity > 0 || $seedResult->amount > 0)) {
+                $seedWorkItems[] = [
+                    'id' => 'seed_homgiong',
+                    'name' => 'Hom giống',
+                    'quantity' => (float)$seedResult->quantity,
+                    'unit' => 'Tấn',
+                    'amount' => (float)$seedResult->amount,
+                ];
+            }
+
+            if (function_exists('apcu_store')) {
+                apcu_store($seedCacheKey, $seedWorkItems, 600);
+            }
+        }
+
+        // Merge and return
         $allWorkItems = array_merge($serviceWorkItems, $seedWorkItems);
-        
+
         return response()->json([
             'success' => true,
             'data' => $allWorkItems
         ]);
-        
     } catch (\Exception $e) {
-        Log::error('Error getting farmer work items: ' . $e->getMessage());
-        Log::error($e->getTraceAsString());
-        
+        \Log::error('Error getting farmer work items: ' . $e->getMessage());
         return response()->json([
             'success' => false,
             'message' => 'Failed to retrieve work items: ' . $e->getMessage()

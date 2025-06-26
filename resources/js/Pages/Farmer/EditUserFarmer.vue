@@ -47,7 +47,11 @@
                     <div class="bg-white rounded-lg overflow-hidden shadow-2xl">
                         <div class="relative">
                             <img
-                                :src="imagePreview || farmer.image"
+                                :src="
+                                    imagePreview
+                                        ? imagePreview
+                                        : getCloudinaryUrl(farmer.image)
+                                "
                                 alt="Profile Image"
                                 class="max-w-full max-h-[70vh] object-contain"
                                 @click.stop
@@ -136,8 +140,14 @@
                                     title="Click to view image"
                                 >
                                     <img
-                                        v-if="imagePreview || farmer.image"
-                                        :src="imagePreview || farmer.image"
+                                        v-if="imagePreview"
+                                        :src="imagePreview"
+                                        alt="Profile"
+                                        class="w-full h-full rounded-full object-cover"
+                                    />
+                                    <img
+                                        v-else-if="farmer.image"
+                                        :src="getCloudinaryUrl(farmer.image)"
                                         alt="Profile"
                                         class="w-full h-full rounded-full object-cover"
                                     />
@@ -1039,6 +1049,32 @@ export default {
     },
 
     methods: {
+        getCloudinaryUrl(publicId, transformation = {}) {
+            if (!publicId) return null;
+            if (publicId.includes("http")) return publicId;
+            const defaultTransform = {
+                width: 400,
+                height: 400,
+                crop: "fill",
+                gravity: "face",
+                quality: "auto:good",
+            };
+            const transform = { ...defaultTransform, ...transformation };
+            const transformString = Object.entries(transform)
+                .map(([key, value]) => {
+                    const keyMap = {
+                        width: "w",
+                        height: "h",
+                        crop: "c",
+                        gravity: "g",
+                        quality: "q",
+                    };
+                    return `${keyMap[key] || key}_${value}`;
+                })
+                .join(",");
+            const cloudName = "dhtgcccax"; // เปลี่ยนตาม config จริง
+            return `https://res.cloudinary.com/${cloudName}/image/upload/${transformString}/${publicId}`;
+        },
         async initializeComponent() {
             this.isLoading = true;
             this.loadingMessage = "Loading farmer data...";
