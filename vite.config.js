@@ -10,11 +10,11 @@ export default defineConfig({
         }),
         vue(),
     ],
-    server: {
-        host: "0.0.0.0",
-        port: 5173,
-        hmr: {
-            host: "172.19.231.95",
-        },
-    },
+    // server: {
+    //     host: "0.0.0.0",
+    //     port: 5173,
+    //     hmr: {
+    //         host: "172.19.231.95",
+    //     },
+    // },
 });

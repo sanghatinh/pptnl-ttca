@@ -877,14 +877,14 @@
                                     {{ formatCurrency(totalPaymentAmount) }}
                                 </div>
                             </div>
-                            <div class="stat-item">
+                            <!-- <div class="stat-item">
                                 <small class="text-white-50"
                                     >Tổng tiền còn lại</small
                                 >
                                 <div class="fw-bold">
                                     {{ formatCurrency(totalRemainingAmount) }}
                                 </div>
-                            </div>
+                            </div> -->
                         </div>
                     </div>
                     <div class="card-body text-center py-5">
@@ -9496,6 +9496,14 @@ button:hover .fas.fa-filter:not(.text-green-500) {
     .table th,
     .table td {
         padding: 0.5rem 0.25rem;
+    }
+    .card-header.bg-gradient-primary.text-white.d-flex.justify-content-between.align-items-center {
+        font-size: 9px;
+        text-align: center;
+    }
+    .card-header.bg-gradient-success.text-white.d-flex.justify-content-between.align-items-center {
+        font-size: 9px;
+        text-align: center;
     }
 }
 

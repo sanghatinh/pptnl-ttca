@@ -473,7 +473,7 @@
                         </div>
                     </li>
                 </ul>
-                <div class="sidebar-version">Ver 1.6</div>
+                <div class="sidebar-version">Ver 1.6.6.9</div>
             </div>
             <!-- sidebar menu end -->
         </div>
