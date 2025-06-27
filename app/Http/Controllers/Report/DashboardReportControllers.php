@@ -15,7 +15,18 @@ class DashboardReportControllers extends Controller
     public function __construct()
 {
     // Set query timeout to prevent long-running queries
-    DB::statement('SET SESSION MAX_EXECUTION_TIME=5000'); // 5 seconds timeout
+    // DB::statement('SET SESSION MAX_EXECUTION_TIME=5000'); // 5 seconds timeout
+      if (function_exists('apcu_exists') && !apcu_exists('all_stations')) {
+        $stations = [
+            ['code' => 'TTCA-TRAM01', 'name' => 'TRẠM 1'],
+            ['code' => 'TTCA-TRAM02', 'name' => 'TRẠM 2'],
+            ['code' => 'TTCA-TRAM03', 'name' => 'TRẠM 3'],
+            ['code' => 'TTCA-TRAM04', 'name' => 'TRẠM 4'],
+            ['code' => 'TTCA-TRAM05', 'name' => 'TRẠM 5'],
+            ['code' => 'TTCA-TRAM06', 'name' => 'TRẠM 6'],
+        ];
+        apcu_store('all_stations', $stations, 86400);
+    }
 }
     public function getReportChartSection(Request $request)
     {

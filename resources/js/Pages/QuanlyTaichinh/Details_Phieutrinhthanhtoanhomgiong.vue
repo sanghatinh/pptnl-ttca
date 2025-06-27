@@ -20,254 +20,223 @@
                 </button>
             </div>
             <div class="card-body p-0">
-                <PerfectScrollbar
-                    class="timeline-scrollarea"
-                    :options="{
-                        wheelSpeed: 1,
-                        wheelPropagation: false,
-                        minScrollbarLength: 20,
-                        suppressScrollX: true,
-                    }"
-                >
-                    <div class="timeline-body p-4">
-                        <div class="timeline-container">
-                            <!-- Processing Stage -->
-                            <div
-                                class="timeline-item appear"
-                                v-if="processingAction"
-                            >
-                                <div class="timeline-badge bg-primary">
-                                    <i class="fas fa-spinner"></i>
-                                </div>
-                                <div class="timeline-content">
-                                    <h5 class="timeline-title">
-                                        <span class="badge bg-primary"
-                                            >Đang xử lý</span
-                                        >
-                                    </h5>
-                                    <p class="mb-1">
-                                        <i class="far fa-calendar me-2"></i>
-                                        <span class="fw-medium">{{
-                                            formatDate(
-                                                processingAction.created_at
-                                            )
-                                        }}</span>
-                                    </p>
-                                    <p class="mb-1">
-                                        <i class="far fa-user me-2"></i>
-                                        <span class="fw-medium">{{
-                                            getUserName(
-                                                processingAction.action_by
-                                            )
-                                        }}</span>
-                                    </p>
-                                    <div
-                                        class="timeline-note"
-                                        v-if="processingAction.note"
-                                    >
-                                        <i class="far fa-comment me-2"></i>
-                                        <span>{{ processingAction.note }}</span>
-                                    </div>
-                                </div>
+                <div class="timeline-body p-4">
+                    <div class="timeline-container">
+                        <!-- Processing Stage -->
+                        <div
+                            class="timeline-item appear"
+                            v-if="processingAction"
+                        >
+                            <div class="timeline-badge bg-primary">
+                                <i class="fas fa-spinner"></i>
                             </div>
-
-                            <!-- Submitted Stage -->
-                            <div
-                                class="timeline-item appear"
-                                v-if="submittedAction"
-                            >
-                                <div class="timeline-badge bg-info">
-                                    <i class="fas fa-paper-plane"></i>
-                                </div>
-                                <div class="timeline-content">
-                                    <h5 class="timeline-title">
-                                        <span class="badge bg-info"
-                                            >Đã nộp kế toán</span
-                                        >
-                                    </h5>
-                                    <p class="mb-1">
-                                        <i class="far fa-calendar me-2"></i>
-                                        <span class="fw-medium">{{
-                                            formatDate(
-                                                submittedAction.created_at
-                                            )
-                                        }}</span>
-                                    </p>
-                                    <p class="mb-1">
-                                        <i class="far fa-user me-2"></i>
-                                        <span class="fw-medium">{{
-                                            getUserName(
-                                                submittedAction.action_by
-                                            )
-                                        }}</span>
-                                    </p>
-                                    <p
-                                        class="mb-1"
-                                        v-if="
-                                            daysBetweenProcessingAndSubmitted !==
-                                            null
-                                        "
+                            <div class="timeline-content">
+                                <h5 class="timeline-title">
+                                    <span class="badge bg-primary"
+                                        >Đang xử lý</span
                                     >
-                                        <i class="far fa-clock me-2"></i>
-                                        <span
-                                            >{{
-                                                daysBetweenProcessingAndSubmitted
-                                            }}
-                                            ngày sau khi xử lý</span
-                                        >
-                                    </p>
-                                    <div
-                                        class="timeline-note"
-                                        v-if="submittedAction.note"
-                                    >
-                                        <i class="far fa-comment me-2"></i>
-                                        <span>{{ submittedAction.note }}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Paid Stage -->
-                            <div class="timeline-item appear" v-if="paidAction">
-                                <div class="timeline-badge bg-success">
-                                    <i class="fas fa-check-circle"></i>
-                                </div>
-                                <div class="timeline-content">
-                                    <h5 class="timeline-title">
-                                        <span class="badge bg-success"
-                                            >Đã thanh toán</span
-                                        >
-                                    </h5>
-                                    <p class="mb-1">
-                                        <i class="far fa-calendar me-2"></i>
-                                        <span class="fw-medium">
-                                            {{
-                                                formatDate(
-                                                    document.payment_date ||
-                                                        paidAction.created_at
-                                                )
-                                            }}
-                                            <span
-                                                v-if="document.payment_date"
-                                                class="badge bg-light text-dark ms-2"
-                                            ></span>
-                                        </span>
-                                    </p>
-                                    <p
-                                        class="mb-1"
-                                        v-if="
-                                            document.payment_date &&
-                                            document.payment_date !==
-                                                formatDate(
-                                                    paidAction.created_at
-                                                )
-                                        "
-                                    >
-                                        <i
-                                            class="fas fa-history me-2 text-muted"
-                                        ></i>
-                                        <span class="text-muted"
-                                            >Ngày chuyển trạng thái:
-                                            {{
-                                                formatDate(
-                                                    paidAction.created_at
-                                                )
-                                            }}</span
-                                        >
-                                    </p>
-                                    <p class="mb-1">
-                                        <i class="far fa-user me-2"></i>
-                                        <span class="fw-medium">{{
-                                            getUserName(paidAction.action_by)
-                                        }}</span>
-                                    </p>
-                                    <p
-                                        class="mb-1"
-                                        v-if="
-                                            daysBetweenSubmittedAndPaid !== null
-                                        "
-                                    >
-                                        <i class="far fa-clock me-2"></i>
-                                        <span>
-                                            {{ daysBetweenSubmittedAndPaid }}
-                                            ngày sau khi nộp kế toán
-                                            <span
-                                                v-if="document.payment_date"
-                                                class="badge bg-light text-dark ms-2"
-                                            ></span>
-                                        </span>
-                                    </p>
-                                    <div
-                                        class="timeline-note"
-                                        v-if="paidAction.note"
-                                    >
-                                        <i class="far fa-comment me-2"></i>
-                                        <span>{{ paidAction.note }}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Cancelled Stage (if applicable) -->
-                            <div
-                                class="timeline-item appear"
-                                v-if="cancelledAction"
-                            >
-                                <div class="timeline-badge bg-danger">
-                                    <i class="fas fa-times-circle"></i>
-                                </div>
-                                <div class="timeline-content">
-                                    <h5 class="timeline-title">
-                                        <span class="badge bg-danger"
-                                            >Đã hủy</span
-                                        >
-                                    </h5>
-                                    <p class="mb-1">
-                                        <i class="far fa-calendar me-2"></i>
-                                        <span class="fw-medium">{{
-                                            formatDate(
-                                                cancelledAction.created_at
-                                            )
-                                        }}</span>
-                                    </p>
-                                    <p class="mb-1">
-                                        <i class="far fa-user me-2"></i>
-                                        <span class="fw-medium">{{
-                                            getUserName(
-                                                cancelledAction.action_by
-                                            )
-                                        }}</span>
-                                    </p>
-                                    <div
-                                        class="timeline-note"
-                                        v-if="cancelledAction.note"
-                                    >
-                                        <i class="far fa-comment me-2"></i>
-                                        <span>{{ cancelledAction.note }}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Empty state if no timeline data -->
-                            <div
-                                class="empty-timeline text-center py-0"
-                                v-if="!processingAction"
-                            >
-                                <i
-                                    class="fas fa-calendar-times fa-4x text-muted mb-3 opacity-50"
-                                ></i>
-                                <p class="lead text-muted">
-                                    Không tìm thấy dữ liệu lịch sử
+                                </h5>
+                                <p class="mb-1">
+                                    <i class="far fa-calendar me-2"></i>
+                                    <span class="fw-medium">{{
+                                        formatDate(processingAction.created_at)
+                                    }}</span>
                                 </p>
-                                <button
-                                    class="btn btn-outline-secondary mt-3"
-                                    @click="toggleTimelineView"
+                                <p class="mb-1">
+                                    <i class="far fa-user me-2"></i>
+                                    <span class="fw-medium">{{
+                                        getUserName(processingAction.action_by)
+                                    }}</span>
+                                </p>
+                                <div
+                                    class="timeline-note"
+                                    v-if="processingAction.note"
                                 >
-                                    <i class="fas fa-arrow-left me-2"></i> Quay
-                                    lại
-                                </button>
+                                    <i class="far fa-comment me-2"></i>
+                                    <span>{{ processingAction.note }}</span>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Submitted Stage -->
+                        <div
+                            class="timeline-item appear"
+                            v-if="submittedAction"
+                        >
+                            <div class="timeline-badge bg-info">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h5 class="timeline-title">
+                                    <span class="badge bg-info"
+                                        >Đã nộp kế toán</span
+                                    >
+                                </h5>
+                                <p class="mb-1">
+                                    <i class="far fa-calendar me-2"></i>
+                                    <span class="fw-medium">{{
+                                        formatDate(submittedAction.created_at)
+                                    }}</span>
+                                </p>
+                                <p class="mb-1">
+                                    <i class="far fa-user me-2"></i>
+                                    <span class="fw-medium">{{
+                                        getUserName(submittedAction.action_by)
+                                    }}</span>
+                                </p>
+                                <p
+                                    class="mb-1"
+                                    v-if="
+                                        daysBetweenProcessingAndSubmitted !==
+                                        null
+                                    "
+                                >
+                                    <i class="far fa-clock me-2"></i>
+                                    <span
+                                        >{{
+                                            daysBetweenProcessingAndSubmitted
+                                        }}
+                                        ngày sau khi xử lý</span
+                                    >
+                                </p>
+                                <div
+                                    class="timeline-note"
+                                    v-if="submittedAction.note"
+                                >
+                                    <i class="far fa-comment me-2"></i>
+                                    <span>{{ submittedAction.note }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Paid Stage -->
+                        <div class="timeline-item appear" v-if="paidAction">
+                            <div class="timeline-badge bg-success">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h5 class="timeline-title">
+                                    <span class="badge bg-success"
+                                        >Đã thanh toán</span
+                                    >
+                                </h5>
+                                <p class="mb-1">
+                                    <i class="far fa-calendar me-2"></i>
+                                    <span class="fw-medium">
+                                        {{
+                                            formatDate(
+                                                document.payment_date ||
+                                                    paidAction.created_at
+                                            )
+                                        }}
+                                        <span
+                                            v-if="document.payment_date"
+                                            class="badge bg-light text-dark ms-2"
+                                        ></span>
+                                    </span>
+                                </p>
+                                <p
+                                    class="mb-1"
+                                    v-if="
+                                        document.payment_date &&
+                                        document.payment_date !==
+                                            formatDate(paidAction.created_at)
+                                    "
+                                >
+                                    <i
+                                        class="fas fa-history me-2 text-muted"
+                                    ></i>
+                                    <span class="text-muted"
+                                        >Ngày chuyển trạng thái:
+                                        {{
+                                            formatDate(paidAction.created_at)
+                                        }}</span
+                                    >
+                                </p>
+                                <p class="mb-1">
+                                    <i class="far fa-user me-2"></i>
+                                    <span class="fw-medium">{{
+                                        getUserName(paidAction.action_by)
+                                    }}</span>
+                                </p>
+                                <p
+                                    class="mb-1"
+                                    v-if="daysBetweenSubmittedAndPaid !== null"
+                                >
+                                    <i class="far fa-clock me-2"></i>
+                                    <span>
+                                        {{ daysBetweenSubmittedAndPaid }}
+                                        ngày sau khi nộp kế toán
+                                        <span
+                                            v-if="document.payment_date"
+                                            class="badge bg-light text-dark ms-2"
+                                        ></span>
+                                    </span>
+                                </p>
+                                <div
+                                    class="timeline-note"
+                                    v-if="paidAction.note"
+                                >
+                                    <i class="far fa-comment me-2"></i>
+                                    <span>{{ paidAction.note }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cancelled Stage (if applicable) -->
+                        <div
+                            class="timeline-item appear"
+                            v-if="cancelledAction"
+                        >
+                            <div class="timeline-badge bg-danger">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h5 class="timeline-title">
+                                    <span class="badge bg-danger">Đã hủy</span>
+                                </h5>
+                                <p class="mb-1">
+                                    <i class="far fa-calendar me-2"></i>
+                                    <span class="fw-medium">{{
+                                        formatDate(cancelledAction.created_at)
+                                    }}</span>
+                                </p>
+                                <p class="mb-1">
+                                    <i class="far fa-user me-2"></i>
+                                    <span class="fw-medium">{{
+                                        getUserName(cancelledAction.action_by)
+                                    }}</span>
+                                </p>
+                                <div
+                                    class="timeline-note"
+                                    v-if="cancelledAction.note"
+                                >
+                                    <i class="far fa-comment me-2"></i>
+                                    <span>{{ cancelledAction.note }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Empty state if no timeline data -->
+                        <div
+                            class="empty-timeline text-center py-0"
+                            v-if="!processingAction"
+                        >
+                            <i
+                                class="fas fa-calendar-times fa-4x text-muted mb-3 opacity-50"
+                            ></i>
+                            <p class="lead text-muted">
+                                Không tìm thấy dữ liệu lịch sử
+                            </p>
+                            <button
+                                class="btn btn-outline-secondary mt-3"
+                                @click="toggleTimelineView"
+                            >
+                                <i class="fas fa-arrow-left me-2"></i> Quay lại
+                            </button>
+                        </div>
                     </div>
-                </PerfectScrollbar>
+                </div>
             </div>
         </div>
     </div>
@@ -275,202 +244,552 @@
     <!-- Original content (hidden when timeline is shown) -->
     <div class="card shadow" v-else>
         <div class="card-body p-0">
-            <PerfectScrollbar
-                :options="{
-                    wheelSpeed: 1,
-                    wheelPropagation: true,
-                    minScrollbarLength: 20,
-                }"
-                class="scroll-area"
-            >
-                <!-- Fixed top container -->
-                <div class="sticky-wrapper">
-                    <!-- Add container with padding -->
-                    <div class="container-fluid px-4">
-                        <div class="button-container">
-                            <!-- ปรับปรุงส่วนของปุ่มการกระทำ -->
-                            <div class="action-button-group">
-                                <button
-                                    type="button"
-                                    class="button-30"
-                                    @click="saveBasicInfo"
-                                    v-if="
-                                        hasPermission(
-                                            'lưu phiếu trình thanh thanh toán'
-                                        )
-                                    "
-                                >
-                                    <i class="bx bxs-save"></i>
-                                    <span>Lưu</span>
-                                </button>
+            <!-- Fixed top container -->
+            <div class="sticky-wrapper">
+                <!-- Add container with padding -->
+                <div class="container-fluid px-4">
+                    <div class="button-container">
+                        <!-- ปรับปรุงส่วนของปุ่มการกระทำ -->
+                        <div class="action-button-group">
+                            <button
+                                type="button"
+                                class="button-30"
+                                @click="saveBasicInfo"
+                                v-if="
+                                    hasPermission(
+                                        'lưu phiếu trình thanh thanh toán'
+                                    )
+                                "
+                            >
+                                <i class="bx bxs-save"></i>
+                                <span>Lưu</span>
+                            </button>
 
-                                <!-- ปุ่มนำส่งฝ่ายบัญชี (แสดงเฉพาะเมื่อสถานะเป็น 'processing') -->
-                                <button
-                                    v-if="
-                                        document.status === 'processing' &&
-                                        hasPermission(
-                                            'nộp phiếu trình thanh toán'
-                                        )
-                                    "
-                                    class="button-30-blue"
-                                    @click="
-                                        confirmUpdateStatus(
-                                            'submitted',
-                                            'Xác nhận nộp phòng kế toán?',
-                                            'Bạn có chắc chắn muốn nộp phiếu này cho phòng kế toán không?'
-                                        )
-                                    "
-                                >
-                                    <i class="bx bx-calendar-check"></i>
-                                    <span>Nộp phòng kế toán</span>
-                                </button>
+                            <!-- ปุ่มนำส่งฝ่ายบัญชี (แสดงเฉพาะเมื่อสถานะเป็น 'processing') -->
+                            <button
+                                v-if="
+                                    document.status === 'processing' &&
+                                    hasPermission('nộp phiếu trình thanh toán')
+                                "
+                                class="button-30-blue"
+                                @click="
+                                    confirmUpdateStatus(
+                                        'submitted',
+                                        'Xác nhận nộp phòng kế toán?',
+                                        'Bạn có chắc chắn muốn nộp phiếu này cho phòng kế toán không?'
+                                    )
+                                "
+                            >
+                                <i class="bx bx-calendar-check"></i>
+                                <span>Nộp phòng kế toán</span>
+                            </button>
 
-                                <!-- ปุ่มส่งคืน (แสดงเฉพาะเมื่อสถานะเป็น 'processing') -->
-                                <button
-                                    v-if="
-                                        document.status === 'submitted' &&
-                                        hasPermission(
-                                            'nộp phiếu trình thanh toán'
-                                        )
-                                    "
-                                    type="button"
-                                    class="button-30-yellow"
-                                    @click="
-                                        confirmUpdateStatus(
-                                            'processing',
-                                            'Xác nhận trả về?',
-                                            'Bạn có chắc chắn muốn trả về phiếu này không?'
-                                        )
-                                    "
-                                >
-                                    <i class="bx bx-calendar-x"></i>
-                                    <span>Trả về</span>
-                                </button>
+                            <!-- ปุ่มส่งคืน (แสดงเฉพาะเมื่อสถานะเป็น 'processing') -->
+                            <button
+                                v-if="
+                                    document.status === 'submitted' &&
+                                    hasPermission('nộp phiếu trình thanh toán')
+                                "
+                                type="button"
+                                class="button-30-yellow"
+                                @click="
+                                    confirmUpdateStatus(
+                                        'processing',
+                                        'Xác nhận trả về?',
+                                        'Bạn có chắc chắn muốn trả về phiếu này không?'
+                                    )
+                                "
+                            >
+                                <i class="bx bx-calendar-x"></i>
+                                <span>Trả về</span>
+                            </button>
 
-                                <!-- ปุ่มสถานะจ่ายเงินแล้ว (แสดงเฉพาะเมื่อสถานะเป็น 'submitted') -->
-                                <button
-                                    v-if="
-                                        document.status === 'submitted' &&
-                                        hasPermission(
-                                            'đã thanh toán phiếu trình thanh toán'
-                                        )
-                                    "
-                                    type="button"
-                                    class="button-30-save"
-                                    @click="confirmPaymentStatus"
-                                >
-                                    <i class="bx bx-check-square"></i>
-                                    <span>Đã thanh toán</span>
-                                </button>
+                            <!-- ปุ่มสถานะจ่ายเงินแล้ว (แสดงเฉพาะเมื่อสถานะเป็น 'submitted') -->
+                            <button
+                                v-if="
+                                    document.status === 'submitted' &&
+                                    hasPermission(
+                                        'đã thanh toán phiếu trình thanh toán'
+                                    )
+                                "
+                                type="button"
+                                class="button-30-save"
+                                @click="confirmPaymentStatus"
+                            >
+                                <i class="bx bx-check-square"></i>
+                                <span>Đã thanh toán</span>
+                            </button>
 
-                                <!-- ปุ่มยกเลิก (แสดงเฉพาะเมื่อสถานะเป็น 'submitted') -->
-                                <button
-                                    v-if="
-                                        document.status === 'paid' &&
-                                        hasPermission('cancel')
-                                    "
-                                    type="button"
-                                    class="button-30"
-                                    @click="
-                                        confirmUpdateStatus(
-                                            'cancelled',
-                                            'Xác nhận hủy?',
-                                            'Bạn có chắc chắn muốn hủy phiếu này không?'
-                                        )
-                                    "
-                                >
-                                    <i class="fa-solid fa-xmark"></i>
-                                    <span>Hủy</span>
-                                </button>
+                            <!-- ปุ่มยกเลิก (แสดงเฉพาะเมื่อสถานะเป็น 'submitted') -->
+                            <button
+                                v-if="
+                                    document.status === 'paid' &&
+                                    hasPermission('cancel')
+                                "
+                                type="button"
+                                class="button-30"
+                                @click="
+                                    confirmUpdateStatus(
+                                        'cancelled',
+                                        'Xác nhận hủy?',
+                                        'Bạn có chắc chắn muốn hủy phiếu này không?'
+                                    )
+                                "
+                            >
+                                <i class="fa-solid fa-xmark"></i>
+                                <span>Hủy</span>
+                            </button>
 
-                                <!-- ปุ่มลบ (แสดงเฉพาะเมื่อไม่ได้อยู่ในสถานะ paid) -->
-                                <button
-                                    v-if="
-                                        document.status !== 'paid' &&
-                                        hasPermission(
-                                            'xóa thanh toán phiếu trình thanh toán'
-                                        )
-                                    "
-                                    type="button"
-                                    class="button-30-del"
-                                    @click="deleteDocument"
-                                >
-                                    <i class="fa-solid fa-trash-can"></i>
-                                    <span>Xóa</span>
-                                </button>
+                            <!-- ปุ่มลบ (แสดงเฉพาะเมื่อไม่ได้อยู่ในสถานะ paid) -->
+                            <button
+                                v-if="
+                                    document.status !== 'paid' &&
+                                    hasPermission(
+                                        'xóa thanh toán phiếu trình thanh toán'
+                                    )
+                                "
+                                type="button"
+                                class="button-30-del"
+                                @click="deleteDocument"
+                            >
+                                <i class="fa-solid fa-trash-can"></i>
+                                <span>Xóa</span>
+                            </button>
 
-                                <button
-                                    class="btn btn-outline-danger"
-                                    @click="printDocument"
-                                    title="In báo cáo"
-                                    :disabled="isLoading"
-                                >
-                                    <i class="fas fa-print me-1"></i> In báo cáo
-                                </button>
-                            </div>
-                            <div class="row align-items-center mb-2"></div>
+                            <button
+                                class="btn btn-outline-danger"
+                                @click="printDocument"
+                                title="In báo cáo"
+                                :disabled="isLoading"
+                            >
+                                <i class="fas fa-print me-1"></i> In báo cáo
+                            </button>
                         </div>
-                        <!-- progress-tracker-container -->
-                        <div class="progress-container mt-4">
-                            <div class="col-12">
+                        <div class="row align-items-center mb-2"></div>
+                    </div>
+                    <!-- progress-tracker-container -->
+                    <div class="progress-container mt-4">
+                        <div class="col-12">
+                            <div
+                                class="progress-tracker"
+                                :class="document.status || 'processing'"
+                                @click="toggleTimelineView"
+                            >
+                                <!-- Pending Step -->
                                 <div
-                                    class="progress-tracker"
-                                    :class="document.status || 'processing'"
-                                    @click="toggleTimelineView"
+                                    class="track-step"
+                                    :class="{
+                                        active:
+                                            document.status === 'processing' ||
+                                            document.status === 'submitted' ||
+                                            document.status === 'paid',
+                                    }"
                                 >
-                                    <!-- Pending Step -->
-                                    <div
-                                        class="track-step"
-                                        :class="{
-                                            active:
-                                                document.status ===
-                                                    'processing' ||
-                                                document.status ===
-                                                    'submitted' ||
-                                                document.status === 'paid',
-                                        }"
-                                    >
-                                        <div class="step-icon status-pending">
-                                            <i class="fas fa-file-invoice"></i>
-                                        </div>
-                                        <span class="step-label"
-                                            >Đang xử lý</span
-                                        >
+                                    <div class="step-icon status-pending">
+                                        <i class="fas fa-file-invoice"></i>
                                     </div>
+                                    <span class="step-label">Đang xử lý</span>
+                                </div>
 
-                                    <!-- Approved Step -->
-                                    <div
-                                        class="track-step"
-                                        :class="{
-                                            active:
-                                                document.status ===
-                                                    'submitted' ||
-                                                document.status === 'paid',
-                                        }"
-                                    >
-                                        <div class="step-icon status-approved">
-                                            <i class="fas fa-check-circle"></i>
-                                        </div>
-                                        <span class="step-label"
-                                            >Đã nộp kế toán</span
-                                        >
+                                <!-- Approved Step -->
+                                <div
+                                    class="track-step"
+                                    :class="{
+                                        active:
+                                            document.status === 'submitted' ||
+                                            document.status === 'paid',
+                                    }"
+                                >
+                                    <div class="step-icon status-approved">
+                                        <i class="fas fa-check-circle"></i>
                                     </div>
-
-                                    <!-- Paid Step -->
-                                    <div
-                                        class="track-step"
-                                        :class="{
-                                            active: document.status === 'paid',
-                                        }"
+                                    <span class="step-label"
+                                        >Đã nộp kế toán</span
                                     >
-                                        <div class="step-icon status-paid">
+                                </div>
+
+                                <!-- Paid Step -->
+                                <div
+                                    class="track-step"
+                                    :class="{
+                                        active: document.status === 'paid',
+                                    }"
+                                >
+                                    <div class="step-icon status-paid">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </div>
+                                    <span class="step-label"
+                                        >Đã thanh toán</span
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main content with added top margin -->
+            <div class="main-content-wrapper">
+                <div class="d-flex flex-column flex-md-row gap-1">
+                    <!-- Thông tin phiếu trình -->
+                    <div class="card col-12 col-md-6">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3 border-bottom pb-2">
+                                Thông tin phiếu trình
+                            </h5>
+                            <div class="row gutters">
+                                <!-- Mã trình thanh toán -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label for="maTrinh" class="form-label">
+                                            Mã trình thanh toán
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="maTrinh"
+                                            :value="document.payment_code"
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Tiêu đề -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label for="tieuDe" class="form-label">
+                                            Tiêu đề
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="tieuDe"
+                                            :value="document.title"
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Vụ đầu tư -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label for="vuDauTu" class="form-label">
+                                            Vụ đầu tư
+                                        </label>
+                                        <select
+                                            class="form-select"
+                                            id="vuDauTu"
+                                            v-model="
+                                                document.investment_project
+                                            "
+                                        >
+                                            <option value="" disabled>
+                                                -- Chọn vụ đầu tư --
+                                            </option>
+                                            <option
+                                                v-for="project in investmentProjects"
+                                                :key="project.Ma_Vudautu"
+                                                :value="project.Ma_Vudautu"
+                                            >
+                                                {{ project.Ten_Vudautu }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Loại thanh toán -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="loaiThanhToan"
+                                            class="form-label"
+                                        >
+                                            Loại thanh toán
+                                        </label>
+                                        <select
+                                            class="form-select"
+                                            id="loaiThanhToan"
+                                            v-model="document.payment_type"
+                                        >
+                                            <option value="" disabled>
+                                                -- Chọn loại thanh toán --
+                                            </option>
+
+                                            <option
+                                                value="Phiếu giao nhận hom giống"
+                                            >
+                                                Phiếu giao nhận hom giống
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <!-- Người tạo -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="nguoiTao"
+                                            class="form-label"
+                                        >
+                                            Người tạo
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="nguoiTao"
+                                            :value="document.creator_name"
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+                                <!-- Số tờ trình -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="soToTrinh"
+                                            class="form-label"
+                                        >
+                                            Số tờ trình
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="soToTrinh"
+                                            v-model="document.proposal_number"
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Ngày tạo -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label for="ngayTao" class="form-label">
+                                            Ngày tạo
+                                        </label>
+                                        <input
+                                            type="date"
+                                            class="form-control"
+                                            id="ngayTao"
+                                            v-model="document.created_at"
+                                        />
+                                    </div>
+                                </div>
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="trangThai"
+                                            class="form-label"
+                                        >
+                                            Trạng thái thanh toán
+                                        </label>
+                                        <div
+                                            class="status-display"
+                                            :class="
+                                                statusClass(document.status)
+                                            "
+                                        >
                                             <i
-                                                class="fas fa-money-bill-wave"
+                                                class="fas"
+                                                :class="
+                                                    getStatusIcon(
+                                                        document.status
+                                                    )
+                                                "
                                             ></i>
+                                            <span>{{
+                                                formatStatus(document.status)
+                                            }}</span>
                                         </div>
-                                        <span class="step-label"
-                                            >Đã thanh toán</span
+                                    </div>
+                                </div>
+
+                                <!-- Số đợt thanh toán -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label for="soDotTT" class="form-label">
+                                            Số đợt thanh toán
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            class="form-control"
+                                            id="soDotTT"
+                                            v-model="
+                                                document.payment_installment
+                                            "
+                                        />
+                                    </div>
+                                </div>
+                                <!-- Ngày thanh toánoán -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="ngaythanhtoan"
+                                            class="form-label"
                                         >
+                                            Ngày thanh toán
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input
+                                            type="date"
+                                            class="form-control"
+                                            id="ngaythanhtoan"
+                                            v-model="document.payment_date"
+                                            ref="paymentDateInput"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thông tin tài chính -->
+                    <!-- filepath: f:\Webpoject\TTCA_PTNL\ttca_ptnl\resources\js\Pages\QuanlyTaichinh\Details_Phieutrinhthanhtoan.vue -->
+                    <!-- Replace the existing Thông tin tài chính card with this improved version -->
+                    <div class="card col-12 col-md-6">
+                        <div class="card-body">
+                            <!-- Financial Summary -->
+                            <h6 class="mb-3 border-bottom pb-2">
+                                Tổng hợp tài chính
+                            </h6>
+                            <div class="row gutters">
+                                <!-- Tổng tiền thanh toán -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="tongTien"
+                                            class="form-label"
+                                        >
+                                            Tổng tiền thanh toán
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control text-end fw-medium"
+                                            id="tongTien"
+                                            :value="
+                                                formatCurrency(
+                                                    totalPaymentAmount
+                                                )
+                                            "
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Tổng tiền tạm giữ -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="tongTienTamGiu"
+                                            class="form-label"
+                                        >
+                                            Tổng tiền tạm giữ
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control text-end fw-medium"
+                                            id="tongTienTamGiu"
+                                            :value="
+                                                formatCurrency(totalHoldAmount)
+                                            "
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Tổng tiền khấu trừ -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="tongTienKhauTru"
+                                            class="form-label"
+                                        >
+                                            Tổng tiền khấu trừ
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control text-end fw-medium"
+                                            id="tongTienKhauTru"
+                                            :value="
+                                                formatCurrency(
+                                                    totalDeductionAmount
+                                                )
+                                            "
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Tổng tiền lãi suất -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="tongTienLaiSuat"
+                                            class="form-label"
+                                        >
+                                            Tổng tiền lãi suất
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control text-end fw-medium"
+                                            id="tongTienLaiSuat"
+                                            :value="
+                                                formatCurrency(
+                                                    totalInterestAmount
+                                                )
+                                            "
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Tổng tiền thanh toán còn lại -->
+                                <div class="col-12">
+                                    <div class="form-group mb-1">
+                                        <label
+                                            for="tongTienConLai"
+                                            class="form-label fw-bold"
+                                        >
+                                            Tổng tiền thanh toán còn lại
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control text-end fw-bold bg-light"
+                                            id="tongTienConLai"
+                                            :value="
+                                                formatCurrency(
+                                                    totalRemainingAmount
+                                                )
+                                            "
+                                            disabled
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -478,595 +797,191 @@
                     </div>
                 </div>
 
-                <!-- Main content with added top margin -->
-                <div class="main-content-wrapper">
-                    <div class="d-flex flex-column flex-md-row gap-1">
-                        <!-- Thông tin phiếu trình -->
-                        <div class="card col-12 col-md-6">
-                            <div class="card-body">
-                                <h5 class="card-title mb-3 border-bottom pb-2">
-                                    Thông tin phiếu trình
-                                </h5>
-                                <div class="row gutters">
-                                    <!-- Mã trình thanh toán -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="maTrinh"
-                                                class="form-label"
-                                            >
-                                                Mã trình thanh toán
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="maTrinh"
-                                                :value="document.payment_code"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <!-- Tiêu đề -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="tieuDe"
-                                                class="form-label"
-                                            >
-                                                Tiêu đề
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="tieuDe"
-                                                :value="document.title"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <!-- Vụ đầu tư -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="vuDauTu"
-                                                class="form-label"
-                                            >
-                                                Vụ đầu tư
-                                            </label>
-                                            <select
-                                                class="form-select"
-                                                id="vuDauTu"
-                                                v-model="
-                                                    document.investment_project
-                                                "
-                                            >
-                                                <option value="" disabled>
-                                                    -- Chọn vụ đầu tư --
-                                                </option>
-                                                <option
-                                                    v-for="project in investmentProjects"
-                                                    :key="project.Ma_Vudautu"
-                                                    :value="project.Ma_Vudautu"
-                                                >
-                                                    {{ project.Ten_Vudautu }}
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <!-- Loại thanh toán -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="loaiThanhToan"
-                                                class="form-label"
-                                            >
-                                                Loại thanh toán
-                                            </label>
-                                            <select
-                                                class="form-select"
-                                                id="loaiThanhToan"
-                                                v-model="document.payment_type"
-                                            >
-                                                <option value="" disabled>
-                                                    -- Chọn loại thanh toán --
-                                                </option>
-
-                                                <option
-                                                    value="Phiếu giao nhận hom giống"
-                                                >
-                                                    Phiếu giao nhận hom giống
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <!-- Người tạo -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="nguoiTao"
-                                                class="form-label"
-                                            >
-                                                Người tạo
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="nguoiTao"
-                                                :value="document.creator_name"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-                                    <!-- Số tờ trình -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="soToTrinh"
-                                                class="form-label"
-                                            >
-                                                Số tờ trình
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="soToTrinh"
-                                                v-model="
-                                                    document.proposal_number
-                                                "
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <!-- Ngày tạo -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="ngayTao"
-                                                class="form-label"
-                                            >
-                                                Ngày tạo
-                                            </label>
-                                            <input
-                                                type="date"
-                                                class="form-control"
-                                                id="ngayTao"
-                                                v-model="document.created_at"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="trangThai"
-                                                class="form-label"
-                                            >
-                                                Trạng thái thanh toán
-                                            </label>
-                                            <div
-                                                class="status-display"
-                                                :class="
-                                                    statusClass(document.status)
-                                                "
-                                            >
-                                                <i
-                                                    class="fas"
-                                                    :class="
-                                                        getStatusIcon(
-                                                            document.status
-                                                        )
-                                                    "
-                                                ></i>
-                                                <span>{{
-                                                    formatStatus(
-                                                        document.status
-                                                    )
-                                                }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Số đợt thanh toán -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="soDotTT"
-                                                class="form-label"
-                                            >
-                                                Số đợt thanh toán
-                                            </label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                class="form-control"
-                                                id="soDotTT"
-                                                v-model="
-                                                    document.payment_installment
-                                                "
-                                            />
-                                        </div>
-                                    </div>
-                                    <!-- Ngày thanh toánoán -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="ngaythanhtoan"
-                                                class="form-label"
-                                            >
-                                                Ngày thanh toán
-                                                <span class="text-danger"
-                                                    >*</span
-                                                >
-                                            </label>
-                                            <input
-                                                type="date"
-                                                class="form-control"
-                                                id="ngaythanhtoan"
-                                                v-model="document.payment_date"
-                                                ref="paymentDateInput"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Thông tin tài chính -->
-                        <!-- filepath: f:\Webpoject\TTCA_PTNL\ttca_ptnl\resources\js\Pages\QuanlyTaichinh\Details_Phieutrinhthanhtoan.vue -->
-                        <!-- Replace the existing Thông tin tài chính card with this improved version -->
-                        <div class="card col-12 col-md-6">
-                            <div class="card-body">
-                                <!-- Financial Summary -->
-                                <h6 class="mb-3 border-bottom pb-2">
-                                    Tổng hợp tài chính
-                                </h6>
-                                <div class="row gutters">
-                                    <!-- Tổng tiền thanh toán -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="tongTien"
-                                                class="form-label"
-                                            >
-                                                Tổng tiền thanh toán
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control text-end fw-medium"
-                                                id="tongTien"
-                                                :value="
-                                                    formatCurrency(
-                                                        totalPaymentAmount
-                                                    )
-                                                "
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <!-- Tổng tiền tạm giữ -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="tongTienTamGiu"
-                                                class="form-label"
-                                            >
-                                                Tổng tiền tạm giữ
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control text-end fw-medium"
-                                                id="tongTienTamGiu"
-                                                :value="
-                                                    formatCurrency(
-                                                        totalHoldAmount
-                                                    )
-                                                "
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <!-- Tổng tiền khấu trừ -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="tongTienKhauTru"
-                                                class="form-label"
-                                            >
-                                                Tổng tiền khấu trừ
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control text-end fw-medium"
-                                                id="tongTienKhauTru"
-                                                :value="
-                                                    formatCurrency(
-                                                        totalDeductionAmount
-                                                    )
-                                                "
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <!-- Tổng tiền lãi suất -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="tongTienLaiSuat"
-                                                class="form-label"
-                                            >
-                                                Tổng tiền lãi suất
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control text-end fw-medium"
-                                                id="tongTienLaiSuat"
-                                                :value="
-                                                    formatCurrency(
-                                                        totalInterestAmount
-                                                    )
-                                                "
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <!-- Tổng tiền thanh toán còn lại -->
-                                    <div class="col-12">
-                                        <div class="form-group mb-1">
-                                            <label
-                                                for="tongTienConLai"
-                                                class="form-label fw-bold"
-                                            >
-                                                Tổng tiền thanh toán còn lại
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control text-end fw-bold bg-light"
-                                                id="tongTienConLai"
-                                                :value="
-                                                    formatCurrency(
-                                                        totalRemainingAmount
-                                                    )
-                                                "
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bảng chi tiết -->
-                    <div class="card mt-3 payment-details-summary-card">
-                        <div
-                            class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center"
-                        >
-                            <h5 class="card-title mb-0 text-white">
-                                <i class="fas fa-file-invoice-dollar me-2"></i>
-                                Chi tiết hồ sơ thanh toán
-                            </h5>
-                            <div class="summary-stats d-flex gap-3">
-                                <div class="stat-item">
-                                    <small class="text-white-50"
-                                        >Tổng số biên bản</small
-                                    >
-                                    <div class="fw-bold">
-                                        {{ paymentDetails.length }}
-                                    </div>
-                                </div>
-                                <div class="stat-item">
-                                    <small class="text-white-50"
-                                        >Tổng tiền</small
-                                    >
-                                    <div class="fw-bold">
-                                        {{ formatCurrency(totalAmount) }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body text-center py-5">
-                            <div class="payment-summary-content">
-                                <div class="summary-icon mb-3">
-                                    <i
-                                        class="fas fa-table fa-3x text-primary opacity-75"
-                                    ></i>
-                                </div>
-                                <h6 class="mb-3">
-                                    Quản lý chi tiết hồ sơ thanh toán
-                                </h6>
-                                <p class="text-muted mb-4">
-                                    Xem và quản lý danh sách biên bản nghiệm thu
-                                    dịch vụ trong phiếu trình thanh toán này
-                                </p>
-                                <button
-                                    class="btn btn-primary btn-lg px-4 py-2"
-                                    @click="openPaymentDetailsModal"
+                <!-- Bảng chi tiết -->
+                <div class="card mt-3 payment-details-summary-card">
+                    <div
+                        class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center"
+                    >
+                        <h5 class="card-title mb-0 text-white">
+                            <i class="fas fa-file-invoice-dollar me-2"></i>
+                            Chi tiết hồ sơ thanh toán
+                        </h5>
+                        <div class="summary-stats d-flex gap-3">
+                            <div class="stat-item">
+                                <small class="text-white-50"
+                                    >Tổng số biên bản</small
                                 >
-                                    <i class="fas fa-eye me-2"></i>
-                                    Hiển thị chi tiết hồ sơ thanh toán
-                                </button>
+                                <div class="fw-bold">
+                                    {{ paymentDetails.length }}
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <small class="text-white-50">Tổng tiền</small>
+                                <div class="fw-bold">
+                                    {{ formatCurrency(totalAmount) }}
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Phiếu đề nghị thanh toán table -->
-                    <!-- Phiếu đề nghị thanh toán - Summary Card -->
-                    <div class="card mt-3 payment-requests-summary-card">
-                        <div
-                            class="card-header bg-gradient-success text-white d-flex justify-content-between align-items-center"
-                        >
-                            <h5 class="card-title mb-0 text-white">
-                                <i class="fas fa-file-contract me-2"></i>
-                                Phiếu đề nghị thanh toán
-                            </h5>
-                            <div class="summary-stats d-flex gap-3">
-                                <div class="stat-item">
-                                    <small class="text-white-50"
-                                        >Tổng số phiếu</small
-                                    >
-                                    <div class="fw-bold">
-                                        {{ paymentRequests.length }}
-                                    </div>
-                                </div>
-                                <div class="stat-item">
-                                    <small class="text-white-50"
-                                        >Tổng tiền thanh toán</small
-                                    >
-                                    <div class="fw-bold">
-                                        {{ formatCurrency(totalPaymentAmount) }}
-                                    </div>
-                                </div>
-                                <div class="stat-item">
-                                    <small class="text-white-50"
-                                        >Tổng tiền còn lại</small
-                                    >
-                                    <div class="fw-bold">
-                                        {{
-                                            formatCurrency(totalRemainingAmount)
-                                        }}
-                                    </div>
-                                </div>
+                    <div class="card-body text-center py-5">
+                        <div class="payment-summary-content">
+                            <div class="summary-icon mb-3">
+                                <i
+                                    class="fas fa-table fa-3x text-primary opacity-75"
+                                ></i>
                             </div>
-                        </div>
-                        <div class="card-body text-center py-5">
-                            <div class="payment-summary-content">
-                                <div class="summary-icon mb-3">
-                                    <i
-                                        class="fas fa-file-contract fa-3x text-success opacity-75"
-                                    ></i>
-                                </div>
-                                <h6 class="mb-3">
-                                    Quản lý phiếu đề nghị thanh toán
-                                </h6>
-                                <p class="text-muted mb-4">
-                                    Xem và quản lý danh sách phiếu đề nghị thanh
-                                    toán trong phiếu trình này
-                                </p>
-                                <button
-                                    class="btn btn-success btn-lg px-4 py-2"
-                                    @click="openPaymentRequestsModal"
-                                >
-                                    <i class="fas fa-eye me-2"></i>
-                                    Hiển thị phiếu đề nghị thanh toán
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Note Section -->
-                    <div class="col-md-12 mt-3">
-                        <div class="card">
-                            <div
-                                class="card-header d-flex justify-content-between align-items-center"
+                            <h6 class="mb-3">
+                                Quản lý chi tiết hồ sơ thanh toán
+                            </h6>
+                            <p class="text-muted mb-4">
+                                Xem và quản lý danh sách biên bản nghiệm thu
+                                dịch vụ trong phiếu trình thanh toán này
+                            </p>
+                            <button
+                                class="btn btn-primary btn-lg px-4 py-2"
+                                @click="openPaymentDetailsModal"
                             >
-                                <h6 class="mb-0">
-                                    <i class="fas fa-sticky-note me-2"></i>Ghi
-                                    chú
-                                </h6>
-                                <div v-if="!isEditingNote">
+                                <i class="fas fa-eye me-2"></i>
+                                Hiển thị chi tiết hồ sơ thanh toán
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phiếu đề nghị thanh toán table -->
+                <!-- Phiếu đề nghị thanh toán - Summary Card -->
+                <div class="card mt-3 payment-requests-summary-card">
+                    <div
+                        class="card-header bg-gradient-success text-white d-flex justify-content-between align-items-center"
+                    >
+                        <h5 class="card-title mb-0 text-white">
+                            <i class="fas fa-file-contract me-2"></i>
+                            Phiếu đề nghị thanh toán
+                        </h5>
+                        <div class="summary-stats d-flex gap-3">
+                            <div class="stat-item">
+                                <small class="text-white-50"
+                                    >Tổng số phiếu</small
+                                >
+                                <div class="fw-bold">
+                                    {{ paymentRequests.length }}
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <small class="text-white-50"
+                                    >Tổng tiền thanh toán</small
+                                >
+                                <div class="fw-bold">
+                                    {{ formatCurrency(totalPaymentAmount) }}
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <small class="text-white-50"
+                                    >Tổng tiền còn lại</small
+                                >
+                                <div class="fw-bold">
+                                    {{ formatCurrency(totalRemainingAmount) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body text-center py-5">
+                        <div class="payment-summary-content">
+                            <div class="summary-icon mb-3">
+                                <i
+                                    class="fas fa-file-contract fa-3x text-success opacity-75"
+                                ></i>
+                            </div>
+                            <h6 class="mb-3">
+                                Quản lý phiếu đề nghị thanh toán
+                            </h6>
+                            <p class="text-muted mb-4">
+                                Xem và quản lý danh sách phiếu đề nghị thanh
+                                toán trong phiếu trình này
+                            </p>
+                            <button
+                                class="btn btn-success btn-lg px-4 py-2"
+                                @click="openPaymentRequestsModal"
+                            >
+                                <i class="fas fa-eye me-2"></i>
+                                Hiển thị phiếu đề nghị thanh toán
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Note Section -->
+                <div class="col-md-12 mt-3">
+                    <div class="card">
+                        <div
+                            class="card-header d-flex justify-content-between align-items-center"
+                        >
+                            <h6 class="mb-0">
+                                <i class="fas fa-sticky-note me-2"></i>Ghi chú
+                            </h6>
+                            <div v-if="!isEditingNote">
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    @click="isEditingNote = true"
+                                    :disabled="isSavingNote"
+                                >
+                                    <i class="fas fa-edit me-1"></i>Chỉnh sửa
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div v-if="!isEditingNote">
+                                <div
+                                    class="note-content"
+                                    v-html="
+                                        document.notes
+                                            ? document.notes.replace(
+                                                  /\n/g,
+                                                  '<br>'
+                                              )
+                                            : '<em class=\'text-muted\'>Chưa có ghi chú nào</em>'
+                                    "
+                                ></div>
+                            </div>
+                            <div v-else>
+                                <textarea
+                                    v-model="noteText"
+                                    class="form-control mb-3"
+                                    rows="4"
+                                    placeholder="Nhập ghi chú..."
+                                    :disabled="isSavingNote"
+                                ></textarea>
+                                <div class="d-flex gap-2">
                                     <button
                                         type="button"
-                                        class="btn btn-sm btn-outline-primary"
-                                        @click="isEditingNote = true"
+                                        class="btn btn-success"
+                                        @click="saveNote"
                                         :disabled="isSavingNote"
                                     >
-                                        <i class="fas fa-edit me-1"></i>Chỉnh
-                                        sửa
+                                        <span
+                                            v-if="isSavingNote"
+                                            class="spinner-border spinner-border-sm me-1"
+                                        ></span>
+                                        <i v-else class="fas fa-save me-1"></i>
+                                        {{
+                                            isSavingNote ? "Đang lưu..." : "Lưu"
+                                        }}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-secondary"
+                                        @click="cancelEditNote"
+                                        :disabled="isSavingNote"
+                                    >
+                                        <i class="fas fa-times me-1"></i>Hủy
                                     </button>
                                 </div>
                             </div>
-                            <div class="card-body">
-                                <div v-if="!isEditingNote">
-                                    <div
-                                        class="note-content"
-                                        v-html="
-                                            document.notes
-                                                ? document.notes.replace(
-                                                      /\n/g,
-                                                      '<br>'
-                                                  )
-                                                : '<em class=\'text-muted\'>Chưa có ghi chú nào</em>'
-                                        "
-                                    ></div>
-                                </div>
-                                <div v-else>
-                                    <textarea
-                                        v-model="noteText"
-                                        class="form-control mb-3"
-                                        rows="4"
-                                        placeholder="Nhập ghi chú..."
-                                        :disabled="isSavingNote"
-                                    ></textarea>
-                                    <div class="d-flex gap-2">
-                                        <button
-                                            type="button"
-                                            class="btn btn-success"
-                                            @click="saveNote"
-                                            :disabled="isSavingNote"
-                                        >
-                                            <span
-                                                v-if="isSavingNote"
-                                                class="spinner-border spinner-border-sm me-1"
-                                            ></span>
-                                            <i
-                                                v-else
-                                                class="fas fa-save me-1"
-                                            ></i>
-                                            {{
-                                                isSavingNote
-                                                    ? "Đang lưu..."
-                                                    : "Lưu"
-                                            }}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="btn btn-outline-secondary"
-                                            @click="cancelEditNote"
-                                            :disabled="isSavingNote"
-                                        >
-                                            <i class="fas fa-times me-1"></i>Hủy
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
-            </PerfectScrollbar>
+            </div>
         </div>
     </div>
     <!-- Payment Requests Modal -->
@@ -8762,7 +8677,7 @@ export default {
     top: 0px;
     left: 230px;
     right: 0;
-    z-index: 10;
+    z-index: 0;
     background: white;
     padding: 1rem 0;
     border-bottom: 1px solid #e0e3e8;
@@ -8785,7 +8700,7 @@ export default {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 10;
+        z-index: 0;
     }
     .main-content-wrapper {
         margin-top: 10px;
@@ -9173,7 +9088,7 @@ export default {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 10;
+        z-index: 0;
     }
 
     .main-content-wrapper {
@@ -10394,6 +10309,7 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 
 /* Table Container */
 .table-container-modal {
+    padding: 0.5rem 0.5rem;
     flex: 1;
     overflow: auto;
     background: white;
@@ -10759,12 +10675,12 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 }
 
 .table-container-modal::-webkit-scrollbar-thumb {
-    background: #28a745;
+    background: #f1f1f1;
     border-radius: 4px;
 }
 
 .table-container-modal::-webkit-scrollbar-thumb:hover {
-    background: #1e7e34;
+    background: #f1f1f1;
 }
 /* Enhanced Modal Styles */
 .modal-dialog.modal-lg {
@@ -10861,7 +10777,7 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 
     .modal-body {
         padding: 1rem;
-        max-height: 60vh;
+        min-height: 80vh;
     }
 
     .row > .col-md-6:first-child {
@@ -11197,12 +11113,12 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 }
 
 .table-container-modal::-webkit-scrollbar-thumb {
-    background: #28a745;
+    background: #f1f1f1;
     border-radius: 4px;
 }
 
 .table-container-modal::-webkit-scrollbar-thumb:hover {
-    background: #1e7e34;
+    background: #f1f1f1;
 }
 
 .max-h-40.overflow-y-auto::-webkit-scrollbar {
@@ -11251,7 +11167,7 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 10;
+        z-index: 0;
     }
 
     .main-content-wrapper {
@@ -11275,10 +11191,10 @@ button:hover .fas.fa-filter:not(.text-green-500) {
         max-width: calc(100% - 1rem);
     }
 
-    .modal-body {
+    /* .modal-body {
         padding: 1rem;
         max-height: 60vh;
-    }
+    } */
 
     .action-toolbar .row {
         flex-direction: column;

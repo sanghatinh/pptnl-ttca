@@ -54,6 +54,32 @@ export default {
             }
         }
     },
+
+    mounted() {
+        this.rebindSidebarToggle();
+        // rebind ทุกครั้งที่เปลี่ยน route
+        this.$watch(
+            () => this.$route.fullPath,
+            () => {
+                this.$nextTick(() => {
+                    this.rebindSidebarToggle();
+                });
+            }
+        );
+    },
+    methods: {
+        rebindSidebarToggle() {
+            if (typeof window.$ !== "undefined") {
+                window
+                    .$("#toggle-sidebar")
+                    .off("click")
+                    .on("click", function (event) {
+                        event.preventDefault();
+                        window.$(".page-wrapper").toggleClass("toggled");
+                    });
+            }
+        },
+    },
 };
 </script>
 <style>

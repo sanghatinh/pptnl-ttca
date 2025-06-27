@@ -121,640 +121,608 @@
 
     <div class="card shadow" v-if="!showTimeline">
         <div class="card-body p-0">
-            <PerfectScrollbar
-                :options="{
-                    wheelSpeed: 1,
-                    wheelPropagation: true,
-                    minScrollbarLength: 20,
-                }"
-                class="scroll-area"
-            >
-                <!-- button  -->
-                <!-- Fixed top container -->
-                <div class="sticky-wrapper">
-                    <!-- Add container with padding -->
-                    <div class="container-fluid px-4">
-                        <div class="button-container">
-                            <div class="row align-items-center mb-2"></div>
-                        </div>
-                        <!-- progress-tracker-container -->
-                        <div class="progress-container mt-4">
-                            <div class="col-12">
+            <!-- button  -->
+            <!-- Fixed top container -->
+            <div class="sticky-wrapper">
+                <!-- Add container with padding -->
+                <div class="container-fluid px-4">
+                    <div class="button-container">
+                        <div class="row align-items-center mb-2"></div>
+                    </div>
+                    <!-- progress-tracker-container -->
+                    <div class="progress-container mt-4">
+                        <div class="col-12">
+                            <div
+                                class="progress-tracker"
+                                :class="
+                                    document.processing_status || 'received'
+                                "
+                                @click="toggleTimelineView"
+                            >
+                                <!-- Received Step -->
                                 <div
-                                    class="progress-tracker"
-                                    :class="
-                                        document.processing_status || 'received'
-                                    "
-                                    @click="toggleTimelineView"
-                                >
-                                    <!-- Received Step -->
-                                    <div
-                                        class="track-step"
-                                        :class="{
-                                            active:
-                                                document.processing_status ===
-                                                    'received' ||
-                                                document.processing_status ===
-                                                    'processing' ||
-                                                document.processing_status ===
-                                                    'submitted' ||
-                                                document.processing_status ===
-                                                    'paid',
-                                        }"
-                                    >
-                                        <div class="step-icon status-received">
-                                            <i
-                                                :class="
-                                                    getReceivedStepIcon(
-                                                        document.trang_thai_nhan_hs
-                                                    )
-                                                "
-                                            ></i>
-                                        </div>
-                                        <span class="step-label">{{
-                                            getReceivedStepLabel(
-                                                document.trang_thai_nhan_hs
-                                            )
-                                        }}</span>
-                                    </div>
-
-                                    <!-- Processing Step -->
-                                    <div
-                                        class="track-step"
-                                        :class="{
-                                            active:
-                                                document.processing_status ===
-                                                    'processing' ||
-                                                document.processing_status ===
-                                                    'submitted' ||
-                                                document.processing_status ===
-                                                    'paid',
-                                        }"
-                                    >
-                                        <div
-                                            class="step-icon status-processing"
-                                        >
-                                            <i class="fas fa-cog fa-spin"></i>
-                                        </div>
-                                        <span class="step-label"
-                                            >Đang xử lý</span
-                                        >
-                                    </div>
-
-                                    <!-- Submitted to Accounting Step -->
-                                    <div
-                                        class="track-step"
-                                        :class="{
-                                            active:
-                                                document.processing_status ===
-                                                    'submitted' ||
-                                                document.processing_status ===
-                                                    'paid',
-                                        }"
-                                    >
-                                        <div class="step-icon status-submitted">
-                                            <i class="fas fa-file-invoice"></i>
-                                        </div>
-                                        <span class="step-label"
-                                            >Đã nộp kế toán</span
-                                        >
-                                    </div>
-
-                                    <!-- Paid Step -->
-                                    <div
-                                        class="track-step"
-                                        :class="{
-                                            active:
-                                                document.processing_status ===
+                                    class="track-step"
+                                    :class="{
+                                        active:
+                                            document.processing_status ===
+                                                'received' ||
+                                            document.processing_status ===
+                                                'processing' ||
+                                            document.processing_status ===
+                                                'submitted' ||
+                                            document.processing_status ===
                                                 'paid',
-                                        }"
-                                    >
-                                        <div class="step-icon status-paid">
-                                            <i
-                                                class="fas fa-money-bill-wave"
-                                            ></i>
-                                        </div>
-                                        <span class="step-label"
-                                            >Đã thanh toán</span
-                                        >
+                                    }"
+                                >
+                                    <div class="step-icon status-received">
+                                        <i
+                                            :class="
+                                                getReceivedStepIcon(
+                                                    document.trang_thai_nhan_hs
+                                                )
+                                            "
+                                        ></i>
                                     </div>
+                                    <span class="step-label">{{
+                                        getReceivedStepLabel(
+                                            document.trang_thai_nhan_hs
+                                        )
+                                    }}</span>
+                                </div>
+
+                                <!-- Processing Step -->
+                                <div
+                                    class="track-step"
+                                    :class="{
+                                        active:
+                                            document.processing_status ===
+                                                'processing' ||
+                                            document.processing_status ===
+                                                'submitted' ||
+                                            document.processing_status ===
+                                                'paid',
+                                    }"
+                                >
+                                    <div class="step-icon status-processing">
+                                        <i class="fas fa-cog fa-spin"></i>
+                                    </div>
+                                    <span class="step-label">Đang xử lý</span>
+                                </div>
+
+                                <!-- Submitted to Accounting Step -->
+                                <div
+                                    class="track-step"
+                                    :class="{
+                                        active:
+                                            document.processing_status ===
+                                                'submitted' ||
+                                            document.processing_status ===
+                                                'paid',
+                                    }"
+                                >
+                                    <div class="step-icon status-submitted">
+                                        <i class="fas fa-file-invoice"></i>
+                                    </div>
+                                    <span class="step-label"
+                                        >Đã nộp kế toán</span
+                                    >
+                                </div>
+
+                                <!-- Paid Step -->
+                                <div
+                                    class="track-step"
+                                    :class="{
+                                        active:
+                                            document.processing_status ===
+                                            'paid',
+                                    }"
+                                >
+                                    <div class="step-icon status-paid">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </div>
+                                    <span class="step-label"
+                                        >Đã thanh toán</span
+                                    >
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Main content with added top margin -->
-                <div class="main-content-wrapper">
-                    <div class="d-flex flex-column flex-md-row gap-1">
-                        <!-- Thông tin phiếu giao nhận hom giống -->
-                        <div class="card col-12 col-md-6">
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    Thông tin phiếu giao nhận
-                                </h5>
-                                <div class="row gutters">
-                                    <!-- Mã số phiếu -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="maSoPhieu"
-                                                class="form-label"
-                                            >
-                                                Mã số phiếu
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="maSoPhieu"
-                                                :value="document.ma_so_phieu"
-                                                disabled
-                                            />
-                                        </div>
+            </div>
+            <!-- Main content with added top margin -->
+            <div class="main-content-wrapper">
+                <div class="d-flex flex-column flex-md-row gap-1">
+                    <!-- Thông tin phiếu giao nhận hom giống -->
+                    <div class="card col-12 col-md-6">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                Thông tin phiếu giao nhận
+                            </h5>
+                            <div class="row gutters">
+                                <!-- Mã số phiếu -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="maSoPhieu"
+                                            class="form-label"
+                                        >
+                                            Mã số phiếu
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="maSoPhieu"
+                                            :value="document.ma_so_phieu"
+                                            disabled
+                                        />
                                     </div>
-                                    <!-- Cán bộ nông vụ -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="canBoNongVu"
-                                                class="form-label"
-                                            >
-                                                Cán bộ nông vụ
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="canBoNongVu"
-                                                :value="document.can_bo_nong_vu"
-                                                disabled
-                                            />
-                                        </div>
+                                </div>
+                                <!-- Cán bộ nông vụ -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="canBoNongVu"
+                                            class="form-label"
+                                        >
+                                            Cán bộ nông vụ
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="canBoNongVu"
+                                            :value="document.can_bo_nong_vu"
+                                            disabled
+                                        />
                                     </div>
-                                    <!-- Vụ đầu tư -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="vuDauTu"
-                                                class="form-label"
-                                            >
-                                                Vụ đầu tư
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="vuDauTu"
-                                                :value="document.vu_dau_tu"
-                                                disabled
-                                            />
-                                        </div>
+                                </div>
+                                <!-- Vụ đầu tư -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label for="vuDauTu" class="form-label">
+                                            Vụ đầu tư
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="vuDauTu"
+                                            :value="document.vu_dau_tu"
+                                            disabled
+                                        />
                                     </div>
-                                    <!-- Tên phiếu -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="tenPhieu"
-                                                class="form-label"
-                                            >
-                                                Tên phiếu
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="tenPhieu"
-                                                :value="document.ten_phieu"
-                                                disabled
-                                            />
-                                        </div>
+                                </div>
+                                <!-- Tên phiếu -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="tenPhieu"
+                                            class="form-label"
+                                        >
+                                            Tên phiếu
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="tenPhieu"
+                                            :value="document.ten_phieu"
+                                            disabled
+                                        />
                                     </div>
-                                    <!-- Hợp đồng đầu tư mía bên giao -->
-                                    <div class="col-12">
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="hopDongBenGiao"
-                                                class="form-label"
-                                            >
-                                                Hợp đồng đầu tư mía bên giao
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="hopDongBenGiao"
-                                                :value="
-                                                    document.hop_dong_dau_tu_mia_ben_giao_hom
-                                                "
-                                                disabled
-                                            />
-                                        </div>
+                                </div>
+                                <!-- Hợp đồng đầu tư mía bên giao -->
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="hopDongBenGiao"
+                                            class="form-label"
+                                        >
+                                            Hợp đồng đầu tư mía bên giao
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="hopDongBenGiao"
+                                            :value="
+                                                document.hop_dong_dau_tu_mia_ben_giao_hom
+                                            "
+                                            disabled
+                                        />
                                     </div>
-                                    <!-- Hợp đồng đầu tư mía bên nhận -->
-                                    <div class="col-12">
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="hopDongBenNhan"
-                                                class="form-label"
-                                            >
-                                                Hợp đồng đầu tư mía bên nhận
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="hopDongBenNhan"
-                                                :value="
-                                                    document.hop_dong_dau_tu_mia
-                                                "
-                                                disabled
-                                            />
-                                        </div>
+                                </div>
+                                <!-- Hợp đồng đầu tư mía bên nhận -->
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="hopDongBenNhan"
+                                            class="form-label"
+                                        >
+                                            Hợp đồng đầu tư mía bên nhận
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="hopDongBenNhan"
+                                            :value="
+                                                document.hop_dong_dau_tu_mia
+                                            "
+                                            disabled
+                                        />
                                     </div>
-                                    <!-- Thêm Trạng thái thanh toán -->
-                                    <div class="col-12">
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="trangThaiThanhToan"
-                                                class="form-label"
-                                            >
-                                                Trạng thái thanh toán
-                                            </label>
-                                            <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i
-                                                        :class="
-                                                            paymentStatusIcon(
-                                                                document.processing_status
-                                                            )
-                                                        "
-                                                    ></i>
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    class="form-control"
-                                                    id="trangThaiThanhToan"
-                                                    :value="
-                                                        formatPaymentStatus(
-                                                            document.processing_status
-                                                        )
-                                                    "
+                                </div>
+                                <!-- Thêm Trạng thái thanh toán -->
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="trangThaiThanhToan"
+                                            class="form-label"
+                                        >
+                                            Trạng thái thanh toán
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i
                                                     :class="
-                                                        paymentStatusClass(
+                                                        paymentStatusIcon(
                                                             document.processing_status
                                                         )
                                                     "
-                                                    disabled
-                                                />
-                                            </div>
+                                                ></i>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="trangThaiThanhToan"
+                                                :value="
+                                                    formatPaymentStatus(
+                                                        document.processing_status
+                                                    )
+                                                "
+                                                :class="
+                                                    paymentStatusClass(
+                                                        document.processing_status
+                                                    )
+                                                "
+                                                disabled
+                                            />
                                         </div>
                                     </div>
-                                    <!-- Hồ sơ đính kèm -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="hoSoDinhKem"
-                                                class="form-label"
+                                </div>
+                                <!-- Hồ sơ đính kèm -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="hoSoDinhKem"
+                                            class="form-label"
+                                        >
+                                            Hồ sơ đính kèm
+                                        </label>
+                                        <div class="d-flex align-items-center">
+                                            <a
+                                                href="#"
+                                                @click.prevent="openAttachment"
+                                                class="text-decoration-none"
                                             >
-                                                Hồ sơ đính kèm
-                                            </label>
-                                            <div
-                                                class="d-flex align-items-center"
-                                            >
-                                                <a
-                                                    href="#"
-                                                    @click.prevent="
-                                                        openAttachment
-                                                    "
-                                                    class="text-decoration-none"
+                                                <div
+                                                    class="d-flex align-items-center"
                                                 >
-                                                    <div
-                                                        class="d-flex align-items-center"
+                                                    <i
+                                                        class="far fa-file-pdf text-danger fs-4 me-2"
+                                                    ></i>
+                                                    <span
+                                                        >Xem hồ sơ đính
+                                                        kèm</span
                                                     >
-                                                        <i
-                                                            class="far fa-file-pdf text-danger fs-4 me-2"
-                                                        ></i>
-                                                        <span
-                                                            >Xem hồ sơ đính
-                                                            kèm</span
-                                                        >
-                                                    </div>
-                                                </a>
-                                            </div>
+                                                </div>
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Thông tin tài chính và giao nhận -->
-                        <div class="card col-12 col-md-6">
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    Thông tin tài chính và giao nhận
-                                </h5>
-                                <div class="row gutters">
-                                    <!-- Tổng thực nhận -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="tongThucNhan"
-                                                class="form-label"
-                                            >
-                                                Tổng thực nhận
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="tongThucNhan"
-                                                :value="
-                                                    formatNumber(
-                                                        document.tong_thuc_nhan
-                                                    )
-                                                "
-                                                disabled
-                                            />
-                                        </div>
+                    <!-- Thông tin tài chính và giao nhận -->
+                    <div class="card col-12 col-md-6">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                Thông tin tài chính và giao nhận
+                            </h5>
+                            <div class="row gutters">
+                                <!-- Tổng thực nhận -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="tongThucNhan"
+                                            class="form-label"
+                                        >
+                                            Tổng thực nhận
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="tongThucNhan"
+                                            :value="
+                                                formatNumber(
+                                                    document.tong_thuc_nhan
+                                                )
+                                            "
+                                            disabled
+                                        />
                                     </div>
-                                    <!-- Tổng tiền -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="tongTien"
-                                                class="form-label"
-                                            >
-                                                Tổng tiền
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="tongTien"
-                                                :value="
-                                                    formatCurrency(
-                                                        document.tong_tien
-                                                    )
-                                                "
-                                                disabled
-                                            />
-                                        </div>
+                                </div>
+                                <!-- Tổng tiền -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="tongTien"
+                                            class="form-label"
+                                        >
+                                            Tổng tiền
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="tongTien"
+                                            :value="
+                                                formatCurrency(
+                                                    document.tong_tien
+                                                )
+                                            "
+                                            disabled
+                                        />
                                     </div>
-                                    <!-- Mã giải ngân -->
-                                    <div
-                                        class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
-                                    >
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="maGiaiNgan"
-                                                class="form-label"
-                                            >
-                                                Mã giải ngân
-                                            </label>
-                                            <div
-                                                v-if="
-                                                    document.ma_de_nghi_giai_ngan
-                                                "
-                                                class="input-group"
-                                                style="cursor: pointer"
-                                                @click="navigateToPaymentDetail"
-                                                title="Click để xem chi tiết phiếu đề nghị thanh toán"
-                                            >
-                                                <span class="input-group-text">
-                                                    <i
-                                                        class="fas fa-external-link-alt text-primary"
-                                                    ></i>
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    class="form-control"
-                                                    id="maGiaiNgan"
-                                                    :value="
-                                                        document.ma_de_nghi_giai_ngan
-                                                    "
-                                                    disabled
-                                                    style="cursor: pointer"
-                                                />
-                                            </div>
+                                </div>
+                                <!-- Mã giải ngân -->
+                                <div
+                                    class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12"
+                                >
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="maGiaiNgan"
+                                            class="form-label"
+                                        >
+                                            Mã giải ngân
+                                        </label>
+                                        <div
+                                            v-if="document.ma_de_nghi_giai_ngan"
+                                            class="input-group"
+                                            style="cursor: pointer"
+                                            @click="navigateToPaymentDetail"
+                                            title="Click để xem chi tiết phiếu đề nghị thanh toán"
+                                        >
+                                            <span class="input-group-text">
+                                                <i
+                                                    class="fas fa-external-link-alt text-primary"
+                                                ></i>
+                                            </span>
                                             <input
-                                                v-else
                                                 type="text"
                                                 class="form-control"
                                                 id="maGiaiNgan"
-                                                value="N/A"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <!-- Người giao hồ sơ -->
-                                    <div class="col-12">
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="nguoiGiao"
-                                                class="form-label"
-                                            >
-                                                Người giao hồ sơ
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="nguoiGiao"
-                                                :value="document.nguoi_giao"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-                                    <!-- Người nhận hồ sơ -->
-                                    <div class="col-12">
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="nguoiNhan"
-                                                class="form-label"
-                                            >
-                                                Người nhận hồ sơ
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="nguoiNhan"
-                                                :value="document.nguoi_nhan"
-                                                disabled
-                                            />
-                                        </div>
-                                    </div>
-                                    <!-- Ngày nhận hồ sơ -->
-                                    <div class="col-12">
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="ngayNhan"
-                                                class="form-label"
-                                            >
-                                                Ngày nhận hồ sơ
-                                            </label>
-                                            <input
-                                                type="text"
-                                                class="form-control"
-                                                id="ngayNhan"
                                                 :value="
-                                                    formatDate(
-                                                        document.ngay_nhan
+                                                    document.ma_de_nghi_giai_ngan
+                                                "
+                                                disabled
+                                                style="cursor: pointer"
+                                            />
+                                        </div>
+                                        <input
+                                            v-else
+                                            type="text"
+                                            class="form-control"
+                                            id="maGiaiNgan"
+                                            value="N/A"
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Người giao hồ sơ -->
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="nguoiGiao"
+                                            class="form-label"
+                                        >
+                                            Người giao hồ sơ
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="nguoiGiao"
+                                            :value="document.nguoi_giao"
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+                                <!-- Người nhận hồ sơ -->
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="nguoiNhan"
+                                            class="form-label"
+                                        >
+                                            Người nhận hồ sơ
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="nguoiNhan"
+                                            :value="document.nguoi_nhan"
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+                                <!-- Ngày nhận hồ sơ -->
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="ngayNhan"
+                                            class="form-label"
+                                        >
+                                            Ngày nhận hồ sơ
+                                        </label>
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            id="ngayNhan"
+                                            :value="
+                                                formatDate(document.ngay_nhan)
+                                            "
+                                            disabled
+                                        />
+                                    </div>
+                                </div>
+                                <!-- Tình trạng giao nhận hồ sơ -->
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label
+                                            for="tinhTrang"
+                                            class="form-label"
+                                        >
+                                            Tình trạng giao nhận hồ sơ
+                                        </label>
+                                        <div
+                                            class="input-group"
+                                            style="cursor: pointer"
+                                            @click="navigateToHosoList"
+                                            title="Click để xem danh sách hồ sơ"
+                                        >
+                                            <span class="input-group-text">
+                                                <i
+                                                    class="fas fa-list text-info"
+                                                ></i>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="tinhTrang"
+                                                :value="
+                                                    formatStatus(
+                                                        document.trang_thai_nhan_hs
+                                                    )
+                                                "
+                                                :class="
+                                                    statusClass(
+                                                        document.trang_thai_nhan_hs
                                                     )
                                                 "
                                                 disabled
+                                                style="cursor: pointer"
                                             />
                                         </div>
                                     </div>
-                                    <!-- Tình trạng giao nhận hồ sơ -->
-                                    <div class="col-12">
-                                        <div class="form-group mb-3">
-                                            <label
-                                                for="tinhTrang"
-                                                class="form-label"
-                                            >
-                                                Tình trạng giao nhận hồ sơ
-                                            </label>
-                                            <div
-                                                class="input-group"
-                                                style="cursor: pointer"
-                                                @click="navigateToHosoList"
-                                                title="Click để xem danh sách hồ sơ"
-                                            >
-                                                <span class="input-group-text">
-                                                    <i
-                                                        class="fas fa-list text-info"
-                                                    ></i>
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    class="form-control"
-                                                    id="tinhTrang"
-                                                    :value="
-                                                        formatStatus(
-                                                            document.trang_thai_nhan_hs
-                                                        )
-                                                    "
-                                                    :class="
-                                                        statusClass(
-                                                            document.trang_thai_nhan_hs
-                                                        )
-                                                    "
-                                                    disabled
-                                                    style="cursor: pointer"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Bảng chi tiết -->
-                    <div class="card mt-3">
-                        <div class="card-body">
-                            <h5 class="card-title">Chi tiết hom giống</h5>
-                            <div class="table-container">
-                                <div class="table-responsive mt-2">
-                                    <table
-                                        class="table table-bordered table-hover align-middle"
-                                    >
-                                        <thead class="table-light text-center">
-                                            <tr>
-                                                <th>STT</th>
-                                                <th>Loại giống</th>
-                                                <th>Mã số thửa</th>
-                                                <th>Đơn vị tính</th>
-                                                <th>Số lượng</th>
-                                                <th>Đơn giá</th>
-                                                <th>Thành tiền</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-if="!serviceDetails.length">
-                                                <td
-                                                    colspan="7"
-                                                    class="text-center py-3 text-muted"
-                                                >
-                                                    <i
-                                                        class="fas fa-info-circle me-2"
-                                                    ></i>
-                                                    Không có dữ liệu chi tiết
-                                                    hom giống cho phiếu này
-                                                </td>
-                                            </tr>
-                                            <tr
-                                                v-for="(
-                                                    item, index
-                                                ) in serviceDetails"
-                                                :key="index"
-                                            >
-                                                <td class="text-center">
-                                                    {{ index + 1 }}
-                                                </td>
-                                                <td class="truncate">
-                                                    {{ item.giong_mia }}
-                                                </td>
-                                                <td>{{ item.thua_dat }}</td>
-                                                <td class="text-center">
-                                                    {{ item.don_vi_tinh }}
-                                                </td>
-                                                <td class="text-end">
-                                                    {{
-                                                        formatNumber(
-                                                            item.thuc_nhan
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td class="text-end">
-                                                    {{
-                                                        formatCurrency(
-                                                            item.don_gia
-                                                        )
-                                                    }}
-                                                </td>
-                                                <td class="text-end">
-                                                    {{
-                                                        formatCurrency(
-                                                            item.thanh_tien_hom_giong
-                                                        )
-                                                    }}
-                                                </td>
-                                            </tr>
-                                            <tr
-                                                v-if="serviceDetails.length"
-                                                class="table-secondary"
-                                            >
-                                                <td
-                                                    colspan="5"
-                                                    class="text-end fw-bold"
-                                                >
-                                                    Tổng cộng:
-                                                </td>
-                                                <td
-                                                    colspan="2"
-                                                    class="text-end fw-bold"
-                                                >
-                                                    {{
-                                                        formatCurrency(
-                                                            totalAmount
-                                                        )
-                                                    }}
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </PerfectScrollbar>
+                <!-- Bảng chi tiết -->
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Chi tiết hom giống</h5>
+                        <div class="table-container">
+                            <div class="table-responsive mt-2">
+                                <table
+                                    class="table table-bordered table-hover align-middle"
+                                >
+                                    <thead class="table-light text-center">
+                                        <tr>
+                                            <th>STT</th>
+                                            <th>Loại giống</th>
+                                            <th>Mã số thửa</th>
+                                            <th>Đơn vị tính</th>
+                                            <th>Số lượng</th>
+                                            <th>Đơn giá</th>
+                                            <th>Thành tiền</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-if="!serviceDetails.length">
+                                            <td
+                                                colspan="7"
+                                                class="text-center py-3 text-muted"
+                                            >
+                                                <i
+                                                    class="fas fa-info-circle me-2"
+                                                ></i>
+                                                Không có dữ liệu chi tiết hom
+                                                giống cho phiếu này
+                                            </td>
+                                        </tr>
+                                        <tr
+                                            v-for="(
+                                                item, index
+                                            ) in serviceDetails"
+                                            :key="index"
+                                        >
+                                            <td class="text-center">
+                                                {{ index + 1 }}
+                                            </td>
+                                            <td class="truncate">
+                                                {{ item.giong_mia }}
+                                            </td>
+                                            <td>{{ item.thua_dat }}</td>
+                                            <td class="text-center">
+                                                {{ item.don_vi_tinh }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{
+                                                    formatNumber(item.thuc_nhan)
+                                                }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{
+                                                    formatCurrency(item.don_gia)
+                                                }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{
+                                                    formatCurrency(
+                                                        item.thanh_tien_hom_giong
+                                                    )
+                                                }}
+                                            </td>
+                                        </tr>
+                                        <tr
+                                            v-if="serviceDetails.length"
+                                            class="table-secondary"
+                                        >
+                                            <td
+                                                colspan="5"
+                                                class="text-end fw-bold"
+                                            >
+                                                Tổng cộng:
+                                            </td>
+                                            <td
+                                                colspan="2"
+                                                class="text-end fw-bold"
+                                            >
+                                                {{
+                                                    formatCurrency(totalAmount)
+                                                }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -1173,7 +1141,7 @@ export default {
     top: 0px;
     left: 230px;
     right: 0;
-    z-index: 10;
+    z-index: 0;
     background: white;
     padding: 1rem 0;
     border-bottom: 1px solid #e0e3e8;
@@ -1526,12 +1494,12 @@ export default {
 }
 
 /* Responsive styles */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
     .sticky-wrapper {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 10;
+        z-index: 0;
     }
 
     .main-content-wrapper {
@@ -1545,20 +1513,12 @@ export default {
     .col-md-6 {
         width: 100% !important;
     }
-    .table-responsive {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        overflow-y: auto;
-        max-height: 150px;
-    }
 }
 
 /* Enhanced table styles */
 .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    overflow-y: auto;
-    max-height: 400px;
 }
 
 .table {

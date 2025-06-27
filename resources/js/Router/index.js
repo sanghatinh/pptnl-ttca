@@ -3,12 +3,6 @@ import { useStore } from "../Store/Auth";
 import axios from "axios"; // เพิ่มบรรทัดนี้ถ้ายังไม่มี
 
 import login from "../Pages/Login.vue";
-import Nopage from "../Pages/404.vue";
-import ListUser from "../Pages/Admin/User.vue";
-import Permission from "../Pages/Admin/Permission.vue";
-import Role from "../Pages/Admin/Role.vue";
-import Profile from "../Pages/Admin/UserProfile.vue";
-import Unauthorized from "../Pages/Unauthorized.vue";
 
 const authMiddleware = async (to, from, next) => {
     const store = useStore();
@@ -674,7 +668,7 @@ const routes = [
     {
         name: "404",
         path: "/:pathMatch(.*)*",
-        component: Nopage,
+        component: () => import("../Pages/404.vue"),
         meta: {
             middleware: [authMiddleware],
         },
@@ -682,7 +676,7 @@ const routes = [
     {
         name: "User",
         path: "/User",
-        component: ListUser,
+        component: () => import("../Pages/Admin/User.vue"),
         meta: {
             middleware: [authMiddleware],
             requiresComponent: true,
@@ -692,7 +686,7 @@ const routes = [
     {
         name: "Permission",
         path: "/Permission",
-        component: Permission,
+        component: () => import("../Pages/Admin/Permission.vue"),
         meta: {
             middleware: [authMiddleware],
             requiresComponent: true,
@@ -702,7 +696,7 @@ const routes = [
     {
         name: "Role",
         path: "/Role",
-        component: Role,
+        component: () => import("../Pages/Admin/Role.vue"),
         meta: {
             middleware: [authMiddleware],
         },
@@ -710,7 +704,7 @@ const routes = [
     {
         name: "Profile",
         path: "/Profile",
-        component: Profile,
+        component: () => import("../Pages/Admin/UserProfile.vue"),
         meta: {
             middleware: [authMiddleware],
         },
@@ -718,7 +712,7 @@ const routes = [
     {
         path: "/unauthorized",
         name: "Unauthorized",
-        component: Unauthorized,
+        component: () => import("../Pages/Unauthorized.vue"),
         meta: { requiresAuth: true },
     },
 ];

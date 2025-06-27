@@ -90,7 +90,7 @@ class DocumentDeliveryController extends Controller
                     'code' => $doc->status,
                     'name' => $statusMapping[$doc->status] ?? $doc->status
                 ],
-                'loan_status' => $doc->loan_status
+                // 'loan_status' => $doc->loan_status
             ];
         });
     
@@ -124,8 +124,8 @@ class DocumentDeliveryController extends Controller
             'receiver_id'        => null, // เปลี่ยนจาก $request->input('receiver_id') เป็น null
             'received_date'      => null, // เปลี่ยนจาก $request->input('received_date') เป็น null
             'file_count'        => $request->input('file_count'),
-            'loan_status'       => $request->input('loan_status'),
-            'status'            => 'creating'
+            // 'loan_status'       => $request->input('loan_status'),
+            'status'            => 'creating',
         ]);
 
             // Log the create action

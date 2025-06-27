@@ -6699,7 +6699,7 @@ button:hover .fas.fa-filter:not(.text-green-500) {
 
     /* Show adjacent pages to current page */
     .page-item.active + .page-item,
-    .page-item.active - .page-item {
+    .page-item.active > .page-item {
         display: flex;
     }
 }

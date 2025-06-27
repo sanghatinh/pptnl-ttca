@@ -19,15 +19,7 @@
                 </button>
             </div>
             <div class="card-body p-0">
-                <PerfectScrollbar
-                    class="timeline-scrollarea"
-                    :options="{
-                        wheelSpeed: 1,
-                        wheelPropagation: false,
-                        minScrollbarLength: 20,
-                        suppressScrollX: true,
-                    }"
-                >
+               
                     <div class="timeline-body p-4">
                         <div class="timeline-container">
                             <!-- Processing Stage -->
@@ -270,7 +262,7 @@
                             </div>
                         </div>
                     </div>
-                </PerfectScrollbar>
+              
             </div>
         </div>
     </div>
@@ -278,14 +270,7 @@
     <!-- Original content -->
     <div class="card shadow" v-if="!showTimeline">
         <div class="card-body p-0">
-            <PerfectScrollbar
-                :options="{
-                    wheelSpeed: 1,
-                    wheelPropagation: true,
-                    minScrollbarLength: 20,
-                }"
-                class="scroll-area"
-            >
+           
                 <div class="sticky-wrapper">
                     <!-- Add container with padding -->
                     <div class="container-fluid px-4">
@@ -1385,7 +1370,7 @@
                         </div>
                     </div>
                 </div>
-            </PerfectScrollbar>
+          
         </div>
     </div>
     <!-- Print Options Modal -->
@@ -2708,7 +2693,7 @@ export default {
     top: 0px;
     left: 230px;
     right: 0;
-    z-index: 10;
+    z-index: 0;
     background: white;
     padding: 1rem 0;
     border-bottom: 1px solid #e0e3e8;
@@ -2903,7 +2888,7 @@ export default {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 10;
+        z-index: 0;
     }
 
     .main-content-wrapper {
@@ -3016,7 +3001,7 @@ export default {
         top: 0px;
         left: 0;
         padding: 0.5rem 0;
-        z-index: 10;
+        z-index: 0;
     }
 
     .main-content-wrapper {
