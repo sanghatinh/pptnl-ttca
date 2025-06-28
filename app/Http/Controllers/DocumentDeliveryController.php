@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log; 
 use App\Models\DocumentDelivery;
 use App\Models\DocumentMapping;
-use App\Models\DocumentMappingHomGiong;
+use App\Models\DocumentMappingHomgiong;
 use App\Models\BienBanNghiemThuHomGiong;
 use App\Models\Log\DocumentLog; // Add this import
 use App\Models\Log\StatusDocumentDelivery; // Add this import
@@ -278,20 +278,23 @@ public function destroy($id)
         $query = \DB::table('tb_bien_ban_nghiemthu_dv')
             ->where('vu_dau_tu', $investmentProject);
 
+        // ไม่แสดงรายการที่ ma_nghiem_thu มีอยู่ใน document_mapping
+        $mappedMaNghiemThu = \DB::table('document_mapping')->pluck('ma_nghiem_thu_bb')->toArray();
+        if (!empty($mappedMaNghiemThu)) {
+            $query->whereNotIn('ma_nghiem_thu', $mappedMaNghiemThu);
+        }
+
         // Apply role-based filtering
         switch ($user->position) {
             case 'department_head':
             case 'office_workers':
                 // Can access all records - no additional filtering needed
-               
                 break;
-                
             case 'Station_Chief':
             case 'Farm_worker':
                 // Can only access records from their own station
                 $query->where('tram', $user->station);
                 break;
-                
             default:
                 // Unknown role - restrict access
                 return response()->json(['error' => 'Unauthorized position'], 403);
@@ -378,7 +381,7 @@ public function destroy($id)
     }
 
     //Modal add hom giong tao phieu giao nhan
-    public function searchBienBanHomGiong(Request $request)
+ public function searchBienBanHomGiong(Request $request)
 {
     try {
         $user = auth()->user();
@@ -394,19 +397,23 @@ public function destroy($id)
         $query = \DB::table('bien_ban_nghiem_thu_hom_giong')
             ->where('vu_dau_tu', $investmentProject);
 
+        // ไม่แสดงรายการที่ ma_so_phieu มีอยู่ใน document_mapping_homgiong
+        $mappedMaSoPhieu = \DB::table('document_mapping_homgiong')->pluck('ma_so_phieu')->toArray();
+        if (!empty($mappedMaSoPhieu)) {
+            $query->whereNotIn('ma_so_phieu', $mappedMaSoPhieu);
+        }
+
         // Apply role-based filtering
         switch ($user->position) {
             case 'department_head':
             case 'office_workers':
                 // Can access all records from all stations - no filtering needed
                 break;
-                
             case 'Station_Chief':
             case 'Farm_worker':
                 // Can only access records from their own station
                 $query->where('tram', $user->station);
                 break;
-                
             default:
                 // Unknown role - restrict access
                 return response()->json(['error' => 'Unauthorized position'], 403);

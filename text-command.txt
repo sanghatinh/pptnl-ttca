@@ -7,6 +7,7 @@ Larvel
     - php artisan route:cache  : ຄຳສັ່ງເຄຼຍ Route Cache
     -php artisan cache:clear
     -php artisan config:clear
+    - php artisan view:cache : ເຮັດໃຫ້ ໂຫລດໜ້າ View ໄວຂື້ນ.
     -php artisan make:controller MyController  เพื่อสร้าง Controller 
     -php artisan make:model Component
     ///Run in mobile
@@ -25,7 +26,7 @@ Git
     - git push                   = ຄຳສັ່ງ ອັບໂຫຼດໂປຼເຈັກຂື້ນ github 
     - git pull                   = ຄຳສັ່ງ ອັບເດດ ໂຄດລ່າສຸດຈາກ github
 
-    - git add . && git commit -m "v1.6.6.9" && git push
+    - git add . && git commit -m "v1.7.0" && git push
 
 
     -cls = ຄຳສັ່ງ clear cmd
