@@ -7,15 +7,21 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Tymon\JWTAuth\Facades\JWTAuth;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use App\Models\Farmer\UserFarmer;
 
 class DashboardFarmerReportControllers extends Controller
 {
    public function getFinancialSummary(Request $request)
     {
+       
         try {
+             Log::info('Headers: ' . json_encode($request->headers->all()));
+    Log::info('X-Supplier-Number: ' . $request->header('X-Supplier-Number'));
+    Log::info('x-supplier-number: ' . $request->header('x-supplier-number'));
+    Log::info('HTTP_X_SUPPLIER_NUMBER: ' . $request->server('HTTP_X_SUPPLIER_NUMBER'));
             // Get supplier ID from request header
-            $supplierId = $request->header('X-Supplier-Number');
+           $supplierId = $request->header('X-Supplier-Number');
             
             // Get selected investment project from request
             $selectedInvestmentProject = $request->input('investment_project', 'all');
@@ -57,9 +63,11 @@ class DashboardFarmerReportControllers extends Controller
 
             // Get farmer user data from user_farmer table - check in multiple fields
             $farmer = DB::table('user_farmer')
-                ->where('supplier_number', $supplierId)
-                ->orWhere('ma_kh_ca_nhan', $supplierId)
-                ->orWhere('ma_kh_doanh_nghiep', $supplierId)
+                ->where(function($q) use ($supplierId) {
+                    $q->where('supplier_number', $supplierId)
+                      ->orWhere('ma_kh_ca_nhan', $supplierId)
+                      ->orWhere('ma_kh_doanh_nghiep', $supplierId);
+                })
                 ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep', 'id')
                 ->first();
 
@@ -270,9 +278,11 @@ public function getDebtPaymentVsInterestData(Request $request)
         
         // Get farmer user data from user_farmer table - check in multiple fields
         $farmer = DB::table('user_farmer')
-            ->where('supplier_number', $supplierId)
-            ->orWhere('ma_kh_ca_nhan', $supplierId)
-            ->orWhere('ma_kh_doanh_nghiep', $supplierId)
+            ->where(function($q) use ($supplierId) {
+                $q->where('supplier_number', $supplierId)
+                  ->orWhere('ma_kh_ca_nhan', $supplierId)
+                  ->orWhere('ma_kh_doanh_nghiep', $supplierId);
+            })
             ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
             ->first();
 
@@ -416,9 +426,11 @@ public function getDebtPaymentTypeDistribution(Request $request)
         
         // Get farmer user data from user_farmer table - check in multiple fields
         $farmer = DB::table('user_farmer')
-            ->where('supplier_number', $supplierId)
-            ->orWhere('ma_kh_ca_nhan', $supplierId)
-            ->orWhere('ma_kh_doanh_nghiep', $supplierId)
+            ->where(function($q) use ($supplierId) {
+                $q->where('supplier_number', $supplierId)
+                  ->orWhere('ma_kh_ca_nhan', $supplierId)
+                  ->orWhere('ma_kh_doanh_nghiep', $supplierId);
+            })
             ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep')
             ->first();
 
@@ -561,9 +573,11 @@ public function getPaymentRequests(Request $request)
         
         // Get farmer user data from user_farmer table - check in multiple fields
         $farmer = DB::table('user_farmer')
-            ->where('supplier_number', $supplierId)
-            ->orWhere('ma_kh_ca_nhan', $supplierId)
-            ->orWhere('ma_kh_doanh_nghiep', $supplierId)
+            ->where(function($q) use ($supplierId) {
+                $q->where('supplier_number', $supplierId)
+                  ->orWhere('ma_kh_ca_nhan', $supplierId)
+                  ->orWhere('ma_kh_doanh_nghiep', $supplierId);
+            })
             ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep', 'id')
             ->first();
 
@@ -668,7 +682,7 @@ public function getWorkItems(Request $request)
         // Try to get supplier ID from JWT token if not in header
         if (!$supplierId) {
             try {
-                $user = \Tymon\JWTAuth\Facades\JWTAuth::parseToken()->authenticate();
+                $user = JWTAuth::parseToken()->authenticate();
                 if (isset($user->supplier_number)) {
                     $supplierId = $user->supplier_number;
                 } else {
@@ -689,9 +703,11 @@ public function getWorkItems(Request $request)
 
         // Get farmer user data from user_farmer table - check in multiple fields
         $farmer = \DB::table('user_farmer')
-            ->where('supplier_number', $supplierId)
-            ->orWhere('ma_kh_ca_nhan', $supplierId)
-            ->orWhere('ma_kh_doanh_nghiep', $supplierId)
+            ->where(function($q) use ($supplierId) {
+                $q->where('supplier_number', $supplierId)
+                  ->orWhere('ma_kh_ca_nhan', $supplierId)
+                  ->orWhere('ma_kh_doanh_nghiep', $supplierId);
+            })
             ->select('ma_kh_ca_nhan', 'ma_kh_doanh_nghiep', 'id')
             ->first();
 

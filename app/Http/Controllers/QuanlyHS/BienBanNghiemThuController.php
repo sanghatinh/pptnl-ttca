@@ -7,7 +7,7 @@ use App\Models\BienBanNghiemThu;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller; // Add this import
 use Illuminate\Support\Facades\Log; 
-use Tymon\JWTAuth\Facades\JWTAuth; 
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 use App\Models\QuanlyHS\PaymentRequestAction; // เพิ่ม model สำหรับตาราง Action
 use App\Models\QuanlyHS\PaymentRequest;

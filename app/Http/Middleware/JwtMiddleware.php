@@ -3,7 +3,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use JWTAuth;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
@@ -37,11 +37,13 @@ class JwtMiddleware
                         'message' => 'Farmer account not found or inactive'
                     ], 401);
                 }
+
+                    // เลือก supplier id ที่มีค่าจริง
+$supplierId = $user->ma_kh_ca_nhan ?: $user->ma_kh_doanh_nghiep;
                 
-                // เพิ่ม supplier number ใน header สำหรับใช้ใน controller
-                $request->headers->set('X-User-Type', 'farmer');
-                  $request->headers->set('X-User-ID', $userId); // เพิ่มบรรทัดนี้
-                $request->headers->set('X-Supplier-Number', $user->ma_kh_doanh_nghiep ?? $user->ma_kh_ca_nhan);
+               $request->headers->set('X-User-Type', 'farmer');
+    $request->headers->set('X-User-ID', $userId);
+    $request->headers->set('X-Supplier-Number', $supplierId);
                 
             } else {
                 $user = User::find($userId);
@@ -62,19 +64,19 @@ class JwtMiddleware
 
             return $next($request);
 
-        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+        } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Token has expired'
             ], 401);
             
-        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+        } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\TokenInvalidException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Token is invalid'
             ], 401);
             
-        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+        } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Token error: ' . $e->getMessage()

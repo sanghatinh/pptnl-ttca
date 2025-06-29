@@ -12,7 +12,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use Tymon\JWTAuth\Facades\JWTAuth; // เพิ่ม import นี้
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth; // เพิ่ม import นี้
 
 class DeductibleServiceDebtController extends Controller
 {
