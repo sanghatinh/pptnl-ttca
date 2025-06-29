@@ -108,6 +108,16 @@ export default {
     },
     async created() {
         await this.initializeUserData();
+        this.$root?.$emitter?.on(
+            "refresh-user-avatar",
+            this.initializeUserData
+        );
+    },
+    beforeUnmount() {
+        this.$root?.$emitter?.off(
+            "refresh-user-avatar",
+            this.initializeUserData
+        );
     },
     setup() {
         const store = useStore();

@@ -688,6 +688,8 @@ export default {
                         showConfirmButton: false,
                         timer: 2000,
                     }).then(() => {
+                        // แจ้ง Headerbar ให้รีเฟรช avatar
+                        this.$root.$emitter?.emit("refresh-user-avatar");
                         // Clear password form
                         this.clearPasswordForm();
                         // Clear image upload state
@@ -764,6 +766,22 @@ export default {
                     return;
                 }
 
+                // ตรวจสอบ HEIC/HEIF
+                if (
+                    file.type === "image/heic" ||
+                    file.type === "image/heif" ||
+                    file.name.toLowerCase().endsWith(".heic") ||
+                    file.name.toLowerCase().endsWith(".heif")
+                ) {
+                    this.$swal({
+                        icon: "warning",
+                        title: "Không hỗ trợ định dạng HEIC",
+                        text: "Vui lòng chuyển đổi hình ảnh sang JPG hoặc PNG trước khi tải lên.",
+                        showConfirmButton: true,
+                    });
+                    return;
+                }
+
                 // Validate file size (5MB max)
                 if (file.size > 5 * 1024 * 1024) {
                     this.$swal({
@@ -778,11 +796,29 @@ export default {
                 this.selectedImageFile = file;
 
                 // Create preview
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.imagePreview = e.target.result;
-                };
-                reader.readAsDataURL(file);
+                try {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.imagePreview = e.target.result;
+                    };
+                    reader.onerror = () => {
+                        this.$swal({
+                            icon: "error",
+                            title: "Lỗi đọc file",
+                            text: "Không thể đọc file hình ảnh này. Vui lòng thử lại với file khác.",
+                            showConfirmButton: true,
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                } catch (err) {
+                    this.$swal({
+                        icon: "error",
+                        title: "Lỗi đọc file",
+                        text: "Không thể đọc file hình ảnh này trên thiết bị của bạn.",
+                        showConfirmButton: true,
+                    });
+                    return;
+                }
 
                 this.$swal({
                     toast: true,
