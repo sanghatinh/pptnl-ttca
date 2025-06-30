@@ -161,6 +161,15 @@
                             <i class="fas fa-chevron-down text-gray-400"></i>
                         </div>
                     </div>
+                    <div v-if="isMobile" class="mt-3">
+                        <button
+                            type="button"
+                            class="w-full py-2 px-4 bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center text-sm font-medium mb-2"
+                            @click="resetAllFilters"
+                        >
+                            <i class="fas fa-redo-alt mr-2"></i> Đặt lại bộ lọc
+                        </button>
+                    </div>
                 </div>
             </div>
 
