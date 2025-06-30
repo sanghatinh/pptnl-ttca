@@ -15,51 +15,69 @@ class ChiTietBienBanNghiemThuController extends Controller
     /**
      * Import data from Excel/CSV file
      */
-    public function importData(Request $request)
-    {
-        // Validate the uploaded file
-        $request->validate([
-            'file' => 'required|file|mimes:csv,xlsx,xls|max:10240' // 10MB max
-        ]);
+public function importData(Request $request)
+{
+    $request->validate([
+        'file' => 'required|file|mimes:csv,xlsx,xls|max:10240'
+    ]);
 
-        // Generate a unique import ID
-        $importId = uniqid('import_chitiet_');
-        
-        try {
-            $file = $request->file('file');
-            $path = $file->storeAs('imports', $importId . '.' . $file->extension());
-            
-            // Store import info in cache for progress tracking
-            \Cache::put('import_chitiet_' . $importId, [
-                'status' => 'uploading',
-                'total' => 0,
-                'processed' => 0,
-                'errors' => [],
-                'success' => false,
-                'finished' => false
-            ], 3600); // Cache for 1 hour
-            
-            // Process file in background
-            dispatch(function() use ($path, $importId) {
-                $this->processImportFile($path, $importId);
-            })->afterResponse();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'File uploaded successfully. Processing started.',
-                'importId' => $importId
-            ]);
-            
-        } catch (\Exception $e) {
-            Log::error('Chi tiết NT Import error: ' . $e->getMessage());
+    $importId = uniqid('import_chitiet_');
+    try {
+        $file = $request->file('file');
+        $fileName = $importId . '.' . $file->getClientOriginalExtension();
+        $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $fileName;
+
+        // Copy file ไป temp path
+        if (!copy($file->getRealPath(), $tempPath)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error uploading file',
-                'errors' => [$e->getMessage()]
+                'message' => 'Failed to copy file to temporary directory'
             ], 500);
         }
-    }
 
+        \Cache::put('import_chitiet_' . $importId, [
+            'status' => 'uploading',
+            'total' => 0,
+            'processed' => 0,
+            'errors' => [],
+            'success' => false,
+            'finished' => false
+        ], 3600);
+
+        Log::info('Start importData', ['env' => app()->environment(), 'path' => $tempPath, 'importId' => $importId]);
+
+        // ประมวลผลทันที (ไม่ dispatch)
+        try {
+            $this->processImportFile($tempPath, $importId);
+        } catch (\Exception $e) {
+            Log::error('processImportFile error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            $importData = \Cache::get('import_chitiet_' . $importId);
+            $importData['status'] = 'failed';
+            $importData['errors'][] = $e->getMessage();
+            $importData['success'] = false;
+            $importData['finished'] = true;
+            \Cache::put('import_chitiet_' . $importId, $importData, 3600);
+        } finally {
+            // ลบไฟล์ temp หลังประมวลผล
+            if (file_exists($tempPath)) {
+                @unlink($tempPath);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'File uploaded successfully. Processing started.',
+            'importId' => $importId
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Chi tiết NT Import error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error uploading file',
+            'errors' => [$e->getMessage()]
+        ], 500);
+    }
+}
     /**
      * Check import progress
      */
@@ -81,32 +99,22 @@ class ChiTietBienBanNghiemThuController extends Controller
     /**
      * Process the uploaded import file
      */
-    private function processImportFile($path, $importId)
+    private function processImportFile($filePath, $importId)
 {
+     // เพิ่มบรรทัดนี้
+    ini_set('memory_limit', '512M');
+    ini_set('max_execution_time', 300);
     try {
-        // Update status to processing
         $importData = \Cache::get('import_chitiet_' . $importId);
         $importData['status'] = 'processing';
         \Cache::put('import_chitiet_' . $importId, $importData, 3600);
-        
-        // Get file from storage
-        $filePath = storage_path('app/private/' . $path);
-        
-        // Check if file exists
+
         if (!file_exists($filePath)) {
-            // Try alternative path if the file doesn't exist at the expected location
-            $alternativePath = storage_path('app/' . $path);
-            if (file_exists($alternativePath)) {
-                $filePath = $alternativePath;
-            } else {
-                throw new \Exception("File \"$path\" does not exist at expected locations.");
-            }
+            throw new \Exception("File \"$filePath\" does not exist.");
         }
-        
-        // Determine file type and process accordingly
+
         $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-        
-        // Load the file based on extension
+
         if ($extension == 'csv') {
             $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Csv');
             $reader->setDelimiter(',');
@@ -115,66 +123,47 @@ class ChiTietBienBanNghiemThuController extends Controller
         } else {
             $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
         }
-        
+
         $spreadsheet = $reader->load($filePath);
         $worksheet = $spreadsheet->getActiveSheet();
         $rows = $worksheet->toArray();
-        
-        // Get headers from first row
+
         if (empty($rows) || count($rows) < 2) {
             throw new \Exception('File is empty or does not contain data rows. Please check the file and try again.');
         }
-        
+
         $headers = array_map('trim', $rows[0]);
-        
-        // Map Excel/CSV columns to database columns
         $columnMap = $this->getColumnMapping($headers);
-        
+
         if (empty($columnMap)) {
             throw new \Exception('Could not map columns from file to database. Required columns are missing.');
         }
-        
-        // Skip header row
+
         array_shift($rows);
-        
-        // Update total records count
+
         $importData = \Cache::get('import_chitiet_' . $importId);
         $importData['total'] = count($rows);
         \Cache::put('import_chitiet_' . $importId, $importData, 3600);
-        
+
         $processedCount = 0;
         $errors = [];
-        
+
         try {
-            // Start transaction
             DB::beginTransaction();
-            
-            // Delete all existing records first (using delete() instead of truncate())
-            ChitietNghiemthudv::query()->delete();
-            
-            // Insert new records in batches for better performance
-            $batchSize = 100; // Process 100 records at a time
+            \App\Models\QuanlyHS\ChitietNghiemthudv::query()->delete();
+            $batchSize = 50;
             $batches = array_chunk($rows, $batchSize);
-            
+
             foreach ($batches as $batchIndex => $batch) {
                 $batchData = [];
-                
                 foreach ($batch as $index => $row) {
                     $rowIndex = ($batchIndex * $batchSize) + $index;
                     try {
-                        // Skip empty rows
-                        if (empty(array_filter($row))) {
-                            continue;
-                        }
-                        
+                        if (empty(array_filter($row))) continue;
                         $data = [];
-                        
-                        // Map data from Excel/CSV to database columns
                         foreach ($columnMap as $dbColumn => $excelIndex) {
                             if ($excelIndex !== false && isset($row[$excelIndex])) {
-                                // For numeric fields, ensure proper formatting
                                 if (in_array($dbColumn, ['khoi_luong_thuc_hien', 'don_gia', 'thanh_tien', 'tien_thanh_toan', 'tien_con_lai', 'so_lan_thuc_hien'])) {
-                                    // Remove currency symbols and formatting
                                     $value = preg_replace('/[^0-9.]/', '', $row[$excelIndex]);
                                     $data[$dbColumn] = $value ?: 0;
                                 } else {
@@ -182,51 +171,32 @@ class ChiTietBienBanNghiemThuController extends Controller
                                 }
                             }
                         }
-                        
-                        // Add to batch data
                         $batchData[] = $data;
-                        
                         $processedCount++;
-                        
                     } catch (\Exception $e) {
-                        // Log error but continue processing
                         $errors[] = 'Row ' . ($rowIndex + 2) . ': ' . $e->getMessage();
                     }
                 }
-                
-                // Insert batch if not empty
                 if (!empty($batchData)) {
-                    ChitietNghiemthudv::insert($batchData);
+                    \App\Models\QuanlyHS\ChitietNghiemthudv::insert($batchData);
                 }
-                
-                // Update progress after each batch
                 $importData = \Cache::get('import_chitiet_' . $importId);
                 $importData['processed'] = $processedCount;
                 $importData['errors'] = $errors;
                 \Cache::put('import_chitiet_' . $importId, $importData, 3600);
-                
-                // Give the database a moment to breathe
-                usleep(10000); // 10ms pause between batches
+                usleep(10000);
             }
-            
-            // Check if there is still an active transaction before committing
             if (DB::transactionLevel() > 0) {
-                // Commit transaction
                 DB::commit();
             }
-            
         } catch (\Exception $e) {
-            // Check if there is still an active transaction before rolling back
             if (DB::transactionLevel() > 0) {
-                // Rollback the transaction
                 DB::rollBack();
             }
-            // Add the error to our errors array
             $errors[] = 'Transaction error: ' . $e->getMessage();
-            throw $e; // Re-throw to be caught by the outer catch block
+            throw $e;
         }
-        
-        // Update final status
+
         $importData = \Cache::get('import_chitiet_' . $importId);
         $importData['status'] = 'completed';
         $importData['processed'] = $processedCount;
@@ -234,23 +204,18 @@ class ChiTietBienBanNghiemThuController extends Controller
         $importData['success'] = true;
         $importData['finished'] = true;
         \Cache::put('import_chitiet_' . $importId, $importData, 3600);
-        
-        // Delete the temporary file
-        Storage::delete($path);
-        
+
     } catch (\Exception $e) {
-        // Update error status
         $importData = \Cache::get('import_chitiet_' . $importId);
         $importData['status'] = 'failed';
         $importData['errors'] = array_merge($importData['errors'] ?? [], [$e->getMessage()]);
         $importData['success'] = false;
         $importData['finished'] = true;
         \Cache::put('import_chitiet_' . $importId, $importData, 3600);
-        
+
         Log::error('Chi tiết NT Import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
     }
 }
-
     /**
      * Map columns from Excel/CSV headers to database columns
      */

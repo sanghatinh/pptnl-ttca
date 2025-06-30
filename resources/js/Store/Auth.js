@@ -141,7 +141,7 @@ export const useStore = defineStore("auth", {
                 } else {
                     config.headers["X-User-Type"] = "employee";
                 }
-                console.log("Request headers:", config.headers);
+                // console.log("Request headers:", config.headers);
                 return config;
             });
 

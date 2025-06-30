@@ -26,7 +26,7 @@ Git
     - git push                   = ຄຳສັ່ງ ອັບໂຫຼດໂປຼເຈັກຂື້ນ github 
     - git pull                   = ຄຳສັ່ງ ອັບເດດ ໂຄດລ່າສຸດຈາກ github
 
-    - git add . && git commit -m "v1.7.2" && git push
+    - git add . && git commit -m "v1.7.3" && git push
 
 
     -cls = ຄຳສັ່ງ clear cmd
@@ -35,7 +35,9 @@ Git
     -Ctrl + Shift + P => Format Document แบบนี้โค้ดของคุณจะสวยงามและเป็นระเบียบทุกครั้ง
     -Ctrl + Shift + W หากต้องการปิด VS Code ทั้งหมด
 
-
+Hosing
+    -ls  กวดดู List domain ใน Cplan
+    -cd /domian
     #SQL
 - DESCRIBE tb_chitiet_dichvu_nt;    ตรวจสอบโครงสร้างของตาราง 
 - TRUNCATE TABLE document_logs;  ลบข้อมูลทั้งหมดและรีเซ็ต ID ใหม่

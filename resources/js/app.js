@@ -28,7 +28,6 @@ const app = createApp(App);
 app.use(pinia);
 app.use(router); // <--- Add this line
 app.use(permissionsPlugin); // Add the permissions plugin
-app.mount("#app-vue");
 
 app.use(VueSweetalert2);
 
@@ -42,3 +41,5 @@ app.component("Register-Page", RegisterPage);
 
 const emitter = mitt();
 app.config.globalProperties.$emitter = emitter;
+
+app.mount("#app-vue");

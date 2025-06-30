@@ -256,49 +256,42 @@ public function index(Request $request)
 
     // Import data from Excel/CSV
     public function importData(Request $request)
-    {
-        // Validate the uploaded file
-        $request->validate([
-            'file' => 'required|file|mimes:csv,xlsx,xls|max:10240' // 10MB max
-        ]);
+{
+    $request->validate([
+        'file' => 'required|file|mimes:csv,xlsx,xls|max:10240'
+    ]);
 
-        // Generate a unique import ID
-        $importId = uniqid('import_');
-        
-        try {
-            $file = $request->file('file');
-            $path = $file->storeAs('imports', $importId . '.' . $file->extension());
-            
-            // Store import info in cache for progress tracking
-            \Cache::put('import_' . $importId, [
-                'status' => 'uploading',
-                'total' => 0,
-                'processed' => 0,
-                'errors' => [],
-                'success' => false,
-                'finished' => false
-            ], 3600); // Cache for 1 hour
-            
-            // Process file in background (queue this job for large files)
-            dispatch(function() use ($path, $importId) {
-                $this->processImportFile($path, $importId);
-            })->afterResponse();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'File uploaded successfully. Processing started.',
-                'importId' => $importId
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Import error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error uploading file',
-                'errors' => [$e->getMessage()]
-            ], 500);
-        }
+    $importId = uniqid('import_');
+    try {
+        $file = $request->file('file');
+        $path = $file->storeAs('imports', $importId . '.' . $file->extension());
+
+        \Cache::put('import_' . $importId, [
+            'status' => 'uploading',
+            'total' => 0,
+            'processed' => 0,
+            'errors' => [],
+            'success' => false,
+            'finished' => false
+        ], 3600);
+
+        // เรียก processImportFile() ทันที (ไม่ใช้ dispatch)
+        $this->processImportFile($path, $importId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'File uploaded successfully. Processing started.',
+            'importId' => $importId
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Import error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error uploading file',
+            'errors' => [$e->getMessage()]
+        ], 500);
     }
+}
 
     // Check import progress
     public function importProgress($importId)
@@ -417,7 +410,7 @@ public function index(Request $request)
                 \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
                 
                 // Insert new records in batches for better performance
-                $batchSize = 100; // Process 100 records at a time
+                $batchSize = 5000; // Process 100 records at a time
                 $batches = array_chunk($rows, $batchSize);
                 
                 foreach ($batches as $batchIndex => $batch) {
