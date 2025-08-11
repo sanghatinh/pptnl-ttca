@@ -68,6 +68,15 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::delete('/my-profile/image', [App\Http\Controllers\UserProfileController::class, 'deleteMyImage']);
 
 
+    
+// Attendance Logs CRUD
+Route::get('/attendance-logs', [App\Http\Controllers\Log\AttendanceLogsController::class, 'index']);
+Route::post('/attendance-logs', [App\Http\Controllers\Log\AttendanceLogsController::class, 'store']);
+Route::get('/attendance-logs/{id}', [App\Http\Controllers\Log\AttendanceLogsController::class, 'show']);
+Route::put('/attendance-logs/{id}', [App\Http\Controllers\Log\AttendanceLogsController::class, 'update']);
+Route::delete('/attendance-logs/{id}', [App\Http\Controllers\Log\AttendanceLogsController::class, 'destroy']);
+
+
 
 
 });
@@ -90,6 +99,12 @@ Route::get('/investment-projects-original', function () {
         ->select('id', 'Ma_Vudautu', 'Ten_Vudautu')
         ->get();
 });
+
+
+
+
+
+
 
 Route::get('/document-deliveries/{id}/info', [DocumentDeliveryController::class, 'getDocumentInfo']);
 Route::get('/document-types', [DocumentTypeController::class, 'index']);
@@ -236,6 +251,15 @@ Route::get('/payment-requests-homgiong/{paymentCode}/history', [PhieuDNTTHomgion
 Route::post('/payment-requests-homgiong/{id}/notes', [PhieuDNTTHomgiongControllers::class, 'saveNoteHomgiong']);
 Route::put('/payment-requests-homgiong/{id}/basic-info', [PhieuDNTTHomgiongControllers::class, 'updateBasicInfoHomgiong']);
 Route::delete('/payment-requests-homgiong/{id}', [PhieuDNTTHomgiongControllers::class, 'destroyHomgiong']);
+
+
+
+ // Attendance Logs CRUD
+    Route::get('/attendance-logs', [App\Http\Controllers\Log\AttendanceLogsController::class, 'index']);
+    Route::post('/attendance-logs', [App\Http\Controllers\Log\AttendanceLogsController::class, 'store']);
+    Route::get('/attendance-logs/{id}', [App\Http\Controllers\Log\AttendanceLogsController::class, 'show']);
+    Route::put('/attendance-logs/{id}', [App\Http\Controllers\Log\AttendanceLogsController::class, 'update']);
+    Route::delete('/attendance-logs/{id}', [App\Http\Controllers\Log\AttendanceLogsController::class, 'destroy']);
 
 
 

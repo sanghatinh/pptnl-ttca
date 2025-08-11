@@ -27,54 +27,54 @@ class CloudinaryService
      * Upload รูปแบบ optimized พร้อม auto-transformation
      */
     public function uploadImageOptimized(UploadedFile $file, array $options = []): array
-    {
-        try {
-            if (!$this->validateFile($file)) {
-                return $this->errorResponse('Invalid file provided');
-            }
-
-            $uploadPreset = $options['upload_preset'] ?? 'ml_default';
-            $folder = $options['folder'] ?? 'users';
-            $quality = $options['quality'] ?? 'auto:good';
-            $format = $options['format'] ?? 'auto';
-
-            Log::info('Starting optimized Cloudinary upload', [
-                'original_name' => $file->getClientOriginalName(),
-                'size' => $file->getSize(),
-                'folder' => $folder
-            ]);
-
-            // ลอง unsigned upload ก่อน (เร็วกว่า)
-            $result = $this->uploadUnsigned($file, $uploadPreset, $quality, $format);
-            
-            // ถ้าไม่สำเร็จ ลอง signed upload
-            if (!$result['success']) {
-                Log::info('Unsigned upload failed, trying signed upload');
-                $result = $this->uploadSigned($file, $folder, $quality, $format);
-            }
-
-            return $result;
-
-        } catch (\Exception $e) {
-            Log::error('Optimized upload error: ' . $e->getMessage());
-            return $this->errorResponse($e->getMessage());
+{
+    try {
+        if (!$this->validateFile($file)) {
+            return $this->errorResponse('Invalid file provided');
         }
+
+        $uploadPreset = $options['upload_preset'] ?? 'ml_default';
+        $folder = $options['folder'] ?? 'users';
+        $quality = $options['quality'] ?? 'auto:good';
+        $format = $options['format'] ?? 'auto';
+
+        Log::info('Starting optimized Cloudinary upload', [
+            'original_name' => $file->getClientOriginalName(),
+            'size' => $file->getSize(),
+            'folder' => $folder
+        ]);
+
+        // ส่ง $folder เข้าไปด้วย
+        $result = $this->uploadUnsigned($file, $uploadPreset, $quality, $format, $folder);
+
+        if (!$result['success']) {
+            Log::info('Unsigned upload failed, trying signed upload');
+            $result = $this->uploadSigned($file, $folder, $quality, $format);
+        }
+
+        return $result;
+
+    } catch (\Exception $e) {
+        Log::error('Optimized upload error: ' . $e->getMessage());
+        return $this->errorResponse($e->getMessage());
     }
+}
 
     /**
      * Upload แบบ unsigned (เร็วกว่า)
      */
-    private function uploadUnsigned(UploadedFile $file, string $uploadPreset, string $quality, string $format): array
-    {
-        $postData = [
-            'file' => new \CURLFile($file->getPathname(), $file->getMimeType(), $file->getClientOriginalName()),
-            'upload_preset' => $uploadPreset,
-            'quality' => $quality,
-            'fetch_format' => $format
-        ];
+private function uploadUnsigned(UploadedFile $file, string $uploadPreset, string $quality, string $format, string $folder = 'users'): array
+{
+    $postData = [
+        'file' => new \CURLFile($file->getPathname(), $file->getMimeType(), $file->getClientOriginalName()),
+        'upload_preset' => $uploadPreset,
+        'quality' => $quality,
+        'fetch_format' => $format,
+        'folder' => $folder // ตอนนี้ $folder จะไม่ undefined
+    ];
 
-        return $this->executeCurlRequest($this->uploadUrl, $postData, 'unsigned');
-    }
+    return $this->executeCurlRequest($this->uploadUrl, $postData, 'unsigned');
+}
 
     /**
      * Upload แบบ signed

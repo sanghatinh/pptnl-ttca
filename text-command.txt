@@ -36,6 +36,7 @@ Git
     -Ctrl + Shift + W หากต้องการปิด VS Code ทั้งหมด
 
 Hosing
+- npm run build: ເປັນຄຳສັ່ງເພື່ອ ກຽມອັບໂຫຼດ ຂື້ນ Server 
     -ls  กวดดู List domain ใน Cplan
     -cd /domian
     #SQL

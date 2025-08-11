@@ -431,6 +431,14 @@ const routes = [
         },
     },
     {
+        name: "Attendancelogs",
+        path: "/Attendancelogs",
+        component: () => import("../Pages/Admin/Attendance.vue"),
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
         name: "Details_PhieudenghithanhtoanHomgiong",
         path: "/Details_PhieudenghithanhtoanHomgiong/:id",
         component: () =>

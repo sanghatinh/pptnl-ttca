@@ -473,6 +473,46 @@
                         </div>
                     </li>
                 </ul>
+                <!-- Quản lý chấm công -->
+                <ul>
+                    <li
+                        class="sidebar-dropdown"
+                        :class="{ active: activeDropdowns.attendance }"
+                        v-if="canViewComponent('Quản lý chấm công')"
+                    >
+                        <a
+                            href="#"
+                            @click.prevent="toggleDropdown('attendance')"
+                        >
+                            <i class="fa-solid fa-user-check"></i>
+                            <span class="menu-text">Quản lý chấm công</span>
+                        </a>
+                        <div
+                            class="sidebar-submenu"
+                            :style="{
+                                display: activeDropdowns.attendance
+                                    ? 'block'
+                                    : 'none',
+                            }"
+                        >
+                            <ul>
+                                <li v-if="canViewComponent('Checkin-Checkout')">
+                                    <router-link
+                                        to="/Attendancelogs"
+                                        :class="
+                                            $route.path === '/Attendancelogs'
+                                                ? 'current-page'
+                                                : ''
+                                        "
+                                        @click="closeSidebar"
+                                    >
+                                        <span>Checkin-Checkout</span>
+                                    </router-link>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
                 <div class="sidebar-version">Ver 1.6.6.9</div>
             </div>
             <!-- sidebar menu end -->
@@ -512,6 +552,7 @@ export default {
                 debt: false,
                 system: false,
                 calendar: false, // เพิ่ม calendar dropdown
+                attendance: false, // เพิ่ม attendance dropdown
             },
         };
     },
@@ -597,6 +638,11 @@ export default {
                 path.includes("/PlanNopHoso")
             ) {
                 this.activeDropdowns.calendar = true;
+            } else if (
+                path.includes("/Attendancelogs") ||
+                path.includes("/Details_Attendancelogs")
+            ) {
+                this.activeDropdowns.attendance = true;
             }
         },
 
