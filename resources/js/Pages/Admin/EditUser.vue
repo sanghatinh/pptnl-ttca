@@ -318,6 +318,37 @@
                                     </small>
                                 </div>
 
+                                <!-- Mã Nhân viên TTCA -->
+                                <div class="space-y-2">
+                                    <label
+                                        class="block text-sm font-medium text-gray-700"
+                                    >
+                                        <svg
+                                            class="inline w-4 h-4 mr-2"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"
+                                            />
+                                        </svg>
+                                        Mã Nhân viên TTCA
+                                    </label>
+                                    <input
+                                        v-model="user.manvTTCA"
+                                        type="text"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        placeholder="Nhập mã nhân viên TTCA"
+                                    />
+                                    <small class="text-gray-500 text-sm">
+                                        Nhập mã nhân viên TTCA nếu có
+                                    </small>
+                                </div>
+
                                 <!-- Chức vụ -->
                                 <div class="space-y-2">
                                     <label
@@ -715,6 +746,7 @@ export default {
                 username: "",
                 fullName: "",
                 maNV: "",
+                manvTTCA: "", // เพิ่มตรงนี้
                 chucVu: "",
                 tram: "",
                 email: "",
@@ -751,6 +783,10 @@ export default {
             if (!publicId) return null;
             // ถ้าเป็น URL อยู่แล้ว ให้ return ตรงๆ
             if (publicId.includes("http")) return publicId;
+            // ถ้าไม่ต้องการ transformation ให้ใช้ URL ธรรมดา
+            if (Object.keys(transformation).length === 0) {
+                return `https://res.cloudinary.com/dhtgcccax/image/upload/${publicId}`;
+            }
             // สร้าง transformation string
             const defaultTransform = {
                 width: 400,
@@ -772,7 +808,7 @@ export default {
                     return `${keyMap[key] || key}_${value}`;
                 })
                 .join(",");
-            const cloudName = "dhtgcccax"; // เปลี่ยนตาม config จริง
+            const cloudName = "dhtgcccax";
             return `https://res.cloudinary.com/${cloudName}/image/upload/${transformString}/${publicId}`;
         },
         // Add new methods for modal handling
@@ -831,6 +867,7 @@ export default {
                     username: userData.username,
                     fullName: userData.full_name,
                     maNV: userData.ma_nhan_vien,
+                    manvTTCA: userData.manv_ttca || "", // เพิ่มตรงนี้
                     chucVu: userData.position,
                     tram: userData.station,
                     email: userData.email,
@@ -1277,6 +1314,7 @@ export default {
                     username: this.user.username,
                     full_name: this.user.fullName,
                     ma_nhan_vien: this.user.maNV || "",
+                    manv_ttca: this.user.manvTTCA || "", // เพิ่มตรงนี้
                     position: this.user.chucVu,
                     station: this.user.tram,
                     email: this.user.email || "",

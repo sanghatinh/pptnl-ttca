@@ -156,6 +156,7 @@ public function addnewuser(Request $request)
         'role_id'    => 'required|exists:roles,id',
         'status'     => 'required|string',
         'ma_nhan_vien' => 'nullable|string',
+        'manv_ttca'  => 'nullable|string',
         'image'      => 'nullable|string' // เปลี่ยนเป็น string สำหรับ public_id
     ]);
 
@@ -172,6 +173,7 @@ public function addnewuser(Request $request)
         $user->station = $request->station;
         $user->status = $request->status;
         $user->ma_nhan_vien = $request->ma_nhan_vien;
+         $user->manv_ttca = $request->manv_ttca;
         $user->role_id = $request->role_id;
 
         // ถ้ามี image public_id ให้บันทึก
@@ -205,7 +207,8 @@ public function addnewuser(Request $request)
                 'station' => $user->station,
                 'status' => $user->status,
                 'role_id' => $user->role_id,
-                'ma_nhan_vien' => $user->ma_nhan_vien
+                'ma_nhan_vien' => $user->ma_nhan_vien,
+                'manv_ttca' => $user->manv_ttca
             ]
         ], 201);
 
@@ -332,6 +335,7 @@ public function edituser($id)
             'role_id' => $user->role_id,
             'status' => $user->status,
             'ma_nhan_vien' => $user->ma_nhan_vien,
+             'manv_ttca' => $user->manv_ttca, // เพิ่มตรงนี้
             'image' => $imageUrl,
             'image_public_id' => $user->image // เก็บ public_id ไว้สำหรับการลบ
         ];
@@ -356,6 +360,7 @@ public function updateuser(Request $request, $id)
         'role_id'    => 'required|exists:roles,id',
         'status'     => 'required|in:active,inactive',
         'ma_nhan_vien' => 'nullable|string',
+        'manv_ttca'  => 'nullable|string',
         'new_password' => 'nullable|string|min:6',
         'confirm_password' => 'nullable|string|same:new_password|required_with:new_password',
         'image' => 'nullable|string', // สำหรับ public_id จาก Cloudinary
@@ -385,6 +390,7 @@ public function updateuser(Request $request, $id)
         $user->role_id    = $request->role_id;
         $user->status     = $request->status;
         $user->ma_nhan_vien = $request->ma_nhan_vien;
+        $user->manv_ttca  = $request->manv_ttca;
 
         // อัปเดตรูปภาพ (ถ้ามี)
         if ($request->filled('image')) {
@@ -424,7 +430,8 @@ public function updateuser(Request $request, $id)
                 'station' => $user->station,
                 'status' => $user->status,
                 'role_id' => $user->role_id,
-                'ma_nhan_vien' => $user->ma_nhan_vien
+                'ma_nhan_vien' => $user->ma_nhan_vien,
+                'manv_ttca' => $user->manv_ttca
             ]
         ], 200);
 

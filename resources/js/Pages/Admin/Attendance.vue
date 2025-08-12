@@ -106,38 +106,64 @@
                                         <th>
                                             Ngày
                                             <button
-                                                @click="toggleFilter('date')"
                                                 class="filter-btn"
+                                                @click="toggleFilter('date')"
                                             >
                                                 <i class="fas fa-filter"></i>
                                             </button>
                                             <div
                                                 v-if="activeFilter === 'date'"
                                                 class="absolute mt-1 bg-white p-2 rounded shadow-lg z-10"
+                                                style="min-width: 320px"
                                             >
-                                                <input
-                                                    type="date"
-                                                    v-model="columnFilters.date"
-                                                    class="form-control form-control-sm mb-2"
-                                                />
-                                                <div
-                                                    class="d-flex justify-content-between mt-2"
-                                                >
-                                                    <button
-                                                        @click="
-                                                            resetFilter('date')
-                                                        "
-                                                        class="btn btn-sm btn-outline-secondary"
+                                                <div class="mb-2">
+                                                    <label
+                                                        class="form-label mb-1"
+                                                        >Từ ngày</label
                                                     >
-                                                        Reset
+                                                    <input
+                                                        type="date"
+                                                        v-model="
+                                                            columnFilters.start_date
+                                                        "
+                                                        class="form-control"
+                                                    />
+                                                </div>
+                                                <div class="mb-2">
+                                                    <label
+                                                        class="form-label mb-1"
+                                                        >Đến ngày</label
+                                                    >
+                                                    <input
+                                                        type="date"
+                                                        v-model="
+                                                            columnFilters.end_date
+                                                        "
+                                                        class="form-control"
+                                                    />
+                                                </div>
+                                                <div class="d-flex gap-2 mt-2">
+                                                    <button
+                                                        class="btn btn-sm btn-success"
+                                                        @click="
+                                                            applyDateRangeFilter
+                                                        "
+                                                    >
+                                                        <i
+                                                            class="fas fa-check"
+                                                        ></i>
+                                                        Áp dụng
                                                     </button>
                                                     <button
+                                                        class="btn btn-sm btn-secondary"
                                                         @click="
-                                                            applyFilter('date')
+                                                            resetDateRangeFilter
                                                         "
-                                                        class="btn btn-sm btn-success"
                                                     >
-                                                        Apply
+                                                        <i
+                                                            class="fas fa-redo-alt"
+                                                        ></i>
+                                                        Reset
                                                     </button>
                                                 </div>
                                             </div>
@@ -688,10 +714,16 @@
             <div class="modal-body">
                 <!-- Date Filter -->
                 <div class="filter-section">
-                    <label class="filter-label">Ngày</label>
+                    <label class="filter-label">Từ ngày</label>
                     <input
                         type="date"
-                        v-model="columnFilters.date"
+                        v-model="columnFilters.start_date"
+                        class="form-control mb-2"
+                    />
+                    <label class="filter-label">Đến ngày</label>
+                    <input
+                        type="date"
+                        v-model="columnFilters.end_date"
                         class="form-control"
                     />
                 </div>
@@ -1172,6 +1204,8 @@ export default {
         const activeFilter = ref(null);
         const columnFilters = ref({
             date: "",
+            start_date: "",
+            end_date: "",
             full_name: "",
         });
         const selectedFilterValues = ref({
@@ -1321,7 +1355,7 @@ export default {
                     icon: "error",
                     text:
                         error.response?.data?.message ||
-                        "ไม่สามารถ export ข้อมูลได้",
+                        "Không thể export dữ liệu",
                 });
             } finally {
                 isLoading.value = false;
@@ -1393,7 +1427,7 @@ export default {
                     title: "Export Error",
                     text:
                         error.response?.data?.message ||
-                        "ไม่สามารถ export ข้อมูลได้",
+                        "Không thể export dữ liệu",
                 });
             } finally {
                 isLoading.value = false;
@@ -1840,6 +1874,22 @@ export default {
             fetchLogs({ page: 1 });
         };
 
+        const applyDateRangeFilter = () => {
+            fetchLogs({
+                page: 1,
+                start_date: columnFilters.value.start_date,
+                end_date: columnFilters.value.end_date,
+            });
+            activeFilter.value = null;
+        };
+
+        const resetDateRangeFilter = () => {
+            columnFilters.value.start_date = "";
+            columnFilters.value.end_date = "";
+            fetchLogs({ page: 1, start_date: "", end_date: "" });
+            activeFilter.value = null;
+        };
+
         const resetAllFilters = () => {
             // Reset UI state
             search.value = "";
@@ -1857,6 +1907,8 @@ export default {
                 page: 1,
                 search: "",
                 date: "",
+                start_date: "",
+                end_date: "",
                 full_name: "",
                 station: [],
                 position: [],
@@ -1883,7 +1935,8 @@ export default {
             // อัพเดตและเรียก API ใหม่
             fetchLogs({
                 page: 1,
-                date: columnFilters.value.date || "",
+                start_date: columnFilters.value.start_date || "",
+                end_date: columnFilters.value.end_date || "",
                 station: [...selectedFilterValues.value.station],
                 position: [...selectedFilterValues.value.position],
             });
@@ -2019,6 +2072,8 @@ export default {
             initPerfectScrollbar,
             updateScrollbar,
             handleResize,
+            applyDateRangeFilter,
+            resetDateRangeFilter,
         };
     },
 };
