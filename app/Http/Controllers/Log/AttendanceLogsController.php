@@ -29,13 +29,31 @@ class AttendanceLogsController extends Controller
         }
 
         // Filter by user position
-        $user = auth()->user();
+       // Filter by user position
+       $user = auth()->user();
+        $position = $user->userPosition ?? $user->position ?? null;
+        \Log::info('AttendanceLogsController@index - Auth user', [
+            'id' => $user->id ?? null,
+            'position' => $position,
+        ]);
         if ($user) {
-            $position = $user->userPosition ?? null;
-            if (in_array($position, ['Station_Chief', 'Farm_worker'])) {
-                $query->where('users_id', $user->id);
+            switch ($position) {
+                case 'department_head':
+                case 'office_workers':
+                    break;
+                case 'Station_Chief':
+                    if ($user->station) {
+                        $query->whereHas('user', function ($q) use ($user) {
+                            $q->where('station', $user->station);
+                        });
+                    }
+                    break;
+                case 'Farm_worker':
+                    $query->where('users_id', $user->id);
+                    break;
+                default:
+                    $query->whereRaw('1=0');
             }
-            // department_head และ office_workers เห็นทั้งหมด ไม่ต้องกรอง
         }
 
         $logs = $query->with('user')->orderBy('date', 'desc')->paginate(20);
@@ -43,11 +61,11 @@ class AttendanceLogsController extends Controller
         // เพิ่มการคำนวณ Status ตามเงื่อนไขที่ระบุ
         $logs->getCollection()->transform(function ($log) {
             if ($log->checkin_morning && $log->checkin_evening) {
-                $log->status = "Đã làm cả ngày";
+                $log->status = "full_day";
             } elseif ($log->checkin_morning) {
-                $log->status = "Đã làm buổi sáng";
+                $log->status = "morning_only";
             } elseif ($log->checkin_evening) {
-                $log->status = "Đã làm buổi chiều";
+                $log->status = "evening_only";
             } else {
                 $log->status = null;
             }
@@ -114,6 +132,15 @@ class AttendanceLogsController extends Controller
         'lat_morning', 'lng_morning', 'lat_evening', 'lng_evening'
     ]);
 
+     // ตรวจสอบว่า date ต้องเป็นวันนี้เท่านั้น
+    $today = now()->toDateString();
+    if ($data['date'] !== $today) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Bạn chỉ có thể điểm danh cho ngày hôm nay'
+        ], 422);
+    }
+
     // Ensure users_id matches authenticated user (for security)
     if ($data['users_id'] != $user->id) {
         \Log::warning('AttendanceLogsController@store - User ID mismatch', [
@@ -122,6 +149,17 @@ class AttendanceLogsController extends Controller
         ]);
         // You might want to allow this for admins, but for now, enforce same user
         $data['users_id'] = $user->id;
+    }
+
+     // ตรวจสอบว่ามี log วันนี้ของ user นี้แล้วหรือยัง
+    $exists = AttendanceLogs::where('users_id', $user->id)
+        ->where('date', $data['date'])
+        ->exists();
+    if ($exists) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Bạn đã điểm danh hôm nay'
+        ], 409);
     }
 
     $cloudinaryService = new CloudinaryService();
@@ -267,82 +305,90 @@ class AttendanceLogsController extends Controller
     /**
      * แก้ไขลงเวลา
      */
-    public function update(Request $request, $id)
-    {
-        $attendance = AttendanceLogs::find($id);
-        if (!$attendance) {
-            return response()->json(['success' => false, 'message' => 'Not found'], 404);
-        }
-
-        $validator = Validator::make($request->all(), AttendanceLogs::rules($id));
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $data = $request->only([
-            'note_morning', 'note_evening',
-            'lat_morning', 'lng_morning', 'lat_evening', 'lng_evening'
-        ]);
-
-        $cloudinaryService = new CloudinaryService();
-
-        // อัปเดตรูปเช้า
-        if ($request->hasFile('photo_morning')) {
-            $result = $cloudinaryService->uploadImageOptimized(
-                $request->file('photo_morning'),
-                [
-                    'folder' => 'attendance_logs',
-                    'quality' => 'auto:good',
-                    'format' => 'auto',
-                    'transformation' => [
-                        'width' => 1200,
-                        'height' => 1200,
-                        'crop' => 'limit',
-                        'quality' => 'auto:good',
-                        'fetch_format' => 'auto'
-                    ],
-                    'max_bytes' => 300 * 1024
-                ]
-            );
-            if ($result['success']) {
-                $data['photo_morning'] = $result['public_id'];
-                $data['checkin_morning'] = now();
-            } else {
-                return response()->json(['success' => false, 'message' => $result['message'] ?? 'Upload failed'], 500);
-            }
-        }
-
-        // อัปเดตรูปเย็น
-        if ($request->hasFile('photo_evening')) {
-            $result = $cloudinaryService->uploadImageOptimized(
-                $request->file('photo_evening'),
-                [
-                    'folder' => 'attendance_logs',
-                    'quality' => 'auto:good',
-                    'format' => 'auto',
-                    'transformation' => [
-                        'width' => 1200,
-                        'height' => 1200,
-                        'crop' => 'limit',
-                        'quality' => 'auto:good',
-                        'fetch_format' => 'auto'
-                    ],
-                    'max_bytes' => 300 * 1024
-                ]
-            );
-            if ($result['success']) {
-                $data['photo_evening'] = $result['public_id'];
-                $data['checkin_evening'] = now();
-            } else {
-                return response()->json(['success' => false, 'message' => $result['message'] ?? 'Upload failed'], 500);
-            }
-        }
-
-        $attendance->update($data);
-
-        return response()->json(['success' => true, 'data' => $attendance]);
+   public function update(Request $request, $id)
+{
+    $attendance = AttendanceLogs::find($id);
+    if (!$attendance) {
+        return response()->json(['success' => false, 'message' => 'Not found'], 404);
     }
 
+    $validator = Validator::make($request->all(), array_merge(
+        AttendanceLogs::rules($id),
+        [
+            'date' => 'required|date',
+            'users_id' => 'required|integer|exists:users,id',
+            'photo_morning' => 'nullable|image|max:5120', // เพิ่ม validation รูปเช้า
+            'photo_evening' => 'nullable|image|max:5120', // เพิ่ม validation รูปเย็น
+        ]
+    ));
+    if ($validator->fails()) {
+        return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+    }
+
+    $data = $request->only([
+        'users_id',
+        'date','note_morning', 'note_evening',
+        'lat_morning', 'lng_morning', 'lat_evening', 'lng_evening'
+    ]);
+
+    $cloudinaryService = new CloudinaryService();
+
+    // อัปเดตรูปเช้า
+    if ($request->hasFile('photo_morning')) {
+        $result = $cloudinaryService->uploadImageOptimized(
+            $request->file('photo_morning'),
+            [
+                'folder' => 'attendance_logs',
+                'quality' => 'auto:good',
+                'format' => 'auto',
+                'transformation' => [
+                    'width' => 1200,
+                    'height' => 1200,
+                    'crop' => 'limit',
+                    'quality' => 'auto:good',
+                    'fetch_format' => 'auto'
+                ],
+                'max_bytes' => 300 * 1024
+            ]
+        );
+        if ($result['success']) {
+            $data['photo_morning'] = $result['public_id'];
+            $data['checkin_morning'] = now();
+        } else {
+            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Upload failed'], 500);
+        }
+    }
+
+    // อัปเดตรูปเย็น
+    if ($request->hasFile('photo_evening')) {
+        $result = $cloudinaryService->uploadImageOptimized(
+            $request->file('photo_evening'),
+            [
+                'folder' => 'attendance_logs',
+                'quality' => 'auto:good',
+                'format' => 'auto',
+                'transformation' => [
+                    'width' => 1200,
+                    'height' => 1200,
+                    'crop' => 'limit',
+                    'quality' => 'auto:good',
+                    'fetch_format' => 'auto'
+                ],
+                'max_bytes' => 300 * 1024
+            ]
+        );
+        if ($result['success']) {
+            $data['photo_evening'] = $result['public_id'];
+            $data['checkin_evening'] = now();
+        } else {
+            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Upload failed'], 500);
+        }
+    }
+
+    $attendance->update($data);
+
+    return response()->json(['success' => true, 'data' => $attendance]);
+}
     /**
      * ลบลงเวลา
      */

@@ -134,6 +134,40 @@
                             <!-- Camera Section -->
                             <div class="space-y-4">
                                 <div class="relative">
+                                    <!-- เพิ่มส่วนนี้สำหรับ desktop -->
+                                    <div
+                                        v-if="isDesktop && morningVideoStream"
+                                        class="mb-4 flex flex-col items-center"
+                                    >
+                                        <video
+                                            ref="morningVideoRef"
+                                            autoplay
+                                            playsinline
+                                            class="w-32 h-32 rounded-xl border-4 border-white shadow-lg"
+                                        ></video>
+                                        <div class="flex gap-2 mt-2">
+                                            <button
+                                                type="button"
+                                                @click.stop="
+                                                    captureDesktopPhoto(
+                                                        'morning'
+                                                    )
+                                                "
+                                                class="px-4 py-2 bg-amber-600 text-white rounded"
+                                            >
+                                                Chụp hình buổi sáng
+                                            </button>
+                                            <button
+                                                type="button"
+                                                @click.stop="
+                                                    stopDesktopCamera('morning')
+                                                "
+                                                class="px-4 py-2 bg-gray-400 text-white rounded"
+                                            >
+                                                Đóng camera
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div
                                         class="border-2 border-dashed border-amber-300 rounded-xl p-8 text-center bg-white hover:bg-amber-50 transition-colors duration-200 cursor-pointer"
                                         @click="triggerCamera('morning')"
@@ -200,7 +234,7 @@
                                             </button>
                                         </div>
                                     </div>
-                                    <input
+                                    <!-- <input
                                         ref="morningInput"
                                         type="file"
                                         accept="image/*"
@@ -209,7 +243,7 @@
                                             onFileChange('morning', $event)
                                         "
                                         class="hidden"
-                                    />
+                                    /> -->
                                 </div>
 
                                 <!-- Location Fields -->
@@ -301,7 +335,7 @@
                                 </div>
                                 <div>
                                     <h3 class="text-lg font-bold text-gray-800">
-                                        CheckIn-Buổi Chiều
+                                        CheckOut-Buổi Chiều
                                     </h3>
                                     <p class="text-sm text-gray-600">
                                         Chụp ảnh khi kết thúc làm việc
@@ -312,6 +346,42 @@
                             <!-- Camera Section -->
                             <div class="space-y-4">
                                 <div class="relative">
+                                    <!-- Desktop camera stream -->
+                                    <div
+                                        v-if="isDesktop && eveningVideoStream"
+                                        class="mb-4"
+                                    >
+                                        <video
+                                            ref="eveningVideoRef"
+                                            autoplay
+                                            playsinline
+                                            class="w-32 h-32 mx-auto rounded-xl border-4 border-white shadow-lg"
+                                        ></video>
+                                        <div
+                                            class="flex justify-center gap-2 mt-2"
+                                        >
+                                            <button
+                                                type="button"
+                                                @click.stop="
+                                                    captureDesktopPhoto(
+                                                        'evening'
+                                                    )
+                                                "
+                                                class="px-4 py-2 bg-indigo-600 text-white rounded"
+                                            >
+                                                Chụp hình buổi chiều
+                                            </button>
+                                            <button
+                                                type="button"
+                                                @click.stop="
+                                                    stopDesktopCamera('evening')
+                                                "
+                                                class="px-4 py-2 bg-gray-400 text-white rounded"
+                                            >
+                                                Đóng camera
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div
                                         class="border-2 border-dashed border-indigo-300 rounded-xl p-8 text-center bg-white hover:bg-indigo-50 transition-colors duration-200 cursor-pointer"
                                         @click="triggerCamera('evening')"
@@ -378,7 +448,8 @@
                                             </button>
                                         </div>
                                     </div>
-                                    <input
+
+                                    <!-- <input
                                         ref="eveningInput"
                                         type="file"
                                         accept="image/*"
@@ -387,7 +458,7 @@
                                             onFileChange('evening', $event)
                                         "
                                         class="hidden"
-                                    />
+                                    /> -->
                                 </div>
 
                                 <!-- Location Fields -->
@@ -516,13 +587,15 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, onUnmounted, nextTick } from "vue";
 import { useStore } from "../Store/Auth";
 
 const props = defineProps({
     log: Object,
 });
 const emit = defineEmits(["close", "saved"]);
+const eveningVideoStream = ref(null);
+const eveningVideoRef = ref(null);
 
 const store = useStore();
 
@@ -551,13 +624,21 @@ const fileEvening = ref(null);
 const submitting = ref(false);
 const morningInput = ref(null);
 const eveningInput = ref(null);
+const isDesktop = ref(window.innerWidth > 1024);
+const morningVideoStream = ref(null);
+const morningVideoRef = ref(null);
 
 watch(
     () => props.log,
     (log) => {
         if (log) {
+            // แปลงวันที่ให้เป็น YYYY-MM-DD
+            let dateStr = log.date;
+            if (dateStr && dateStr.length > 10) {
+                dateStr = dateStr.slice(0, 10);
+            }
             form.value = {
-                date: log.date,
+                date: dateStr || "",
                 lat_morning: log.lat_morning || "",
                 lng_morning: log.lng_morning || "",
                 note_morning: log.note_morning || "",
@@ -622,17 +703,92 @@ function getLocationAndSet(type) {
 }
 
 function triggerCamera(type) {
-    // Check if we're on mobile (has camera access)
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    if (isDesktop.value) {
+        // Desktop: open camera stream
+        if (type === "morning") {
+            openDesktopCamera("morning");
+        } else {
+            openDesktopCamera("evening");
+        }
+    } else {
+        // Mobile: use file input
         if (type === "morning") {
             morningInput.value?.click();
         } else {
             eveningInput.value?.click();
         }
-    } else {
-        alert("กล้องถ่ายรูปไม่พร้อมใช้งาน กรุณาใช้งานผ่านมือถือ");
     }
 }
+
+async function openDesktopCamera(type) {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+        });
+        if (type === "morning") {
+            morningVideoStream.value = stream;
+            nextTick(() => {
+                if (morningVideoRef.value) {
+                    morningVideoRef.value.srcObject = stream;
+                }
+            });
+        } else {
+            eveningVideoStream.value = stream;
+            nextTick(() => {
+                if (eveningVideoRef.value) {
+                    eveningVideoRef.value.srcObject = stream;
+                }
+            });
+        }
+    } catch (err) {
+        alert("Không thể mở camera: " + err.message);
+    }
+}
+
+function captureDesktopPhoto(type) {
+    let videoEl;
+    if (type === "morning") {
+        videoEl = morningVideoRef.value;
+    } else {
+        videoEl = eveningVideoRef.value;
+    }
+    if (!videoEl) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = videoEl.videoWidth;
+    canvas.height = videoEl.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+
+    if (type === "morning") {
+        previewMorning.value = dataUrl;
+        fileMorning.value = dataUrl;
+        stopDesktopCamera("morning");
+        getLocationAndSet("morning");
+    } else {
+        previewEvening.value = dataUrl;
+        fileEvening.value = dataUrl;
+        stopDesktopCamera("evening");
+        getLocationAndSet("evening");
+    }
+}
+
+function stopDesktopCamera(type) {
+    if (type === "morning" && morningVideoStream.value) {
+        morningVideoStream.value.getTracks().forEach((track) => track.stop());
+        morningVideoStream.value = null;
+    }
+    if (type === "evening" && eveningVideoStream.value) {
+        eveningVideoStream.value.getTracks().forEach((track) => track.stop());
+        eveningVideoStream.value = null;
+    }
+}
+
+onUnmounted(() => {
+    stopDesktopCamera("morning");
+    stopDesktopCamera("evening");
+});
 
 function clearPhoto(type) {
     if (type === "morning") {
@@ -733,14 +889,35 @@ async function onFileChange(type, event) {
 }
 
 function hasValidData() {
-    // At least one photo should be taken (either morning or evening)
+    // ถ้ามีรูปเช้า ต้องมี lat/lng เช้า
+    if (fileMorning.value || previewMorning.value) {
+        if (!form.value.lat_morning || !form.value.lng_morning) return false;
+    }
+    // ถ้ามีรูปเย็น ต้องมี lat/lng เย็น
+    if (fileEvening.value || previewEvening.value) {
+        if (!form.value.lat_evening || !form.value.lng_evening) return false;
+    }
+    // ถ้าแก้ไข log เดิม ให้ผ่าน
+    if (props.log) return true;
+    // ต้องมีรูปอย่างน้อย 1 รูป
     return (
         fileMorning.value ||
         previewMorning.value ||
         fileEvening.value ||
-        previewEvening.value ||
-        props.log
-    ); // Allow if editing existing log
+        previewEvening.value
+    );
+}
+
+function dataURLtoFile(dataurl, filename) {
+    const arr = dataurl.split(",");
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
 }
 
 async function submitAttendance() {
@@ -748,33 +925,54 @@ async function submitAttendance() {
     try {
         const formData = new FormData();
 
-        // Add all form fields
-        Object.entries(form.value).forEach(([key, val]) => {
-            if (val) formData.append(key, val);
-        });
-
-        // Add user ID
+        // Always set users_id and date explicitly
         const userId = getUserIdFromLocalStorage();
-        if (userId) {
-            formData.append("users_id", userId);
-        }
+        formData.append("users_id", userId);
+        formData.append("date", form.value.date);
+
+        [
+            "lat_morning",
+            "lng_morning",
+            "note_morning",
+            "lat_evening",
+            "lng_evening",
+            "note_evening",
+        ].forEach((key) => {
+            if (form.value[key] !== undefined && form.value[key] !== null)
+                formData.append(key, form.value[key]);
+        });
 
         // Add photos if selected
         if (fileMorning.value) {
-            formData.append("photo_morning", fileMorning.value);
+            if (typeof fileMorning.value === "string") {
+                // base64 string -> File
+                formData.append(
+                    "photo_morning",
+                    dataURLtoFile(fileMorning.value, "morning.jpg")
+                );
+            } else {
+                formData.append("photo_morning", fileMorning.value);
+            }
         }
         if (fileEvening.value) {
-            formData.append("photo_evening", fileEvening.value);
+            if (typeof fileEvening.value === "string") {
+                // base64 string -> File
+                formData.append(
+                    "photo_evening",
+                    dataURLtoFile(fileEvening.value, "evening.jpg")
+                );
+            } else {
+                formData.append("photo_evening", fileEvening.value);
+            }
         }
-
         let url = "/api/attendance-logs";
         let method = "POST";
         if (props.log) {
             url = `/api/attendance-logs/${props.log.id}`;
-            method = "PUT";
+            method = "POST"; // เปลี่ยนจาก PUT เป็น POST
+            formData.append("_method", "PUT"); // Laravel จะเข้าใจว่าเป็น PUT
         }
 
-        // Get proper authentication headers
         const token = localStorage.getItem("web_token") || store.getToken;
 
         const response = await fetch(url, {
@@ -782,22 +980,24 @@ async function submitAttendance() {
             body: formData,
             headers: {
                 Authorization: `Bearer ${token}`,
-                // Don't set Content-Type for FormData, let browser set it
+                // ไม่ต้องใส่ Content-Type ถ้าใช้ FormData
             },
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || "Request failed");
+            throw new Error(
+                errorData.message ||
+                    (errorData.errors
+                        ? Object.values(errorData.errors).join(", ")
+                        : "Request failed")
+            );
         }
 
         const result = await response.json();
-        console.log("Attendance saved:", result);
-
         emit("saved");
         emit("close");
     } catch (error) {
-        console.error("Error saving attendance:", error);
         alert("เกิดข้อผิดพลาด: " + error.message);
     } finally {
         submitting.value = false;

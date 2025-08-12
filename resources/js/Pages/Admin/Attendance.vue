@@ -1045,28 +1045,71 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="map-modal-body">
-                <div id="map" style="height: 400px; width: 100%"></div>
-                <div class="location-info mt-3">
-                    <div
-                        v-if="
-                            selectedLogForMap?.lat_morning &&
-                            selectedLogForMap?.lng_morning
-                        "
-                    >
-                        <strong>Vị trí buổi sáng:</strong>
-                        {{ selectedLogForMap.lat_morning }},
-                        {{ selectedLogForMap.lng_morning }}
-                    </div>
-                    <div
-                        v-if="
-                            selectedLogForMap?.lat_evening &&
-                            selectedLogForMap?.lng_evening
-                        "
-                    >
-                        <strong>Vị trí buổi chiều:</strong>
-                        {{ selectedLogForMap.lat_evening }},
-                        {{ selectedLogForMap.lng_evening }}
+            <div
+                class="map-modal-body"
+                style="overflow-y: auto; max-height: 60vh"
+            >
+                <div id="map" style="height: 400px; width: 100%">
+                    <div class="location-info mt-3">
+                        <div
+                            v-if="
+                                selectedLogForMap?.lat_morning &&
+                                selectedLogForMap?.lng_morning
+                            "
+                        >
+                            <strong>Vị trí buổi sáng:</strong>
+                            {{ selectedLogForMap.lat_morning }},
+                            {{ selectedLogForMap.lng_morning }}
+                            <br />
+                            <iframe
+                                :src="`https://maps.google.com/maps?q=${selectedLogForMap.lat_morning},${selectedLogForMap.lng_morning}&z=16&output=embed`"
+                                width="100%"
+                                height="200"
+                                style="
+                                    border: 0;
+                                    border-radius: 12px;
+                                    margin-top: 8px;
+                                "
+                                allowfullscreen=""
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"
+                            ></iframe>
+                        </div>
+                        <div
+                            v-if="
+                                selectedLogForMap?.lat_evening &&
+                                selectedLogForMap?.lng_evening
+                            "
+                            style="margin-top: 16px"
+                        >
+                            <strong>Vị trí buổi chiều:</strong>
+                            {{ selectedLogForMap.lat_evening }},
+                            {{ selectedLogForMap.lng_evening }}
+                            <br />
+                            <iframe
+                                :src="`https://maps.google.com/maps?q=${selectedLogForMap.lat_evening},${selectedLogForMap.lng_evening}&z=16&output=embed`"
+                                width="100%"
+                                height="200"
+                                style="
+                                    border: 0;
+                                    border-radius: 12px;
+                                    margin-top: 8px;
+                                "
+                                allowfullscreen=""
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"
+                            ></iframe>
+                        </div>
+                        <div style="margin-top: 16px">
+                            <a
+                                href="https://www.google.com/maps/d/u/0/viewer?mid=1NRGygQgjZM_KifkMem99dg2VglWXmY0&ll=14.760469708692652,106.86124898895572&z=12"
+                                target="_blank"
+                                class="btn btn-sm btn-secondary mt-2"
+                            >
+                                <i class="fas fa-map"></i> Xem tất cả trên My
+                                Maps
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
