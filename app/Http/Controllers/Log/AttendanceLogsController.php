@@ -8,15 +8,95 @@ use App\Models\Log\AttendanceLogs;
 use App\Services\CloudinaryService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Support\Facades\Response;
 
 class AttendanceLogsController extends Controller
 {
     /**
      * แสดงรายการลงเวลา
      */
-     public function index(Request $request)
+    public function index(Request $request)
     {
         $query = AttendanceLogs::query();
+
+        // Global search
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('date', 'like', "%{$searchTerm}%")
+                  ->orWhere('note_morning', 'like', "%{$searchTerm}%")
+                  ->orWhere('note_evening', 'like', "%{$searchTerm}%")
+                  ->orWhereHas('user', function ($userQuery) use ($searchTerm) {
+                      $userQuery->where('full_name', 'like', "%{$searchTerm}%")
+                               ->orWhere('username', 'like', "%{$searchTerm}%");
+                  });
+            });
+        }
+
+        // Date filter
+        if ($request->filled('date')) {
+            $query->where('date', $request->date);
+        }
+
+        // Full name filter
+        if ($request->filled('full_name')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('full_name', 'like', "%{$request->full_name}%");
+            });
+        }
+
+        // Station filter
+        if ($request->filled('station') && is_array($request->station) && count($request->station) > 0) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->whereIn('station', $request->station);
+            });
+        }
+
+        // Position filter
+        if ($request->filled('position') && is_array($request->position) && count($request->position) > 0) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->whereIn('position', $request->position);
+            });
+        }
+
+        // Status filter
+        if ($request->filled('status') && is_array($request->status) && count($request->status) > 0) {
+            $statusConditions = [];
+            foreach ($request->status as $status) {
+                switch ($status) {
+                    case 'full_day':
+                        $statusConditions[] = function ($q) {
+                            $q->whereNotNull('checkin_morning')->whereNotNull('checkin_evening');
+                        };
+                        break;
+                    case 'morning_only':
+                        $statusConditions[] = function ($q) {
+                            $q->whereNotNull('checkin_morning')->whereNull('checkin_evening');
+                        };
+                        break;
+                    case 'evening_only':
+                        $statusConditions[] = function ($q) {
+                            $q->whereNull('checkin_morning')->whereNotNull('checkin_evening');
+                        };
+                        break;
+                    case 'no_checkin':
+                        $statusConditions[] = function ($q) {
+                            $q->whereNull('checkin_morning')->whereNull('checkin_evening');
+                        };
+                        break;
+                }
+            }
+
+            if (!empty($statusConditions)) {
+                $query->where(function ($q) use ($statusConditions) {
+                    foreach ($statusConditions as $condition) {
+                        $q->orWhere($condition);
+                    }
+                });
+            }
+        }
 
         // Filter by user
         if ($request->has('user_id')) {
@@ -29,8 +109,7 @@ class AttendanceLogsController extends Controller
         }
 
         // Filter by user position
-       // Filter by user position
-       $user = auth()->user();
+        $user = auth()->user();
         $position = $user->userPosition ?? $user->position ?? null;
         \Log::info('AttendanceLogsController@index - Auth user', [
             'id' => $user->id ?? null,
@@ -56,7 +135,13 @@ class AttendanceLogsController extends Controller
             }
         }
 
-        $logs = $query->with('user')->orderBy('date', 'desc')->paginate(20);
+        // Determine per_page
+        $perPage = $request->get('per_page', 20);
+        if ($perPage == -1) {
+            $perPage = 99999; // Get all records for export
+        }
+
+        $logs = $query->with('user')->orderBy('date', 'desc')->paginate($perPage);
 
         // เพิ่มการคำนวณ Status ตามเงื่อนไขที่ระบุ
         $logs->getCollection()->transform(function ($log) {
@@ -67,7 +152,7 @@ class AttendanceLogsController extends Controller
             } elseif ($log->checkin_evening) {
                 $log->status = "evening_only";
             } else {
-                $log->status = null;
+                $log->status = "no_checkin";
             }
             return $log;
         });
@@ -412,4 +497,262 @@ class AttendanceLogsController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Deleted']);
     }
+
+
+ public function exportExcel(Request $request)
+{
+    // \Log::info('AttendanceLogsController@exportExcel - START', [
+    //     'params' => $request->all(),
+    //     'method' => $request->method(),
+    //     'url' => $request->fullUrl(),
+    //     'ip' => $request->ip()
+    // ]);
+
+    try {
+        // ตรวจสอบ JWT/Bearer token
+        $user = auth()->user();
+        $position = $user->userPosition ?? $user->position ?? null;
+        
+        // \Log::info('AttendanceLogsController@exportExcel - Auth check', [
+        //     'user_id' => $user->id ?? null,
+        //     'position' => $position,
+        //     'has_user' => !!$user
+        // ]);
+
+        if (!$user) {
+           
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required'
+            ], 401);
+        }
+
+        // สร้าง query เหมือน index
+        $query = AttendanceLogs::query();
+
+        // \Log::info('AttendanceLogsController@exportExcel - Building query', [
+        //     'initial_count' => $query->count()
+        // ]);
+
+        // Apply all filters like in index method
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('date', 'like', "%{$searchTerm}%")
+                  ->orWhere('note_morning', 'like', "%{$searchTerm}%")
+                  ->orWhere('note_evening', 'like', "%{$searchTerm}%")
+                  ->orWhereHas('user', function ($userQuery) use ($searchTerm) {
+                      $userQuery->where('full_name', 'like', "%{$searchTerm}%")
+                                ->orWhere('username', 'like', "%{$searchTerm}%");
+                  });
+            });
+        }
+
+        if ($request->filled('date')) {
+            $query->where('date', $request->date);
+        }
+
+        if ($request->filled('full_name')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('full_name', 'like', "%{$request->full_name}%");
+            });
+        }
+
+        if ($request->filled('station') && is_array($request->station) && count($request->station) > 0) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->whereIn('station', $request->station);
+            });
+        }
+
+        if ($request->filled('position') && is_array($request->position) && count($request->position) > 0) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->whereIn('position', $request->position);
+            });
+        }
+
+        if ($request->filled('status') && is_array($request->status) && count($request->status) > 0) {
+            $statusConditions = [];
+            foreach ($request->status as $status) {
+                switch ($status) {
+                    case 'full_day':
+                        $statusConditions[] = function ($q) {
+                            $q->whereNotNull('checkin_morning')->whereNotNull('checkin_evening');
+                        };
+                        break;
+                    case 'morning_only':
+                        $statusConditions[] = function ($q) {
+                            $q->whereNotNull('checkin_morning')->whereNull('checkin_evening');
+                        };
+                        break;
+                    case 'evening_only':
+                        $statusConditions[] = function ($q) {
+                            $q->whereNull('checkin_morning')->whereNotNull('checkin_evening');
+                        };
+                        break;
+                    case 'no_checkin':
+                        $statusConditions[] = function ($q) {
+                            $q->whereNull('checkin_morning')->whereNull('checkin_evening');
+                        };
+                        break;
+                }
+            }
+
+            if (!empty($statusConditions)) {
+                $query->where(function ($q) use ($statusConditions) {
+                    foreach ($statusConditions as $condition) {
+                        $q->orWhere($condition);
+                    }
+                });
+            }
+        }
+
+        if ($request->has('user_id')) {
+            $query->byUser($request->user_id);
+        }
+
+        if ($request->has('start_date') && $request->has('end_date')) {
+            $query->byDateRange($request->start_date, $request->end_date);
+        }
+
+        // Filter by user position (same as index)
+        switch ($position) {
+            case 'department_head':
+            case 'office_workers':
+                break;
+            case 'Station_Chief':
+                if ($user->station) {
+                    $query->whereHas('user', function ($q) use ($user) {
+                        $q->where('station', $user->station);
+                    });
+                }
+                break;
+            case 'Farm_worker':
+                $query->where('users_id', $user->id);
+                break;
+            default:
+                $query->whereRaw('1=0');
+        }
+
+        // Log SQL query
+        // \Log::info('AttendanceLogsController@exportExcel - Final query', [
+        //     'sql' => $query->toSql(),
+        //     'bindings' => $query->getBindings(),
+        //     'filtered_count' => $query->count()
+        // ]);
+
+        // Get data - แก้ไขส่วนนี้ให้จัดการ pagination อย่างถูกต้อง
+        $all = filter_var($request->get('all', false), FILTER_VALIDATE_BOOLEAN);
+        
+        if ($all) {
+            // Export ทั้งหมด
+            $logs = $query->with('user')->orderBy('date', 'desc')->get();
+            \Log::info('AttendanceLogsController@exportExcel - Export all data', [
+                'total_count' => $logs->count()
+            ]);
+        } else {
+            // Export หน้าปัจจุบัน
+            $perPage = $request->get('per_page', 20);
+            $page = $request->get('page', 1);
+            
+            $logs = $query->with('user')
+                         ->orderBy('date', 'desc')
+                         ->paginate($perPage, ['*'], 'page', $page)
+                         ->getCollection();
+            
+            \Log::info('AttendanceLogsController@exportExcel - Export current page', [
+                'page' => $page,
+                'per_page' => $perPage,
+                'page_count' => $logs->count()
+            ]);
+        }
+
+        // \Log::info('AttendanceLogsController@exportExcel - Data retrieved', [
+        //     'logs_count' => $logs->count(),
+        //     'export_type' => $all ? 'all' : 'current_page'
+        // ]);
+
+        // Create Excel
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+       // ดึงตำแหน่งทั้งหมดมา mapping
+        $positionsMap = \DB::table('listposition')->pluck('position', 'id_position');
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // เพิ่ม column "Mã nhân viên" และแก้ไข "Chức vụ" ให้ mapping
+        $header = [
+            '#', 'Ngày', 'Trạm', 'Tên', 'Mã nhân viên', 'Chức vụ',
+            'CheckIn Sáng', 'Ghi chú Sáng', 'CheckIn Chiều', 'Ghi chú Chiều', 'Trạng thái'
+        ];
+        $sheet->fromArray($header, null, 'A1');
+
+        $rows = [];
+        $startIndex = $all ? 1 : (($page - 1) * $perPage) + 1;
+
+        foreach ($logs as $idx => $log) {
+            $user = $log->user;
+            $status = ($log->checkin_morning && $log->checkin_evening) ? 'Đầy đủ'
+                : ($log->checkin_morning ? 'Chỉ sáng'
+                : ($log->checkin_evening ? 'Chỉ chiều' : 'Chưa điểm danh'));
+
+            // Mapping position
+            $positionValue = '';
+            if ($user && $user->position) {
+                $positionValue = $positionsMap[$user->position] ?? $user->position;
+            }
+
+             // Format Ngày
+    $dateFormatted = $log->date ? \Carbon\Carbon::parse($log->date)->format('d/m/Y') : '';
+
+    // Format CheckIn Sáng
+    $checkinMorningFormatted = $log->checkin_morning
+        ? \Carbon\Carbon::parse($log->checkin_morning)->format('d/m/Y H:i')
+        : '';
+
+    // Format CheckIn Chiều
+    $checkinEveningFormatted = $log->checkin_evening
+        ? \Carbon\Carbon::parse($log->checkin_evening)->format('d/m/Y H:i')
+        : '';
+
+              $rows[] = [
+        $startIndex + $idx,
+        $dateFormatted,
+        $user->station ?? '',
+        $user->full_name ?? '',
+        $user->manv_ttca ?? '', // Mã nhân viên
+        $positionValue,         // Chức vụ (mapped)
+        $checkinMorningFormatted,
+        $log->note_morning,
+        $checkinEveningFormatted,
+        $log->note_evening,
+        $status,
+    ];
+        }
+
+        if (count($rows) > 0) {
+            $sheet->fromArray($rows, null, 'A2');
+        }
+
+        $exportType = $all ? 'all' : "page_{$page}";
+        $filename = 'attendance_logs_' . $exportType . '_' . now()->format('Ymd_His') . '.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Export failed: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
 }

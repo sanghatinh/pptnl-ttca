@@ -70,11 +70,13 @@ Route::group(['middleware' => ['auth:api']], function () {
 
     
 // Attendance Logs CRUD
+Route::get('/attendance-logs/export', [App\Http\Controllers\Log\AttendanceLogsController::class, 'exportExcel']);
 Route::get('/attendance-logs', [App\Http\Controllers\Log\AttendanceLogsController::class, 'index']);
 Route::post('/attendance-logs', [App\Http\Controllers\Log\AttendanceLogsController::class, 'store']);
 Route::get('/attendance-logs/{id}', [App\Http\Controllers\Log\AttendanceLogsController::class, 'show']);
 Route::put('/attendance-logs/{id}', [App\Http\Controllers\Log\AttendanceLogsController::class, 'update']);
 Route::delete('/attendance-logs/{id}', [App\Http\Controllers\Log\AttendanceLogsController::class, 'destroy']);
+
 
 
 

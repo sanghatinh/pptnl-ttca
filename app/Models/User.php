@@ -32,6 +32,7 @@ class User extends Authenticatable implements JWTSubject
   'status',
   'ma_nhan_vien',
   'image',
+  'manv_ttca'
     ];
 
     /**

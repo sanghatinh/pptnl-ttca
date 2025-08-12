@@ -14,7 +14,7 @@
                     <i class="fas fa-clock me-2"></i>
                     Quản lý chấm công
                     <span class="badge bg-primary ms-2"
-                        >{{ filteredLogs.length }} records</span
+                        >{{ totalRecords }} records</span
                     >
                 </h5>
             </div>
@@ -426,18 +426,15 @@
                                 </thead>
                                 <tbody>
                                     <tr
-                                        v-for="(
-                                            log, index
-                                        ) in paginatedLogs.data"
+                                        v-for="(log, index) in logs"
                                         :key="log.id"
                                         class="desktop-row clickable-row"
                                         @click="openModal(log)"
                                     >
                                         <td>
                                             {{
-                                                (currentPage - 1) * perPage +
-                                                index +
-                                                1
+                                                (paginationData.from || 0) +
+                                                index
                                             }}
                                         </td>
                                         <td>{{ formatDate(log.date) }}</td>
@@ -600,7 +597,7 @@
 
                         <div class="pagination-card">
                             <pagination
-                                :data="paginatedLogs"
+                                :data="paginationData"
                                 @pagination-change-page="pageChanged"
                                 :limit="5"
                                 :classes="paginationClasses"
@@ -753,10 +750,7 @@
             </div>
 
             <div class="modal-footer">
-                <button
-                    @click="showMobileFilterModal = false"
-                    class="btn btn-primary"
-                >
+                <button @click="applyMobileFilters" class="btn btn-primary">
                     <i class="fas fa-check me-1"></i>
                     Apply Filters
                 </button>
@@ -767,7 +761,7 @@
     <!-- For Mobile: Card View -->
     <div v-if="isMobile" class="card-container">
         <div
-            v-for="(log, index) in paginatedLogs.data"
+            v-for="(log, index) in logs"
             :key="log.id"
             class="attendance-card mb-3 p-3 rounded border-0 clickable-card"
             @click="openModal(log)"
@@ -777,7 +771,7 @@
             >
                 <div class="attendance-index fw-bold">
                     <span class="badge bg-label-primary rounded-pill"
-                        >#{{ (currentPage - 1) * perPage + index + 1 }}</span
+                        >#{{ (paginationData.from || 0) + index }}</span
                     >
                 </div>
                 <div class="attendance-date">
@@ -907,11 +901,13 @@
             <div class="pagination-info">
                 <span class="page-info"
                     >Trang {{ currentPage }} của
-                    {{ paginatedLogs.last_page }}</span
+                    {{ paginationData.last_page || 1 }}</span
                 >
                 <span class="record-info"
-                    >{{ paginatedLogs.from }}-{{ paginatedLogs.to }} của
-                    {{ paginatedLogs.total }} bản ghi</span
+                    >{{ paginationData.from || 0 }}-{{
+                        paginationData.to || 0
+                    }}
+                    của {{ totalRecords }} bản ghi</span
                 >
             </div>
 
@@ -937,28 +933,28 @@
                 <button
                     class="page-btn"
                     @click="pageChanged(currentPage + 1)"
-                    :disabled="currentPage === paginatedLogs.last_page"
+                    :disabled="currentPage === (paginationData.last_page || 1)"
                 >
                     <i class="fas fa-angle-right"></i>
                 </button>
 
                 <button
                     class="page-btn"
-                    @click="pageChanged(paginatedLogs.last_page)"
-                    :disabled="currentPage === paginatedLogs.last_page"
+                    @click="pageChanged(paginationData.last_page || 1)"
+                    :disabled="currentPage === (paginationData.last_page || 1)"
                 >
                     <i class="fas fa-angle-double-right"></i>
                 </button>
             </div>
 
-            <div class="quick-jump" v-if="paginatedLogs.last_page > 5">
+            <div class="quick-jump" v-if="(paginationData.last_page || 1) > 5">
                 <span>Đi đến trang:</span>
                 <select
                     :value="currentPage"
                     @change="pageChanged(parseInt($event.target.value))"
                 >
                     <option
-                        v-for="page in paginatedLogs.last_page"
+                        v-for="page in paginationData.last_page || 1"
                         :key="page"
                         :value="page"
                     >
@@ -970,6 +966,7 @@
     </div>
 
     <!-- Export Modal -->
+    <!-- Export Modal -->
     <div
         class="modal fade"
         id="exportModal"
@@ -980,37 +977,31 @@
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-header bg-light">
-                    <h5 class="modal-title text-success" id="exportModalLabel">
+                    <h5 class="modal-title" id="exportModalLabel">
                         <i class="fas fa-file-excel text-success me-2"></i>
-                        Export to Excel
+                        Export dữ liệu chấm công
                     </h5>
                     <button
                         type="button"
                         class="btn-close"
-                        data-bs-dismiss="modal"
-                        aria-label="Close"
                         @click="closeExportModal"
                     ></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted small mb-3">Chọn định dạng xuất:</p>
                     <div class="d-grid gap-2">
                         <button
-                            @click="exportToExcelCurrentPage"
                             class="btn btn-outline-success"
+                            @click="exportToExcelCurrentPage"
                         >
-                            <i class="fas fa-file-export me-2"></i>
-                            Chỉ xuất trang hiện tại ({{
-                                paginatedLogs.data.length
-                            }}
-                            records)
+                            <i class="fas fa-file-excel"></i> Export trang hiện
+                            tại
                         </button>
                         <button
-                            @click="exportToExcelAllPages"
                             class="btn btn-success"
+                            @click="exportToExcelAllPages"
                         >
-                            <i class="fas fa-table me-2"></i>
-                            Xuất tất cả ({{ filteredLogs.length }} records)
+                            <i class="fas fa-file-excel"></i> Export tất cả bản
+                            ghi
                         </button>
                     </div>
                 </div>
@@ -1121,12 +1112,12 @@
         v-if="modalOpen"
         :log="selectedLog"
         @close="closeModal"
-        @saved="fetchLogs"
+        @saved="handleAttendanceSaved"
     />
 </template>
 
 <script>
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed, watch, onUnmounted } from "vue";
 import axios from "axios";
 import ModalAttendance from "@/Components/ModalAttendance.vue";
 import { useStore } from "../../Store/Auth";
@@ -1146,36 +1137,50 @@ export default {
     setup() {
         const store = useStore();
 
-        // Reactive data
-        const logs = ref([]);
+        const exportModalInstance = ref(null);
+
+        // Reactive data - ปรับปรุงให้รับข้อมูลจาก API
+        const logs = ref([]); // ข้อมูลจาก API response.data.data
+        const paginationData = ref({}); // ข้อมูล pagination จาก API response.data.data
         const loading = ref(false);
         const modalOpen = ref(false);
         const selectedLog = ref(null);
         const isLoading = ref(false);
         const isMobile = ref(window.innerWidth < 768);
 
-        // Pagination
-        const currentPage = ref(1);
-        const perPage = ref(10);
+        // API Parameters - ปรับให้ส่งไป backend
+        const apiParams = ref({
+            page: 1,
+            per_page: 20,
+            search: "",
+            date: "",
+            full_name: "",
+            station: [],
+            position: [],
+            status: [],
+        });
 
-        // Search and filters
+        const pageChanged = (page) => {
+            if (page < 1 || page > (paginationData.value.last_page || 1))
+                return;
+            apiParams.value.page = page;
+            fetchLogs({ page });
+        };
+
+        // Search and filter UI state
         const search = ref("");
         const activeFilter = ref(null);
         const columnFilters = ref({
             date: "",
             full_name: "",
         });
-
-        // Filter values
         const selectedFilterValues = ref({
             station: [],
             position: [],
             status: [],
         });
-
-        // Mobile filters
-        const showMobileFilterModal = ref(false);
         const selectedMobileStatus = ref("");
+        const showMobileFilterModal = ref(false);
 
         // Master data
         const stations = ref([]);
@@ -1207,105 +1212,261 @@ export default {
             disabled: "disabled modern-disabled",
         });
 
-        // Computed properties
-        const filteredLogs = computed(() => {
-            return logs.value.filter((log) => {
-                // Global search
-                const searchTerm = search.value.toLowerCase();
-                const matchesGlobalSearch =
-                    (log.user?.full_name || "")
-                        .toLowerCase()
-                        .includes(searchTerm) ||
-                    (log.user?.username || "")
-                        .toLowerCase()
-                        .includes(searchTerm) ||
-                    getStationName(log.user?.station)
-                        .toLowerCase()
-                        .includes(searchTerm) ||
-                    getPositionName(log.user?.position)
-                        .toLowerCase()
-                        .includes(searchTerm) ||
-                    log.date.includes(searchTerm) ||
-                    statusText(log.status).toLowerCase().includes(searchTerm);
+        // Computed properties - ปรับให้ใช้ข้อมูลจาก API
+        const currentPage = computed(
+            () => paginationData.value.current_page || 1
+        );
+        const totalRecords = computed(() => paginationData.value.total || 0);
 
-                // Column filters
-                const matchesColumnFilters =
-                    (!columnFilters.value.date ||
-                        log.date === columnFilters.value.date) &&
-                    (!columnFilters.value.full_name ||
-                        (log.user?.full_name || "")
-                            .toLowerCase()
-                            .includes(
-                                columnFilters.value.full_name.toLowerCase()
-                            )) &&
-                    (selectedFilterValues.value.station.length === 0 ||
-                        selectedFilterValues.value.station.includes(
-                            log.user?.station
-                        )) &&
-                    (selectedFilterValues.value.position.length === 0 ||
-                        selectedFilterValues.value.position.includes(
-                            log.user?.position
-                        )) &&
-                    (selectedFilterValues.value.status.length === 0 ||
-                        selectedFilterValues.value.status.includes(
-                            log.status
-                        )) &&
-                    (!selectedMobileStatus.value ||
-                        log.status === selectedMobileStatus.value);
+        const showExportModal = () => {
+            const modal = document.getElementById("exportModal");
+            if (modal) {
+                exportModalInstance.value = new window.bootstrap.Modal(modal);
+                exportModalInstance.value.show();
+            }
+        };
 
-                return matchesGlobalSearch && matchesColumnFilters;
-            });
-        });
+        const closeExportModal = () => {
+            if (exportModalInstance.value) {
+                exportModalInstance.value.hide();
+            } else {
+                // fallback: hide by manipulating DOM
+                const modal = document.getElementById("exportModal");
+                if (modal) {
+                    modal.classList.remove("show");
+                    modal.style.display = "none";
+                }
+            }
+        };
 
-        const paginatedLogs = computed(() => {
-            const total = filteredLogs.value.length;
-            const lastPage = Math.ceil(total / perPage.value) || 1;
-            const start = (currentPage.value - 1) * perPage.value;
-            const data = filteredLogs.value.slice(start, start + perPage.value);
-
-            return {
-                current_page: currentPage.value,
-                data,
-                first_page_url: "?page=1",
-                from: total > 0 ? start + 1 : 0,
-                last_page: lastPage,
-                last_page_url: `?page=${lastPage}`,
-                next_page_url:
-                    currentPage.value < lastPage
-                        ? `?page=${currentPage.value + 1}`
-                        : null,
-                path: "",
-                per_page: perPage.value,
-                prev_page_url:
-                    currentPage.value > 1
-                        ? `?page=${currentPage.value - 1}`
-                        : null,
-                to: start + data.length,
-                total,
-            };
-        });
-
-        // Methods
-        const fetchLogs = async () => {
+        const exportToExcelCurrentPage = async () => {
             isLoading.value = true;
             try {
                 const token =
                     localStorage.getItem("web_token") || store.getToken;
-                const response = await axios.get("/api/attendance-logs", {
+
+                // Clean up parameters - remove empty arrays and null values
+                const cleanParams = {};
+                Object.keys(apiParams.value).forEach((key) => {
+                    const value = apiParams.value[key];
+                    if (
+                        value !== null &&
+                        value !== "" &&
+                        !(Array.isArray(value) && value.length === 0)
+                    ) {
+                        cleanParams[key] = value;
+                    }
+                });
+
+                // สำหรับ export หน้าปัจจุบัน ต้องระบุ page และ per_page ชัดเจน
+                cleanParams.all = false;
+                cleanParams.page = apiParams.value.page;
+                cleanParams.per_page = apiParams.value.per_page;
+
+                console.log("Export current page params:", cleanParams);
+
+                const queryString = new URLSearchParams();
+                Object.keys(cleanParams).forEach((key) => {
+                    if (Array.isArray(cleanParams[key])) {
+                        cleanParams[key].forEach((item) => {
+                            queryString.append(`${key}[]`, item);
+                        });
+                    } else {
+                        queryString.append(key, cleanParams[key]);
+                    }
+                });
+
+                const url = `/api/attendance-logs/export?${queryString.toString()}`;
+                console.log("Export URL:", url);
+
+                const response = await axios.get(url, {
+                    responseType: "blob",
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
-                logs.value = (response.data.data.data || []).map((log) => ({
-                    ...log,
-                    status:
-                        log.checkin_morning && log.checkin_evening
-                            ? "full_day"
-                            : log.checkin_morning
-                            ? "morning_only"
-                            : log.checkin_evening
-                            ? "evening_only"
-                            : "no_checkin",
-                }));
+                // Check if response is an error JSON
+                if (response.data.type === "application/json") {
+                    const reader = new FileReader();
+                    reader.onload = function () {
+                        const result = JSON.parse(reader.result);
+                        Swal.fire({
+                            icon: "error",
+                            text: result.message || "Export error",
+                        });
+                    };
+                    reader.readAsText(response.data);
+                    return;
+                }
+
+                // Create download link
+                const blob = new Blob([response.data], {
+                    type: response.headers["content-type"],
+                });
+                const link = document.createElement("a");
+                link.href = window.URL.createObjectURL(blob);
+                link.download = getExportFilename();
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Export thành công",
+                    text: "File Excel đã được tải xuống",
+                    timer: 2000,
+                });
+            } catch (error) {
+                console.error("Export error:", error);
+                Swal.fire({
+                    icon: "error",
+                    text:
+                        error.response?.data?.message ||
+                        "ไม่สามารถ export ข้อมูลได้",
+                });
+            } finally {
+                isLoading.value = false;
+                closeExportModal();
+            }
+        };
+
+        const exportToExcelAllPages = async () => {
+            isLoading.value = true;
+            try {
+                const token =
+                    localStorage.getItem("web_token") || store.getToken;
+
+                // Clean up parameters
+                const cleanParams = {};
+                Object.keys(apiParams.value).forEach((key) => {
+                    const value = apiParams.value[key];
+                    if (
+                        value !== null &&
+                        value !== "" &&
+                        !(Array.isArray(value) && value.length === 0)
+                    ) {
+                        cleanParams[key] = value;
+                    }
+                });
+
+                cleanParams.all = true;
+                delete cleanParams.page; // Remove page for all export
+                delete cleanParams.per_page; // Remove per_page for all export
+
+                const queryString = new URLSearchParams();
+                Object.keys(cleanParams).forEach((key) => {
+                    if (Array.isArray(cleanParams[key])) {
+                        cleanParams[key].forEach((item) => {
+                            queryString.append(`${key}[]`, item);
+                        });
+                    } else {
+                        queryString.append(key, cleanParams[key]);
+                    }
+                });
+
+                const url = `/api/attendance-logs/export?${queryString.toString()}`;
+
+                const response = await axios.get(url, {
+                    responseType: "blob",
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                const blob = new Blob([response.data], {
+                    type: response.headers["content-type"],
+                });
+                const link = document.createElement("a");
+                link.href = window.URL.createObjectURL(blob);
+                link.download = getExportFilename(true);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Export thành công",
+                    text: "File Excel đã được tải xuống",
+                    timer: 2000,
+                });
+            } catch (error) {
+                console.error("Export error:", error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Export Error",
+                    text:
+                        error.response?.data?.message ||
+                        "ไม่สามารถ export ข้อมูลได้",
+                });
+            } finally {
+                isLoading.value = false;
+                closeExportModal();
+            }
+        };
+        function getExportFilename(all = false) {
+            const date = new Date().toISOString().slice(0, 10);
+            return all
+                ? `attendance_all_${date}.xlsx`
+                : `attendance_page_${apiParams.value.page}_${date}.xlsx`;
+        }
+
+        // Methods - ปรับปรุง fetchLogs ให้รับ parameters
+        const fetchLogs = async (params = {}) => {
+            isLoading.value = true;
+            try {
+                const token =
+                    localStorage.getItem("web_token") || store.getToken;
+
+                // รวม parameters และซิงค์กับ UI state
+                const requestParams = {
+                    ...apiParams.value,
+                    ...params,
+                };
+
+                // ซิงค์ search term กับ UI
+                if (requestParams.search !== search.value) {
+                    search.value = requestParams.search || "";
+                }
+
+                // ลบ parameters ที่เป็น array ว่าง
+                Object.keys(requestParams).forEach((key) => {
+                    if (
+                        Array.isArray(requestParams[key]) &&
+                        requestParams[key].length === 0
+                    ) {
+                        delete requestParams[key];
+                    }
+                    if (
+                        requestParams[key] === "" ||
+                        requestParams[key] === null
+                    ) {
+                        delete requestParams[key];
+                    }
+                });
+
+                const response = await axios.get("/api/attendance-logs", {
+                    headers: { Authorization: `Bearer ${token}` },
+                    params: requestParams,
+                });
+
+                // เก็บข้อมูลจาก API response
+                const responseData = response.data.data;
+                logs.value = responseData.data || [];
+                paginationData.value = {
+                    current_page: responseData.current_page,
+                    last_page: responseData.last_page,
+                    per_page: responseData.per_page,
+                    total: responseData.total,
+                    from: responseData.from,
+                    to: responseData.to,
+                    first_page_url: responseData.first_page_url,
+                    last_page_url: responseData.last_page_url,
+                    next_page_url: responseData.next_page_url,
+                    prev_page_url: responseData.prev_page_url,
+                    data: responseData.data,
+                };
+
+                // อัพเดต apiParams เฉพาะค่าที่เปลี่ยน
+                Object.keys(params).forEach((key) => {
+                    apiParams.value[key] = params[key];
+                });
 
                 updateUniqueValues();
             } catch (error) {
@@ -1570,6 +1731,32 @@ export default {
             }
         };
 
+        const initPerfectScrollbar = () => {
+            if (tableScrollContainer.value) {
+                if (ps.value) {
+                    ps.value.destroy();
+                }
+                ps.value = new PerfectScrollbar(tableScrollContainer.value, {
+                    wheelSpeed: 1,
+                    wheelPropagation: true,
+                    minScrollbarLength: 20,
+                });
+            }
+        };
+
+        const updateScrollbar = () => {
+            if (ps.value) {
+                ps.value.update();
+            }
+        };
+
+        const handleResize = () => {
+            isMobile.value = window.innerWidth < 768;
+            setTimeout(() => {
+                updateScrollbar();
+            }, 100);
+        };
+
         // Modal functions
         const openModal = (log = null) => {
             selectedLog.value = log;
@@ -1616,21 +1803,45 @@ export default {
             activeFilter.value = activeFilter.value === column ? null : column;
         };
 
+        // ปรับปรุง Filter functions ให้มีประสิทธิภาพมากขึ้น
         const resetFilter = (column) => {
             if (["station", "position", "status"].includes(column)) {
                 selectedFilterValues.value[column] = [];
             } else {
                 columnFilters.value[column] = "";
             }
-            currentPage.value = 1;
+
+            activeFilter.value = null;
+
+            // เรียก API ใหม่พร้อมรีเซ็ต filter นั้นๆ
+            const resetParams = { page: 1 };
+            resetParams[column] = ["station", "position", "status"].includes(
+                column
+            )
+                ? []
+                : "";
+
+            fetchLogs(resetParams);
         };
 
         const applyFilter = (column) => {
+            // อัพเดต apiParams
+            if (["station", "position", "status"].includes(column)) {
+                apiParams.value[column] = [
+                    ...selectedFilterValues.value[column],
+                ];
+            } else {
+                apiParams.value[column] = columnFilters.value[column];
+            }
+
             activeFilter.value = null;
-            currentPage.value = 1;
+
+            // เรียก API ใหม่
+            fetchLogs({ page: 1 });
         };
 
         const resetAllFilters = () => {
+            // Reset UI state
             search.value = "";
             Object.keys(columnFilters.value).forEach((key) => {
                 columnFilters.value[key] = "";
@@ -1640,156 +1851,121 @@ export default {
             });
             selectedMobileStatus.value = "";
             activeFilter.value = null;
-            currentPage.value = 1;
+
+            // Reset และเรียก API ใหม่
+            fetchLogs({
+                page: 1,
+                search: "",
+                date: "",
+                full_name: "",
+                station: [],
+                position: [],
+                status: [],
+            });
         };
 
         const applyMobileStatusFilter = () => {
-            currentPage.value = 1;
-        };
-
-        // Pagination
-        const pageChanged = (page) => {
-            currentPage.value = page;
-        };
-
-        // Export functions
-        const showExportModal = () => {
-            try {
-                import("bootstrap/dist/js/bootstrap.bundle.min.js").then(
-                    (bootstrap) => {
-                        const Modal = bootstrap.Modal;
-                        const modalElement =
-                            document.getElementById("exportModal");
-                        if (modalElement) {
-                            const modal = new Modal(modalElement);
-                            modal.show();
-                        }
-                    }
-                );
-            } catch (error) {
-                console.error("Error showing export modal:", error);
+            if (selectedMobileStatus.value) {
+                selectedFilterValues.value.status = [
+                    selectedMobileStatus.value,
+                ];
+            } else {
+                selectedFilterValues.value.status = [];
             }
+
+            fetchLogs({
+                page: 1,
+                status: selectedFilterValues.value.status,
+            });
         };
 
-        const closeExportModal = () => {
-            const modalElement = document.getElementById("exportModal");
-            if (modalElement) {
-                const modal = bootstrap.Modal.getInstance(modalElement);
-                if (modal) modal.hide();
-            }
+        const applyMobileFilters = () => {
+            // อัพเดตและเรียก API ใหม่
+            fetchLogs({
+                page: 1,
+                date: columnFilters.value.date || "",
+                station: [...selectedFilterValues.value.station],
+                position: [...selectedFilterValues.value.position],
+            });
+
+            showMobileFilterModal.value = false;
         };
 
-        const exportToExcelCurrentPage = () => {
-            if (paginatedLogs.value.data.length > 0) {
-                generateExcel(
-                    paginatedLogs.value.data,
-                    "attendance_current_page"
-                );
-                closeExportModal();
-            }
+        // ปรับปรุง Search ให้ใช้ debounce ที่ดีขึ้น
+        let searchTimeout = null;
+        const debouncedSearch = () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                fetchLogs({ page: 1, search: search.value });
+            }, 500);
         };
 
-        const exportToExcelAllPages = () => {
-            if (filteredLogs.value.length > 0) {
-                generateExcel(filteredLogs.value, "attendance_all");
-                closeExportModal();
-            }
+        // เพิ่มฟังก์ชันสำหรับจัดการ saved modal
+        const handleAttendanceSaved = () => {
+            // รีเฟรชข้อมูลโดยใช้ parameters ปัจจุบัน
+            fetchLogs({ page: apiParams.value.page });
         };
 
-        const generateExcel = (data, filename) => {
-            try {
-                const exportData = data.map((log) => ({
-                    Ngày: formatDate(log.date),
-                    Trạm: getStationName(log.user?.station),
-                    "Tên đầy đủ": log.user?.full_name || "",
-                    "Chức vụ": getPositionName(log.user?.position),
-                    "Check-in sáng": formatTime(log.checkin_morning),
-                    "Ghi chú sáng": log.note_morning || "",
-                    "Check-in chiều": formatTime(log.checkin_evening),
-                    "Ghi chú chiều": log.note_evening || "",
-                    "Trạng thái": statusText(log.status),
-                }));
+        // Lifecycle - ปรับปรุงการโหลดข้อมูลเริ่มต้น
+        onMounted(async () => {
+            // โหลดข้อมูลพื้นฐานก่อน
+            await Promise.all([fetchStations(), fetchPositions()]);
 
-                const ws = XLSX.utils.json_to_sheet(exportData);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Attendance");
-                XLSX.writeFile(
-                    wb,
-                    `${filename}_${new Date().toISOString().split("T")[0]}.xlsx`
-                );
+            // จากนั้นโหลดข้อมูล logs
+            await fetchLogs();
 
-                Swal.fire({
-                    icon: "success",
-                    title: "Export Successful",
-                    text: "Excel file has been downloaded successfully!",
-                    timer: 2000,
-                    showConfirmButton: false,
-                });
-            } catch (error) {
-                console.error("Error generating Excel:", error);
-                Swal.fire({
-                    icon: "error",
-                    title: "Export Error",
-                    text: "An error occurred while generating the Excel file",
-                });
-            }
-        };
-
-        // Perfect Scrollbar
-        const initPerfectScrollbar = () => {
-            if (tableScrollContainer.value) {
-                if (ps.value) ps.value.destroy();
-                ps.value = new PerfectScrollbar(tableScrollContainer.value, {
-                    suppressScrollX: false,
-                    wheelPropagation: false,
-                });
-            }
-        };
-
-        const updateScrollbar = () => {
-            if (ps.value) ps.value.update();
-        };
-
-        // Resize handler
-        const handleResize = () => {
-            isMobile.value = window.innerWidth < 768;
-        };
-
-        // Lifecycle
-        onMounted(() => {
-            fetchLogs();
-            fetchStations();
-            fetchPositions();
+            // เซ็ตอัพ event listeners
             window.addEventListener("resize", handleResize);
-            initPerfectScrollbar();
+
+            // เซ็ตอัพ perfect scrollbar หลังจากข้อมูลโหลดเสร็จ
+            setTimeout(() => {
+                initPerfectScrollbar();
+            }, 100);
         });
 
-        // Watchers
+        // ปรับปรุง Watchers - เปลี่ยนจาก watch search เป็น immediate search
+        watch(search, (newValue, oldValue) => {
+            // ถ้าค่าเปลี่ยนแปลงจริงๆ ถึงจะเรียก debounced search
+            if (newValue !== oldValue) {
+                debouncedSearch();
+            }
+        });
+
+        // เพิ่ม watcher สำหรับ perfect scrollbar
         watch(
-            [search, filteredLogs],
+            () => logs.value.length,
             () => {
-                currentPage.value = 1;
-                updateScrollbar();
-            },
-            { deep: true }
+                setTimeout(() => {
+                    updateScrollbar();
+                }, 50);
+            }
         );
+
+        // Cleanup function
+        onUnmounted(() => {
+            clearTimeout(searchTimeout);
+            window.removeEventListener("resize", handleResize);
+            if (ps.value) {
+                ps.value.destroy();
+            }
+        });
 
         return {
             // Data
             logs,
+            paginationData,
             loading,
             modalOpen,
             selectedLog,
             isLoading,
             isMobile,
-            currentPage,
-            perPage,
+            apiParams,
             search,
             activeFilter,
             columnFilters,
             selectedFilterValues,
-            showMobileFilterModal,
             selectedMobileStatus,
+            showMobileFilterModal,
             stations,
             positions,
             showPhotoModal,
@@ -1802,11 +1978,12 @@ export default {
             paginationClasses,
 
             // Computed
-            filteredLogs,
-            paginatedLogs,
+            currentPage,
+            totalRecords,
 
             // Methods
             fetchLogs,
+            handleAttendanceSaved,
             getCloudinaryUrl,
             formatTime,
             formatDate,
@@ -1831,12 +2008,14 @@ export default {
             applyFilter,
             resetAllFilters,
             applyMobileStatusFilter,
+            applyMobileFilters,
             pageChanged,
+            debouncedSearch,
             showExportModal,
             closeExportModal,
             exportToExcelCurrentPage,
             exportToExcelAllPages,
-            generateExcel,
+            getExportFilename,
             initPerfectScrollbar,
             updateScrollbar,
             handleResize,
@@ -1844,19 +2023,20 @@ export default {
     },
 };
 </script>
+
 <style scoped>
-/* Enhanced table styling for modern look */
+/* Enhanced table styling for modern look - Optimized */
 .table-container {
     position: relative;
     width: 100%;
     height: 100%;
     background-color: #fff;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     padding: 1rem;
     margin-bottom: 1rem;
     overflow: hidden;
     min-height: calc(100vh - 450px);
+    border-radius: 0.75rem;
 }
 
 .desktop-controls-container {
@@ -1876,7 +2056,7 @@ export default {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #10b981 0%, #059669 50%, #10b981 100%);
+    background: #10b981;
     z-index: 1;
 }
 
@@ -1885,22 +2065,22 @@ export default {
     max-height: calc(100vh - 350px);
     height: auto;
     overflow: auto;
-    border-radius: 0.75rem;
-    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 0.5rem;
+    background: #ffffff;
 }
 
-/* Modern table styling without borders */
+/* Simplified table styling */
 .table {
     margin-bottom: 0;
     width: 100%;
-    min-width: 1400px; /* Increased for attendance columns */
+    min-width: 1400px;
     border-collapse: separate;
     border-spacing: 0;
     border: none;
     background-color: transparent;
 }
 
-/* Enhanced header styling */
+/* Simplified header styling */
 .table thead {
     position: sticky;
     top: 0;
@@ -1912,82 +2092,63 @@ export default {
     top: 0;
     background: #f8fafc;
     z-index: 20;
-    padding: 1.25rem 1rem;
+    padding: 1rem 0.75rem;
     vertical-align: middle;
     border: none;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
     font-weight: 600;
     font-size: 0.875rem;
     color: #059669;
     text-transform: none;
-    letter-spacing: normal;
     white-space: nowrap;
     min-width: 120px;
     position: relative;
-    transition: all 0.2s ease;
 }
 
 /* Specific column widths for attendance table */
 .table thead th:nth-child(1) {
     min-width: 60px;
-} /* # */
+}
 .table thead th:nth-child(2) {
     min-width: 120px;
-} /* Ngày */
+}
 .table thead th:nth-child(3) {
     min-width: 150px;
-} /* Trạm */
+}
 .table thead th:nth-child(4) {
     min-width: 180px;
-} /* Full Name */
+}
 .table thead th:nth-child(5) {
     min-width: 140px;
-} /* Chức vụ */
+}
 .table thead th:nth-child(6) {
     min-width: 180px;
-} /* CheckIn-Buổi Sáng */
+}
 .table thead th:nth-child(7) {
     min-width: 160px;
-} /* Ghi chú Buổi Sáng */
+}
 .table thead th:nth-child(8) {
     min-width: 180px;
-} /* CheckIn-Buổi Chiều */
+}
 .table thead th:nth-child(9) {
     min-width: 160px;
-} /* Ghi chú Buổi Chiều */
+}
 .table thead th:nth-child(10) {
     min-width: 120px;
-} /* Status */
+}
 .table thead th:nth-child(11) {
     min-width: 100px;
-} /* Xem maps */
-
-/* Add subtle separator between headers */
-.table thead th:not(:last-child):after {
-    content: "";
-    position: absolute;
-    right: 0;
-    top: 25%;
-    height: 50%;
-    width: 1px;
-    background: linear-gradient(
-        180deg,
-        transparent 0%,
-        #d1d5db 50%,
-        transparent 100%
-    );
 }
 
-/* Modern table body styling */
+/* Simplified table body styling */
 .table tbody {
     background-color: transparent;
 }
 
 .table td {
-    padding: 1rem 0.75rem;
+    padding: 0.875rem 0.75rem;
     vertical-align: middle;
     border: none;
-    transition: all 0.3s ease;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1996,15 +2157,14 @@ export default {
     background-color: transparent;
 }
 
-/* Enhanced row styling with subtle separation */
+/* Simplified row styling */
 .table tbody tr {
     position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 0.5rem;
-    margin-bottom: 0.25rem;
+    transition: background-color 0.2s ease;
+    border-radius: 0.25rem;
 }
 
-/* Add subtle row separator */
+/* Simplified row separator */
 .table tbody tr:not(:last-child):after {
     content: "";
     position: absolute;
@@ -2012,53 +2172,32 @@ export default {
     left: 1rem;
     right: 1rem;
     height: 1px;
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(229, 231, 235, 0.6) 10%,
-        rgba(229, 231, 235, 0.6) 90%,
-        transparent 100%
-    );
+    background: #f1f5f9;
 }
 
-/* Modern hover effect */
+/* Simplified hover effect */
 .table tbody tr:hover {
-    background: linear-gradient(
-        135deg,
-        rgba(16, 185, 129, 0.05) 0%,
-        rgba(16, 185, 129, 0.02) 100%
-    );
-    transform: translateY(-2px) scale(1.01);
-    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
-    border-radius: 0.75rem;
+    background: #f8fafc;
 }
 
 .table tbody tr:hover:after {
     opacity: 0;
 }
 
-.table tbody tr:hover td {
-    color: #065f46;
-}
-
-/* Enhanced zebra striping */
+/* Simplified zebra striping */
 .table tbody tr:nth-child(even) {
-    background: linear-gradient(
-        135deg,
-        rgba(248, 250, 252, 0.7) 0%,
-        rgba(241, 245, 249, 0.3) 100%
-    );
+    background: #f9fafb;
 }
 
 .table tbody tr:nth-child(odd) {
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.9) 0%,
-        rgba(248, 250, 252, 0.5) 100%
-    );
+    background: #ffffff;
 }
 
-/* Check-in photo styling */
+.table tbody tr:hover {
+    background: #f0fdf4 !important;
+}
+
+/* Check-in photo styling - Simplified */
 .checkin-info {
     display: flex;
     flex-direction: column;
@@ -2069,31 +2208,27 @@ export default {
 .checkin-photo {
     width: 60px;
     height: 60px;
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     object-fit: cover;
-    border: 3px solid #e5e7eb;
-    transition: all 0.3s ease;
+    border: 2px solid #e5e7eb;
+    transition: border-color 0.2s ease;
     cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .checkin-photo:hover {
-    transform: scale(1.1);
     border-color: #10b981;
-    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
 }
 
 .checkin-time {
     font-size: 0.75rem;
     font-weight: 600;
     color: #6b7280;
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    background: #f3f4f6;
     padding: 0.25rem 0.5rem;
-    border-radius: 0.375rem;
-    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
 }
 
-/* Note display styling */
+/* Note display styling - Simplified */
 .note-display {
     max-width: 150px;
     white-space: normal;
@@ -2103,16 +2238,16 @@ export default {
     color: #6b7280;
     line-height: 1.4;
     padding: 0.5rem;
-    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-    border-radius: 0.5rem;
+    background: #f9fafb;
+    border-radius: 0.25rem;
     border: 1px solid #e5e7eb;
 }
 
-/* Enhanced badges and status styling */
+/* Simplified badges */
 .badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.25rem;
     padding: 0.375em 0.75em;
     font-size: 0.75rem;
     font-weight: 600;
@@ -2120,105 +2255,75 @@ export default {
     text-align: center;
     white-space: nowrap;
     vertical-align: baseline;
-    border-radius: 0.5rem;
+    border-radius: 0.375rem;
     margin: auto;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
 }
 
-.badge:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-}
-
-/* Badge color schemes */
+/* Simplified badge colors */
 .bg-label-primary {
     color: #1e40af;
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-    border: 1px solid rgba(30, 64, 175, 0.2);
+    background: #dbeafe;
 }
 
 .bg-label-success {
     color: #065f46;
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-    border: 1px solid rgba(6, 95, 70, 0.2);
+    background: #d1fae5;
 }
 
 .bg-label-warning {
     color: #92400e;
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border: 1px solid rgba(146, 64, 14, 0.2);
+    background: #fef3c7;
 }
 
 .bg-label-danger {
     color: #991b1b;
-    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-    border: 1px solid rgba(153, 27, 27, 0.2);
+    background: #fee2e2;
 }
 
 .bg-label-info {
     color: #0369a1;
-    background: linear-gradient(135deg, #e0f2fe 0%, #b3e5fc 100%);
-    border: 1px solid rgba(3, 105, 161, 0.2);
+    background: #e0f2fe;
 }
 
 .bg-label-secondary {
     color: #4b5563;
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-    border: 1px solid rgba(75, 85, 99, 0.2);
+    background: #f3f4f6;
 }
 
 .bg-label-light {
     color: #6b7280;
-    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-    border: 1px solid rgba(107, 114, 128, 0.2);
+    background: #f9fafb;
 }
 
-/* Position Badge Styling */
+/* Position Badge Styling - Simplified */
 .position-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.25rem;
     padding: 0.375rem 0.75rem;
     font-size: 0.75rem;
     font-weight: 600;
     line-height: 1;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    border: 1px solid transparent;
+    border-radius: 0.375rem;
     min-width: 80px;
     justify-content: center;
 }
 
-.position-badge:hover {
-    transform: translateY(-1px) scale(1.02);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Station Badge Styling */
+/* Station Badge Styling - Simplified */
 .station-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.25rem;
     padding: 0.375rem 0.75rem;
     font-size: 0.75rem;
     font-weight: 600;
     line-height: 1;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    border: 1px solid transparent;
+    border-radius: 0.375rem;
     min-width: 90px;
     justify-content: center;
 }
 
-.station-badge:hover {
-    transform: translateY(-1px) scale(1.02);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Enhanced status styling */
+/* Simplified status styling */
 .text-success {
     color: #059669;
     font-weight: 600;
@@ -2234,7 +2339,7 @@ export default {
     font-style: italic;
 }
 
-/* Enhanced filter button */
+/* Simplified filter button */
 .filter-btn {
     background: transparent;
     border: none;
@@ -2242,17 +2347,15 @@ export default {
     padding: 0.375rem;
     margin-left: 0.375rem;
     color: #9ca3af;
-    transition: all 0.2s ease;
-    border-radius: 0.375rem;
+    transition: color 0.2s ease;
+    border-radius: 0.25rem;
 }
 
 .filter-btn:hover {
     color: #10b981;
-    background: rgba(16, 185, 129, 0.1);
-    transform: scale(1.1);
 }
 
-/* Enhanced reset filters button */
+/* Simplified reset filters button */
 .reset-all-filters-btn {
     position: absolute;
     right: 15px;
@@ -2261,25 +2364,21 @@ export default {
     font-size: 1rem;
     cursor: pointer;
     color: #fff;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: #10b981;
     border-radius: 50%;
     width: 36px;
     height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25);
-    transition: all 0.3s ease;
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    transition: background-color 0.2s ease;
 }
 
 .reset-all-filters-btn:hover {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    transform: rotate(180deg) scale(1.1);
-    box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4);
+    background: #059669;
 }
 
-/* Enhanced filter dropdown */
+/* Simplified filter dropdown */
 .absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10 {
     position: absolute;
     top: calc(100% + 8px);
@@ -2287,30 +2386,14 @@ export default {
     min-width: 280px;
     max-width: 320px;
     z-index: 1050;
-    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    background: #ffffff;
     padding: 1rem;
-    border-radius: 0.75rem;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-        0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    backdrop-filter: blur(8px);
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
 }
 
-.absolute.mt-1.bg-white.p-2.rounded.shadow-lg.z-10:before {
-    content: "";
-    position: absolute;
-    top: -8px;
-    left: 15px;
-    width: 16px;
-    height: 16px;
-    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-    transform: rotate(45deg);
-    border-left: 1px solid rgba(226, 232, 240, 0.8);
-    border-top: 1px solid rgba(226, 232, 240, 0.8);
-    z-index: -1;
-}
-
-/* Enhanced row number column */
+/* Simplified row number column */
 .table th:first-child,
 .table td:first-child {
     width: 60px;
@@ -2321,46 +2404,38 @@ export default {
     color: #6b7280;
 }
 
-/* Perfect scrollbar modern styling */
+/* Simplified scrollbar styling */
 .ps__rail-y {
-    width: 8px;
+    width: 6px;
     background-color: transparent !important;
-    border-radius: 4px;
 }
 
 .ps__thumb-y {
     width: 6px;
-    background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
-    border-radius: 4px;
-    transition: all 0.2s ease;
+    background: #cbd5e1;
+    border-radius: 3px;
 }
 
-.ps__rail-y:hover > .ps__thumb-y,
-.ps__rail-y:focus > .ps__thumb-y {
-    width: 8px;
-    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+.ps__rail-y:hover > .ps__thumb-y {
+    background: #10b981;
 }
 
 .ps__rail-x {
-    height: 8px;
+    height: 6px;
     background-color: transparent !important;
-    border-radius: 4px;
 }
 
 .ps__thumb-x {
     height: 6px;
-    background: linear-gradient(90deg, #cbd5e1 0%, #94a3b8 100%);
-    border-radius: 4px;
-    transition: all 0.2s ease;
+    background: #cbd5e1;
+    border-radius: 3px;
 }
 
-.ps__rail-x:hover > .ps__thumb-x,
-.ps__rail-x:focus > .ps__thumb-x {
-    height: 8px;
-    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+.ps__rail-x:hover > .ps__thumb-x {
+    background: #10b981;
 }
 
-/* Enhanced pagination styling */
+/* Simplified pagination styling */
 .pagination-card {
     padding: 1rem;
     display: flex;
@@ -2389,7 +2464,7 @@ export default {
     padding: 0.625rem 0.875rem;
     line-height: 1.25;
     border: 1px solid transparent;
-    border-radius: 0.5rem;
+    border-radius: 0.375rem;
     transition: all 0.2s ease;
     font-weight: 500;
     min-width: 40px;
@@ -2399,24 +2474,17 @@ export default {
 .pagination li.active a {
     z-index: 1;
     color: #fff;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: #10b981;
     border-color: transparent;
-    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25);
-    transform: translateY(-1px);
 }
 
 .pagination li a:hover:not(.active) {
     color: #10b981;
-    background: linear-gradient(
-        135deg,
-        rgba(16, 185, 129, 0.1) 0%,
-        rgba(16, 185, 129, 0.05) 100%
-    );
-    border-color: rgba(16, 185, 129, 0.2);
-    transform: translateY(-1px);
+    background: #f0fdf4;
+    border-color: #bbf7d0;
 }
 
-/* Enhanced search container */
+/* Simplified search container */
 .search-container {
     max-width: 350px;
     width: 100%;
@@ -2424,28 +2492,28 @@ export default {
 
 .search-input {
     height: 42px;
-    transition: all 0.3s ease;
+    transition: border-color 0.2s ease;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
     border: 1px solid #d1d5db;
-    background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%);
+    background: #ffffff;
 }
 
 .search-input:focus {
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
     border-color: #10b981;
-    background: #ffffff;
+    outline: none;
 }
 
 .input-group-text {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
-    background: linear-gradient(145deg, #f3f4f6 0%, #e5e7eb 100%);
+    background: #f3f4f6;
     border: 1px solid #d1d5db;
     border-right: none;
 }
 
-/* Loading animation enhancement */
+/* Simplified loading animation */
 #loading-wrapper {
     position: fixed;
     top: 0;
@@ -2453,7 +2521,6 @@ export default {
     width: 100%;
     height: 100%;
     background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -2466,38 +2533,28 @@ export default {
     color: #10b981;
 }
 
-/* Clickable row styles */
+/* Simplified clickable styles */
 .clickable-row {
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background-color 0.2s ease;
 }
 
 .clickable-row:hover {
-    background: linear-gradient(
-        135deg,
-        rgba(16, 185, 129, 0.1) 0%,
-        rgba(16, 185, 129, 0.05) 100%
-    ) !important;
-    transform: translateY(-2px) scale(1.01);
-    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+    background: #f0fdf4 !important;
 }
 
 .clickable-card {
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .clickable-card:hover {
-    background: linear-gradient(
-        135deg,
-        rgba(16, 185, 129, 0.1) 0%,
-        rgba(16, 185, 129, 0.05) 100%
-    ) !important;
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2);
+    background: #f0fdf4 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.1);
 }
 
-/* Photo Modal Styling */
+/* Simplified Photo Modal */
 .photo-modal-overlay {
     position: fixed;
     top: 0;
@@ -2505,13 +2562,11 @@ export default {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(4px);
     z-index: 2000;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 1rem;
-    animation: fadeIn 0.3s ease;
 }
 
 .photo-modal-content {
@@ -2519,10 +2574,9 @@ export default {
     max-width: 90vw;
     max-height: 90vh;
     background: white;
-    border-radius: 1rem;
+    border-radius: 0.5rem;
     overflow: hidden;
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-    animation: slideIn 0.3s ease;
 }
 
 .photo-modal-image {
@@ -2546,16 +2600,15 @@ export default {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background-color 0.2s ease;
     z-index: 1;
 }
 
 .photo-modal-close:hover {
     background: rgba(239, 68, 68, 0.8);
-    transform: scale(1.1);
 }
 
-/* Map Modal Styling */
+/* Simplified Map Modal */
 .map-modal-overlay {
     position: fixed;
     top: 0;
@@ -2563,24 +2616,21 @@ export default {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
     z-index: 1500;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 1rem;
-    animation: fadeIn 0.3s ease;
 }
 
 .map-modal-content {
     background: white;
-    border-radius: 1rem;
+    border-radius: 0.5rem;
     width: 100%;
     max-width: 600px;
     max-height: 80vh;
     overflow: hidden;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    animation: slideIn 0.3s ease;
 }
 
 .map-modal-header {
@@ -2589,7 +2639,7 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: #f8fafc;
 }
 
 .map-modal-header h5 {
@@ -2603,9 +2653,9 @@ export default {
 }
 
 .location-info {
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    background: #f0fdf4;
     padding: 1rem;
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     border: 1px solid #bbf7d0;
 }
 
@@ -2619,17 +2669,15 @@ export default {
     color: #059669;
 }
 
-/* Mobile Controls Styling */
+/* Simplified Mobile Controls */
 @media (max-width: 768px) {
     .mobile-controls-container {
-        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-        border-radius: 1rem;
+        background: #ffffff;
+        border-radius: 0.5rem;
         padding: 1.25rem;
         margin-bottom: 1rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-            0 2px 4px -1px rgba(0, 0, 0, 0.06),
-            0 0 0 1px rgba(226, 232, 240, 0.7);
-        border: 1px solid rgba(226, 232, 240, 0.7);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e5e7eb;
         position: relative;
         overflow: hidden;
     }
@@ -2641,12 +2689,7 @@ export default {
         left: 0;
         right: 0;
         height: 2px;
-        background: linear-gradient(
-            90deg,
-            #10b981 0%,
-            #059669 50%,
-            #10b981 100%
-        );
+        background: #10b981;
     }
 
     .mobile-header-row {
@@ -2667,9 +2710,9 @@ export default {
     }
 
     .btn-mobile-add {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        background: #10b981;
         border: none;
-        border-radius: 0.75rem;
+        border-radius: 0.5rem;
         color: white;
         width: 48px;
         height: 48px;
@@ -2677,34 +2720,12 @@ export default {
         align-items: center;
         justify-content: center;
         font-size: 1.25rem;
-        box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-mobile-add::before {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 50%;
-        transition: all 0.3s ease;
-        transform: translate(-50%, -50%);
-    }
-
-    .btn-mobile-add:hover::before {
-        width: 100px;
-        height: 100px;
+        transition: background-color 0.2s ease;
+        cursor: pointer;
     }
 
     .btn-mobile-add:hover {
-        transform: translateY(-2px) scale(1.05);
-        box-shadow: 0 8px 12px rgba(16, 185, 129, 0.4);
-        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        background: #059669;
     }
 
     .mobile-filter-row {
@@ -2728,13 +2749,13 @@ export default {
         width: 100%;
         height: 48px;
         border: 2px solid #e5e7eb;
-        border-radius: 0.75rem;
+        border-radius: 0.5rem;
         padding: 0 1rem;
-        background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%);
+        background: #ffffff;
         font-size: 0.875rem;
         font-weight: 500;
         color: #374151;
-        transition: all 0.3s ease;
+        transition: border-color 0.2s ease;
         appearance: none;
         background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
         background-position: right 0.75rem center;
@@ -2747,13 +2768,12 @@ export default {
         outline: none;
         border-color: #10b981;
         box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-        background: #ffffff;
     }
 
     .mobile-filter-btn {
-        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        background: #f3f4f6;
         border: 2px solid #d1d5db;
-        border-radius: 0.75rem;
+        border-radius: 0.5rem;
         color: #6b7280;
         width: 48px;
         height: 48px;
@@ -2761,18 +2781,17 @@ export default {
         align-items: center;
         justify-content: center;
         font-size: 1.1rem;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.2s ease;
+        cursor: pointer;
     }
 
     .mobile-filter-btn:hover {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        background: #10b981;
         border-color: #10b981;
         color: white;
-        transform: translateY(-2px) scale(1.05);
-        box-shadow: 0 8px 12px rgba(16, 185, 129, 0.25);
     }
 
-    /* Mobile Filter Modal */
+    /* Simplified Mobile Filter Modal */
     .mobile-filter-modal-overlay {
         position: fixed;
         top: 0;
@@ -2780,7 +2799,6 @@ export default {
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(4px);
         z-index: 1050;
         display: flex;
         align-items: center;
@@ -2789,21 +2807,19 @@ export default {
     }
 
     .mobile-filter-modal {
-        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-        border-radius: 1rem;
+        background: #ffffff;
+        border-radius: 0.5rem;
         width: 100%;
         max-width: 400px;
         max-height: 80vh;
         overflow: hidden;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-            0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        animation: modalSlideIn 0.3s ease-out;
+        box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+        border: 1px solid #e2e8f0;
     }
 
     .modal-header {
         padding: 1.5rem 1.5rem 1rem;
-        border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+        border-bottom: 1px solid #e2e8f0;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -2823,12 +2839,12 @@ export default {
         color: #6b7280;
         font-size: 1.25rem;
         padding: 0.5rem;
-        border-radius: 0.375rem;
-        transition: all 0.2s ease;
+        border-radius: 0.25rem;
+        transition: color 0.2s ease;
+        cursor: pointer;
     }
 
     .btn-close:hover {
-        background: rgba(239, 68, 68, 0.1);
         color: #ef4444;
     }
 
@@ -2854,7 +2870,7 @@ export default {
         max-height: 150px;
         overflow-y: auto;
         border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
+        border-radius: 0.25rem;
         padding: 0.75rem;
         background: #f9fafb;
     }
@@ -2875,19 +2891,19 @@ export default {
 
     .modal-footer {
         padding: 1rem 1.5rem 1.5rem;
-        border-top: 1px solid rgba(226, 232, 240, 0.7);
+        border-top: 1px solid #e2e8f0;
         display: flex;
         gap: 0.75rem;
         justify-content: flex-end;
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        background: #f8fafc;
     }
 
     .btn {
         padding: 0.75rem 1.5rem;
-        border-radius: 0.5rem;
+        border-radius: 0.375rem;
         font-size: 0.875rem;
         font-weight: 600;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
         border: 1px solid transparent;
         display: flex;
         align-items: center;
@@ -2897,31 +2913,27 @@ export default {
     }
 
     .btn-primary {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        background: #10b981;
         color: white;
         border: none;
-        box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25);
     }
 
     .btn-primary:hover {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 12px rgba(16, 185, 129, 0.3);
+        background: #059669;
     }
 }
 
-/* Mobile Card View Styling */
+/* Simplified Mobile Card View */
 .card-container {
     padding: 0.5rem;
 }
 
 .attendance-card {
     position: relative;
-    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05),
-        0 10px 15px -5px rgba(16, 185, 129, 0.07);
-    border: 1px solid rgba(226, 232, 240, 0.7);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
     overflow: hidden;
 }
 
@@ -2930,15 +2942,13 @@ export default {
     position: absolute;
     top: 0;
     left: 0;
-    width: 6px;
+    width: 4px;
     height: 100%;
-    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-    border-top-left-radius: 4px;
-    border-bottom-left-radius: 4px;
+    background: #10b981;
 }
 
 .card-header {
-    border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+    border-bottom: 1px solid #e2e8f0;
     padding-bottom: 0.75rem;
 }
 
@@ -2964,8 +2974,8 @@ export default {
 }
 
 .checkin-section {
-    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-    border-radius: 0.75rem;
+    background: #f9fafb;
+    border-radius: 0.5rem;
     padding: 1rem;
     border: 1px solid #e5e7eb;
 }
@@ -2985,15 +2995,14 @@ export default {
 .mobile-checkin-photo {
     width: 50px;
     height: 50px;
-    border-radius: 0.5rem;
+    border-radius: 0.375rem;
     object-fit: cover;
     border: 2px solid #e5e7eb;
-    transition: all 0.3s ease;
+    transition: border-color 0.2s ease;
     cursor: pointer;
 }
 
 .mobile-checkin-photo:hover {
-    transform: scale(1.1);
     border-color: #10b981;
 }
 
@@ -3016,16 +3025,16 @@ export default {
 
 .status-actions {
     padding-top: 0.75rem;
-    border-top: 1px solid rgba(226, 232, 240, 0.7);
+    border-top: 1px solid #e2e8f0;
 }
 
-/* Mobile Pagination Card */
+/* Simplified Mobile Pagination */
 .mobile-pagination-card {
     background: white;
-    border-radius: 12px;
+    border-radius: 0.5rem;
     padding: 16px;
     margin-top: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     border: 1px solid #e5e7eb;
 }
 
@@ -3059,20 +3068,19 @@ export default {
     width: 40px;
     height: 40px;
     border: 1px solid #d1d5db;
-    border-radius: 8px;
+    border-radius: 0.375rem;
     background: white;
     color: #6b7280;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     cursor: pointer;
 }
 
 .page-btn:hover:not(:disabled) {
     border-color: #10b981;
     color: #10b981;
-    transform: translateY(-1px);
 }
 
 .page-btn:disabled {
@@ -3084,7 +3092,7 @@ export default {
     background: #10b981;
     color: white;
     padding: 8px 16px;
-    border-radius: 8px;
+    border-radius: 0.375rem;
     font-weight: 600;
     margin: 0 8px;
     min-width: 40px;
@@ -3104,7 +3112,7 @@ export default {
 
 .quick-jump select {
     border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border-radius: 0.25rem;
     padding: 4px 8px;
     background: white;
     color: #374151;
@@ -3116,16 +3124,16 @@ export default {
     border-color: #10b981;
 }
 
-/* Export Modal Styling */
+/* Simplified Export Modal */
 .modal-content {
-    border-radius: 1rem;
+    border-radius: 0.5rem;
     border: none;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    border-radius: 1rem 1rem 0 0;
+    border-bottom: 1px solid #e5e7eb;
+    border-radius: 0.5rem 0.5rem 0 0;
 }
 
 .modal-body {
@@ -3135,256 +3143,24 @@ export default {
 .btn-outline-success {
     border-color: #10b981;
     color: #10b981;
+    transition: all 0.2s ease;
 }
 
 .btn-outline-success:hover {
     background-color: #10b981;
     border-color: #10b981;
     color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
 }
 
 .btn-success {
     background-color: #10b981;
     border-color: #10b981;
     color: white;
+    transition: all 0.2s ease;
 }
 
 .btn-success:hover {
     background-color: #059669;
     border-color: #059669;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(5, 150, 105, 0.4);
-}
-
-/* Animations */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: scale(0.9) translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-@keyframes modalSlideIn {
-    from {
-        opacity: 0;
-        transform: scale(0.9) translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-/* Responsive adjustments */
-@media (max-width: 480px) {
-    .table-scroll-container {
-        max-height: calc(100vh - 300px);
-        border-radius: 0.5rem;
-    }
-
-    .table thead th {
-        font-size: 0.75rem;
-        padding: 0.75rem 0.5rem;
-    }
-
-    .table td {
-        font-size: 0.75rem;
-        padding: 0.75rem 0.5rem;
-    }
-
-    .checkin-photo {
-        width: 50px;
-        height: 50px;
-    }
-
-    .pagination-info {
-        flex-direction: column;
-        gap: 4px;
-        text-align: center;
-    }
-
-    .page-btn {
-        width: 36px;
-        height: 36px;
-    }
-
-    .current-page {
-        padding: 6px 12px;
-        margin: 0 4px;
-    }
-
-    .badge {
-        font-size: 0.7rem;
-        padding: 0.25rem 0.5rem;
-    }
-
-    .position-badge,
-    .station-badge {
-        min-width: 70px;
-    }
-}
-
-/* Additional utility classes */
-.text-muted {
-    color: #6b7280 !important;
-}
-
-.text-warning {
-    color: #f59e0b !important;
-}
-
-.text-info {
-    color: #0ea5e9 !important;
-}
-
-.fw-bold {
-    font-weight: 600 !important;
-}
-
-/* Button styling */
-.button-30-save {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    border: none;
-    border-radius: 0.75rem;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25);
-    cursor: pointer;
-}
-
-.button-30-save:hover {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 12px rgba(16, 185, 129, 0.3);
-}
-
-.btn-light {
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-    border: 1px solid #d1d5db;
-    color: #6b7280;
-    transition: all 0.3s ease;
-}
-
-.btn-light:hover {
-    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
-    color: #374151;
-    transform: translateY(-1px);
-}
-
-.btn-icon {
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.5rem;
-}
-
-.btn-sm {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.8rem;
-    border-radius: 0.375rem;
-}
-
-.btn-info {
-    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-    border: none;
-    color: white;
-    box-shadow: 0 2px 4px rgba(14, 165, 233, 0.25);
-}
-
-.btn-info:hover {
-    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(14, 165, 233, 0.3);
-}
-
-/* Dropdown menu styling */
-.dropdown-menu {
-    border: none;
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    padding: 0.5rem;
-    background: white;
-}
-
-.dropdown-item {
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
-    transition: all 0.2s ease;
-    font-size: 0.875rem;
-}
-
-.dropdown-item:hover {
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-    color: #059669;
-    transform: translateX(4px);
-}
-
-/* Form controls enhancement */
-.form-control-sm {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.875rem;
-    border-radius: 0.5rem;
-    border: 1px solid #d1d5db;
-    transition: all 0.3s ease;
-}
-
-.form-control-sm:focus {
-    border-color: #10b981;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    outline: none;
-}
-
-.form-control {
-    border-radius: 0.5rem;
-    border: 1px solid #d1d5db;
-    transition: all 0.3s ease;
-}
-
-.form-control:focus {
-    border-color: #10b981;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    outline: none;
-}
-
-/* Badge hover animations */
-.position-badge:hover,
-.station-badge:hover {
-    animation: badgeBounce 0.6s ease-in-out;
-}
-
-@keyframes badgeBounce {
-    0%,
-    20%,
-    60%,
-    100% {
-        transform: translateY(0) scale(1);
-    }
-    40% {
-        transform: translateY(-4px) scale(1.05);
-    }
-    80% {
-        transform: translateY(-2px) scale(1.02);
-    }
 }
 </style>
