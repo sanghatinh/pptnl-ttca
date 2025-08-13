@@ -471,4 +471,11 @@ private function uploadUnsigned(UploadedFile $file, string $uploadPreset, string
             return "https://res.cloudinary.com/{$this->cloudName}/image/upload/{$publicId}";
         }
     }
+
+    public function getImageUrl($publicId)
+{
+    $cloudName = env('CLOUDINARY_CLOUD_NAME', 'dhtgcccax');
+    return "https://res.cloudinary.com/{$cloudName}/image/upload/{$publicId}";
+}
+
 }

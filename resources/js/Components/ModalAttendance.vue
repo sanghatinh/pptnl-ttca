@@ -104,11 +104,11 @@
                         >
                             <div class="flex items-center space-x-3 mb-6">
                                 <div
-                                    class="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center"
+                                    class="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg"
                                 >
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
-                                        class="h-6 w-6 text-white"
+                                        class="h-7 w-7 text-white"
                                         fill="none"
                                         viewBox="0 0 24 24"
                                         stroke="currentColor"
@@ -122,10 +122,10 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-lg font-bold text-gray-800">
+                                    <h3 class="text-xl font-bold text-gray-800">
                                         CheckIn-Buổi Sáng
                                     </h3>
-                                    <p class="text-sm text-gray-600">
+                                    <p class="text-sm text-gray-500">
                                         Chụp ảnh khi bắt đầu làm việc
                                     </p>
                                 </div>
@@ -134,16 +134,20 @@
                             <!-- Camera Section -->
                             <div class="space-y-4">
                                 <div class="relative">
-                                    <!-- เพิ่มส่วนนี้สำหรับ desktop -->
+                                    <!-- Desktop camera stream -->
                                     <div
-                                        v-if="isDesktop && morningVideoStream"
+                                        v-if="
+                                            isDesktop &&
+                                            morningVideoStream &&
+                                            !previewMorning
+                                        "
                                         class="mb-4 flex flex-col items-center"
                                     >
                                         <video
                                             ref="morningVideoRef"
                                             autoplay
                                             playsinline
-                                            class="w-32 h-32 rounded-xl border-4 border-white shadow-lg"
+                                            class="w-36 h-36 rounded-xl border-4 border-white shadow-lg"
                                         ></video>
                                         <div class="flex gap-2 mt-2">
                                             <button
@@ -153,7 +157,8 @@
                                                         'morning'
                                                     )
                                                 "
-                                                class="px-4 py-2 bg-amber-600 text-white rounded"
+                                                class="px-4 py-2 bg-amber-600 text-white rounded shadow"
+                                                :disabled="!!previewMorning"
                                             >
                                                 Chụp hình buổi sáng
                                             </button>
@@ -162,22 +167,30 @@
                                                 @click.stop="
                                                     stopDesktopCamera('morning')
                                                 "
-                                                class="px-4 py-2 bg-gray-400 text-white rounded"
+                                                class="px-4 py-2 bg-gray-400 text-white rounded shadow"
+                                                :disabled="!!previewMorning"
                                             >
                                                 Đóng camera
                                             </button>
                                         </div>
                                     </div>
                                     <div
-                                        class="border-2 border-dashed border-amber-300 rounded-xl p-8 text-center bg-white hover:bg-amber-50 transition-colors duration-200 cursor-pointer"
-                                        @click="triggerCamera('morning')"
+                                        class="border-2 border-dashed border-amber-300 rounded-xl p-8 text-center bg-white hover:bg-amber-50 transition-colors duration-200 cursor-pointer group"
+                                        :class="{
+                                            'opacity-60 pointer-events-none':
+                                                previewMorning,
+                                        }"
+                                        @click="
+                                            !previewMorning &&
+                                                triggerCamera('morning')
+                                        "
                                     >
                                         <div
                                             v-if="!previewMorning"
                                             class="space-y-3"
                                         >
                                             <div
-                                                class="w-16 h-16 mx-auto bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center"
+                                                class="w-16 h-16 mx-auto bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow"
                                             >
                                                 <svg
                                                     xmlns="http://www.w3.org/2000/svg"
@@ -216,25 +229,29 @@
                                         <div v-else class="space-y-3">
                                             <img
                                                 :src="previewMorning"
-                                                class="w-32 h-32 mx-auto object-cover rounded-xl border-4 border-white shadow-lg"
+                                                class="w-36 h-36 mx-auto object-cover rounded-xl border-4 border-white shadow-lg"
                                             />
                                             <p
-                                                class="text-sm text-green-600 font-medium"
+                                                class="text-sm text-green-600 font-medium flex items-center justify-center gap-1"
                                             >
-                                                ✓ Hình ảnh đã được chụp
+                                                <svg
+                                                    class="w-4 h-4 text-green-500"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        d="M5 13l4 4L19 7"
+                                                    />
+                                                </svg>
+                                                Hình ảnh đã được chụp
                                             </p>
-                                            <button
-                                                type="button"
-                                                @click.stop="
-                                                    clearPhoto('morning')
-                                                "
-                                                class="text-xs text-amber-600 hover:text-amber-800 underline"
-                                            >
-                                                Chụp lại
-                                            </button>
                                         </div>
                                     </div>
-                                    <!-- <input
+                                    <input
                                         ref="morningInput"
                                         type="file"
                                         accept="image/*"
@@ -243,7 +260,8 @@
                                             onFileChange('morning', $event)
                                         "
                                         class="hidden"
-                                    /> -->
+                                        :disabled="!!previewMorning"
+                                    />
                                 </div>
 
                                 <!-- Location Fields -->
@@ -348,8 +366,12 @@
                                 <div class="relative">
                                     <!-- Desktop camera stream -->
                                     <div
-                                        v-if="isDesktop && eveningVideoStream"
-                                        class="mb-4"
+                                        v-if="
+                                            isDesktop &&
+                                            eveningVideoStream &&
+                                            !previewEvening
+                                        "
+                                        class="mb-4 flex flex-col items-center"
                                     >
                                         <video
                                             ref="eveningVideoRef"
@@ -368,6 +390,7 @@
                                                     )
                                                 "
                                                 class="px-4 py-2 bg-indigo-600 text-white rounded"
+                                                :disabled="!!previewEvening"
                                             >
                                                 Chụp hình buổi chiều
                                             </button>
@@ -377,14 +400,22 @@
                                                     stopDesktopCamera('evening')
                                                 "
                                                 class="px-4 py-2 bg-gray-400 text-white rounded"
+                                                :disabled="!!previewEvening"
                                             >
                                                 Đóng camera
                                             </button>
                                         </div>
                                     </div>
                                     <div
-                                        class="border-2 border-dashed border-indigo-300 rounded-xl p-8 text-center bg-white hover:bg-indigo-50 transition-colors duration-200 cursor-pointer"
-                                        @click="triggerCamera('evening')"
+                                        class="border-2 border-dashed border-indigo-300 rounded-xl p-8 text-center bg-white hover:bg-indigo-50 transition-colors duration-200 cursor-pointer group"
+                                        :class="{
+                                            'opacity-60 pointer-events-none':
+                                                previewEvening,
+                                        }"
+                                        @click="
+                                            !previewEvening &&
+                                                triggerCamera('evening')
+                                        "
                                     >
                                         <div
                                             v-if="!previewEvening"
@@ -433,23 +464,26 @@
                                                 class="w-32 h-32 mx-auto object-cover rounded-xl border-4 border-white shadow-lg"
                                             />
                                             <p
-                                                class="text-sm text-green-600 font-medium"
+                                                class="text-sm text-green-600 font-medium flex items-center justify-center gap-1"
                                             >
-                                                ✓ Hình ảnh đã được chụp
+                                                <svg
+                                                    class="w-4 h-4 text-green-500"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        d="M5 13l4 4L19 7"
+                                                    />
+                                                </svg>
+                                                Hình ảnh đã được chụp
                                             </p>
-                                            <button
-                                                type="button"
-                                                @click.stop="
-                                                    clearPhoto('evening')
-                                                "
-                                                class="text-xs text-indigo-600 hover:text-indigo-800 underline"
-                                            >
-                                                Chụp lại
-                                            </button>
                                         </div>
                                     </div>
-
-                                    <!-- <input
+                                    <input
                                         ref="eveningInput"
                                         type="file"
                                         accept="image/*"
@@ -458,7 +492,8 @@
                                             onFileChange('evening', $event)
                                         "
                                         class="hidden"
-                                    /> -->
+                                        :disabled="!!previewEvening"
+                                    />
                                 </div>
 
                                 <!-- Location Fields -->
@@ -589,6 +624,7 @@
 <script setup>
 import { ref, watch, onUnmounted, nextTick } from "vue";
 import { useStore } from "../Store/Auth";
+import Swal from "sweetalert2"; // เพิ่มบรรทัดนี้
 
 const props = defineProps({
     log: Object,
@@ -995,10 +1031,26 @@ async function submitAttendance() {
         }
 
         const result = await response.json();
+        // แจ้งเตือนเมื่อสร้างหรืออัปเดตสำเร็จ
+        Swal.fire({
+            icon: "success",
+            title: props.log ? "Đã cập nhật" : "Tạo dữ liệu thành công",
+            text: props.log
+                ? "Thông tin vào-ra đã được cập nhật"
+                : "Lưu thông tin vào-ra thành công",
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
         emit("saved");
         emit("close");
     } catch (error) {
-        alert("เกิดข้อผิดพลาด: " + error.message);
+        // แจ้งเตือนเมื่อเกิดข้อผิดพลาด
+        Swal.fire({
+            icon: "error",
+            title: "Đã xảy ra lỗi",
+            text: error.message,
+        });
     } finally {
         submitting.value = false;
     }

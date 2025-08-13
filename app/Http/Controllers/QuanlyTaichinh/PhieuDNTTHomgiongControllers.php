@@ -480,150 +480,198 @@ public function bulkUpdate(Request $request)
 public function import(Request $request)
 {
     try {
-        // Validate input
+        // เปลี่ยน validation rule เป็น custom function ตรวจสอบ extension
         $request->validate([
-            'file' => 'required|file|mimes:csv,xlsx,xls|max:10240', // 10MB max
-            'payment_code' => 'required|string' // Parent payment request code
+            'file' => [
+                'required',
+                'file',
+                'max:10240', // 10MB
+                function ($attribute, $value, $fail) {
+                    $allowedExtensions = ['csv', 'xlsx', 'xls'];
+                    $extension = strtolower($value->getClientOriginalExtension());
+                    if (!in_array($extension, $allowedExtensions)) {
+                        $fail('ไฟล์ต้องเป็นประเภท: ' . implode(', ', $allowedExtensions));
+                    }
+                }
+            ],
+            'payment_code' => 'required|string'
         ]);
-        
+
         $file = $request->file('file');
         $paymentCode = $request->input('payment_code');
-        
+
         // Check if parent payment request exists
-        $parentPaymentRequest = DB::table('tb_phieu_trinh_thanh_toan_homgiong')
+        $parentPaymentRequest = \DB::table('tb_phieu_trinh_thanh_toan_homgiong')
             ->where('ma_trinh_thanh_toan', $paymentCode)
             ->first();
-            
+
         if (!$parentPaymentRequest) {
             return response()->json([
-                'success' => false,
-                'message' => 'Parent payment request not found',
                 'errors' => ['Invalid payment code']
             ], 404);
         }
-        
-        $filePath = $file->getPathname();
-        $extension = $file->getClientOriginalExtension();
-        
-        // Process the file based on its extension
-        if ($extension == 'csv') {
-            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Csv');
-        } else {
-            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+
+        $allowedExtensions = ['csv', 'xlsx', 'xls'];
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        // เพิ่มการตรวจสอบ extension อีกครั้งเพื่อความปลอดภัย
+        if (!in_array($extension, $allowedExtensions)) {
+            return response()->json([
+                'errors' => ['file' => ['ประเภทไฟล์ไม่ถูกต้อง']]
+            ], 422);
         }
-        
-        $spreadsheet = $reader->load($filePath);
+
+        // Copy file ไป temp path
+        $importId = uniqid('import_dntthg_');
+        $fileName = $importId . '.' . $extension;
+        $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $fileName;
+        if (!copy($file->getRealPath(), $tempPath)) {
+            return response()->json([
+                'errors' => ['Failed to copy file to temporary directory']
+            ], 500);
+        }
+
+        // ใช้ specific reader classes และ fallback mechanism
+        try {
+            if ($extension === 'csv') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+                $reader->setDelimiter(',');
+                $reader->setEnclosure('"');
+                $reader->setSheetIndex(0);
+            } elseif ($extension === 'xlsx') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+            } elseif ($extension === 'xls') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+            } else {
+                throw new \Exception("Unsupported file format: {$extension}");
+            }
+            $spreadsheet = $reader->load($tempPath);
+        } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+            \Log::warning("Failed to read with {$extension} reader, trying alternative readers: " . $e->getMessage());
+            $readersToTry = [];
+            if ($extension !== 'csv') {
+                $readersToTry[] = ['type' => 'Csv', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Csv::class];
+            }
+            if ($extension !== 'xlsx') {
+                $readersToTry[] = ['type' => 'Xlsx', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Xlsx::class];
+            }
+            if ($extension !== 'xls') {
+                $readersToTry[] = ['type' => 'Xls', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Xls::class];
+            }
+            $spreadsheet = null;
+            foreach ($readersToTry as $readerInfo) {
+                try {
+                    $reader = new $readerInfo['class']();
+                    if ($readerInfo['type'] === 'Csv') {
+                        $reader->setDelimiter(',');
+                        $reader->setEnclosure('"');
+                    }
+                    $spreadsheet = $reader->load($tempPath);
+                    \Log::info("Successfully read file using {$readerInfo['type']} reader");
+                    break;
+                } catch (\Exception $readerEx) {
+                    \Log::warning("Failed to read with {$readerInfo['type']} reader: " . $readerEx->getMessage());
+                    continue;
+                }
+            }
+            if (!$spreadsheet) {
+                throw new \Exception("Unable to read the uploaded file. Please ensure it's a valid Excel or CSV file.");
+            }
+        }
+
         $worksheet = $spreadsheet->getActiveSheet();
         $rows = $worksheet->toArray();
-        
+
         // Get headers from first row
         if (empty($rows) || count($rows) < 2) {
+            @unlink($tempPath);
             return response()->json([
-                'success' => false,
-                'message' => 'File must contain at least a header row and one data row',
                 'errors' => ['Invalid file format']
             ], 400);
         }
-        
+
         $headers = array_map('trim', $rows[0]);
-        
+
         // Required columns for homgiong import
         $requiredColumns = [
             'ma_giai_ngan',
             'vu_dau_tu',
             'loai_thanh_toan'
         ];
-        
+
         // Optional columns
         $optionalColumns = [
             'khach_hang_ca_nhan',
             'ma_khach_hang_ca_nhan',
             'khach_hang_doanh_nghiep',
             'ma_khach_hang_doanh_nghiep',
-         
         ];
-        
+
         // Find column indices
         $columnIndices = [];
         foreach (array_merge($requiredColumns, $optionalColumns) as $column) {
             $index = array_search(strtolower($column), array_map('strtolower', $headers));
             if ($index === false && in_array($column, $requiredColumns)) {
+                @unlink($tempPath);
                 return response()->json([
-                    'success' => false,
-                    'message' => "Required column '{$column}' not found in file",
-                    'errors' => ['Missing required columns']
+                    'errors' => ["Missing required column: {$column}"]
                 ], 400);
             }
             $columnIndices[$column] = $index;
         }
-        
+
         // Skip header row
         array_shift($rows);
-        
+
         $importedCount = 0;
         $duplicateCount = 0;
         $errorCount = 0;
         $errors = [];
-        
-        DB::beginTransaction();
-        
+
+        \DB::beginTransaction();
+
         try {
             foreach ($rows as $rowIndex => $row) {
-                if (empty(array_filter($row))) continue; // Skip empty rows
-                
-                $rowNumber = $rowIndex + 2; // +2 because we start from 1 and skipped header
-                
-                // Extract required data
-                $maGiaiNgan = trim($row[$columnIndices['ma_giai_ngan']] ?? '');
-                $vuDauTu = trim($row[$columnIndices['vu_dau_tu']] ?? '');
-                $loaiThanhToan = trim($row[$columnIndices['loai_thanh_toan']] ?? '');
-                
-                // Validate required fields
-                if (empty($maGiaiNgan) || empty($vuDauTu) || empty($loaiThanhToan)) {
-                    $errors[] = "Row {$rowNumber}: Missing required fields";
-                    $errorCount++;
-                    continue;
-                }
-                
-                // Check for duplicates
-                $existingRecord = PhieudenghithanhtoanHomgiong::where('ma_giai_ngan', $maGiaiNgan)->first();
-                if ($existingRecord) {
-                    $errors[] = "Row {$rowNumber}: Disbursement code '{$maGiaiNgan}' already exists";
-                    $duplicateCount++;
-                    continue;
-                }
-                
-                // Prepare data for creation
-                $paymentRequestData = [
-                    'ma_giai_ngan' => $maGiaiNgan,
-                    'ma_trinh_thanh_toan' => $paymentCode,
-                    'vu_dau_tu' => $vuDauTu,
-                    'loai_thanh_toan' => $loaiThanhToan,
-                    'tong_tien' => 0, // Default values
-                    'tong_tien_tam_giu' => 0,
-                    'tong_tien_khau_tru' => 0,
-                    'tong_tien_lai_suat' => 0,
-                    'tong_tien_thanh_toan_con_lai' => 0,
-                    'trang_thai_thanh_toan' => 'processing'
-                ];
-                
-                // Add optional fields if available
-                foreach ($optionalColumns as $column) {
-                    if ($columnIndices[$column] !== false && isset($row[$columnIndices[$column]])) {
-                        $value = trim($row[$columnIndices[$column]]);
-                        if (!empty($value)) {
-                            $paymentRequestData[$column] = $value;
-                        }
+                try {
+                    // Skip empty rows
+                    if (empty(array_filter($row))) {
+                        continue;
                     }
+
+                    $data = [];
+                    foreach ($requiredColumns as $column) {
+                        $excelIndex = $columnIndices[$column];
+                        $data[$column] = ($excelIndex !== false && isset($row[$excelIndex])) ? trim($row[$excelIndex]) : null;
+                    }
+                    foreach ($optionalColumns as $column) {
+                        $excelIndex = $columnIndices[$column] ?? false;
+                        $data[$column] = ($excelIndex !== false && isset($row[$excelIndex])) ? trim($row[$excelIndex]) : null;
+                    }
+                    $data['ma_trinh_thanh_toan'] = $paymentCode;
+
+                    // Check for duplicate ma_giai_ngan
+                    $exists = \DB::table('tb_de_nghi_thanhtoan_homgiong')
+                        ->where('ma_giai_ngan', $data['ma_giai_ngan'])
+                        ->exists();
+
+                    if ($exists) {
+                        $duplicateCount++;
+                        $errors[] = "Row " . ($rowIndex + 2) . ": Duplicate ma_giai_ngan: " . $data['ma_giai_ngan'];
+                        continue;
+                    }
+
+                    // Insert record
+                    \DB::table('tb_de_nghi_thanhtoan_homgiong')->insert($data);
+                    $importedCount++;
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    $errors[] = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
                 }
-                
-                // Create the payment request
-                PhieudenghithanhtoanHomgiong::create($paymentRequestData);
-                $importedCount++;
             }
-            
-            DB::commit();
-            
+
+            \DB::commit();
+            @unlink($tempPath);
+
             $message = "Import completed: {$importedCount} records imported";
             if ($duplicateCount > 0) {
                 $message .= ", {$duplicateCount} duplicates skipped";
@@ -631,7 +679,7 @@ public function import(Request $request)
             if ($errorCount > 0) {
                 $message .= ", {$errorCount} errors";
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => $message,
@@ -640,22 +688,21 @@ public function import(Request $request)
                 'error_count' => $errorCount,
                 'errors' => $errors
             ]);
-            
         } catch (\Exception $e) {
-            DB::rollBack();
+            \DB::rollBack();
+            @unlink($tempPath);
             throw $e;
         }
-        
+
     } catch (\Illuminate\Validation\ValidationException $e) {
         return response()->json([
             'success' => false,
             'message' => 'Validation failed',
             'errors' => $e->errors()
         ], 422);
-        
+
     } catch (\Exception $e) {
-        Log::error('Error importing payment requests homgiong: ' . $e->getMessage());
-        
+        \Log::error('Error importing payment requests homgiong: ' . $e->getMessage());
         return response()->json([
             'success' => false,
             'message' => 'Import failed: ' . $e->getMessage(),

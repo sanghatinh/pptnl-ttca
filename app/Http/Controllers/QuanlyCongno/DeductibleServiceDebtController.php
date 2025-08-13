@@ -274,9 +274,20 @@ private function getUniqueValues()
 public function startImport(Request $request)
 {
     try {
-        // Validate the incoming request
+        // เปลี่ยน validation rule เป็น custom function ตรวจสอบ extension
         $validator = Validator::make($request->all(), [
-            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+            'file' => [
+                'required',
+                'file',
+                'max:10240', // 10MB
+                function ($attribute, $value, $fail) {
+                    $allowedExtensions = ['csv', 'xlsx', 'xls'];
+                    $extension = strtolower($value->getClientOriginalExtension());
+                    if (!in_array($extension, $allowedExtensions)) {
+                        $fail('ไฟล์ต้องเป็นประเภท: ' . implode(', ', $allowedExtensions));
+                    }
+                }
+            ]
         ]);
 
         if ($validator->fails()) {
@@ -302,17 +313,20 @@ public function startImport(Request $request)
         
         // ดึงไฟล์ที่อัปโหลด
         $file = $request->file('file');
-        
-        // ตรวจสอบว่าไฟล์ถูกอัพโหลดอย่างถูกต้อง
-        if (!$file || !$file->isValid()) {
+        $allowedExtensions = ['csv', 'xlsx', 'xls'];
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        // เพิ่มการตรวจสอบ extension อีกครั้งเพื่อความปลอดภัย
+        if (!in_array($extension, $allowedExtensions)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid upload file'
-            ], 400);
+                'message' => 'ประเภทไฟล์ไม่ได้รับอนุญาต. อนุญาตเฉพาะ: CSV, XLSX, XLS',
+                'errors' => ['file' => ['ประเภทไฟล์ไม่ถูกต้อง']]
+            ], 422);
         }
         
         // สร้างชื่อไฟล์ชั่วคราว
-        $fileName = $importId . '.' . $file->getClientOriginalExtension();
+        $fileName = $importId . '.' . $extension;
         $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $fileName;
         
         // ย้ายไฟล์ไปยังโฟลเดอร์ temporary ของระบบโดยตรง
@@ -332,14 +346,14 @@ public function startImport(Request $request)
         }
         
         // Process the file in background using the temporary path
-        dispatch(function() use ($tempPath, $importId) {
+        dispatch(function() use ($tempPath, $importId, $extension) {
             try {
                 // ตรวจสอบไฟล์อีกครั้งก่อนเริ่มประมวลผลในพื้นหลัง
                 if (!file_exists($tempPath)) {
                     throw new \Exception("Temp file not found: $tempPath");
                 }
                 
-                $this->processImportFile($tempPath, $importId);
+                $this->processImportFile($tempPath, $importId, $extension);
             } catch (\Exception $e) {
                 Log::error('Error in dispatch callback: ' . $e->getMessage());
                 $importData = Cache::get('import_congno_dichvu_khautru_' . $importId);
@@ -380,63 +394,107 @@ public function startImport(Request $request)
  * @param \Illuminate\Http\UploadedFile $file
  * @param string $importId
  */
-private function processImportFile($filePath, $importId)
+private function processImportFile($filePath, $importId, $extension = null)
 {
     try {
         // ตรวจสอบว่าไฟล์มีอยู่จริงหรือไม่
         if (!file_exists($filePath)) {
             throw new \Exception("File \"$filePath\" does not exist.");
         }
-        
-        // Log file information for debugging
-        Log::info('Starting to process import file', [
-            'path' => $filePath,
-            'exists' => file_exists($filePath),
-            'size' => file_exists($filePath) ? filesize($filePath) : 'N/A',
-            'import_id' => $importId
-        ]);
-        
-        // Load the file using the file path
-        $spreadsheet = IOFactory::load($filePath);
+
+        // ตรวจสอบ extension แบบง่ายๆ
+        if ($extension === null) {
+            $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        }
+        $allowedExtensions = ['csv', 'xlsx', 'xls'];
+        if (!in_array($extension, $allowedExtensions)) {
+            throw new \Exception("Unsupported file extension: {$extension}. Allowed: " . implode(', ', $allowedExtensions));
+        }
+
+        // ใช้ specific reader classes และ fallback mechanism
+        try {
+            if ($extension === 'csv') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+                $reader->setDelimiter(',');
+                $reader->setEnclosure('"');
+                $reader->setSheetIndex(0);
+            } elseif ($extension === 'xlsx') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+            } elseif ($extension === 'xls') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+            } else {
+                throw new \Exception("Unsupported file format: {$extension}");
+            }
+            $spreadsheet = $reader->load($filePath);
+        } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+            Log::warning("Failed to read with {$extension} reader, trying alternative readers: " . $e->getMessage());
+            $readersToTry = [];
+            if ($extension !== 'csv') {
+                $readersToTry[] = ['type' => 'Csv', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Csv::class];
+            }
+            if ($extension !== 'xlsx') {
+                $readersToTry[] = ['type' => 'Xlsx', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Xlsx::class];
+            }
+            if ($extension !== 'xls') {
+                $readersToTry[] = ['type' => 'Xls', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Xls::class];
+            }
+            $spreadsheet = null;
+            foreach ($readersToTry as $readerInfo) {
+                try {
+                    $reader = new $readerInfo['class']();
+                    if ($readerInfo['type'] === 'Csv') {
+                        $reader->setDelimiter(',');
+                        $reader->setEnclosure('"');
+                    }
+                    $spreadsheet = $reader->load($filePath);
+                    Log::info("Successfully read file using {$readerInfo['type']} reader");
+                    break;
+                } catch (\Exception $readerEx) {
+                    Log::warning("Failed to read with {$readerInfo['type']} reader: " . $readerEx->getMessage());
+                    continue;
+                }
+            }
+            if (!$spreadsheet) {
+                throw new \Exception("Unable to read the uploaded file. Please ensure it's a valid Excel or CSV file.");
+            }
+        }
+
         $worksheet = $spreadsheet->getActiveSheet();
         $rows = $worksheet->toArray();
-        
+
         // First row is headers
         $headers = array_shift($rows);
-        
+
         // Map Excel column headers to database fields
         $columnMapping = $this->getColumnMapping($headers);
-        
+
         // Update total count
         $importData = Cache::get('import_congno_dichvu_khautru_' . $importId);
         $importData['total'] = count($rows);
         Cache::put('import_congno_dichvu_khautru_' . $importId, $importData, 3600);
-        
+
         // Process rows
         $processedCount = 0;
         $errors = [];
-        
+
         foreach ($rows as $rowIndex => $row) {
             try {
                 // Skip empty rows
                 if (empty(array_filter($row))) {
                     continue;
                 }
-                
+
                 $rowData = [];
-                
+
                 // Map data from Excel columns to database fields
                 foreach ($columnMapping as $dbField => $excelIndex) {
                     if ($excelIndex !== null) {
                         // Handle special case for date fields
                         if ($dbField === 'ngay_phat_sinh' && !empty($row[$excelIndex])) {
-                            // Try to convert Excel date to Y-m-d format
                             if (is_numeric($row[$excelIndex])) {
-                                // Excel date stored as numeric value
                                 $dateValue = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row[$excelIndex]);
                                 $rowData[$dbField] = $dateValue->format('Y-m-d');
                             } else {
-                                // Try to parse as date string
                                 try {
                                     $date = new \DateTime($row[$excelIndex]);
                                     $rowData[$dbField] = $date->format('Y-m-d');
@@ -450,56 +508,44 @@ private function processImportFile($filePath, $importId)
                         }
                     }
                 }
-                
+
                 // Validate numeric fields
                 $numericFields = [
                     'ty_gia_quy_doi', 'so_tien_theo_gia_tri_dau_tu', 'so_tien_no_goc_da_quy', 
                     'da_tra_goc', 'so_tien_con_lai', 'tien_lai', 'lai_suat'
                 ];
-                
+
                 foreach ($numericFields as $field) {
                     if (isset($rowData[$field])) {
-                        // Convert from formatted string (e.g., "1,234.56") to numeric
                         $rowData[$field] = preg_replace('/[^0-9.-]/', '', $rowData[$field]);
-                        
-                        // If empty after removing non-numeric chars, set to 0
                         if ($rowData[$field] === '' || $rowData[$field] === null) {
                             $rowData[$field] = 0;
                         }
                     }
                 }
-                
-                // Check for required fields - ใช้ field ที่ถูกต้องตามฐานข้อมูล 'invoicenumber'
+
+                // Check for required fields
                 $requiredFields = ['tram', 'invoicenumber', 'vu_dau_tu', 'so_tien_no_goc_da_quy'];
                 $missingFields = [];
-                
                 foreach ($requiredFields as $field) {
                     if (empty($rowData[$field])) {
                         $missingFields[] = $field;
                     }
                 }
-                
                 if (!empty($missingFields)) {
                     $errors[] = "Row " . ($rowIndex + 2) . ": Missing required fields: " . implode(', ', $missingFields);
                     continue;
                 }
-                
+
                 try {
-                    // Check if record exists by invoicenumber
                     $exists = DeductibleServiceDebt::where('invoicenumber', $rowData['invoicenumber'])->exists();
-                    
                     if ($exists) {
-                        // แก้ไขเป็นการใช้ query builder เพื่อหลีกเลี่ยงปัญหา primary key
                         DeductibleServiceDebt::where('invoicenumber', $rowData['invoicenumber'])
                             ->update($rowData);
                     } else {
-                        // Create new record
                         DeductibleServiceDebt::create($rowData);
                     }
-                    
                     $processedCount++;
-                    
-                    // Update progress every 10 records
                     if ($processedCount % 10 === 0) {
                         $importData = Cache::get('import_congno_dichvu_khautru_' . $importId);
                         $importData['processed'] = $processedCount;
@@ -509,28 +555,24 @@ private function processImportFile($filePath, $importId)
                     $errors[] = "Row " . ($rowIndex + 2) . ": Database error: " . $e->getMessage();
                     Log::error("Database error processing row " . ($rowIndex + 2) . ": " . $e->getMessage());
                 }
-                
+
             } catch (\Exception $e) {
                 $errors[] = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
                 Log::error("Error processing row " . ($rowIndex + 2) . ": " . $e->getMessage());
             }
         }
-        
-        // Clear cache to ensure fresh data after import
+
         Cache::forget('deductible_service_unique_values');
-        
-        // Update final status
+
         $importData = Cache::get('import_congno_dichvu_khautru_' . $importId);
         $importData['processed'] = $processedCount;
         $importData['errors'] = $errors;
         $importData['finished'] = true;
-        $importData['success'] = $processedCount > 0; // ตั้งเป็น true ถ้าอย่างน้อยนำเข้าได้ 1 รายการ
-        
+        $importData['success'] = $processedCount > 0;
         Cache::put('import_congno_dichvu_khautru_' . $importId, $importData, 3600);
-        
+
     } catch (\Exception $e) {
         Log::error('Import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-        
         $importData = Cache::get('import_congno_dichvu_khautru_' . $importId);
         if ($importData) {
             $importData['errors'] = array_merge($importData['errors'] ?? [], [$e->getMessage()]);
@@ -538,7 +580,6 @@ private function processImportFile($filePath, $importId)
             $importData['finished'] = true;
             Cache::put('import_congno_dichvu_khautru_' . $importId, $importData, 3600);
         } else {
-            // ถ้าไม่พบข้อมูลใน Cache สร้างใหม่
             Cache::put('import_congno_dichvu_khautru_' . $importId, [
                 'processed' => 0,
                 'total' => 0,

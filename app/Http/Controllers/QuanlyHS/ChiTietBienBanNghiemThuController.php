@@ -17,14 +17,38 @@ class ChiTietBienBanNghiemThuController extends Controller
      */
 public function importData(Request $request)
 {
+    // เปลี่ยน validation rule เป็น custom function ตรวจสอบ extension
     $request->validate([
-        'file' => 'required|file|mimes:csv,xlsx,xls|max:10240'
+        'file' => [
+            'required',
+            'file',
+            'max:10240', // 10MB
+            function ($attribute, $value, $fail) {
+                $allowedExtensions = ['csv', 'xlsx', 'xls'];
+                $extension = strtolower($value->getClientOriginalExtension());
+                if (!in_array($extension, $allowedExtensions)) {
+                    $fail('ไฟล์ต้องเป็นประเภท: ' . implode(', ', $allowedExtensions));
+                }
+            }
+        ]
     ]);
 
     $importId = uniqid('import_chitiet_');
     try {
         $file = $request->file('file');
-        $fileName = $importId . '.' . $file->getClientOriginalExtension();
+        $allowedExtensions = ['csv', 'xlsx', 'xls'];
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        // เพิ่มการตรวจสอบ extension อีกครั้งเพื่อความปลอดภัย
+        if (!in_array($extension, $allowedExtensions)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ประเภทไฟล์ไม่ได้รับอนุญาต. อนุญาตเฉพาะ: CSV, XLSX, XLS',
+                'errors' => ['file' => ['ประเภทไฟล์ไม่ถูกต้อง']]
+            ], 422);
+        }
+
+        $fileName = $importId . '.' . $extension;
         $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $fileName;
 
         // Copy file ไป temp path
@@ -101,7 +125,6 @@ public function importData(Request $request)
      */
     private function processImportFile($filePath, $importId)
 {
-     // เพิ่มบรรทัดนี้
     ini_set('memory_limit', '512M');
     ini_set('max_execution_time', 300);
     try {
@@ -113,18 +136,61 @@ public function importData(Request $request)
             throw new \Exception("File \"$filePath\" does not exist.");
         }
 
-        $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-
-        if ($extension == 'csv') {
-            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Csv');
-            $reader->setDelimiter(',');
-            $reader->setEnclosure('"');
-            $reader->setSheetIndex(0);
-        } else {
-            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+        // ตรวจสอบ extension แบบง่ายๆ
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $allowedExtensions = ['csv', 'xlsx', 'xls'];
+        if (!in_array($extension, $allowedExtensions)) {
+            throw new \Exception("Unsupported file extension: {$extension}. Allowed: " . implode(', ', $allowedExtensions));
         }
 
-        $spreadsheet = $reader->load($filePath);
+        // ใช้ specific reader classes และ fallback mechanism
+        try {
+            if ($extension === 'csv') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+                $reader->setDelimiter(',');
+                $reader->setEnclosure('"');
+                $reader->setSheetIndex(0);
+            } elseif ($extension === 'xlsx') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+            } elseif ($extension === 'xls') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+            } else {
+                throw new \Exception("Unsupported file format: {$extension}");
+            }
+            $spreadsheet = $reader->load($filePath);
+        } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+            Log::warning("Failed to read with {$extension} reader, trying alternative readers: " . $e->getMessage());
+            $readersToTry = [];
+            if ($extension !== 'csv') {
+                $readersToTry[] = ['type' => 'Csv', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Csv::class];
+            }
+            if ($extension !== 'xlsx') {
+                $readersToTry[] = ['type' => 'Xlsx', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Xlsx::class];
+            }
+            if ($extension !== 'xls') {
+                $readersToTry[] = ['type' => 'Xls', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Xls::class];
+            }
+            $spreadsheet = null;
+            foreach ($readersToTry as $readerInfo) {
+                try {
+                    $reader = new $readerInfo['class']();
+                    if ($readerInfo['type'] === 'Csv') {
+                        $reader->setDelimiter(',');
+                        $reader->setEnclosure('"');
+                    }
+                    $spreadsheet = $reader->load($filePath);
+                    Log::info("Successfully read file using {$readerInfo['type']} reader");
+                    break;
+                } catch (\Exception $readerEx) {
+                    Log::warning("Failed to read with {$readerInfo['type']} reader: " . $readerEx->getMessage());
+                    continue;
+                }
+            }
+            if (!$spreadsheet) {
+                throw new \Exception("Unable to read the uploaded file. Please ensure it's a valid Excel or CSV file.");
+            }
+        }
+
         $worksheet = $spreadsheet->getActiveSheet();
         $rows = $worksheet->toArray();
 

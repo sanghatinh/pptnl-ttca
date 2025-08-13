@@ -79,15 +79,11 @@ class FarmerProfileController extends Controller
         }
 
         // สร้าง Cloudinary URL สำหรับรูปภาพ (ถ้ามี)
-        $imageUrl = null;
-        if ($farmer->url_image) {
-            $imageUrl = $this->cloudinaryService->getTransformationUrl($farmer->url_image, [
-                'quality' => 'auto:good',
-                'width' => 400,
-                'height' => 400,
-                'crop' => 'fill'
-            ]);
-        }
+      $imageUrl = null;
+if ($farmer->url_image) {
+    // ส่งลิงก์ Cloudinary แบบธรรมดา ไม่ใส่ transformation
+    $imageUrl = $this->cloudinaryService->getImageUrl($farmer->url_image);
+}
 
         // เตรียมข้อมูลสำหรับส่งกลับ
         $profileData = [

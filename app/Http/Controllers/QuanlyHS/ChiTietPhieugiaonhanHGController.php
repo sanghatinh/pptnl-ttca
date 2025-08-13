@@ -17,49 +17,66 @@ class ChiTietPhieugiaonhanHGController extends Controller
      * Import data from Excel/CSV file
      */
     public function importData(Request $request)
-    {
-        // Validate the uploaded file
-        $request->validate([
-            'file' => 'required|file|mimes:csv,xlsx,xls|max:10240' // 10MB max
-        ]);
+{
+    // เปลี่ยน validation rule เป็น custom function ตรวจสอบ extension
+    $request->validate([
+        'file' => [
+            'required',
+            'file',
+            'max:10240', // 10MB
+            function ($attribute, $value, $fail) {
+                $allowedExtensions = ['csv', 'xlsx', 'xls'];
+                $extension = strtolower($value->getClientOriginalExtension());
+                if (!in_array($extension, $allowedExtensions)) {
+                    $fail('ไฟล์ต้องเป็นประเภท: ' . implode(', ', $allowedExtensions));
+                }
+            }
+        ]
+    ]);
 
-        // Generate a unique import ID
-        $importId = uniqid('import_chitiet_hg_');
-        
-        try {
-            $file = $request->file('file');
-            $path = $file->storeAs('imports', $importId . '.' . $file->extension());
-            
-            // Store import info in cache for progress tracking
-            \Cache::put('import_chitiet_hg_' . $importId, [
-                'status' => 'uploading',
-                'total' => 0,
-                'processed' => 0,
-                'errors' => [],
-                'success' => false,
-                'finished' => false
-            ], 3600); // Cache for 1 hour
-            
-            // Process file in background
-            dispatch(function() use ($path, $importId) {
-                $this->processImportFile($path, $importId);
-            })->afterResponse();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'File uploaded successfully. Processing started.',
-                'importId' => $importId
-            ]);
-            
-        } catch (\Exception $e) {
-            Log::error('Chi tiết HG Import error: ' . $e->getMessage());
+    $importId = uniqid('import_chitiet_hg_');
+    try {
+        $file = $request->file('file');
+        $allowedExtensions = ['csv', 'xlsx', 'xls'];
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        // เพิ่มการตรวจสอบ extension อีกครั้งเพื่อความปลอดภัย
+        if (!in_array($extension, $allowedExtensions)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error uploading file',
-                'errors' => [$e->getMessage()]
-            ], 500);
+                'message' => 'ประเภทไฟล์ไม่ได้รับอนุญาต. อนุญาตเฉพาะ: CSV, XLSX, XLS',
+                'errors' => ['file' => ['ประเภทไฟล์ไม่ถูกต้อง']]
+            ], 422);
         }
+
+        $path = $file->storeAs('imports', $importId . '.' . $extension);
+
+        \Cache::put('import_chitiet_hg_' . $importId, [
+            'status' => 'uploading',
+            'total' => 0,
+            'processed' => 0,
+            'errors' => [],
+            'success' => false,
+            'finished' => false
+        ], 3600);
+
+        // ประมวลผลทันที (ไม่ใช้ dispatch)
+        $this->processImportFile($path, $importId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'File uploaded successfully. Processing started.',
+            'importId' => $importId
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Chi tiết HG Import error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error uploading file',
+            'errors' => [$e->getMessage()]
+        ], 500);
     }
+}
 
     /**
      * Check import progress
@@ -85,94 +102,127 @@ class ChiTietPhieugiaonhanHGController extends Controller
     private function processImportFile($path, $importId)
 {
     try {
-        // Update status to processing
         $importData = \Cache::get('import_chitiet_hg_' . $importId);
         $importData['status'] = 'processing';
         \Cache::put('import_chitiet_hg_' . $importId, $importData, 3600);
-        
+
         // Get file from storage
-        $filePath = storage_path('app/private/' . $path);
-        
-        // Check if file exists
+        $filePath = storage_path('app/' . $path);
+
+        // Check if file exists, try alternative paths if not
         if (!file_exists($filePath)) {
-            // Try alternative path if the file doesn't exist at the expected location
-            $alternativePath = storage_path('app/' . $path);
-            if (file_exists($alternativePath)) {
-                $filePath = $alternativePath;
-            } else {
-                throw new \Exception("File \"$path\" does not exist at expected locations.");
+            $alternatePaths = [
+                storage_path('app/private/' . $path),
+                storage_path('app/public/' . $path),
+                storage_path($path)
+            ];
+            $fileFound = false;
+            foreach ($alternatePaths as $altPath) {
+                if (file_exists($altPath)) {
+                    $filePath = $altPath;
+                    $fileFound = true;
+                    break;
+                }
+            }
+            if (!$fileFound) {
+                throw new \Exception("File \"$path\" does not exist at any expected locations. Please check file upload settings.");
             }
         }
-        
-        // Determine file type and process accordingly
-        $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-        
-        // Load the file based on extension
-        if ($extension == 'csv') {
-            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Csv');
-            $reader->setDelimiter(',');
-            $reader->setEnclosure('"');
-            $reader->setSheetIndex(0);
-        } else {
-            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+
+        // ตรวจสอบ extension แบบง่ายๆ
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $allowedExtensions = ['csv', 'xlsx', 'xls'];
+        if (!in_array($extension, $allowedExtensions)) {
+            throw new \Exception("Unsupported file extension: {$extension}. Allowed: " . implode(', ', $allowedExtensions));
         }
-        
-        $spreadsheet = $reader->load($filePath);
+
+        // ใช้ specific reader classes และ fallback mechanism
+        try {
+            if ($extension === 'csv') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+                $reader->setDelimiter(',');
+                $reader->setEnclosure('"');
+                $reader->setSheetIndex(0);
+            } elseif ($extension === 'xlsx') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+            } elseif ($extension === 'xls') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+            } else {
+                throw new \Exception("Unsupported file format: {$extension}");
+            }
+            $spreadsheet = $reader->load($filePath);
+        } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+            Log::warning("Failed to read with {$extension} reader, trying alternative readers: " . $e->getMessage());
+            $readersToTry = [];
+            if ($extension !== 'csv') {
+                $readersToTry[] = ['type' => 'Csv', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Csv::class];
+            }
+            if ($extension !== 'xlsx') {
+                $readersToTry[] = ['type' => 'Xlsx', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Xlsx::class];
+            }
+            if ($extension !== 'xls') {
+                $readersToTry[] = ['type' => 'Xls', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Xls::class];
+            }
+            $spreadsheet = null;
+            foreach ($readersToTry as $readerInfo) {
+                try {
+                    $reader = new $readerInfo['class']();
+                    if ($readerInfo['type'] === 'Csv') {
+                        $reader->setDelimiter(',');
+                        $reader->setEnclosure('"');
+                    }
+                    $spreadsheet = $reader->load($filePath);
+                    Log::info("Successfully read file using {$readerInfo['type']} reader");
+                    break;
+                } catch (\Exception $readerEx) {
+                    Log::warning("Failed to read with {$readerInfo['type']} reader: " . $readerEx->getMessage());
+                    continue;
+                }
+            }
+            if (!$spreadsheet) {
+                throw new \Exception("Unable to read the uploaded file. Please ensure it's a valid Excel or CSV file.");
+            }
+        }
+
         $worksheet = $spreadsheet->getActiveSheet();
         $rows = $worksheet->toArray();
-        
-        // Get headers from first row
+
         if (empty($rows) || count($rows) < 2) {
             throw new \Exception('File is empty or does not contain data rows. Please check the file and try again.');
         }
-        
+
         $headers = array_map('trim', $rows[0]);
-        
-        // Map Excel/CSV columns to database columns
         $columnMap = $this->getColumnMapping($headers);
-        
+
         if (empty($columnMap)) {
             throw new \Exception('Could not map columns from file to database. Required columns are missing.');
         }
-        
-        // Skip header row
+
         array_shift($rows);
-        
-        // Update total records count
+
         $importData = \Cache::get('import_chitiet_hg_' . $importId);
         $importData['total'] = count($rows);
         \Cache::put('import_chitiet_hg_' . $importId, $importData, 3600);
-        
+
         $processedCount = 0;
         $errors = [];
-        
+
         try {
-            // Get the model's fillable fields to ensure consistent column count
             $model = new ChitietgiaonhanHomgiong();
             $fillableColumns = $model->getFillable();
-            
-            // Start transaction
+
             DB::beginTransaction();
-            
-            // Delete all existing records first (using delete() instead of truncate())
             ChitietgiaonhanHomgiong::query()->delete();
-            
-            // Insert new records in batches for better performance
-            $batchSize = 100; // Process 100 records at a time
+
+            $batchSize = 100;
             $batches = array_chunk($rows, $batchSize);
-            
+
             foreach ($batches as $batchIndex => $batch) {
                 $batchData = [];
-                
                 foreach ($batch as $index => $row) {
                     $rowIndex = ($batchIndex * $batchSize) + $index;
                     try {
-                        // Skip empty rows
-                        if (empty(array_filter($row))) {
-                            continue;
-                        }
-                        
-                        // Create data array with all fillable fields initialized to default values
+                        if (empty(array_filter($row))) continue;
                         $data = [];
                         foreach ($fillableColumns as $column) {
                             if (in_array($column, [
@@ -192,27 +242,19 @@ class ChiTietPhieugiaonhanHGController extends Controller
                                 $data[$column] = '';
                             }
                         }
-                        
-                        // Map data from Excel/CSV to database columns
                         foreach ($columnMap as $dbColumn => $excelIndex) {
                             if ($excelIndex !== false && isset($row[$excelIndex])) {
-                                // For numeric fields, ensure proper formatting
                                 if (in_array($dbColumn, [
                                     'so_luong_dk', 'thuc_nhan', 'don_gia', 'thanh_tien_hom_giong',
                                     'don_gia_don_chat', 'thanh_tien_don_chat', 'don_gia_boc_xep',
                                     'thanh_tien_boc_xep', 'don_gia_van_chuyen', 'thanh_tien_van_chuyen',
                                     'so_tien_dau_tu_hl', 'so_tien_dau_tu_khl'
                                 ])) {
-                                    // Remove currency symbols and formatting
                                     $value = preg_replace('/[^0-9.]/', '', $row[$excelIndex]);
                                     $data[$dbColumn] = $value ?: 0;
-                                } 
-                                // Handle date fields
-                                else if ($dbColumn === 'ngay_nhan' && !empty($row[$excelIndex])) {
-                                    // Try to parse the date
+                                } else if ($dbColumn === 'ngay_nhan' && !empty($row[$excelIndex])) {
                                     try {
                                         if (is_numeric($row[$excelIndex])) {
-                                            // Excel date format
                                             $dateValue = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row[$excelIndex]);
                                             $data[$dbColumn] = $dateValue->format('Y-m-d');
                                         } else {
@@ -222,36 +264,21 @@ class ChiTietPhieugiaonhanHGController extends Controller
                                         $data[$dbColumn] = null;
                                     }
                                 } else {
-                                    // For string values, properly escape and handle quotes
                                     $value = $row[$excelIndex];
                                     if (is_string($value)) {
-                                        // Ensure string values are properly encoded
                                         $value = mb_convert_encoding($value, 'UTF-8', mb_detect_encoding($value));
                                     }
                                     $data[$dbColumn] = $value;
                                 }
                             }
                         }
-                        
-                        // Validate row data
-                        if ($rowIndex + 2 === 56) {
-                            // Special logging for row 56 where the error occurs
-                            Log::debug("Row 56 data:", $data);
-                        }
-                        
-                        // Add to batch data
                         $batchData[] = $data;
-                        
                         $processedCount++;
-                        
                     } catch (\Exception $e) {
-                        // Log error but continue processing
                         $errors[] = 'Row ' . ($rowIndex + 2) . ': ' . $e->getMessage();
                         Log::error('Error processing row ' . ($rowIndex + 2) . ': ' . $e->getMessage());
                     }
                 }
-                
-                // Insert batch if not empty - use chunking for better error handling
                 if (!empty($batchData)) {
                     foreach (array_chunk($batchData, 10) as $chunk) {
                         try {
@@ -263,36 +290,24 @@ class ChiTietPhieugiaonhanHGController extends Controller
                         }
                     }
                 }
-                
-                // Update progress after each batch
                 $importData = \Cache::get('import_chitiet_hg_' . $importId);
                 $importData['processed'] = $processedCount;
                 $importData['errors'] = $errors;
                 \Cache::put('import_chitiet_hg_' . $importId, $importData, 3600);
-                
-                // Give the database a moment to breathe
-                usleep(10000); // 10ms pause between batches
+                usleep(10000);
             }
-            
-            // Check if there is still an active transaction before committing
             if (DB::transactionLevel() > 0) {
-                // Commit transaction
                 DB::commit();
             }
-            
         } catch (\Exception $e) {
-            // Check if there is still an active transaction before rolling back
             if (DB::transactionLevel() > 0) {
-                // Rollback the transaction
                 DB::rollBack();
             }
-            // Add the error to our errors array
             $errors[] = 'Transaction error: ' . $e->getMessage();
             Log::error('Transaction error: ' . $e->getMessage());
-            throw $e; // Re-throw to be caught by the outer catch block
+            throw $e;
         }
-        
-        // Update final status
+
         $importData = \Cache::get('import_chitiet_hg_' . $importId);
         $importData['status'] = 'completed';
         $importData['processed'] = $processedCount;
@@ -300,19 +315,17 @@ class ChiTietPhieugiaonhanHGController extends Controller
         $importData['success'] = true;
         $importData['finished'] = true;
         \Cache::put('import_chitiet_hg_' . $importId, $importData, 3600);
-        
-        // Delete the temporary file
+
         Storage::delete($path);
-        
+
     } catch (\Exception $e) {
-        // Update error status
         $importData = \Cache::get('import_chitiet_hg_' . $importId);
         $importData['status'] = 'failed';
         $importData['errors'] = array_merge($importData['errors'] ?? [], [$e->getMessage()]);
         $importData['success'] = false;
         $importData['finished'] = true;
         \Cache::put('import_chitiet_hg_' . $importId, $importData, 3600);
-        
+
         Log::error('Chi tiết HG Import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
     }
 }

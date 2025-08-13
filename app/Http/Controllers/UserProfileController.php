@@ -48,16 +48,11 @@ class UserProfileController extends Controller
             
             // ใช้ CloudinaryService สำหรับรูปภาพ
             $imageUrl = null;
-            if ($userQuery->image) {
-                $cloudinaryService = new CloudinaryService();
-                $imageUrl = $cloudinaryService->getTransformationUrl($userQuery->image, [
-                    'width' => 200,
-                    'height' => 200,
-                    'crop' => 'fill',
-                    'gravity' => 'face',
-                    'quality' => 'auto:good'
-                ]);
-            }
+if ($userQuery->image) {
+    // ส่งลิงก์ Cloudinary แบบธรรมดา ไม่ใส่ transformation
+    $cloudinaryService = new CloudinaryService();
+    $imageUrl = $cloudinaryService->getImageUrl($userQuery->image);
+}
             
             return response()->json([
                 'success' => true,
@@ -179,16 +174,11 @@ class UserProfileController extends Controller
                 
                 // สร้าง image_url สำหรับ response
                 $imageUrl = null;
-                if ($updatedUserQuery->image) {
-                    $cloudinaryService = new CloudinaryService();
-                    $imageUrl = $cloudinaryService->getTransformationUrl($updatedUserQuery->image, [
-                        'width' => 200,
-                        'height' => 200,
-                        'crop' => 'fill',
-                        'gravity' => 'face',
-                        'quality' => 'auto:good'
-                    ]);
-                }
+if ($userQuery->image) {
+    // ส่งลิงก์ Cloudinary แบบธรรมดา ไม่ใส่ transformation
+    $cloudinaryService = new CloudinaryService();
+    $imageUrl = $cloudinaryService->getImageUrl($userQuery->image);
+}
                 
                 return response()->json([
                     'success' => true,
@@ -289,4 +279,8 @@ class UserProfileController extends Controller
             ], 500);
         }
     }
+
+
+
+
 }

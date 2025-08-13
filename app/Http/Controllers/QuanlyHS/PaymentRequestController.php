@@ -677,148 +677,213 @@ $paymentDetails = DB::table('tb_bien_ban_nghiemthu_dv as bb')
      * Import data from CSV/Excel to update payment details
      */
     public function importData(Request $request, $id)
-    {
-        $request->validate([
-            'file' => 'required|file|mimes:csv,xlsx,xls|max:10240' // 10MB max
-        ]);
-
-        try {
-            // Check if payment request exists
-            $paymentRequest = PaymentRequest::where('ma_trinh_thanh_toan', $id)->first();
-            
-            if (!$paymentRequest) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Payment request not found'
-                ], 404);
+{
+    // เปลี่ยน validation rule เป็น custom function ตรวจสอบ extension
+    $request->validate([
+        'file' => [
+            'required',
+            'file',
+            'max:10240', // 10MB
+            function ($attribute, $value, $fail) {
+                $allowedExtensions = ['csv', 'xlsx', 'xls'];
+                $extension = strtolower($value->getClientOriginalExtension());
+                if (!in_array($extension, $allowedExtensions)) {
+                    $fail('ไฟล์ต้องเป็นประเภท: ' . implode(', ', $allowedExtensions));
+                }
             }
-            
-            $file = $request->file('file');
-            $filePath = $file->getPathname();
-            $extension = $file->getClientOriginalExtension();
-            
-            // Process the file based on its extension
-            if ($extension == 'csv') {
-                $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Csv');
+        ]
+    ]);
+
+    try {
+        // Check if payment request exists
+        $paymentRequest = PaymentRequest::where('ma_trinh_thanh_toan', $id)->first();
+        
+        if (!$paymentRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment request not found'
+            ], 404);
+        }
+        
+        $file = $request->file('file');
+        $allowedExtensions = ['csv', 'xlsx', 'xls'];
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        // เพิ่มการตรวจสอบ extension อีกครั้งเพื่อความปลอดภัย
+        if (!in_array($extension, $allowedExtensions)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ประเภทไฟล์ไม่ได้รับอนุญาต. อนุญาตเฉพาะ: CSV, XLSX, XLS',
+                'errors' => ['file' => ['ประเภทไฟล์ไม่ถูกต้อง']]
+            ], 422);
+        }
+
+        // Copy file ไป temp path
+        $importId = uniqid('import_payment_');
+        $fileName = $importId . '.' . $extension;
+        $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $fileName;
+        if (!copy($file->getRealPath(), $tempPath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to copy file to temporary directory'
+            ], 500);
+        }
+
+        // ใช้ specific reader classes และ fallback mechanism
+        try {
+            if ($extension === 'csv') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
                 $reader->setDelimiter(',');
                 $reader->setEnclosure('"');
                 $reader->setSheetIndex(0);
+            } elseif ($extension === 'xlsx') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+            } elseif ($extension === 'xls') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
             } else {
-                $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+                throw new \Exception("Unsupported file format: {$extension}");
             }
-            
-            $spreadsheet = $reader->load($filePath);
-            $worksheet = $spreadsheet->getActiveSheet();
-            $rows = $worksheet->toArray();
-            
-            // Get headers from first row
-            if (empty($rows) || count($rows) < 2) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'File is empty or does not contain data rows',
-                    'errors' => ['Please check the file format and try again.']
-                ], 422);
+            $spreadsheet = $reader->load($tempPath);
+        } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+            Log::warning("Failed to read with {$extension} reader, trying alternative readers: " . $e->getMessage());
+            $readersToTry = [];
+            if ($extension !== 'csv') {
+                $readersToTry[] = ['type' => 'Csv', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Csv::class];
             }
-            
-            $headers = array_map('trim', $rows[0]);
-            
-            // Find indices of required columns
-            $maIndex = array_search('ma_nghiem_thu', array_map('strtolower', $headers));
-            $maGiaiNganIndex = array_search('ma_de_nghi_giai_ngan', array_map('strtolower', $headers));
-            
-            // Alternative column names that might be used
-            if ($maIndex === false) {
-                $maIndex = array_search('ma nghiem thu', array_map('strtolower', $headers)) !== false ? 
-                           array_search('ma nghiem thu', array_map('strtolower', $headers)) : 
-                           array_search('ma_nghiem_thu', array_map('strtolower', $headers));
+            if ($extension !== 'xlsx') {
+                $readersToTry[] = ['type' => 'Xlsx', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Xlsx::class];
             }
-            
-            if ($maGiaiNganIndex === false) {
-                $maGiaiNganIndex = array_search('ma giai ngan', array_map('strtolower', $headers)) !== false ? 
-                                   array_search('ma giai ngan', array_map('strtolower', $headers)) : 
-                                   array_search('ma de nghi giai ngan', array_map('strtolower', $headers));
+            if ($extension !== 'xls') {
+                $readersToTry[] = ['type' => 'Xls', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Xls::class];
             }
-            
-            if ($maIndex === false || $maGiaiNganIndex === false) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Required columns are missing',
-                    'errors' => ['File must contain columns for ma_nghiem_thu and ma_de_nghi_giai_ngan.']
-                ], 422);
-            }
-            
-            // Skip header row
-            array_shift($rows);
-            
-            $updatedCount = 0;
-            $errorRows = [];
-            $errors = [];
-            
-            // Process rows
-            DB::beginTransaction();
-            try {
-                foreach ($rows as $index => $row) {
-                    // Skip empty rows
-                    if (empty(array_filter($row))) {
-                        continue;
+            $spreadsheet = null;
+            foreach ($readersToTry as $readerInfo) {
+                try {
+                    $reader = new $readerInfo['class']();
+                    if ($readerInfo['type'] === 'Csv') {
+                        $reader->setDelimiter(',');
+                        $reader->setEnclosure('"');
                     }
-                    
-                    $maValue = trim($row[$maIndex] ?? '');
-                    $maGiaiNganValue = trim($row[$maGiaiNganIndex] ?? '');
-                    
-                    if (empty($maValue)) {
-                        $errorRows[] = $index + 2; // +2 for 1-indexed and header row
-                        continue;
-                    }
-                    
-                    // Update the record in Logs_phieu_trinh_thanh_toan
-                    $updated = DB::table('Logs_phieu_trinh_thanh_toan')
-                        ->where('ma_trinh_thanh_toan', $id)
-                        ->where('ma_nghiem_thu', $maValue)
-                        ->update(['ma_de_nghi_giai_ngan' => $maGiaiNganValue]);
-                    
-                    if ($updated) {
-                        $updatedCount++;
-                    } else {
-                        $errorRows[] = $index + 2;
-                    }
+                    $spreadsheet = $reader->load($tempPath);
+                    Log::info("Successfully read file using {$readerInfo['type']} reader");
+                    break;
+                } catch (\Exception $readerEx) {
+                    Log::warning("Failed to read with {$readerInfo['type']} reader: " . $readerEx->getMessage());
+                    continue;
                 }
-                
-                if (!empty($errorRows)) {
-                    $errors[] = 'Could not update rows: ' . implode(', ', $errorRows) . '. These rows may not exist in the payment request.';
-                }
-                
-                DB::commit();
-                
-                return response()->json([
-                    'success' => true,
-                    'message' => "Successfully updated {$updatedCount} records" . 
-                                (!empty($errors) ? " with {$errors} warnings" : ""),
-                    'updated_count' => $updatedCount,
-                    'errors' => $errors
-                ]);
-                
-            } catch (\Exception $e) {
-                DB::rollBack();
-                Log::error('Error importing payment request data: ' . $e->getMessage());
-                
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error processing import file',
-                    'errors' => [$e->getMessage()]
-                ], 500);
             }
-            
+            if (!$spreadsheet) {
+                throw new \Exception("Unable to read the uploaded file. Please ensure it's a valid Excel or CSV file.");
+            }
+        }
+
+        $worksheet = $spreadsheet->getActiveSheet();
+        $rows = $worksheet->toArray();
+
+        // Get headers from first row
+        if (empty($rows) || count($rows) < 2) {
+            @unlink($tempPath);
+            return response()->json([
+                'success' => false,
+                'message' => 'File is empty or does not contain data rows',
+                'errors' => ['Please check the file format and try again.']
+            ], 422);
+        }
+
+        $headers = array_map('trim', $rows[0]);
+        $maIndex = array_search('ma_nghiem_thu', array_map('strtolower', $headers));
+        $maGiaiNganIndex = array_search('ma_de_nghi_giai_ngan', array_map('strtolower', $headers));
+
+        // Alternative column names that might be used
+        if ($maIndex === false) {
+            $maIndex = array_search('ma nghiem thu', array_map('strtolower', $headers)) !== false ? 
+                       array_search('ma nghiem thu', array_map('strtolower', $headers)) : 
+                       array_search('ma_nghiem_thu', array_map('strtolower', $headers));
+        }
+        if ($maGiaiNganIndex === false) {
+            $maGiaiNganIndex = array_search('ma giai ngan', array_map('strtolower', $headers)) !== false ? 
+                               array_search('ma giai ngan', array_map('strtolower', $headers)) : 
+                               array_search('ma de nghi giai ngan', array_map('strtolower', $headers));
+        }
+
+        if ($maIndex === false || $maGiaiNganIndex === false) {
+            @unlink($tempPath);
+            return response()->json([
+                'success' => false,
+                'message' => 'Required columns are missing',
+                'errors' => ['File must contain columns for ma_nghiem_thu and ma_de_nghi_giai_ngan.']
+            ], 422);
+        }
+
+        // Skip header row
+        array_shift($rows);
+
+        $updatedCount = 0;
+        $errorRows = [];
+        $errors = [];
+
+        // Process rows
+        DB::beginTransaction();
+        try {
+            foreach ($rows as $index => $row) {
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+                $maValue = trim($row[$maIndex] ?? '');
+                $maGiaiNganValue = trim($row[$maGiaiNganIndex] ?? '');
+
+                if (empty($maValue)) {
+                    $errorRows[] = $index + 2; // +2 for 1-indexed and header row
+                    continue;
+                }
+
+                // Update the record in Logs_phieu_trinh_thanh_toan
+                $updated = DB::table('Logs_phieu_trinh_thanh_toan')
+                    ->where('ma_trinh_thanh_toan', $id)
+                    ->where('ma_nghiem_thu', $maValue)
+                    ->update(['ma_de_nghi_giai_ngan' => $maGiaiNganValue]);
+
+                if ($updated) {
+                    $updatedCount++;
+                } else {
+                    $errorRows[] = $index + 2;
+                }
+            }
+
+            if (!empty($errorRows)) {
+                $errors[] = 'Could not update rows: ' . implode(', ', $errorRows) . '. These rows may not exist in the payment request.';
+            }
+
+            DB::commit();
+            @unlink($tempPath);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully updated {$updatedCount} records" . 
+                            (!empty($errors) ? " with {$errors} warnings" : ""),
+                'updated_count' => $updatedCount,
+                'errors' => $errors
+            ]);
         } catch (\Exception $e) {
-            Log::error('Error in import process: ' . $e->getMessage());
-            
+            DB::rollBack();
+            @unlink($tempPath);
+            Log::error('Error importing payment request data: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error processing import file',
                 'errors' => [$e->getMessage()]
             ], 500);
         }
+    } catch (\Exception $e) {
+        Log::error('Error in import process: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error processing import file',
+            'errors' => [$e->getMessage()]
+        ], 500);
     }
+}
 
 public function updateBasicInfo(Request $request, $id)
 {

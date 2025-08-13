@@ -249,49 +249,66 @@ public function index(Request $request)
 
     // Import data from Excel/CSV
     public function importData(Request $request)
-    {
-        // Validate the uploaded file
-        $request->validate([
-            'file' => 'required|file|mimes:csv,xlsx,xls|max:10240' // 10MB max
-        ]);
+{
+    // เปลี่ยน validation rule เป็น custom function ตรวจสอบ extension
+    $request->validate([
+        'file' => [
+            'required',
+            'file',
+            'max:10240', // 10MB
+            function ($attribute, $value, $fail) {
+                $allowedExtensions = ['csv', 'xlsx', 'xls'];
+                $extension = strtolower($value->getClientOriginalExtension());
+                if (!in_array($extension, $allowedExtensions)) {
+                    $fail('ไฟล์ต้องเป็นประเภท: ' . implode(', ', $allowedExtensions));
+                }
+            }
+        ]
+    ]);
 
-        // Generate a unique import ID
-        $importId = uniqid('import_');
-        
-        try {
-            $file = $request->file('file');
-            $path = $file->storeAs('imports', $importId . '.' . $file->extension());
-            
-            // Store import info in cache for progress tracking
-            \Cache::put('import_homgiong_' . $importId, [
-                'status' => 'uploading',
-                'total' => 0,
-                'processed' => 0,
-                'errors' => [],
-                'success' => false,
-                'finished' => false
-            ], 3600); // Cache for 1 hour
-            
-            // Process file in background (queue this job for large files)
-            dispatch(function() use ($path, $importId) {
-                $this->processImportFile($path, $importId);
-            })->afterResponse();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'File uploaded successfully. Processing started.',
-                'importId' => $importId
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Import error: ' . $e->getMessage());
+    $importId = uniqid('import_homgiong_');
+    try {
+        $file = $request->file('file');
+        $allowedExtensions = ['csv', 'xlsx', 'xls'];
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        // เพิ่มการตรวจสอบ extension อีกครั้งเพื่อความปลอดภัย
+        if (!in_array($extension, $allowedExtensions)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error uploading file',
-                'errors' => [$e->getMessage()]
-            ], 500);
+                'message' => 'ประเภทไฟล์ไม่ได้รับอนุญาต. อนุญาตเฉพาะ: CSV, XLSX, XLS',
+                'errors' => ['file' => ['ประเภทไฟล์ไม่ถูกต้อง']]
+            ], 422);
         }
+
+        $path = $file->storeAs('imports', $importId . '.' . $extension);
+
+        \Cache::put('import_homgiong_' . $importId, [
+            'status' => 'uploading',
+            'total' => 0,
+            'processed' => 0,
+            'errors' => [],
+            'success' => false,
+            'finished' => false
+        ], 3600);
+
+        // ประมวลผลทันที (ไม่ใช้ dispatch)
+        $this->processImportFile($path, $importId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'File uploaded successfully. Processing started.',
+            'importId' => $importId
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Import error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error uploading file',
+            'errors' => [$e->getMessage()]
+        ], 500);
     }
+}
 
     // Check import progress
     public function importProgress($importId)
@@ -311,242 +328,211 @@ public function index(Request $request)
 
     // Process the uploaded import file
     private function processImportFile($path, $importId)
-    {
-        try {
-            // Update status to processing
-            $importData = \Cache::get('import_homgiong_' . $importId);
-            $importData['status'] = 'processing';
-            \Cache::put('import_homgiong_' . $importId, $importData, 3600);
-            
-            // Log the original path for debugging
-            \Log::info('Import path provided: ' . $path);
-            
-            // Get file from storage - fix path to match filesystem configuration
-            $filePath = storage_path('app/' . $path);
-            
-            // Log the attempted path
-            \Log::info('Attempting to access file at: ' . $filePath);
-            
-            // Check if file exists
-            if (!file_exists($filePath)) {
-                // Try alternative paths if the file doesn't exist at the expected location
-                $alternatePaths = [
-                    storage_path('app/private/' . $path),
-                    storage_path('app/public/' . $path),
-                    storage_path($path)
-                ];
-                
-                $fileFound = false;
-                foreach ($alternatePaths as $altPath) {
-                    \Log::info('Trying alternative path: ' . $altPath);
-                    if (file_exists($altPath)) {
-                        $filePath = $altPath;
-                        $fileFound = true;
-                        \Log::info('File found at: ' . $filePath);
-                        break;
-                    }
-                }
-                
-                if (!$fileFound) {
-                    throw new \Exception("File \"$path\" does not exist at any expected locations. Please check file upload settings.");
+{
+    try {
+        $importData = \Cache::get('import_homgiong_' . $importId);
+        $importData['status'] = 'processing';
+        \Cache::put('import_homgiong_' . $importId, $importData, 3600);
+
+        // Get file from storage - fix path to match filesystem configuration
+        $filePath = storage_path('app/' . $path);
+
+        // Check if file exists, try alternative paths if not
+        if (!file_exists($filePath)) {
+            $alternatePaths = [
+                storage_path('app/private/' . $path),
+                storage_path('app/public/' . $path),
+                storage_path($path)
+            ];
+            $fileFound = false;
+            foreach ($alternatePaths as $altPath) {
+                if (file_exists($altPath)) {
+                    $filePath = $altPath;
+                    $fileFound = true;
+                    break;
                 }
             }
-            
-            // Determine file type and process accordingly
-            $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-            \Log::info('File extension detected: ' . $extension);
-            
-            // Load the file based on extension
-            if ($extension == 'csv') {
-                $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Csv');
+            if (!$fileFound) {
+                throw new \Exception("File \"$path\" does not exist at any expected locations. Please check file upload settings.");
+            }
+        }
+
+        // ตรวจสอบ extension แบบง่ายๆ
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $allowedExtensions = ['csv', 'xlsx', 'xls'];
+        if (!in_array($extension, $allowedExtensions)) {
+            throw new \Exception("Unsupported file extension: {$extension}. Allowed: " . implode(', ', $allowedExtensions));
+        }
+
+        // ใช้ specific reader classes และ fallback mechanism
+        try {
+            if ($extension === 'csv') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
                 $reader->setDelimiter(',');
                 $reader->setEnclosure('"');
                 $reader->setSheetIndex(0);
+            } elseif ($extension === 'xlsx') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+            } elseif ($extension === 'xls') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
             } else {
-                $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+                throw new \Exception("Unsupported file format: {$extension}");
             }
-            
-            try {
-                $spreadsheet = $reader->load($filePath);
-                \Log::info('File loaded successfully with PhpSpreadsheet');
-            } catch (\Exception $e) {
-                \Log::error('Error loading file with PhpSpreadsheet: ' . $e->getMessage());
-                throw new \Exception('Failed to load file: ' . $e->getMessage());
+            $spreadsheet = $reader->load($filePath);
+        } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+            \Log::warning("Failed to read with {$extension} reader, trying alternative readers: " . $e->getMessage());
+            $readersToTry = [];
+            if ($extension !== 'csv') {
+                $readersToTry[] = ['type' => 'Csv', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Csv::class];
             }
-            
-            $worksheet = $spreadsheet->getActiveSheet();
-            $rows = $worksheet->toArray();
-            
-            // Get headers from first row
-            if (empty($rows) || count($rows) < 2) {
-                throw new \Exception('File is empty or does not contain data rows. Please check the file and try again.');
+            if ($extension !== 'xlsx') {
+                $readersToTry[] = ['type' => 'Xlsx', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Xlsx::class];
             }
-            
-            $headers = array_map('trim', $rows[0]);
-            \Log::info('Headers found: ' . implode(', ', $headers));
-            
-            // Map Excel/CSV columns to database columns
-            $columnMap = $this->getColumnMapping($headers);
-            
-            if (empty($columnMap)) {
-                throw new \Exception('Could not map columns from file to database. Required columns are missing. Please verify your file has the following columns: ma_so_phieu, tram, vu_dau_tu, ten_phieu');
+            if ($extension !== 'xls') {
+                $readersToTry[] = ['type' => 'Xls', 'class' => \PhpOffice\PhpSpreadsheet\Reader\Xls::class];
             }
-            
-            // Skip header row
-            array_shift($rows);
-            
-            // Update total records count
-            $importData = \Cache::get('import_homgiong_' . $importId);
-            $importData['total'] = count($rows);
-            \Cache::put('import_homgiong_' . $importId, $importData, 3600);
-            
-            $processedCount = 0;
-            $errors = [];
-            
-            // Use a simple try-catch instead of the callback-style transaction
-            try {
-                \DB::beginTransaction();
-                
-                // Store existing ma_so_phieu values that have mappings
-                $existingMappedHG = \DB::table('document_mapping_homgiong')
-                    ->whereNotNull('ma_so_phieu')
-                    ->pluck('ma_so_phieu')
-                    ->toArray();
-                
-                // Extract ma_so_phieu values from the import file
-                $importedHGIds = [];
-                foreach ($rows as $row) {
-                    $maIndex = $columnMap['ma_so_phieu'];
-                    if ($maIndex !== false && isset($row[$maIndex]) && !empty($row[$maIndex])) {
-                        $importedHGIds[] = $row[$maIndex];
+            $spreadsheet = null;
+            foreach ($readersToTry as $readerInfo) {
+                try {
+                    $reader = new $readerInfo['class']();
+                    if ($readerInfo['type'] === 'Csv') {
+                        $reader->setDelimiter(',');
+                        $reader->setEnclosure('"');
                     }
+                    $spreadsheet = $reader->load($filePath);
+                    \Log::info("Successfully read file using {$readerInfo['type']} reader");
+                    break;
+                } catch (\Exception $readerEx) {
+                    \Log::warning("Failed to read with {$readerInfo['type']} reader: " . $readerEx->getMessage());
+                    continue;
                 }
-                
-                // Get only hom giong IDs that will be affected but preserve mappings
-                $preserveMappings = array_intersect($existingMappedHG, $importedHGIds);
-                
-                // First temporarily disable foreign key checks 
-                \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-                
-                // Log the IDs that will be deleted and preserved
-                \Log::info('IDs to be imported: ' . implode(', ', $importedHGIds));
-                \Log::info('Mappings to be preserved: ' . implode(', ', $preserveMappings));
-                
-                // Delete records from bien_ban_nghiem_thu_hom_giong that will be replaced by the import
-                // but preserve records referenced in document_mapping that aren't in the import
-                if (!empty($importedHGIds)) {
-                    $deleted = \DB::table('bien_ban_nghiem_thu_hom_giong')
-                        ->whereIn('ma_so_phieu', $importedHGIds)
-                        ->delete();
-                        \Log::info('Deleted ' . $deleted . ' existing records');
-                }
-                
-                \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-                
-                // Insert new records in batches for better performance
-                $batchSize = 100; // Process 100 records at a time
-                $batches = array_chunk($rows, $batchSize);
-                
-                foreach ($batches as $batchIndex => $batch) {
-                    $batchData = [];
-                    
-                    foreach ($batch as $index => $row) {
-                        $rowIndex = ($batchIndex * $batchSize) + $index;
-                        try {
-                            // Skip empty rows
-                            if (empty(array_filter($row))) {
-                                continue;
-                            }
-                            
-                            $data = [];
-                            
-                            // Map data from Excel/CSV to database columns
-                            foreach ($columnMap as $dbColumn => $excelIndex) {
-                                if ($excelIndex !== false && isset($row[$excelIndex])) {
-                                    $value = trim($row[$excelIndex]);
-                                    
-                                    // Handle special cases (e.g., dates, numbers)
-                                    if (in_array($dbColumn, ['tong_thuc_nhan', 'tong_tien', 'tong_tien_hom', 'tong_tien_boc_xep', 'tong_tien_van_chuyen'])) {
-                                        // Convert from string to number or handle formatting if needed
-                                        $value = is_numeric($value) ? $value : 0;
-                                    }
-                                    
-                                    $data[$dbColumn] = $value;
-                                }
-                            }
-                            
-                            // Set required fields if missing
-                            if (empty($data['ma_so_phieu'])) {
-                                throw new \Exception("Row " . ($rowIndex + 2) . ": Missing required field 'ma_so_phieu'");
-                            }
-                            
-                            // Replace any empty strings with null for certain fields
-                            foreach (['tram', 'vu_dau_tu', 'ten_phieu'] as $requiredField) {
-                                if (!isset($data[$requiredField]) || $data[$requiredField] === '') {
-                                    $data[$requiredField] = null;
-                                }
-                            }
-                            
-                            $batchData[] = $data;
-                            $processedCount++;
-                            
-                        } catch (\Exception $e) {
-                            $errors[] = "Error processing row " . ($rowIndex + 2) . ": " . $e->getMessage();
-                        }
-                    }
-                    
-                    // Insert batch if not empty
-                    if (!empty($batchData)) {
-                        \Log::info('Inserting batch of ' . count($batchData) . ' records');
-                        \DB::table('bien_ban_nghiem_thu_hom_giong')->insert($batchData);
-                    }
-                    
-                    // Update progress after each batch
-                    $importData = \Cache::get('import_homgiong_' . $importId);
-                    $importData['processed'] = $processedCount;
-                    $importData['errors'] = $errors;
-                    \Cache::put('import_homgiong_' . $importId, $importData, 3600);
-                    
-                    // Give the database a moment to breathe
-                    usleep(10000); // 10ms pause between batches
-                }
-                
-                // If we get here, commit the transaction
-                \DB::commit();
-                \Log::info('Transaction committed successfully');
-            } catch (\Exception $e) {
-                // Rollback the transaction
-                \DB::rollBack();
-                \Log::error('Transaction rollback: ' . $e->getMessage());
-                // Add the error to our errors array
-                $errors[] = 'Transaction error: ' . $e->getMessage();
-                throw $e; // Re-throw to be caught by the outer catch block
             }
-            
-            // Update final status
-            $importData = \Cache::get('import_homgiong_' . $importId);
-            $importData['status'] = 'completed';
-            $importData['processed'] = $processedCount;
-            $importData['errors'] = $errors;
-            $importData['success'] = true;
-            $importData['finished'] = true;
-            \Cache::put('import_homgiong_' . $importId, $importData, 3600);
-            
-            // Delete the temporary file
-            \Storage::delete($path);
-            
-        } catch (\Exception $e) {
-            // Update error status
-            $importData = \Cache::get('import_homgiong_' . $importId);
-            $importData['status'] = 'failed';
-            $importData['errors'] = array_merge($importData['errors'] ?? [], [$e->getMessage()]);
-            $importData['success'] = false;
-            $importData['finished'] = true;
-            \Cache::put('import_homgiong_' . $importId, $importData, 3600);
-            
-            \Log::error('Import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            if (!$spreadsheet) {
+                throw new \Exception("Unable to read the uploaded file. Please ensure it's a valid Excel or CSV file.");
+            }
         }
+
+        $worksheet = $spreadsheet->getActiveSheet();
+        $rows = $worksheet->toArray();
+
+        if (empty($rows) || count($rows) < 2) {
+            throw new \Exception('File is empty or does not contain data rows. Please check the file and try again.');
+        }
+
+        $headers = array_map('trim', $rows[0]);
+        $columnMap = $this->getColumnMapping($headers);
+
+        if (empty($columnMap)) {
+            throw new \Exception('Could not map columns from file to database. Required columns are missing. Please verify your file has the following columns: ma_so_phieu, tram, vu_dau_tu, ten_phieu');
+        }
+
+        array_shift($rows);
+
+        $importData = \Cache::get('import_homgiong_' . $importId);
+        $importData['total'] = count($rows);
+        \Cache::put('import_homgiong_' . $importId, $importData, 3600);
+
+        $processedCount = 0;
+        $errors = [];
+
+        try {
+            \DB::beginTransaction();
+
+            // Store existing ma_so_phieu values that have mappings
+            $existingMappedHG = \DB::table('document_mapping_homgiong')
+                ->whereNotNull('ma_so_phieu')
+                ->pluck('ma_so_phieu')
+                ->toArray();
+
+            // Extract ma_so_phieu values from the import file
+            $importedHGIds = [];
+            foreach ($rows as $row) {
+                $maIndex = $columnMap['ma_so_phieu'];
+                if ($maIndex !== false && isset($row[$maIndex]) && !empty($row[$maIndex])) {
+                    $importedHGIds[] = $row[$maIndex];
+                }
+            }
+
+            // Delete records from bien_ban_nghiem_thu_hom_giong that will be replaced by the import
+            if (!empty($importedHGIds)) {
+                \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+                \DB::table('bien_ban_nghiem_thu_hom_giong')
+                    ->whereIn('ma_so_phieu', $importedHGIds)
+                    ->delete();
+                \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            }
+
+            // Insert new records in batches
+            $batchSize = 100;
+            $batches = array_chunk($rows, $batchSize);
+
+            foreach ($batches as $batchIndex => $batch) {
+                $batchData = [];
+                foreach ($batch as $index => $row) {
+                    $rowIndex = ($batchIndex * $batchSize) + $index;
+                    try {
+                        if (empty(array_filter($row))) continue;
+                        $data = [];
+                        foreach ($columnMap as $dbColumn => $excelIndex) {
+                            if ($excelIndex !== false && isset($row[$excelIndex])) {
+                                $value = trim($row[$excelIndex]);
+                                if (in_array($dbColumn, ['tong_thuc_nhan', 'tong_tien', 'tong_tien_hom', 'tong_tien_boc_xep', 'tong_tien_van_chuyen'])) {
+                                    $value = is_numeric($value) ? $value : 0;
+                                }
+                                $data[$dbColumn] = $value;
+                            }
+                        }
+                        if (empty($data['ma_so_phieu'])) {
+                            throw new \Exception("Row " . ($rowIndex + 2) . ": Missing required field 'ma_so_phieu'");
+                        }
+                        foreach (['tram', 'vu_dau_tu', 'ten_phieu'] as $requiredField) {
+                            if (!isset($data[$requiredField]) || $data[$requiredField] === '') {
+                                $data[$requiredField] = null;
+                            }
+                        }
+                        $batchData[] = $data;
+                        $processedCount++;
+                    } catch (\Exception $e) {
+                        $errors[] = "Error processing row " . ($rowIndex + 2) . ": " . $e->getMessage();
+                    }
+                }
+                if (!empty($batchData)) {
+                    \DB::table('bien_ban_nghiem_thu_hom_giong')->insert($batchData);
+                }
+                $importData = \Cache::get('import_homgiong_' . $importId);
+                $importData['processed'] = $processedCount;
+                $importData['errors'] = $errors;
+                \Cache::put('import_homgiong_' . $importId, $importData, 3600);
+                usleep(10000);
+            }
+            \DB::commit();
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            $errors[] = 'Transaction error: ' . $e->getMessage();
+            throw $e;
+        }
+
+        $importData = \Cache::get('import_homgiong_' . $importId);
+        $importData['status'] = 'completed';
+        $importData['processed'] = $processedCount;
+        $importData['errors'] = $errors;
+        $importData['success'] = true;
+        $importData['finished'] = true;
+        \Cache::put('import_homgiong_' . $importId, $importData, 3600);
+
+        \Storage::delete($path);
+
+    } catch (\Exception $e) {
+        $importData = \Cache::get('import_homgiong_' . $importId);
+        $importData['status'] = 'failed';
+        $importData['errors'] = array_merge($importData['errors'] ?? [], [$e->getMessage()]);
+        $importData['success'] = false;
+        $importData['finished'] = true;
+        \Cache::put('import_homgiong_' . $importId, $importData, 3600);
+
+        \Log::error('Import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
     }
+}
 
     // Map columns from Excel/CSV headers to database columns
     private function getColumnMapping($headers)

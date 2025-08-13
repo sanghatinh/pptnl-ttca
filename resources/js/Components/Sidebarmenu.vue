@@ -749,4 +749,23 @@ li.active > router-link i {
     margin-top: 2px;
     opacity: 0.7;
 }
+
+.sidebar-content {
+    max-height: calc(100vh - 60px); /* ปรับ 60px ตามความสูง logo/header */
+    overflow-y: auto;
+    /* เพิ่มเติมเพื่อให้ scroll bar ดูสวยขึ้น */
+    scrollbar-width: thin;
+    scrollbar-color: #cccccc #f5f5f5;
+}
+/* สำหรับ Chrome */
+.sidebar-content::-webkit-scrollbar {
+    width: 6px;
+}
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: #cccccc;
+    border-radius: 4px;
+}
+.sidebar-content::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
 </style>
