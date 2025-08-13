@@ -1008,9 +1008,9 @@
     >
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
-                <div class="modal-header bg-light">
+                <div class="modal-header bg-success">
                     <h5 class="modal-title" id="exportModalLabel">
-                        <i class="fas fa-file-excel text-success me-2"></i>
+                        <i class="fas fa-file-excel text-white me-2"></i>
                         Export dữ liệu chấm công
                     </h5>
                     <button

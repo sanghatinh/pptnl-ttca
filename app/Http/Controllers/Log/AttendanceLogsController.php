@@ -706,15 +706,13 @@ class AttendanceLogsController extends Controller
              // Format Ngày
     $dateFormatted = $log->date ? \Carbon\Carbon::parse($log->date)->format('d/m/Y') : '';
 
-    // Format CheckIn Sáng
-    $checkinMorningFormatted = $log->checkin_morning
-        ? \Carbon\Carbon::parse($log->checkin_morning)->format('d/m/Y H:i')
-        : '';
+     $checkinMorningFormatted = $log->checkin_morning
+    ? \Carbon\Carbon::parse($log->checkin_morning)->setTimezone('Asia/Bangkok')->format('d/m/Y H:i')
+    : '';
 
-    // Format CheckIn Chiều
-    $checkinEveningFormatted = $log->checkin_evening
-        ? \Carbon\Carbon::parse($log->checkin_evening)->format('d/m/Y H:i')
-        : '';
+$checkinEveningFormatted = $log->checkin_evening
+    ? \Carbon\Carbon::parse($log->checkin_evening)->setTimezone('Asia/Bangkok')->format('d/m/Y H:i')
+    : '';
 
               $rows[] = [
         $startIndex + $idx,
