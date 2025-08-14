@@ -128,6 +128,7 @@ class AttendanceLogsController extends Controller
                     }
                     break;
                 case 'Farm_worker':
+                    case 'Mechanical_worker':
                     $query->where('users_id', $user->id);
                     break;
                 default:
@@ -627,6 +628,7 @@ class AttendanceLogsController extends Controller
                 }
                 break;
             case 'Farm_worker':
+                case 'Mechanical_worker':
                 $query->where('users_id', $user->id);
                 break;
             default:
