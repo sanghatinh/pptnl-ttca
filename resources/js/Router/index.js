@@ -43,6 +43,14 @@ const authMiddleware = async (to, from, next) => {
 };
 const routes = [
     {
+        name: "Dashboard",
+        path: "/",
+        component: () => import("../Pages/Dashboard.vue"),
+        meta: {
+            middleware: [authMiddleware],
+        },
+    },
+    {
         name: "Home",
         path: "/Dashboard",
         component: () => import("../Pages/Dashboard.vue"),

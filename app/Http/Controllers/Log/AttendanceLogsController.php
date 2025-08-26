@@ -164,7 +164,7 @@ class AttendanceLogsController extends Controller
     /**
      * สร้างลงเวลา (เช้า/เย็น)
      */
- public function store(Request $request)
+public function store(Request $request)
 {
     // Log ข้อมูล request ทั้งหมด
     \Log::info('AttendanceLogsController@store - Incoming request', [
@@ -218,7 +218,7 @@ class AttendanceLogsController extends Controller
         'lat_morning', 'lng_morning', 'lat_evening', 'lng_evening'
     ]);
 
-     // ตรวจสอบว่า date ต้องเป็นวันนี้เท่านั้น
+    // ตรวจสอบว่า date ต้องเป็นวันนี้เท่านั้น
     $today = now()->toDateString();
     if ($data['date'] !== $today) {
         return response()->json([
@@ -233,75 +233,116 @@ class AttendanceLogsController extends Controller
             'authenticated_user' => $user->id,
             'submitted_user_id' => $data['users_id']
         ]);
-        // You might want to allow this for admins, but for now, enforce same user
         $data['users_id'] = $user->id;
     }
 
-     // ตรวจสอบว่ามี log วันนี้ของ user นี้แล้วหรือยัง
-    $exists = AttendanceLogs::where('users_id', $user->id)
+    // ตรวจสอบว่ามี log วันนี้ของ user นี้แล้วหรือยัง
+    $existingLog = AttendanceLogs::where('users_id', $user->id)
         ->where('date', $data['date'])
-        ->exists();
-    if ($exists) {
+        ->first();
+    
+    if ($existingLog) {
         return response()->json([
             'success' => false,
             'message' => 'Bạn đã điểm danh hôm nay'
         ], 409);
     }
 
+    // ตรวจสอบช่วงเวลาที่อนุญาตให้ checkin
+    $currentTime = now()->setTimezone('Asia/Bangkok');
+    $currentHour = $currentTime->hour;
+    $currentMinute = $currentTime->minute;
+    $currentTimeInMinutes = ($currentHour * 60) + $currentMinute;
+
+    // ช่วงเวลาเช้า: 6:00 - 9:00 (360 - 540 นาที)
+    $morningStart = 6 * 60; // 6:00 = 360 นาที
+    $morningEnd = 9 * 60;   // 9:00 = 540 นาที
+
+    // ช่วงเวลาเย็น: 16:00 - 18:00 (960 - 1080 นาที)
+    $eveningStart = 16 * 60; // 16:00 = 960 นาที
+    $eveningEnd = 18 * 60;   // 18:00 = 1080 นาที
+
+    // ตรวจสอบว่าสามารถ checkin ได้หรือไม่
+    $canCheckinMorning = ($currentTimeInMinutes >= $morningStart && $currentTimeInMinutes <= $morningEnd);
+    $canCheckinEvening = ($currentTimeInMinutes >= $eveningStart && $currentTimeInMinutes <= $eveningEnd);
+
+    // ถ้ามีการอัปโหลดรูปเช้า แต่ไม่อยู่ในช่วงเวลาเช้า
+    if ($request->hasFile('photo_morning') && !$canCheckinMorning) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Chỉ có thể điểm danh sáng từ 6:00 đến 9:00'
+        ], 422);
+    }
+
+    // ถ้ามีการอัปโหลดรูปเย็น แต่ไม่อยู่ในช่วงเวลาเย็น
+    if ($request->hasFile('photo_evening') && !$canCheckinEvening) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Chỉ có thể điểm danh chiều từ 16:00 đến 18:00'
+        ], 422);
+    }
+
+    // ถ้าไม่ได้อยู่ในช่วงเวลาที่อนุญาต
+    if (!$canCheckinMorning && !$canCheckinEvening) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Chỉ có thể điểm danh trong khung giờ: 6:00-9:00 (sáng) hoặc 16:00-18:00 (chiều)'
+        ], 422);
+    }
+
     $cloudinaryService = new CloudinaryService();
 
     // เช็คอินเช้า
     if ($request->hasFile('photo_morning')) {
-    $result = $cloudinaryService->uploadImageOptimized(
-        $request->file('photo_morning'),
-        [
-            'folder' => 'attendance_logs',
-            'quality' => 'auto:good',
-            'format' => 'jpg',
-            'transformation' => [
-                'width' => 1024,
-                'height' => 1024,
-                'crop' => 'limit',
-                'quality' => 'auto:good',
-                'fetch_format' => 'jpg'
-            ]
-        ]
-    );
-    // ถ้าไฟล์ใหญ่เกิน 500KB ให้บีบอัดใหม่
-    if ($result['success'] && $result['bytes'] > 512000) {
-        \Log::info('Recompressing photo_morning with lower quality', ['bytes' => $result['bytes']]);
         $result = $cloudinaryService->uploadImageOptimized(
             $request->file('photo_morning'),
             [
                 'folder' => 'attendance_logs',
-                'quality' => 'auto:low',
+                'quality' => 'auto:good',
                 'format' => 'jpg',
                 'transformation' => [
-                    'width' => 800,
-                    'height' => 800,
+                    'width' => 1024,
+                    'height' => 1024,
                     'crop' => 'limit',
-                    'quality' => 'auto:low',
+                    'quality' => 'auto:good',
                     'fetch_format' => 'jpg'
                 ]
             ]
         );
+        // ถ้าไฟล์ใหญ่เกิน 500KB ให้บีบอัดใหม่
+        if ($result['success'] && $result['bytes'] > 512000) {
+            \Log::info('Recompressing photo_morning with lower quality', ['bytes' => $result['bytes']]);
+            $result = $cloudinaryService->uploadImageOptimized(
+                $request->file('photo_morning'),
+                [
+                    'folder' => 'attendance_logs',
+                    'quality' => 'auto:low',
+                    'format' => 'jpg',
+                    'transformation' => [
+                        'width' => 800,
+                        'height' => 800,
+                        'crop' => 'limit',
+                        'quality' => 'auto:low',
+                        'fetch_format' => 'jpg'
+                    ]
+                ]
+            );
+        }
+        \Log::info('AttendanceLogsController@store - photo_morning upload result', $result);
+        if ($result['success']) {
+            $data['photo_morning'] = $result['public_id'];
+            $data['checkin_morning'] = now();
+        } else {
+            \Log::error('AttendanceLogsController@store - photo_morning upload failed', [
+                'message' => $result['message'] ?? 'Upload failed'
+            ]);
+            return response()->json([
+                'success' => false, 
+                'message' => $result['message'] ?? 'Upload failed'
+            ], 500);
+        }
     }
-    \Log::info('AttendanceLogsController@store - photo_morning upload result', $result);
-    if ($result['success']) {
-        $data['photo_morning'] = $result['public_id'];
-        $data['checkin_morning'] = now();
-    } else {
-        \Log::error('AttendanceLogsController@store - photo_morning upload failed', [
-            'message' => $result['message'] ?? 'Upload failed'
-        ]);
-        return response()->json([
-            'success' => false, 
-            'message' => $result['message'] ?? 'Upload failed'
-        ], 500);
-    }
-}
 
-    // เช็คอินเย็น
     // เช็คอินเย็น
     if ($request->hasFile('photo_evening')) {
         $result = $cloudinaryService->uploadImageOptimized(
@@ -373,7 +414,6 @@ class AttendanceLogsController extends Controller
             'message' => 'Failed to save attendance: ' . $e->getMessage()
         ], 500);
     }
-    
 }
 
     /**
@@ -417,6 +457,49 @@ class AttendanceLogsController extends Controller
         'lat_morning', 'lng_morning', 'lat_evening', 'lng_evening'
     ]);
 
+    // ตรวจสอบช่วงเวลาที่อนุญาตให้ checkin
+    $currentTime = now()->setTimezone('Asia/Bangkok');
+    $currentHour = $currentTime->hour;
+    $currentMinute = $currentTime->minute;
+    $currentTimeInMinutes = ($currentHour * 60) + $currentMinute;
+
+    // ช่วงเวลาเช้า: 6:00 - 9:00 (360 - 540 นาที)
+    $morningStart = 6 * 60; // 6:00 = 360 นาที
+    $morningEnd = 9 * 60;   // 9:00 = 540 นาที
+
+    // ช่วงเวลาเย็น: 16:00 - 18:00 (960 - 1080 นาที)
+    $eveningStart = 16 * 60; // 16:00 = 960 นาที
+    $eveningEnd = 18 * 60;   // 18:00 = 1080 นาที
+
+    // ตรวจสอบว่าสามารถ checkin ได้หรือไม่
+    $canCheckinMorning = ($currentTimeInMinutes >= $morningStart && $currentTimeInMinutes <= $morningEnd);
+    $canCheckinEvening = ($currentTimeInMinutes >= $eveningStart && $currentTimeInMinutes <= $eveningEnd);
+
+    // ถ้ามีการอัปโหลดรูปเช้า แต่ไม่อยู่ในช่วงเวลาเช้า
+    if ($request->hasFile('photo_morning') && !$canCheckinMorning) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Chỉ có thể cập nhật điểm danh sáng từ 6:00 đến 9:00'
+        ], 422);
+    }
+
+    // ถ้ามีการอัปโหลดรูปเย็น แต่ไม่อยู่ในช่วงเวลาเย็น
+    if ($request->hasFile('photo_evening') && !$canCheckinEvening) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Chỉ có thể cập nhật điểm danh chiều từ 16:00 đến 18:00'
+        ], 422);
+    }
+
+    // ถ้าไม่ได้อยู่ในช่วงเวลาที่อนุญาต และมีการอัปโหลดรูป
+    if (($request->hasFile('photo_morning') || $request->hasFile('photo_evening')) && 
+        !$canCheckinMorning && !$canCheckinEvening) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Chỉ có thể cập nhật điểm danh trong khung giờ: 6:00-9:00 (sáng) hoặc 16:00-18:00 (chiều)'
+        ], 422);
+    }
+
     $cloudinaryService = new CloudinaryService();
 
     // อัปเดตรูปเช้า
@@ -426,22 +509,43 @@ class AttendanceLogsController extends Controller
             [
                 'folder' => 'attendance_logs',
                 'quality' => 'auto:good',
-                'format' => 'auto',
+                'format' => 'jpg',
                 'transformation' => [
-                    'width' => 1200,
-                    'height' => 1200,
+                    'width' => 1024,
+                    'height' => 1024,
                     'crop' => 'limit',
                     'quality' => 'auto:good',
-                    'fetch_format' => 'auto'
-                ],
-                'max_bytes' => 300 * 1024
+                    'fetch_format' => 'jpg'
+                ]
             ]
         );
+        // ถ้าไฟล์ใหญ่เกิน 500KB ให้บีบอัดใหม่
+        if ($result['success'] && $result['bytes'] > 512000) {
+            \Log::info('Recompressing photo_morning with lower quality', ['bytes' => $result['bytes']]);
+            $result = $cloudinaryService->uploadImageOptimized(
+                $request->file('photo_morning'),
+                [
+                    'folder' => 'attendance_logs',
+                    'quality' => 'auto:low',
+                    'format' => 'jpg',
+                    'transformation' => [
+                        'width' => 800,
+                        'height' => 800,
+                        'crop' => 'limit',
+                        'quality' => 'auto:low',
+                        'fetch_format' => 'jpg'
+                    ]
+                ]
+            );
+        }
         if ($result['success']) {
             $data['photo_morning'] = $result['public_id'];
             $data['checkin_morning'] = now();
         } else {
-            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Upload failed'], 500);
+            return response()->json([
+                'success' => false, 
+                'message' => $result['message'] ?? 'Upload failed'
+            ], 500);
         }
     }
 
@@ -452,22 +556,42 @@ class AttendanceLogsController extends Controller
             [
                 'folder' => 'attendance_logs',
                 'quality' => 'auto:good',
-                'format' => 'auto',
+                'format' => 'jpg',
                 'transformation' => [
                     'width' => 1200,
                     'height' => 1200,
                     'crop' => 'limit',
                     'quality' => 'auto:good',
-                    'fetch_format' => 'auto'
-                ],
-                'max_bytes' => 300 * 1024
+                    'fetch_format' => 'jpg'
+                ]
             ]
         );
+        if ($result['success'] && $result['bytes'] > 512000) {
+            \Log::info('Recompressing photo_evening with lower quality', ['bytes' => $result['bytes']]);
+            $result = $cloudinaryService->uploadImageOptimized(
+                $request->file('photo_evening'),
+                [
+                    'folder' => 'attendance_logs',
+                    'quality' => 'auto:low',
+                    'format' => 'jpg',
+                    'transformation' => [
+                        'width' => 800,
+                        'height' => 800,
+                        'crop' => 'limit',
+                        'quality' => 'auto:low',
+                        'fetch_format' => 'jpg'
+                    ]
+                ]
+            );
+        }
         if ($result['success']) {
             $data['photo_evening'] = $result['public_id'];
             $data['checkin_evening'] = now();
         } else {
-            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Upload failed'], 500);
+            return response()->json([
+                'success' => false, 
+                'message' => $result['message'] ?? 'Upload failed'
+            ], 500);
         }
     }
 
