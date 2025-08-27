@@ -5,7 +5,6 @@
         <div
             class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto relative animate-fade-in"
         >
-            <!-- Header -->
             <div
                 class="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 px-6 py-4 z-10"
             >
@@ -61,10 +60,8 @@
                 </div>
             </div>
 
-            <!-- Form Content -->
             <div class="p-6">
                 <form @submit.prevent="submitAttendance" class="space-y-8">
-                    <!-- Date Section -->
                     <div
                         class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100"
                     >
@@ -96,9 +93,69 @@
                         />
                     </div>
 
-                    <!-- Photo Sections -->
+                    <div
+                        v-if="locationMessage"
+                        class="location-message"
+                        :class="{
+                            info: locationMessage === 'Đang tìm vị trí...',
+                            success: locationMessage === 'Đã tìm thấy vị trí!',
+                            error:
+                                locationMessage.includes('error') ||
+                                locationMessage.includes('Không thể'),
+                        }"
+                    >
+                        <svg
+                            v-if="locationMessage === 'Đang tìm vị trí...'"
+                            class="w-5 h-5 text-blue-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                            ></circle>
+                        </svg>
+                        <svg
+                            v-else-if="
+                                locationMessage === 'Đã tìm thấy vị trí!'
+                            "
+                            class="w-5 h-5 text-green-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M5 13l4 4L19 7"
+                            />
+                        </svg>
+                        <svg
+                            v-else-if="
+                                locationMessage.includes('error') ||
+                                locationMessage.includes('Không thể')
+                            "
+                            class="w-5 h-5 text-red-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M6 18L18 6M6 6l12 12"
+                            />
+                        </svg>
+                        <p>{{ locationMessage }}</p>
+                    </div>
+
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <!-- Morning Check-in -->
                         <div
                             class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200 hover:shadow-lg transition-shadow duration-300"
                         >
@@ -131,10 +188,8 @@
                                 </div>
                             </div>
 
-                            <!-- Camera Section -->
                             <div class="space-y-4">
                                 <div class="relative">
-                                    <!-- Desktop camera stream -->
                                     <div
                                         v-if="
                                             isDesktop &&
@@ -264,7 +319,6 @@
                                     />
                                 </div>
 
-                                <!-- Location Fields -->
                                 <div class="space-y-3">
                                     <label
                                         class="flex items-center space-x-2 text-sm font-medium text-gray-700"
@@ -311,7 +365,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Note Field -->
                                 <div>
                                     <label
                                         class="block text-sm font-medium text-gray-700 mb-2"
@@ -328,7 +381,6 @@
                             </div>
                         </div>
 
-                        <!-- Evening Check-out -->
                         <div
                             class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200 hover:shadow-lg transition-shadow duration-300"
                         >
@@ -361,10 +413,8 @@
                                 </div>
                             </div>
 
-                            <!-- Camera Section -->
                             <div class="space-y-4">
                                 <div class="relative">
-                                    <!-- Desktop camera stream -->
                                     <div
                                         v-if="
                                             isDesktop &&
@@ -496,7 +546,6 @@
                                     />
                                 </div>
 
-                                <!-- Location Fields -->
                                 <div class="space-y-3">
                                     <label
                                         class="flex items-center space-x-2 text-sm font-medium text-gray-700"
@@ -543,7 +592,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Note Field -->
                                 <div>
                                     <label
                                         class="block text-sm font-medium text-gray-700 mb-2"
@@ -561,7 +609,6 @@
                         </div>
                     </div>
 
-                    <!-- Submit Button -->
                     <div class="flex justify-end pt-6 border-t border-gray-200">
                         <button
                             type="submit"
@@ -624,26 +671,14 @@
 <script setup>
 import { ref, watch, onUnmounted, nextTick } from "vue";
 import { useStore } from "../Store/Auth";
-import Swal from "sweetalert2"; // เพิ่มบรรทัดนี้
+import Swal from "sweetalert2";
 
 const props = defineProps({
     log: Object,
 });
 const emit = defineEmits(["close", "saved"]);
-const eveningVideoStream = ref(null);
-const eveningVideoRef = ref(null);
 
-const store = useStore();
-
-function getUserIdFromLocalStorage() {
-    try {
-        const user = JSON.parse(localStorage.getItem("web_user"));
-        return user?.id || "";
-    } catch {
-        return "";
-    }
-}
-
+// --- State Management ---
 const form = ref({
     date: "",
     lat_morning: "",
@@ -653,22 +688,51 @@ const form = ref({
     lng_evening: "",
     note_evening: "",
 });
+
 const previewMorning = ref(null);
 const previewEvening = ref(null);
 const fileMorning = ref(null);
 const fileEvening = ref(null);
 const submitting = ref(false);
+
 const morningInput = ref(null);
 const eveningInput = ref(null);
+
 const isDesktop = ref(window.innerWidth > 1024);
 const morningVideoStream = ref(null);
 const morningVideoRef = ref(null);
+const eveningVideoStream = ref(null);
+const eveningVideoRef = ref(null);
 
+const locationMessage = ref(""); // State for displaying location status
+
+// --- Store and User ---
+const store = useStore();
+function getUserIdFromLocalStorage() {
+    try {
+        const user = JSON.parse(localStorage.getItem("web_user"));
+        return user?.id || "";
+    } catch {
+        return "";
+    }
+}
+
+function getCurrentThaiDate() {
+    const formatter = new Intl.DateTimeFormat("sv-SE", {
+        timeZone: "Asia/Bangkok",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
+
+    return formatter.format(new Date());
+}
+
+// --- Lifecycle and Watchers ---
 watch(
     () => props.log,
     (log) => {
         if (log) {
-            // แปลงวันที่ให้เป็น YYYY-MM-DD
             let dateStr = log.date;
             if (dateStr && dateStr.length > 10) {
                 dateStr = dateStr.slice(0, 10);
@@ -689,8 +753,9 @@ watch(
                 ? getCloudinaryUrl(log.photo_evening)
                 : null;
         } else {
+            // Reset form for new entry
             form.value = {
-                date: new Date().toISOString().slice(0, 10),
+                date: getCurrentThaiDate(),
                 lat_morning: "",
                 lng_morning: "",
                 note_morning: "",
@@ -703,51 +768,97 @@ watch(
         }
         fileMorning.value = null;
         fileEvening.value = null;
+        locationMessage.value = "";
     },
     { immediate: true }
 );
 
-function getCloudinaryUrl(publicId) {
-    const id = publicId.startsWith("attendance_logs/")
-        ? publicId
-        : `attendance_logs/${publicId}`;
-    return `https://res.cloudinary.com/dhtgcccax/image/upload/${id}.jpg`;
+onUnmounted(() => {
+    stopDesktopCamera("morning");
+    stopDesktopCamera("evening");
+});
+
+// --- Geolocation ---
+function getLocation(type) {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error("Browser của bạn không hỗ trợ Geolocation"));
+            return;
+        }
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0,
+        };
+
+        locationMessage.value = "Đang tìm vị trí...";
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude, longitude } = pos.coords;
+                if (type === "morning") {
+                    form.value.lat_morning = latitude.toFixed(6);
+                    form.value.lng_morning = longitude.toFixed(6);
+                } else {
+                    form.value.lat_evening = latitude.toFixed(6);
+                    form.value.lng_evening = longitude.toFixed(6);
+                }
+                locationMessage.value = "Đã tìm thấy vị trí!";
+                setTimeout(() => {
+                    locationMessage.value = "";
+                }, 2000);
+                resolve(pos);
+            },
+            (err) => {
+                let errorMessage = "Không thể truy cập vị trí: ";
+                switch (err.code) {
+                    case err.PERMISSION_DENIED:
+                        errorMessage +=
+                            "Người dùng từ chối quyền truy cập vị trí";
+                        break;
+                    case err.POSITION_UNAVAILABLE:
+                        errorMessage += "Thông tin vị trí không khả dụng";
+                        break;
+                    case err.TIMEOUT:
+                        errorMessage += "Hết thời gian tìm kiếm vị trí";
+                        break;
+                    default:
+                        errorMessage += "Lỗi không xác định";
+                        break;
+                }
+                locationMessage.value = errorMessage;
+                reject(new Error(errorMessage));
+            },
+            options
+        );
+    });
 }
 
-function getLocationAndSet(type) {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-        (pos) => {
-            if (type === "morning") {
-                form.value.lat_morning = pos.coords.latitude.toFixed(6);
-                form.value.lng_morning = pos.coords.longitude.toFixed(6);
-            } else {
-                form.value.lat_evening = pos.coords.latitude.toFixed(6);
-                form.value.lng_evening = pos.coords.longitude.toFixed(6);
-            }
-        },
-        () => {
-            if (type === "morning") {
-                form.value.lat_morning = "";
-                form.value.lng_morning = "";
-            } else {
-                form.value.lat_evening = "";
-                form.value.lng_evening = "";
-            }
-        }
-    );
+// --- Camera Logic ---
+
+// --- CHANGE START: Modified triggerCamera and onFileChange for iOS compatibility ---
+
+// This new async function is for desktop only, to get location BEFORE opening the camera.
+async function openDesktopCameraWithLocation(type) {
+    try {
+        await getLocation(type); // 1. Get location first
+        openDesktopCamera(type); // 2. Then open the camera stream
+    } catch (error) {
+        Swal.fire({
+            icon: "error",
+            title: "Có lỗi xảy ra tìm vị trí",
+            text: error.message,
+        });
+    }
 }
 
 function triggerCamera(type) {
     if (isDesktop.value) {
-        // Desktop: open camera stream
-        if (type === "morning") {
-            openDesktopCamera("morning");
-        } else {
-            openDesktopCamera("evening");
-        }
+        // Desktop flow: get location, then open camera.
+        openDesktopCameraWithLocation(type);
     } else {
-        // Mobile: use file input
+        // Mobile (including iOS) flow: open camera IMMEDIATELY.
         if (type === "morning") {
             morningInput.value?.click();
         } else {
@@ -756,6 +867,48 @@ function triggerCamera(type) {
     }
 }
 
+async function onFileChange(type, event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // For mobile devices, we get the location AFTER the photo has been taken.
+    // This is the crucial fix for iOS.
+    if (!isDesktop.value) {
+        try {
+            await getLocation(type);
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Không lấy được vị trí",
+                text: `Không thể lưu ảnh nếu không có vị trí. Lỗi: ${error.message}`,
+            });
+            // Reset the file input so the user can try again
+            event.target.value = null;
+            return; // Stop processing if location fails
+        }
+    }
+
+    const compressedBlob = await compressImage(file, 500, 0.7);
+    const compressedFile = new File([compressedBlob], file.name, {
+        type: "image/jpeg",
+    });
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        if (type === "morning") {
+            previewMorning.value = e.target.result;
+            fileMorning.value = compressedFile;
+        } else {
+            previewEvening.value = e.target.result;
+            fileEvening.value = compressedFile;
+        }
+    };
+    reader.readAsDataURL(compressedFile);
+}
+
+// --- CHANGE END ---
+
+// --- Desktop Camera ---
 async function openDesktopCamera(type) {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -764,16 +917,14 @@ async function openDesktopCamera(type) {
         if (type === "morning") {
             morningVideoStream.value = stream;
             nextTick(() => {
-                if (morningVideoRef.value) {
+                if (morningVideoRef.value)
                     morningVideoRef.value.srcObject = stream;
-                }
             });
         } else {
             eveningVideoStream.value = stream;
             nextTick(() => {
-                if (eveningVideoRef.value) {
+                if (eveningVideoRef.value)
                     eveningVideoRef.value.srcObject = stream;
-                }
             });
         }
     } catch (err) {
@@ -782,12 +933,8 @@ async function openDesktopCamera(type) {
 }
 
 function captureDesktopPhoto(type) {
-    let videoEl;
-    if (type === "morning") {
-        videoEl = morningVideoRef.value;
-    } else {
-        videoEl = eveningVideoRef.value;
-    }
+    let videoEl =
+        type === "morning" ? morningVideoRef.value : eveningVideoRef.value;
     if (!videoEl) return;
 
     const canvas = document.createElement("canvas");
@@ -801,51 +948,23 @@ function captureDesktopPhoto(type) {
         previewMorning.value = dataUrl;
         fileMorning.value = dataUrl;
         stopDesktopCamera("morning");
-        getLocationAndSet("morning");
     } else {
         previewEvening.value = dataUrl;
         fileEvening.value = dataUrl;
         stopDesktopCamera("evening");
-        getLocationAndSet("evening");
     }
 }
 
 function stopDesktopCamera(type) {
-    if (type === "morning" && morningVideoStream.value) {
-        morningVideoStream.value.getTracks().forEach((track) => track.stop());
-        morningVideoStream.value = null;
-    }
-    if (type === "evening" && eveningVideoStream.value) {
-        eveningVideoStream.value.getTracks().forEach((track) => track.stop());
-        eveningVideoStream.value = null;
+    const streamRef =
+        type === "morning" ? morningVideoStream : eveningVideoStream;
+    if (streamRef.value) {
+        streamRef.value.getTracks().forEach((track) => track.stop());
+        streamRef.value = null;
     }
 }
 
-onUnmounted(() => {
-    stopDesktopCamera("morning");
-    stopDesktopCamera("evening");
-});
-
-function clearPhoto(type) {
-    if (type === "morning") {
-        previewMorning.value = null;
-        fileMorning.value = null;
-        form.value.lat_morning = "";
-        form.value.lng_morning = "";
-        if (morningInput.value) {
-            morningInput.value.value = "";
-        }
-    } else {
-        previewEvening.value = null;
-        fileEvening.value = null;
-        form.value.lat_evening = "";
-        form.value.lng_evening = "";
-        if (eveningInput.value) {
-            eveningInput.value.value = "";
-        }
-    }
-}
-
+// --- Image Processing ---
 async function compressImage(file, maxSizeKB = 500, quality = 0.7) {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -853,7 +972,6 @@ async function compressImage(file, maxSizeKB = 500, quality = 0.7) {
         reader.onload = (e) => {
             img.onload = () => {
                 const canvas = document.createElement("canvas");
-                // Resize to max 1024px
                 const maxDim = 1024;
                 let w = img.width,
                     h = img.height;
@@ -899,49 +1017,32 @@ async function compressImage(file, maxSizeKB = 500, quality = 0.7) {
     });
 }
 
-async function onFileChange(type, event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    getLocationAndSet(type);
-
-    // Compress image before preview/upload
-    const compressedBlob = await compressImage(file, 500, 0.7);
-    const compressedFile = new File([compressedBlob], file.name, {
-        type: "image/jpeg",
-    });
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        if (type === "morning") {
-            previewMorning.value = e.target.result;
-            fileMorning.value = compressedFile;
-        } else {
-            previewEvening.value = e.target.result;
-            fileEvening.value = compressedFile;
-        }
-    };
-    reader.readAsDataURL(compressedFile);
-}
-
+// --- Form Validation & Submission ---
 function hasValidData() {
-    // ถ้ามีรูปเช้า ต้องมี lat/lng เช้า
-    if (fileMorning.value || previewMorning.value) {
-        if (!form.value.lat_morning || !form.value.lng_morning) return false;
+    if (
+        (fileMorning.value || previewMorning.value) &&
+        (!form.value.lat_morning || !form.value.lng_morning)
+    ) {
+        return false;
     }
-    // ถ้ามีรูปเย็น ต้องมี lat/lng เย็น
-    if (fileEvening.value || previewEvening.value) {
-        if (!form.value.lat_evening || !form.value.lng_evening) return false;
+    if (
+        (fileEvening.value || previewEvening.value) &&
+        (!form.value.lat_evening || !form.value.lng_evening)
+    ) {
+        return false;
     }
-    // ถ้าแก้ไข log เดิม ให้ผ่าน
     if (props.log) return true;
-    // ต้องมีรูปอย่างน้อย 1 รูป
-    return (
-        fileMorning.value ||
-        previewMorning.value ||
-        fileEvening.value ||
-        previewEvening.value
-    );
+
+    const hasMorningData =
+        (fileMorning.value || previewMorning.value) &&
+        form.value.lat_morning &&
+        form.value.lng_morning;
+    const hasEveningData =
+        (fileEvening.value || previewEvening.value) &&
+        form.value.lat_evening &&
+        form.value.lng_evening;
+
+    return hasMorningData || hasEveningData;
 }
 
 function dataURLtoFile(dataurl, filename) {
@@ -960,78 +1061,57 @@ async function submitAttendance() {
     submitting.value = true;
     try {
         const formData = new FormData();
-
-        // Always set users_id and date explicitly
         const userId = getUserIdFromLocalStorage();
         formData.append("users_id", userId);
         formData.append("date", form.value.date);
 
-        [
-            "lat_morning",
-            "lng_morning",
-            "note_morning",
-            "lat_evening",
-            "lng_evening",
-            "note_evening",
-        ].forEach((key) => {
-            if (form.value[key] !== undefined && form.value[key] !== null)
+        Object.keys(form.value).forEach((key) => {
+            if (
+                key !== "date" &&
+                form.value[key] !== undefined &&
+                form.value[key] !== null
+            ) {
                 formData.append(key, form.value[key]);
+            }
         });
 
-        // Add photos if selected
         if (fileMorning.value) {
-            if (typeof fileMorning.value === "string") {
-                // base64 string -> File
-                formData.append(
-                    "photo_morning",
-                    dataURLtoFile(fileMorning.value, "morning.jpg")
-                );
-            } else {
-                formData.append("photo_morning", fileMorning.value);
-            }
+            const morningFile =
+                typeof fileMorning.value === "string"
+                    ? dataURLtoFile(fileMorning.value, "morning.jpg")
+                    : fileMorning.value;
+            formData.append("photo_morning", morningFile);
         }
         if (fileEvening.value) {
-            if (typeof fileEvening.value === "string") {
-                // base64 string -> File
-                formData.append(
-                    "photo_evening",
-                    dataURLtoFile(fileEvening.value, "evening.jpg")
-                );
-            } else {
-                formData.append("photo_evening", fileEvening.value);
-            }
+            const eveningFile =
+                typeof fileEvening.value === "string"
+                    ? dataURLtoFile(fileEvening.value, "evening.jpg")
+                    : fileEvening.value;
+            formData.append("photo_evening", eveningFile);
         }
+
         let url = "/api/attendance-logs";
         let method = "POST";
         if (props.log) {
             url = `/api/attendance-logs/${props.log.id}`;
-            method = "POST"; // เปลี่ยนจาก PUT เป็น POST
-            formData.append("_method", "PUT"); // Laravel จะเข้าใจว่าเป็น PUT
+            formData.append("_method", "PUT");
         }
 
         const token = localStorage.getItem("web_token") || store.getToken;
-
         const response = await fetch(url, {
-            method,
+            method: "POST",
             body: formData,
             headers: {
                 Authorization: `Bearer ${token}`,
-                // ไม่ต้องใส่ Content-Type ถ้าใช้ FormData
+                Accept: "application/json",
             },
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(
-                errorData.message ||
-                    (errorData.errors
-                        ? Object.values(errorData.errors).join(", ")
-                        : "Request failed")
-            );
+            throw new Error(errorData.message || "Lỗi khi lưu dữ liệu");
         }
 
-        const result = await response.json();
-        // แจ้งเตือนเมื่อสร้างหรืออัปเดตสำเร็จ
         Swal.fire({
             icon: "success",
             title: props.log ? "Đã cập nhật" : "Tạo dữ liệu thành công",
@@ -1045,7 +1125,6 @@ async function submitAttendance() {
         emit("saved");
         emit("close");
     } catch (error) {
-        // แจ้งเตือนเมื่อเกิดข้อผิดพลาด
         Swal.fire({
             icon: "error",
             title: "Đã xảy ra lỗi",
@@ -1054,6 +1133,14 @@ async function submitAttendance() {
     } finally {
         submitting.value = false;
     }
+}
+
+// --- Utility ---
+function getCloudinaryUrl(publicId) {
+    const id = publicId.startsWith("attendance_logs/")
+        ? publicId
+        : `attendance_logs/${publicId}`;
+    return `https://res.cloudinary.com/dhtgcccax/image/upload/${id}.jpg`;
 }
 </script>
 
@@ -1106,5 +1193,39 @@ async function submitAttendance() {
     .rounded-2xl {
         border-radius: 1rem;
     }
+}
+
+/* เพิ่มใน <style scoped> ด้านล่างสุด */
+
+.location-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    margin-bottom: 1rem;
+    transition: background 0.2s, color 0.2s;
+}
+
+.location-message.info {
+    background: linear-gradient(90deg, #e0f2fe 0%, #f0f9ff 100%);
+    color: #2563eb;
+    border: 1px solid #bae6fd;
+}
+
+.location-message.success {
+    background: linear-gradient(90deg, #dcfce7 0%, #f0fdf4 100%);
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.location-message.error {
+    background: linear-gradient(90deg, #fee2e2 0%, #fef2f2 100%);
+    color: #dc2626;
+    border: 1px solid #fecaca;
 }
 </style>
