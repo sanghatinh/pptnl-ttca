@@ -438,6 +438,24 @@ public function store(Request $request)
         return response()->json(['success' => false, 'message' => 'Not found'], 404);
     }
 
+     // ตรวจสอบสิทธิ์ - อนุญาตให้แก้ไขเฉพาะข้อมูลของตัวเองเท่านั้น
+    $user = auth()->user();
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Authentication required'
+        ], 401);
+    }
+
+    // ตรวจสอบว่าเป็นเจ้าของข้อมูลหรือไม่
+    if ($attendance->users_id !== $user->id) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Bạn chỉ có thể chỉnh sửa bản ghi điểm danh của chính mình'
+        ], 403);
+    }
+
+
     $validator = Validator::make($request->all(), array_merge(
         AttendanceLogs::rules($id),
         [
@@ -456,6 +474,14 @@ public function store(Request $request)
         'date','note_morning', 'note_evening',
         'lat_morning', 'lng_morning', 'lat_evening', 'lng_evening'
     ]);
+
+    // ตรวจสอบว่า users_id ที่ส่งมาตรงกับผู้ใช้ที่ล็อกอินหรือไม่
+    if ($data['users_id'] != $user->id) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Không thể thay đổi ID người dùng'
+        ], 422);
+    }
 
     // ตรวจสอบช่วงเวลาที่อนุญาตให้ checkin
     $currentTime = now()->setTimezone('Asia/Bangkok');
