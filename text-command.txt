@@ -26,7 +26,7 @@ Git
     - git push                   = ຄຳສັ່ງ ອັບໂຫຼດໂປຼເຈັກຂື້ນ github 
     - git pull                   = ຄຳສັ່ງ ອັບເດດ ໂຄດລ່າສຸດຈາກ github
 
-    - git add . && git commit -m "v1.7.5.e.6" && git push
+    - git add . && git commit -m "v1.7.5.e.7" && git push
 
 
     -cls = ຄຳສັ່ງ clear cmd
@@ -36,7 +36,7 @@ Git
     -Ctrl + Shift + W หากต้องการปิด VS Code ทั้งหมด
 
 Hosing
-- npm run build: ເປັນຄຳສັ່ງເພື່ອ ກຽມອັບໂຫຼດ ຂື້ນ Server 
+- npm run build: ເປັນຄຳສັ່ງເພື່ອ ກຽມອັບໂຫຼດ ຂື້ນ Server
     -ls  กวดดู List domain ใน Cplan
     -cd /domian
     #SQL

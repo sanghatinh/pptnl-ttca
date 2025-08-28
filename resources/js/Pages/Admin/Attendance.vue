@@ -1564,10 +1564,11 @@ export default {
 
         const formatTime = (datetime) => {
             if (!datetime) return "-";
-            return new Date(datetime).toLocaleTimeString("th-TH", {
-                hour: "2-digit",
-                minute: "2-digit",
-            });
+            const d = new Date(datetime);
+            // ใช้เวลา UTC ตรงกับ backend
+            const hours = String(d.getUTCHours()).padStart(2, "0");
+            const minutes = String(d.getUTCMinutes()).padStart(2, "0");
+            return `${hours}:${minutes}`;
         };
 
         const formatDate = (date) => {
