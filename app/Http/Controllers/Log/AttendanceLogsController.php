@@ -250,6 +250,7 @@ public function store(Request $request)
 
     // ตรวจสอบช่วงเวลาที่อนุญาตให้ checkin
     $currentTime = now()->setTimezone('Asia/Bangkok');
+    $serverTime = now(); // เวลา server
     $currentHour = $currentTime->hour;
     $currentMinute = $currentTime->minute;
     $currentTimeInMinutes = ($currentHour * 60) + $currentMinute;
