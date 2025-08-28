@@ -1,10 +1,12 @@
 <?php
 
+
 namespace App\Models\Log;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
+use Carbon\Carbon;
 
 class AttendanceLogs extends Model
 {
@@ -69,6 +71,47 @@ class AttendanceLogs extends Model
     ];
 
     /**
+     * แก้ไขการแสดงผลวันที่ให้ถูกต้องตามโซนเวลา Asia/Bangkok
+     */
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return Carbon::instance($date)->setTimezone('Asia/Bangkok')->format('Y-m-d\TH:i:s.u\Z');
+    }
+
+    /**
+     * Accessor สำหรับ date attribute
+     */
+    public function getDateAttribute($value)
+    {
+        if ($value) {
+            return Carbon::parse($value)->setTimezone('Asia/Bangkok')->format('Y-m-d\TH:i:s.u\Z');
+        }
+        return $value;
+    }
+
+    /**
+     * Accessor สำหรับ checkin_morning attribute
+     */
+    public function getCheckinMorningAttribute($value)
+    {
+        if ($value) {
+            return Carbon::parse($value)->setTimezone('Asia/Bangkok')->format('Y-m-d\TH:i:s.u\Z');
+        }
+        return $value;
+    }
+
+    /**
+     * Accessor สำหรับ checkin_evening attribute
+     */
+    public function getCheckinEveningAttribute($value)
+    {
+        if ($value) {
+            return Carbon::parse($value)->setTimezone('Asia/Bangkok')->format('Y-m-d\TH:i:s.u\Z');
+        }
+        return $value;
+    }
+
+    /**
      * Relationship with User model
      */
     public function user()
@@ -80,22 +123,22 @@ class AttendanceLogs extends Model
      * Validation rules
      */
     public static function rules($id = null)
-{
-    return [
-        'users_id' => 'required|integer|exists:users,id',
-        'date' => 'required|date',
-        'checkin_morning' => 'nullable|date',
-        'photo_morning' => 'nullable|string',
-        'lat_morning' => 'nullable|numeric|between:-90,90',
-        'lng_morning' => 'nullable|numeric|between:-180,180',
-        'note_morning' => 'nullable|string|max:500',
-        'checkin_evening' => 'nullable|date',
-        'photo_evening' => 'nullable|string',
-        'lat_evening' => 'nullable|numeric|between:-90,90',
-        'lng_evening' => 'nullable|numeric|between:-180,180',
-        'note_evening' => 'nullable|string|max:500',
-    ];
-}
+    {
+        return [
+            'users_id' => 'required|integer|exists:users,id',
+            'date' => 'required|date',
+            'checkin_morning' => 'nullable|date',
+            'photo_morning' => 'nullable|string',
+            'lat_morning' => 'nullable|numeric|between:-90,90',
+            'lng_morning' => 'nullable|numeric|between:-180,180',
+            'note_morning' => 'nullable|string|max:500',
+            'checkin_evening' => 'nullable|date',
+            'photo_evening' => 'nullable|string',
+            'lat_evening' => 'nullable|numeric|between:-90,90',
+            'lng_evening' => 'nullable|numeric|between:-180,180',
+            'note_evening' => 'nullable|string|max:500',
+        ];
+    }
 
     /**
      * Scope to filter by user

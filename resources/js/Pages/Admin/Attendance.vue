@@ -1572,11 +1572,12 @@ export default {
 
         const formatDate = (date) => {
             if (!date) return "-";
-            return new Date(date).toLocaleDateString("th-TH", {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-            });
+            const d = new Date(date);
+            // Format DD/MM/YYYY (year as AD)
+            const day = String(d.getDate()).padStart(2, "0");
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const year = d.getFullYear(); // AD year
+            return `${day}/${month}/${year}`;
         };
 
         const statusText = (status) => {

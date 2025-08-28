@@ -155,7 +155,9 @@ class AttendanceLogsController extends Controller
             } else {
                 $log->status = "no_checkin";
             }
+
             return $log;
+    
         });
 
         return response()->json(['success' => true, 'data' => $logs]);
