@@ -127,6 +127,14 @@ class AttendanceLogsController extends Controller
                         });
                     }
                     break;
+                case 'Mechanical_worker_head':
+            // เห็น Mechanical_worker และตัวเอง
+            $query->where(function ($q) use ($user) {
+                $q->whereHas('user', function ($q2) {
+                    $q2->where('position', 'Mechanical_worker');
+                })->orWhere('users_id', $user->id);
+            });
+            break;
                 case 'Farm_worker':
                     case 'Mechanical_worker':
                     $query->where('users_id', $user->id);
@@ -257,9 +265,9 @@ public function store(Request $request)
     $currentMinute = $currentTime->minute;
     $currentTimeInMinutes = ($currentHour * 60) + $currentMinute;
 
-    // ช่วงเวลาเช้า: 6:00 - 9:00 (360 - 540 นาที)
+    // ช่วงเวลาเช้า: 6:00 - 8:30 (360 - 510 นาที)
     $morningStart = 6 * 60; // 6:00 = 360 นาที
-    $morningEnd = 9 * 60;   // 9:00 = 540 นาที
+    $morningEnd = 8 * 60 + 30;   // 8:30 = 510 นาที
 
     // ช่วงเวลาเย็น: 16:00 - 18:00 (960 - 1080 นาที)
     $eveningStart = 16 * 60; // 16:00 = 960 นาที
@@ -492,9 +500,9 @@ public function store(Request $request)
     $currentMinute = $currentTime->minute;
     $currentTimeInMinutes = ($currentHour * 60) + $currentMinute;
 
-    // ช่วงเวลาเช้า: 6:00 - 9:00 (360 - 540 นาที)
+    // ช่วงเวลาเช้า: 6:00 - 8:30 (360 - 510 นาที)
     $morningStart = 6 * 60; // 6:00 = 360 นาที
-    $morningEnd = 9 * 60;   // 9:00 = 540 นาที
+    $morningEnd = 8 * 60 + 30;   // 8:30 = 510 นาที
 
     // ช่วงเวลาเย็น: 16:00 - 18:00 (960 - 1080 นาที)
     $eveningStart = 16 * 60; // 16:00 = 960 นาที

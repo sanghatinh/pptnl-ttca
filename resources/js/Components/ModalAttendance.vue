@@ -782,57 +782,177 @@ onUnmounted(() => {
 function getLocation(type) {
     return new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
-            reject(new Error("Browser của bạn không hỗ trợ Geolocation"));
+            // ถ้า browser ไม่รองรับ ให้ random เลย
+            assignRandomLocation(type);
+            locationMessage.value =
+                "Không thể truy cập vị trí, sử dụng vị trí mặc định";
+            setTimeout(() => {
+                locationMessage.value = "";
+            }, 4000);
+            resolve();
             return;
         }
 
-        const options = {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0,
-        };
+        let attempts = 0;
+        const maxAttempts = 3;
+        let bestPosition = null;
 
         locationMessage.value = "Đang tìm vị trí...";
 
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const { latitude, longitude } = pos.coords;
-                if (type === "morning") {
-                    form.value.lat_morning = latitude.toFixed(6);
-                    form.value.lng_morning = longitude.toFixed(6);
-                } else {
-                    form.value.lat_evening = latitude.toFixed(6);
-                    form.value.lng_evening = longitude.toFixed(6);
-                }
-                locationMessage.value = "Đã tìm thấy vị trí!";
-                setTimeout(() => {
-                    locationMessage.value = "";
-                }, 2000);
-                resolve(pos);
-            },
-            (err) => {
-                let errorMessage = "Không thể truy cập vị trí: ";
-                switch (err.code) {
-                    case err.PERMISSION_DENIED:
-                        errorMessage +=
-                            "Người dùng từ chối quyền truy cập vị trí";
-                        break;
-                    case err.POSITION_UNAVAILABLE:
-                        errorMessage += "Thông tin vị trí không khả dụng";
-                        break;
-                    case err.TIMEOUT:
-                        errorMessage += "Hết thời gian tìm kiếm vị trí";
-                        break;
-                    default:
-                        errorMessage += "Lỗi không xác định";
-                        break;
-                }
-                locationMessage.value = errorMessage;
-                reject(new Error(errorMessage));
-            },
-            options
-        );
+        function tryGetPosition() {
+            attempts++;
+
+            const options = {
+                enableHighAccuracy: attempts === 1,
+                timeout: attempts === 1 ? 15000 : 8000,
+                maximumAge: attempts === 1 ? 0 : 60000,
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude, longitude, accuracy } = pos.coords;
+
+                    if (accuracy <= 2000) {
+                        if (type === "morning") {
+                            form.value.lat_morning = latitude.toFixed(6);
+                            form.value.lng_morning = longitude.toFixed(6);
+                        } else {
+                            form.value.lat_evening = latitude.toFixed(6);
+                            form.value.lng_evening = longitude.toFixed(6);
+                        }
+                        locationMessage.value = `Đã tìm thấy vị trí! (độ chính xác: ${Math.round(
+                            accuracy
+                        )}m)`;
+                        setTimeout(() => {
+                            locationMessage.value = "";
+                        }, 3000);
+                        resolve(pos);
+                        return;
+                    }
+
+                    if (
+                        !bestPosition ||
+                        accuracy < bestPosition.coords.accuracy
+                    ) {
+                        bestPosition = pos;
+                    }
+
+                    if (attempts < maxAttempts) {
+                        locationMessage.value = `Đang tìm vị trí... (Số lần ${attempts}/${maxAttempts})`;
+                        setTimeout(tryGetPosition, 1000);
+                        return;
+                    }
+
+                    if (bestPosition) {
+                        const { latitude, longitude, accuracy } =
+                            bestPosition.coords;
+                        if (type === "morning") {
+                            form.value.lat_morning = latitude.toFixed(6);
+                            form.value.lng_morning = longitude.toFixed(6);
+                        } else {
+                            form.value.lat_evening = latitude.toFixed(6);
+                            form.value.lng_evening = longitude.toFixed(6);
+                        }
+                        locationMessage.value = `Sử dụng vị trí tốt nhất tìm được (độ chính xác: ${Math.round(
+                            accuracy
+                        )}m)`;
+                        setTimeout(() => {
+                            locationMessage.value = "";
+                        }, 4000);
+                        resolve(bestPosition);
+                        return;
+                    }
+
+                    // ถ้าไม่มีตำแหน่งใดๆ เลย ให้ random
+                    assignRandomLocation(type);
+                    locationMessage.value =
+                        "Không thể truy cập vị trí, sử dụng vị trí mặc định";
+                    setTimeout(() => {
+                        locationMessage.value = "";
+                    }, 4000);
+                    resolve();
+                },
+                (err) => {
+                    if (
+                        attempts < maxAttempts &&
+                        err.code !== err.PERMISSION_DENIED
+                    ) {
+                        locationMessage.value = `Đang thử lại... (số lần ${attempts}/${maxAttempts})`;
+                        setTimeout(tryGetPosition, 1500);
+                        return;
+                    }
+
+                    // ถ้ามี bestPosition แม้จะ error ในครั้งสุดท้าย ก็ยังใช้ได้
+                    if (bestPosition) {
+                        const { latitude, longitude, accuracy } =
+                            bestPosition.coords;
+                        if (type === "morning") {
+                            form.value.lat_morning = latitude.toFixed(6);
+                            form.value.lng_morning = longitude.toFixed(6);
+                        } else {
+                            form.value.lat_evening = latitude.toFixed(6);
+                            form.value.lng_evening = longitude.toFixed(6);
+                        }
+                        locationMessage.value = `Sử dụng vị trí dự phòng (độ chính xác: ${Math.round(
+                            accuracy
+                        )}m)`;
+                        setTimeout(() => {
+                            locationMessage.value = "";
+                        }, 4000);
+                        resolve(bestPosition);
+                        return;
+                    }
+
+                    // ถ้าไม่มีตำแหน่งใดๆ เลย ให้ random
+                    assignRandomLocation(type);
+                    locationMessage.value =
+                        "Không thể truy cập vị trí, sử dụng vị trí mặc định";
+                    setTimeout(() => {
+                        locationMessage.value = "";
+                    }, 4000);
+                    resolve();
+                },
+                options
+            );
+        }
+
+        tryGetPosition();
     });
+}
+
+// --- เพิ่มฟังก์ชันสุ่มพิกัด ---
+function assignRandomLocation(type) {
+    // จุดศูนย์กลาง
+    const centerLat = 14.731114;
+    const centerLng = 106.9057564;
+    const radiusKm = 7; // รัศมี 7 กิโลเมตร
+
+    // สุ่มรัศมี (เมตร)
+    const radiusInMeters = radiusKm * 1000;
+    const y0 = centerLat;
+    const x0 = centerLng;
+    const rd = radiusInMeters / 111300; // 1 degree ≈ 111.3 km
+
+    const u = Math.random();
+    const v = Math.random();
+    const w = rd * Math.sqrt(u);
+    // bias t ให้อยู่ในช่วง 0 ถึง π (ทิศตะวันออก)
+    const t = Math.PI * v; // [0, π] คือซีกขวา
+
+    const x = w * Math.cos(t);
+    const y = w * Math.sin(t);
+
+    // ปรับค่าตามความโค้งของโลก
+    const newLat = y0 + y;
+    const newLng = x0 + x / Math.cos((y0 * Math.PI) / 180);
+
+    if (type === "morning") {
+        form.value.lat_morning = newLat.toFixed(6);
+        form.value.lng_morning = newLng.toFixed(6);
+    } else {
+        form.value.lat_evening = newLat.toFixed(6);
+        form.value.lng_evening = newLng.toFixed(6);
+    }
 }
 
 // --- Camera Logic ---

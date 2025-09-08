@@ -217,6 +217,7 @@
 
 <script>
 import axios from "axios";
+import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { useStore } from "../Store/Auth"; // เพิ่มบรรทัดนี้
 export default {
     setup() {
@@ -338,10 +339,16 @@ export default {
             this.errorMessage = "";
 
             try {
+                let deviceId = await this.getDeviceId();
+                let deviceType = this.getDeviceType();
+
                 const response = await axios.post("api/login", {
                     username: this.employee.username,
                     password: this.employee.password,
                     remember_me: this.employee.remember_me,
+                    device_id: deviceId,
+                    device_type: deviceType,
+                    device_ip: deviceId, // หรือจะลบ device_ip ออกก็ได้
                 });
 
                 this.handleLoginSuccess(response.data);
@@ -349,6 +356,34 @@ export default {
                 this.handleLoginError(error);
             } finally {
                 this.isLoading = false;
+            }
+        },
+
+        getDeviceType() {
+            const ua = navigator.userAgent;
+            if (
+                /android|iphone|ipad|ipod|mobile|iemobile|blackberry|opera mini/i.test(
+                    ua
+                )
+            ) {
+                return "mobile";
+            }
+            return "pc";
+        },
+        async getDeviceId() {
+            // ใช้ FingerprintJS เพื่อสร้าง device id ที่ unique ต่อ browser/device
+            const fp = await FingerprintJS.load();
+            const result = await fp.get();
+            return result.visitorId;
+        },
+
+        async getIpAddress() {
+            try {
+                const res = await fetch("https://api.ipify.org?format=json");
+                const data = await res.json();
+                return data.ip;
+            } catch {
+                return "unknown";
             }
         },
 

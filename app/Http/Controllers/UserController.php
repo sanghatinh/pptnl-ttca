@@ -19,83 +19,163 @@ class UserController extends Controller
 {
 
     
-    public function login(Request $request)
-    {
-        try {
-            $credentials = [
-                'username' => $request->username,
-                'password' => $request->password
-            ];
-    
-            if ($request->remember_me) {
-                JWTAuth::factory()->setTTL(60 * 24 * 7);
-            }
-    
-            if (!$token = JWTAuth::attempt($credentials)) {
+public function login(Request $request)
+{
+    try {
+        $credentials = [
+            'username' => $request->username,
+            'password' => $request->password
+        ];
+
+        $deviceId = $request->input('device_id');
+        $deviceType = $request->input('device_type'); // "pc" หรือ "mobile"
+        $deviceIp = $request->input('device_ip');
+
+          // Nếu device_id hoặc device_type là null, hoặc device_ip là null thì vẫn cho login
+        if ((is_null($deviceId) || is_null($deviceType)) && is_null($deviceIp)) {
+            // Cho phép login, không trả về lỗi
+        } else {
+            if (!$deviceId || !$deviceType) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Mất khẩu hoặc tên đăng nhập không đúng'
-                ], 401);
+                    'message' => 'Vui lòng nhập device_id và device_type'
+                ], 400);
             }
-    
-            $user = auth()->user();
-            if ($user->status !== 'active') {
+        }
+
+        // ตรวจสอบ device_id_pc และ last_login_ip ซ้ำกับ user อื่น
+        if ($deviceType === 'pc') {
+            $conflictUser = User::where(function($q) use ($deviceId, $deviceIp) {
+                    $q->where('device_id_pc', $deviceId)
+                      ->orWhere('last_login_ip', $deviceIp);
+                })
+                ->where('status', 'active')
+                ->where('username', '!=', $request->username)
+                ->first();
+
+            if ($conflictUser) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Your account is inactive'
-                ], 403);
+                    'message' => 'Máy này đã được sử dụng bởi user khác'
+                ], 409);
             }
-    
-            return response()->json([
-                'success' => true,
-                'token' => $token,
-                'user' => $user
-            ]);
-        } catch (\Exception $e) {
+        }
+
+        if (!$token = JWTAuth::attempt($credentials)) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
+                'message' => 'Sai tên đăng nhập hoặc mật khẩu'
+            ], 401);
         }
-    }
 
+        $user = auth()->user();
+        if ($user->status !== 'active') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tài khoản của bạn không hoạt động. Vui lòng liên hệ quản trị viên.'
+            ], 403);
+        }
+
+        // บันทึก device_id และ IP ตามประเภท
+        if ($deviceType === 'pc') {
+            if (empty($user->device_id_pc)) {
+                $user->device_id_pc = $deviceId;
+                $user->last_login_ip = $deviceIp;
+                $user->last_login_at = now();
+                $user->save();
+            } else {
+                if ($user->device_id_pc !== $deviceId) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tài khoản đã được đăng nhập trên PC/Notebook khác'
+                    ], 409);
+                } else {
+                    $user->last_login_ip = $deviceIp;
+                    $user->last_login_at = now();
+                    $user->save();
+                }
+            }
+        } else { // mobile
+            if (empty($user->device_id_mobile)) {
+                $user->device_id_mobile = $deviceId;
+                $user->last_login_ip = $deviceIp;
+                $user->last_login_at = now();
+                $user->save();
+            } else {
+                if ($user->device_id_mobile !== $deviceId) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tài khoản này đã được đăng nhập trên điện thoại khác'
+                    ], 409);
+                } else {
+                    $user->last_login_ip = $deviceIp;
+                    $user->last_login_at = now();
+                    $user->save();
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'token' => $token,
+            'user' => $user
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
 
 public function logout(Request $request)
-    {
-        try {
-            $token = JWTAuth::getToken();
-            if (!$token) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Token not provided'
-                ], 401);
-            }
-
-            try {
-                JWTAuth::invalidate($token);
-            } catch (TokenExpiredException $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Token has expired'
-                ], 401);
-            }
-
-            $success = true;
-            $message = "Logout success!";
-
-        } catch (\Exception $ex) {
-            $success = false;
-            $message = $ex->getMessage();
+{
+    try {
+        $token = JWTAuth::getToken();
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token not provided'
+            ], 401);
         }
 
-        $response = [
-            'success' => $success,
-            'message' => $message
-        ];
+        // ตรวจสอบว่าต้องการ logout ทุกอุปกรณ์หรือไม่
+        $logoutAll = $request->input('logout_all_devices', false);
 
-        return response()->json($response);
+        if ($logoutAll) {
+            // ลบ device_id ออกจาก user
+            $user = Auth::user();
+            if ($user) {
+                $user->device_id = null;
+                $user->save();
+            }
+        }
+
+        try {
+            JWTAuth::invalidate($token);
+        } catch (TokenExpiredException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token has expired'
+            ], 401);
+        }
+
+        $success = true;
+        $message = $logoutAll ? "Logout from all devices success!" : "Logout success!";
+
+    } catch (\Exception $ex) {
+        $success = false;
+        $message = $ex->getMessage();
     }
+
+    $response = [
+        'success' => $success,
+        'message' => $message
+    ];
+
+    return response()->json($response);
+}
 
     //ดึงข้อมูลจากตาราง listposition และ liststation
     public function getPositions()
@@ -1133,6 +1213,44 @@ public function getEmployeesByStation(Request $request)
         return response()->json([
             'success' => false,
             'message' => 'Error fetching employees: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+/**
+ * Reset device_id_pc and device_id_mobile for a user (admin only)
+ */
+public function resetDeviceId($id)
+{
+    try {
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        $user->device_id_pc = null;
+        $user->device_id_mobile = null;
+        $user->last_login_ip = null;
+        $user->last_login_at = null;
+        $user->save();
+
+        \Log::info('Device IDs reset by admin', ['user_id' => $id, 'admin_id' => auth()->id()]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Device IDs reset successfully'
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error resetting device IDs: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to reset device IDs',
+            'error' => $e->getMessage()
         ], 500);
     }
 }

@@ -700,6 +700,30 @@
                                 >
                                     Cancel
                                 </button>
+
+                                <!-- Reset Device ID Button -->
+                                <button
+                                    type="button"
+                                    @click="resetDeviceId"
+                                    :disabled="isLoading"
+                                    class="flex-1 bg-yellow-400 text-white px-6 py-3 rounded-lg font-medium hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Reset device_id_pc & device_id_mobile"
+                                >
+                                    <svg
+                                        class="inline w-5 h-5 mr-2"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M4 4v5h.582M20 20v-5h-.581M5 9a7 7 0 0114 0v6a7 7 0 01-14 0V9zm7 7v.01"
+                                        ></path>
+                                    </svg>
+                                    Reset Device ID
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -915,6 +939,67 @@ export default {
             } catch (error) {
                 console.error("Error fetching roles:", error);
                 this.handleAuthError(error);
+            }
+        },
+
+        async resetDeviceId() {
+            const confirmed = await this.$swal({
+                title: "Reset Device ID?",
+                text: "Bạn có chắc chắn muốn reset device_id_pc và device_id_mobile cho user này? (User sẽ phải login lại)",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#f59e42",
+                cancelButtonColor: "#6b7280",
+                confirmButtonText: "Có, reset!",
+                cancelButtonText: "Hủy",
+                reverseButtons: true,
+            });
+            if (!confirmed.isConfirmed) return;
+
+            this.isLoading = true;
+            this.loadingMessage = "Đang reset device ID...";
+
+            try {
+                const response = await axios.post(
+                    `/api/user/${this.user.id}/reset-device`,
+                    {},
+                    {
+                        headers: {
+                            Authorization: "Bearer " + this.store.getToken,
+                        },
+                        timeout: 15000,
+                    }
+                );
+                if (response.data.success) {
+                    this.$swal({
+                        icon: "success",
+                        title: "Reset thành công!",
+                        text: "Device ID đã được reset. User sẽ phải đăng nhập lại.",
+                        showConfirmButton: false,
+                        timer: 1800,
+                    });
+                } else {
+                    this.$swal({
+                        icon: "error",
+                        title: "Reset thất bại!",
+                        text:
+                            response.data.message ||
+                            "Không thể reset device ID",
+                        showConfirmButton: true,
+                    });
+                }
+            } catch (error) {
+                this.$swal({
+                    icon: "error",
+                    title: "Reset thất bại!",
+                    text:
+                        error.response?.data?.message ||
+                        "Có lỗi xảy ra khi reset device ID",
+                    showConfirmButton: true,
+                });
+            } finally {
+                this.isLoading = false;
+                this.loadingMessage = "Đang xử lý...";
             }
         },
 

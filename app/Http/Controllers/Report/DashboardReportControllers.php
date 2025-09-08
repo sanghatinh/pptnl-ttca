@@ -7,119 +7,208 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 class DashboardReportControllers extends Controller
 {
 
-    public function __construct()
-{
-    // Set query timeout to prevent long-running queries
-    // DB::statement('SET SESSION MAX_EXECUTION_TIME=5000'); // 5 seconds timeout
-      if (function_exists('apcu_exists') && !apcu_exists('all_stations')) {
-        $stations = [
-            ['code' => 'TTCA-TRAM01', 'name' => 'TRẠM 1'],
-            ['code' => 'TTCA-TRAM02', 'name' => 'TRẠM 2'],
-            ['code' => 'TTCA-TRAM03', 'name' => 'TRẠM 3'],
-            ['code' => 'TTCA-TRAM04', 'name' => 'TRẠM 4'],
-            ['code' => 'TTCA-TRAM05', 'name' => 'TRẠM 5'],
-            ['code' => 'TTCA-TRAM06', 'name' => 'TRẠM 6'],
-        ];
-        apcu_store('all_stations', $stations, 86400);
+     public function __construct()
+    {
+        // Set query timeout to prevent long-running queries (optimized for shared hosting)
+        $this->setOptimalQueryTimeout();
+
+        // Cache stations data for better performance on shared hosting
+        $this->warmupBasicCache();
     }
-}
-    public function getReportChartSection(Request $request)
+
+    /**
+     * Set optimal query timeout for shared hosting environments
+     */
+    private function setOptimalQueryTimeout()
     {
         try {
-            // Get authenticated user
-            $user = Auth::user();
-            if (!$user) {
-                return response()->json(['error' => 'Unauthorized'], 401);
-            }
-
-            // Get period from request (week, month, year)
-            $period = $request->input('period', 'week');
-            
-            // Calculate date range based on period
-            $dateRange = $this->getDateRange($period);
-            
-            // Get user position
-            $userPosition = $user->position;
-            $userStation = $user->station;
-            $userMaNhanVien = $user->ma_nhan_vien;
-
-            // Initialize result array for stations
-            $stationsData = [];
-            
-            // Define station mapping
-            $stationMapping = [
-                1 => ['name' => 'TRẠM 1', 'code' => 'TTCA-TRAM01'],
-                2 => ['name' => 'TRẠM 2', 'code' => 'TTCA-TRAM02'],
-                3 => ['name' => 'TRẠM 3', 'code' => 'TTCA-TRAM03'],
-                4 => ['name' => 'TRẠM 4', 'code' => 'TTCA-TRAM04'],
-                5 => ['name' => 'TRẠM 5', 'code' => 'TTCA-TRAM05'],
-                6 => ['name' => 'TRẠM 6', 'code' => 'TTCA-TRAM06']
-            ];
-
-            // Check user role and get data accordingly
-            if (in_array($userPosition, ['department_head', 'office_workers'])) {
-                // Get all stations data
-                foreach ($stationMapping as $stationNumber => $stationInfo) {
-                    $stationData = $this->getStationData($stationInfo['code'], $period, $dateRange);
-                    $stationsData[] = [
-                        'name' => $stationInfo['name'],
-                        'quantity' => $stationData['quantity'],
-                        'weeklyAmount' => $stationData['periodAmount'],
-                        'cumulativeAmount' => $stationData['cumulativeAmount']
-                    ];
-                }
-            } elseif ($userPosition === 'Station_Chief') {
-                // Get only user's station data using station code directly
-                $userStationCode = $userStation; // Assuming userStation already contains station code like 'TTCA-TRAM01'
-                
-                // Find station name from mapping
-                $stationName = 'TRẠM';
-                foreach ($stationMapping as $stationNumber => $stationInfo) {
-                    if ($stationInfo['code'] === $userStationCode) {
-                        $stationName = $stationInfo['name'];
-                        break;
-                    }
-                }
-                
-                $stationData = $this->getStationData($userStationCode, $period, $dateRange);
-                $stationsData[] = [
-                    'name' => $stationName,
-                    'quantity' => $stationData['quantity'],
-                    'weeklyAmount' => $stationData['periodAmount'],
-                    'cumulativeAmount' => $stationData['cumulativeAmount']
-                ];
-            } elseif ($userPosition === 'Farm_worker') {
-                // Get data filtered by ma_nhan_vien
-                $stationData = $this->getFarmWorkerData($userMaNhanVien, $period, $dateRange);
-                $stationsData[] = [
-                    'name' => 'Dữ liệu của tôi',
-                    'quantity' => $stationData['quantity'],
-                    'weeklyAmount' => $stationData['periodAmount'],
-                    'cumulativeAmount' => $stationData['cumulativeAmount']
-                ];
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'stations' => $stationsData,
-                    'period' => $period,
-                    'dateRange' => $dateRange
-                ]
-            ]);
-
+            // Try to set MySQL 5.7+ execution time limit
+            DB::statement('SET SESSION MAX_EXECUTION_TIME=30000'); // 30 วินาที
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to fetch chart data: ' . $e->getMessage()
-            ], 500);
+            // Fallback for older MySQL versions or restricted environments
+            try {
+                // Try alternative method for MySQL 5.6 and below
+                DB::statement('SET SESSION wait_timeout=30');
+                DB::statement('SET SESSION interactive_timeout=30');
+            } catch (\Exception $e2) {
+                // Log the issue but continue execution
+                \Log::warning('Cannot set query timeout on this hosting environment: ' . $e2->getMessage());
+                
+                // Set PHP execution time limit as additional safety
+                $this->setPhpExecutionTimeout();
+            }
         }
     }
+
+    /**
+     * Set PHP execution timeout as fallback for shared hosting
+     */
+    private function setPhpExecutionTimeout()
+    {
+        try {
+            // Increase PHP execution time for report generation (if allowed)
+            if (function_exists('set_time_limit')) {
+                set_time_limit(60); // 60 seconds for report generation
+            }
+        } catch (\Exception $e) {
+            \Log::info('PHP execution time limit cannot be modified on this hosting environment');
+        }
+    }
+
+    /**
+     * Warmup basic cache data to improve performance on shared hosting
+     */
+    private function warmupBasicCache()
+    {
+        if (!Cache::has('all_stations')) {
+            $stations = [
+                ['code' => 'TTCA-TRAM01', 'name' => 'TRẠM 1'],
+                ['code' => 'TTCA-TRAM02', 'name' => 'TRẠM 2'],
+                ['code' => 'TTCA-TRAM03', 'name' => 'TRẠM 3'],
+                ['code' => 'TTCA-TRAM04', 'name' => 'TRẠM 4'],
+                ['code' => 'TTCA-TRAM05', 'name' => 'TRẠM 5'],
+                ['code' => 'TTCA-TRAM06', 'name' => 'TRẠM 6'],
+            ];
+            // ใช้ TTL ที่เหมาะสมกับ shared hosting (30 นาที)
+            Cache::put('all_stations', $stations, 1800);
+        }
+    }
+   public function getReportChartSection(Request $request)
+{
+    try {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $period = $request->input('period', 'week');
+        $cacheKey = "chart_data_{$user->id}_{$period}";
+
+        // ใช้ cache ก่อน
+        $cachedData = $this->safeCache($cacheKey, function() use ($user, $period) {
+            return $this->generateChartDataOptimized($user, $period);
+        }, 'report_data');
+
+        return response()->json([
+            'success' => true,
+            'data' => $cachedData,
+            'fromCache' => true
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Chart data generation failed: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'error' => 'Failed to fetch chart data: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+/**
+ * ใช้ stored procedure เดียวดึงข้อมูลทุกสถานี (หรือ station เดียว/พนักงานไร่) ในครั้งเดียว
+ */
+private function generateChartDataOptimized($user, $period)
+{
+    $startTime = microtime(true);
+    $dateRange = $this->getDateRange($period);
+    $userPosition = $user->position;
+    $userStation = $user->station;
+    $userMaNhanVien = $user->ma_nhan_vien;
+
+    $stationMapping = [
+        'TTCA-TRAM01' => 'TRẠM 1',
+        'TTCA-TRAM02' => 'TRẠM 2',
+        'TTCA-TRAM03' => 'TRẠM 3',
+        'TTCA-TRAM04' => 'TRẠM 4',
+        'TTCA-TRAM05' => 'TRẠM 5',
+        'TTCA-TRAM06' => 'TRẠM 6'
+    ];
+
+    $stationsData = [];
+
+    if (in_array($userPosition, ['department_head', 'office_workers'])) {
+        // เรียก procedure เดียวดึงข้อมูลทุกสถานี
+        $allData = $this->safeStoredProcedure('get_chart_all_stations_data', [
+            $dateRange['start'],
+            $dateRange['end']
+        ]);
+        // Map ข้อมูลให้อยู่ในรูปแบบที่ frontend ต้องการ
+        $grouped = [];
+        foreach ($allData as $row) {
+            $stationCode = $row->station_code;
+            if (!isset($grouped[$stationCode])) {
+                $grouped[$stationCode] = [
+                    'quantity' => 0,
+                    'weeklyAmount' => 0,
+                    'cumulativeAmount' => 0
+                ];
+            }
+            $grouped[$stationCode]['quantity'] += $row->period_quantity ?? 0;
+            $grouped[$stationCode]['weeklyAmount'] += $row->period_amount ?? 0;
+            $grouped[$stationCode]['cumulativeAmount'] += $row->cumulative_amount ?? 0;
+        }
+        foreach ($stationMapping as $code => $name) {
+            $stationsData[] = [
+                'name' => $name,
+                'quantity' => $grouped[$code]['quantity'] ?? 0,
+                'weeklyAmount' => $grouped[$code]['weeklyAmount'] ?? 0,
+                'cumulativeAmount' => $grouped[$code]['cumulativeAmount'] ?? 0
+            ];
+        }
+    } elseif ($userPosition === 'Station_Chief') {
+        // เรียก procedure สำหรับสถานีเดียว
+        $service = $this->safeStoredProcedure('get_chart_service_data', [
+            $dateRange['start'],
+            $dateRange['end'],
+            $userStation
+        ]);
+        $seed = $this->safeStoredProcedure('get_chart_seed_data', [
+            $dateRange['start'],
+            $dateRange['end'],
+            $userStation
+        ]);
+        $stationsData[] = [
+            'name' => $stationMapping[$userStation] ?? 'TRẠM',
+            'quantity' => ($service[0]->period_quantity ?? 0) + ($seed[0]->period_quantity ?? 0),
+            'weeklyAmount' => ($service[0]->period_amount ?? 0) + ($seed[0]->period_amount ?? 0),
+            'cumulativeAmount' => ($service[0]->cumulative_amount ?? 0) + ($seed[0]->cumulative_amount ?? 0)
+        ];
+    } elseif ($userPosition === 'Farm_worker') {
+        // เรียก procedure สำหรับพนักงานไร่
+        $service = $this->safeStoredProcedure('get_chart_farm_worker_service_data', [
+            $dateRange['start'],
+            $dateRange['end'],
+            $userMaNhanVien
+        ]);
+        $seed = $this->safeStoredProcedure('get_chart_farm_worker_seed_data', [
+            $dateRange['start'],
+            $dateRange['end'],
+            $userMaNhanVien
+        ]);
+        $stationsData[] = [
+            'name' => 'Dữ liệuของฉัน',
+            'quantity' => ($service[0]->period_quantity ?? 0) + ($seed[0]->period_quantity ?? 0),
+            'weeklyAmount' => ($service[0]->period_amount ?? 0) + ($seed[0]->period_amount ?? 0),
+            'cumulativeAmount' => ($service[0]->cumulative_amount ?? 0) + ($seed[0]->cumulative_amount ?? 0)
+        ];
+    }
+
+    $executionTime = round(microtime(true) - $startTime, 2);
+
+    return [
+        'stations' => $stationsData,
+        'period' => $period,
+        'dateRange' => $dateRange,
+        'executionTime' => $executionTime
+    ];
+}
+
 
     private function getDateRange($period)
     {
@@ -149,49 +238,33 @@ class DashboardReportControllers extends Controller
         }
     }
 
-    private function getStationData($stationCode, $period, $dateRange)
-    {
-        // Get service data (bien_ban_nghiemthu_dv)
-        $serviceData = $this->getServiceData($stationCode, $period, $dateRange);
-        
-        // Get seed data (bien_ban_nghiem_thu_hom_giong)
-        $seedData = $this->getSeedData($stationCode, $period, $dateRange);
-        
+    // DEPRECATED: Replaced by stored procedures for better performance
+    // This method is kept for compatibility but will be removed in future versions
+
+   // DEPRECATED: Now replaced by stored procedure get_chart_service_data for better performance
+   private function getServiceData($stationCode, $period, $dateRange)
+{
+    try {
+        $result = $this->safeStoredProcedure('get_chart_service_data', [
+            $dateRange['start'],
+            $dateRange['end'],
+            $stationCode
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error calling get_chart_service_data SP: ' . $e->getMessage());
         return [
-            'quantity' => $serviceData['quantity'] + $seedData['quantity'],
-            'periodAmount' => $serviceData['periodAmount'] + $seedData['periodAmount'],
-            'cumulativeAmount' => $serviceData['cumulativeAmount'] + $seedData['cumulativeAmount']
+            'quantity' => 0,
+            'periodAmount' => 0,
+            'cumulativeAmount' => 0
         ];
     }
-
-    private function getServiceData($stationCode, $period, $dateRange)
-{
-    // Use a single raw SQL query with conditional aggregation
-    $result = DB::select("
-        SELECT 
-            COUNT(CASE WHEN pttt.ngay_tao BETWEEN ? AND ? THEN 1 ELSE NULL END) as period_quantity,
-            SUM(CASE WHEN pttt.ngay_tao BETWEEN ? AND ? THEN bbnt.tong_tien ELSE 0 END) as period_amount,
-            COUNT(*) as total_quantity,
-            SUM(bbnt.tong_tien) as cumulative_amount
-        FROM tb_bien_ban_nghiemthu_dv as bbnt
-        JOIN Logs_phieu_trinh_thanh_toan as log ON bbnt.ma_nghiem_thu = log.ma_nghiem_thu
-        JOIN tb_phieu_trinh_thanh_toan as pttt ON log.ma_trinh_thanh_toan = pttt.ma_trinh_thanh_toan
-        WHERE bbnt.tram = ?
-        AND pttt.trang_thai_thanh_toan IN ('processing', 'submitted', 'paid')",
-        [
-            $dateRange['start'], $dateRange['end'],
-            $dateRange['start'], $dateRange['end'],
-            $stationCode
-        ]
-    );
     
     $data = !empty($result) ? $result[0] : (object)[
         'period_quantity' => 0,
         'period_amount' => 0,
-        'total_quantity' => 0,
         'cumulative_amount' => 0
     ];
-
+    
     return [
         'quantity' => $data->period_quantity,
         'periodAmount' => $data->period_amount ?: 0,
@@ -199,31 +272,28 @@ class DashboardReportControllers extends Controller
     ];
 }
 
+    // DEPRECATED: Now replaced by stored procedure get_chart_seed_data for better performance
     private function getSeedData($stationCode, $period, $dateRange)
 {
-    // Use a single raw SQL query with conditional aggregation
-    $result = DB::select("
-        SELECT 
-            COUNT(CASE WHEN pttt.ngay_tao BETWEEN ? AND ? THEN 1 ELSE NULL END) as period_quantity,
-            SUM(CASE WHEN pttt.ngay_tao BETWEEN ? AND ? THEN bbhg.tong_tien ELSE 0 END) as period_amount,
-            COUNT(*) as total_quantity,
-            SUM(bbhg.tong_tien) as cumulative_amount
-        FROM bien_ban_nghiem_thu_hom_giong as bbhg
-        JOIN logs_phieu_trinh_thanh_toan_homgiong as log ON bbhg.ma_so_phieu = log.ma_so_phieu
-        JOIN tb_phieu_trinh_thanh_toan_homgiong as pttt ON log.ma_trinh_thanh_toan = pttt.ma_trinh_thanh_toan
-        WHERE bbhg.tram = ?
-        AND pttt.trang_thai_thanh_toan IN ('processing', 'submitted', 'paid')",
-        [
-            $dateRange['start'], $dateRange['end'],
-            $dateRange['start'], $dateRange['end'],
+    // Use stored procedure instead of raw SQL for better performance
+    try {
+        $result = $this->safeStoredProcedure('get_chart_seed_data', [
+            $dateRange['start'],
+            $dateRange['end'],
             $stationCode
-        ]
-    );
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error calling get_chart_seed_data SP: ' . $e->getMessage());
+        return [
+            'quantity' => 0,
+            'periodAmount' => 0,
+            'cumulativeAmount' => 0
+        ];
+    }
     
     $data = !empty($result) ? $result[0] : (object)[
         'period_quantity' => 0,
         'period_amount' => 0,
-        'total_quantity' => 0,
         'cumulative_amount' => 0
     ];
 
@@ -234,6 +304,7 @@ class DashboardReportControllers extends Controller
     ];
 }
 
+    // DEPRECATED: Now replaced by stored procedures for better performance  
     private function getFarmWorkerData($maNhanVien, $period, $dateRange)
     {
         // Get service data for specific farm worker
@@ -249,10 +320,11 @@ class DashboardReportControllers extends Controller
         ];
     }
 
+    // DEPRECATED: Now replaced by stored procedure get_chart_farm_worker_service_data for better performance
     private function getFarmWorkerServiceData($maNhanVien, $period, $dateRange)
 {
     // Use a single query with conditional aggregation to get both period and cumulative data
-    $result = DB::select("
+    $result = $this->safeDbQuery("
         SELECT 
             COUNT(CASE WHEN pttt.ngay_tao BETWEEN ? AND ? THEN 1 ELSE NULL END) as period_quantity,
             SUM(CASE WHEN pttt.ngay_tao BETWEEN ? AND ? THEN bbnt.tong_tien ELSE 0 END) as period_amount,
@@ -283,10 +355,11 @@ class DashboardReportControllers extends Controller
         'cumulativeAmount' => $data->cumulative_amount ?: 0
     ];
 }
+    // DEPRECATED: Now replaced by stored procedure get_chart_farm_worker_seed_data for better performance
     private function getFarmWorkerSeedData($maNhanVien, $period, $dateRange)
 {
     // Use a single query with conditional aggregation to get both period and cumulative data
-    $result = DB::select("
+    $result = $this->safeDbQuery("
         SELECT 
             COUNT(CASE WHEN pttt.ngay_tao BETWEEN ? AND ? THEN 1 ELSE NULL END) as period_quantity,
             SUM(CASE WHEN pttt.ngay_tao BETWEEN ? AND ? THEN bbhg.tong_tien ELSE 0 END) as period_amount,
@@ -340,15 +413,13 @@ public function getReportTableSection(Request $request)
         $cacheKey = "report_table_{$user->id}_{$period}_" . ($stationFilter ?: 'all');
         
         // Try to get data from cache first with improved handling
-        if (function_exists('apcu_exists') && apcu_exists($cacheKey)) {
-            $cachedData = apcu_fetch($cacheKey);
-            if ($cachedData) {
-                return response()->json([
-                    'success' => true,
-                    'data' => $cachedData,
-                    'fromCache' => true
-                ]);
-            }
+        $cachedData = Cache::get($cacheKey);
+        if ($cachedData) {
+            return response()->json([
+                'success' => true,
+                'data' => $cachedData,
+                'fromCache' => true
+            ]);
         }
         
         // Calculate date range based on period
@@ -379,13 +450,10 @@ public function getReportTableSection(Request $request)
         
         // Get available stations (with caching)
         $stationsForUserCacheKey = "stations_for_user_{$userPosition}_{$userStation}";
-        if (function_exists('apcu_exists') && apcu_exists($stationsForUserCacheKey)) {
-            $availableStations = apcu_fetch($stationsForUserCacheKey);
-        } else {
+        $availableStations = Cache::get($stationsForUserCacheKey);
+        if (!$availableStations) {
             $availableStations = $this->getStationsForUser($userPosition, $userStation);
-            if (function_exists('apcu_store')) {
-                apcu_store($stationsForUserCacheKey, $availableStations, 86400); // Cache for 24 hours
-            }
+            Cache::put($stationsForUserCacheKey, $availableStations, 1800); // 30 นาทีสำหรับ shared hosting
         }
         
         $responseData = [
@@ -402,10 +470,7 @@ public function getReportTableSection(Request $request)
         $responseData['executionTime'] = $executionTime;
 
         // Store in cache with longer TTL to reduce database load
-        if (function_exists('apcu_store')) {
-            $ttl = 1800; // 30 minutes
-            apcu_store($cacheKey, $responseData, $ttl);
-        }
+        Cache::put($cacheKey, $responseData, 1200); // 20 นาทีสำหรับ shared hosting
 
         return response()->json([
             'success' => true,
@@ -442,16 +507,10 @@ public function getAvailableStations(Request $request)
         $cacheKey = 'available_stations_' . $userPosition . '_' . $userStation;
         
         // Check if data exists in cache
-        if (function_exists('apcu_exists') && apcu_exists($cacheKey)) {
-            $stations = apcu_fetch($cacheKey);
-        } else {
-            // Get stations based on user position
+        $stations = Cache::get($cacheKey);
+        if (!$stations) {
             $stations = $this->getStationsForUser($userPosition, $userStation);
-            
-            // Store in cache for 24 hours if APCu is available
-            if (function_exists('apcu_store')) {
-                apcu_store($cacheKey, $stations, 86400); // 24 hours
-            }
+            Cache::put($cacheKey, $stations, 1800); // 30 นาทีสำหรับ shared hosting
         }
         
         return response()->json([
@@ -519,85 +578,44 @@ private function getJobCategoriesData($period, $dateRange, $station = null, $maN
 
 private function getServiceJobCategories($period, $dateRange, $station = null, $maNhanVien = null)
 {
-    // Create a cache key for this specific query
+    // Create a cache key for this specific query (ยังคงใช้ caching เดิม)
     $cacheKey = "service_jobs_{$period}_{$dateRange['start']}_{$dateRange['end']}_" . ($station ?: 'all') . "_" . ($maNhanVien ?: 'all');
     
     // Try to get from cache first
-    if (function_exists('apcu_exists') && apcu_exists($cacheKey)) {
-        $jobCategories = apcu_fetch($cacheKey);
-        if ($jobCategories !== false) {
-            \Log::info('Using cached service job categories');
-            return $jobCategories;
-        }
+    $jobCategories = Cache::get($cacheKey);
+    if ($jobCategories) {
+        \Log::info('Using cached service job categories');
+        return $jobCategories;
     }
     
-    // Build query parameters
-    $params = [
-        $dateRange['start'], 
-        $dateRange['end'],
-        $dateRange['start'], 
-        $dateRange['end']
-    ];
-    
-    // Build WHERE clause
-    $whereConditions = ["pttt.trang_thai_thanh_toan IN ('processing', 'submitted', 'paid')"];
-    
-    if ($station) {
-        $whereConditions[] = "bb.tram = ?";
-        $params[] = $station;
-    }
-    
-    if ($maNhanVien) {
-        $whereConditions[] = "bb.ma_nhan_vien = ?";
-        $params[] = $maNhanVien;
-    }
-    
-    $whereClause = implode(' AND ', $whereConditions);
-    
-    // Execute optimized query with LIMIT to prevent too many rows
-    $sql = "
-        SELECT 
-            ct.dich_vu,
-            ct.don_vi_tinh,
-            SUM(CASE WHEN pttt.ngay_tao BETWEEN ? AND ? THEN ct.khoi_luong_thuc_hien ELSE 0 END) as period_quantity,
-            SUM(CASE WHEN pttt.ngay_tao BETWEEN ? AND ? THEN ct.thanh_tien ELSE 0 END) as period_amount,
-            SUM(ct.thanh_tien) as cumulative_amount
-        FROM tb_chitiet_dichvu_nt as ct
-        JOIN tb_bien_ban_nghiemthu_dv as bb 
-            ON ct.ma_nghiem_thu = bb.ma_nghiem_thu
-        JOIN Logs_phieu_trinh_thanh_toan as log 
-            ON bb.ma_nghiem_thu = log.ma_nghiem_thu
-        JOIN tb_phieu_trinh_thanh_toan as pttt 
-            ON log.ma_trinh_thanh_toan = pttt.ma_trinh_thanh_toan
-        WHERE $whereClause
-        GROUP BY ct.dich_vu, ct.don_vi_tinh
-        LIMIT 100
-    ";
-    
+    // เรียก Stored Procedure แทนการสร้าง SQL ใน PHP
     try {
-        $services = DB::select($sql, $params);
+        $services = $this->safeStoredProcedure('get_service_job_categories', [
+            $dateRange['start'],
+            $dateRange['end'],
+            $station,
+            $maNhanVien
+        ]);
     } catch (\Exception $e) {
-        \Log::error('Error in getServiceJobCategories: ' . $e->getMessage());
+        \Log::error('Error calling get_service_job_categories SP: ' . $e->getMessage());
         return [];
     }
     
+    // จัดรูปแบบผลลัพธ์ให้ตรงกับ format เดิม
     $jobCategories = [];
     foreach ($services as $service) {
         $jobCategories[] = [
-            'name' => $service->dich_vu,
-            'quantity' => $service->period_quantity ?: 0,
-            'unit' => $service->don_vi_tinh ?: 'Đơn vị',
-            'weeklyAmount' => $service->period_amount ?: 0,
-            'cumulativeAmount' => $service->cumulative_amount ?: 0
+            'name' => $service->name,
+            'quantity' => $service->quantity ?: 0,
+            'unit' => $service->unit ?: 'Đơn vị',
+            'weeklyAmount' => $service->weeklyAmount ?: 0,
+            'cumulativeAmount' => $service->cumulativeAmount ?: 0
         ];
     }
     
-    // Store in cache for 15 minutes
-    if (function_exists('apcu_store')) {
-        apcu_store($cacheKey, $jobCategories, 900);
-    }
-    
-    return $jobCategories;
+        // Store in cache with optimized TTL for shared hosting
+        Cache::put($cacheKey, $jobCategories, 900); // 15 นาที
+        return $jobCategories;
 }
 private function getHomGiongJobCategory($period, $dateRange, $station = null, $maNhanVien = null)
 {
@@ -605,53 +623,22 @@ private function getHomGiongJobCategory($period, $dateRange, $station = null, $m
     $cacheKey = "hom_giong_{$period}_{$dateRange['start']}_{$dateRange['end']}_" . ($station ?: 'all') . "_" . ($maNhanVien ?: 'all');
     
     // Try to get from cache first
-    if (function_exists('apcu_exists') && apcu_exists($cacheKey)) {
-        $homGiongJob = apcu_fetch($cacheKey);
-        if ($homGiongJob !== false) {
-            \Log::info('Using cached hom giong data');
-            return $homGiongJob;
-        }
+    $homGiongJob = Cache::get($cacheKey);
+    if ($homGiongJob) {
+        \Log::info('Using cached hom giong data');
+        return $homGiongJob;
     }
     
-    // Build query parameters
-    $params = [
-        $dateRange['start'], 
-        $dateRange['end'],
-        $dateRange['start'], 
-        $dateRange['end']
-    ];
-    
-    // Build WHERE clause
-    $whereConditions = ["pttt.trang_thai_thanh_toan IN ('processing', 'submitted', 'paid')"];
-    
-    if ($station) {
-        $whereConditions[] = "bb.tram = ?";
-        $params[] = $station;
-    }
-    
-    if ($maNhanVien) {
-        $whereConditions[] = "bb.ma_nhan_vien = ?";
-        $params[] = $maNhanVien;
-    }
-    
-    $whereClause = implode(' AND ', $whereConditions);
-    
-    // Execute optimized query
-    $sql = "
-        SELECT 
-            SUM(CASE WHEN pttt.ngay_tao BETWEEN ? AND ? THEN bb.tong_thuc_nhan ELSE 0 END) as period_quantity,
-            SUM(CASE WHEN pttt.ngay_tao BETWEEN ? AND ? THEN bb.tong_tien ELSE 0 END) as period_amount,
-            SUM(bb.tong_tien) as cumulative_amount
-        FROM bien_ban_nghiem_thu_hom_giong as bb
-        JOIN logs_phieu_trinh_thanh_toan_homgiong as log ON bb.ma_so_phieu = log.ma_so_phieu
-        JOIN tb_phieu_trinh_thanh_toan_homgiong as pttt ON log.ma_trinh_thanh_toan = pttt.ma_trinh_thanh_toan
-        WHERE $whereClause
-    ";
-    
+    // เรียก Stored Procedure แทนการสร้าง SQL ใน PHP
     try {
-        $result = DB::select($sql, $params);
+        $result = $this->safeStoredProcedure('get_hom_giong_job_category', [
+            $dateRange['start'],
+            $dateRange['end'],
+            $station,
+            $maNhanVien
+        ]);
     } catch (\Exception $e) {
-        \Log::error('Error in getHomGiongJobCategory: ' . $e->getMessage());
+        \Log::error('Error calling get_hom_giong_job_category SP: ' . $e->getMessage());
         return [
             'name' => 'Hom giống',
             'quantity' => 0,
@@ -661,7 +648,7 @@ private function getHomGiongJobCategory($period, $dateRange, $station = null, $m
         ];
     }
     
-    // Handle null result
+    // จัดรูปแบบผลลัพธ์ให้ตรงกับ format เดิม
     if (empty($result) || !isset($result[0])) {
         return [
             'name' => 'Hom giống',
@@ -680,12 +667,304 @@ private function getHomGiongJobCategory($period, $dateRange, $station = null, $m
         'cumulativeAmount' => $result[0]->cumulative_amount ?: 0
     ];
     
-    // Store in cache for 15 minutes
-    if (function_exists('apcu_store')) {
-        apcu_store($cacheKey, $homGiongJob, 900);
-    }
-    
+    // Store in cache with optimized TTL for shared hosting
+    Cache::put($cacheKey, $homGiongJob, 900); // 15 นาที
     return $homGiongJob;
 }
 
+/**
+ * Get optimized cache TTL based on data type for shared hosting
+ */
+private function getCacheTTL($dataType = 'default')
+{
+    // Optimized TTL values for shared hosting performance
+    $ttlMap = [
+        'stations' => 1800,      // 30 นาที - ข้อมูลสถานีไม่เปลี่ยนบ่อย
+        'report_data' => 1200,   // 20 นาที - ข้อมูลรายงานหลัก
+        'job_categories' => 900, // 15 นาที - ข้อมูลหมวดงาน
+        'user_permissions' => 1800, // 30 นาที - สิทธิ์ผู้ใช้
+        'default' => 600         // 10 นาที - ค่าเริ่มต้น
+    ];
+    
+    return $ttlMap[$dataType] ?? $ttlMap['default'];
+}
+
+/**
+ * Safe cache get with fallback for shared hosting
+ */
+private function safeCache($key, $callback, $dataType = 'default')
+{
+    try {
+        $cached = Cache::get($key);
+        if ($cached !== null) {
+            return $cached;
+        }
+        
+        $data = $callback();
+        if ($data !== null) {
+            Cache::put($key, $data, $this->getCacheTTL($dataType));
+        }
+        
+        return $data;
+    } catch (\Exception $e) {
+        \Log::warning("Cache operation failed for key: {$key}. Error: " . $e->getMessage());
+        // Fallback to direct execution if cache fails
+        return $callback();
+    }
+}
+
+/**
+ * Execute database query with timeout protection for shared hosting
+ */
+private function safeDbQuery($query, $bindings = [], $timeoutSeconds = 30)
+{
+    try {
+        // Set a reasonable timeout for the query
+        $startTime = microtime(true);
+        
+        $result = DB::select($query, $bindings);
+        
+        $executionTime = microtime(true) - $startTime;
+        
+        // Log slow queries for optimization
+        if ($executionTime > 5) {
+            \Log::warning("Slow query detected (${executionTime}s): " . substr($query, 0, 100));
+        }
+        
+        return $result;
+        
+    } catch (\Exception $e) {
+        \Log::error("Database query failed: " . $e->getMessage() . " Query: " . substr($query, 0, 100));
+        
+        // Return empty result for graceful degradation
+        return [];
+    }
+}
+
+/**
+ * Execute stored procedure with error handling for shared hosting
+ */
+private function safeStoredProcedure($procedureName, $parameters = [])
+{
+    try {
+        $placeholders = str_repeat('?,', count($parameters) - 1) . '?';
+        $query = "CALL {$procedureName}({$placeholders})";
+        
+        return $this->safeDbQuery($query, $parameters);
+        
+    } catch (\Exception $e) {
+        \Log::error("Stored procedure '{$procedureName}' failed: " . $e->getMessage());
+        return [];
+    }
+}
+    private function generateChartData($user, $period)
+    {
+        $startTime = microtime(true);
+        
+        // Calculate date range based on period
+        $dateRange = $this->getDateRange($period);
+        
+        // Get user position
+        $userPosition = $user->position;
+        $userStation = $user->station;
+        $userMaNhanVien = $user->ma_nhan_vien;
+
+        // Initialize result array for stations
+        $stationsData = [];
+        
+        // Define station mapping
+        $stationMapping = [
+            'TTCA-TRAM01' => 'TRẠM 1',
+            'TTCA-TRAM02' => 'TRẠM 2',
+            'TTCA-TRAM03' => 'TRẠM 3',
+            'TTCA-TRAM04' => 'TRẠM 4',
+            'TTCA-TRAM05' => 'TRẠM 5',
+            'TTCA-TRAM06' => 'TRẠM 6'
+        ];
+
+        // Check user role and get data accordingly using optimized procedures
+        if (in_array($userPosition, ['department_head', 'office_workers'])) {
+            // Use single procedure call to get all stations data at once
+            $stationsData = $this->getAllStationsChartData($dateRange, $stationMapping);
+        } elseif ($userPosition === 'Station_Chief') {
+            // Get only user's station data using optimized procedures
+            $stationData = $this->getStationChartDataOptimized($userStation, $dateRange);
+            $stationName = $stationMapping[$userStation] ?? 'TRẠM';
+            
+            $stationsData[] = [
+                'name' => $stationName,
+                'quantity' => $stationData['quantity'],
+                'weeklyAmount' => $stationData['periodAmount'],
+                'cumulativeAmount' => $stationData['cumulativeAmount']
+            ];
+        } elseif ($userPosition === 'Farm_worker') {
+            // Get data filtered by ma_nhan_vien using optimized procedures
+            $stationData = $this->getFarmWorkerChartDataOptimized($userMaNhanVien, $dateRange);
+            $stationsData[] = [
+                'name' => 'Dữ liệu của tôi',
+                'quantity' => $stationData['quantity'],
+                'weeklyAmount' => $stationData['periodAmount'],
+                'cumulativeAmount' => $stationData['cumulativeAmount']
+            ];
+        }
+
+        $executionTime = round(microtime(true) - $startTime, 2);
+        
+        return [
+            'stations' => $stationsData,
+            'period' => $period,
+            'dateRange' => $dateRange,
+            'executionTime' => $executionTime
+        ];
+    }
+
+    private function getAllStationsChartData($dateRange, $stationMapping)
+    {
+        try {
+            // Single procedure call to get all stations data
+            $allData = $this->safeStoredProcedure('get_chart_all_stations_data', [
+                $dateRange['start'],
+                $dateRange['end']
+            ]);
+            
+            // Process and group data by station
+            $stationResults = [];
+            
+            foreach ($allData as $row) {
+                $stationCode = $row->station_code;
+                $dataType = $row->data_type;
+                
+                if (!isset($stationResults[$stationCode])) {
+                    $stationResults[$stationCode] = [
+                        'service' => [
+                            'quantity' => 0,
+                            'periodAmount' => 0,
+                            'cumulativeAmount' => 0
+                        ],
+                        'seed' => [
+                            'quantity' => 0,
+                            'periodAmount' => 0,
+                            'cumulativeAmount' => 0
+                        ]
+                    ];
+                }
+                
+                $stationResults[$stationCode][$dataType] = [
+                    'quantity' => $row->period_quantity ?: 0,
+                    'periodAmount' => $row->period_amount ?: 0,
+                    'cumulativeAmount' => $row->cumulative_amount ?: 0
+                ];
+            }
+            
+            // Format for output
+            $stationsData = [];
+            foreach ($stationMapping as $stationCode => $stationName) {
+                $serviceData = $stationResults[$stationCode]['service'] ?? ['quantity' => 0, 'periodAmount' => 0, 'cumulativeAmount' => 0];
+                $seedData = $stationResults[$stationCode]['seed'] ?? ['quantity' => 0, 'periodAmount' => 0, 'cumulativeAmount' => 0];
+                
+                $stationsData[] = [
+                    'name' => $stationName,
+                    'quantity' => $serviceData['quantity'] + $seedData['quantity'],
+                    'weeklyAmount' => $serviceData['periodAmount'] + $seedData['periodAmount'],
+                    'cumulativeAmount' => $serviceData['cumulativeAmount'] + $seedData['cumulativeAmount']
+                ];
+            }
+            
+            return $stationsData;
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in getAllStationsChartData: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    private function getStationChartDataOptimized($stationCode, $dateRange)
+    {
+        try {
+            // Get service data using stored procedure
+            $serviceResult = $this->safeStoredProcedure('get_chart_service_data', [
+                $dateRange['start'],
+                $dateRange['end'],
+                $stationCode
+            ]);
+            
+            // Get seed data using stored procedure
+            $seedResult = $this->safeStoredProcedure('get_chart_seed_data', [
+                $dateRange['start'],
+                $dateRange['end'],
+                $stationCode
+            ]);
+            
+            $serviceData = !empty($serviceResult) ? $serviceResult[0] : (object)[
+                'period_quantity' => 0,
+                'period_amount' => 0,
+                'cumulative_amount' => 0
+            ];
+            
+            $seedData = !empty($seedResult) ? $seedResult[0] : (object)[
+                'period_quantity' => 0,
+                'period_amount' => 0,
+                'cumulative_amount' => 0
+            ];
+            
+            return [
+                'quantity' => ($serviceData->period_quantity ?: 0) + ($seedData->period_quantity ?: 0),
+                'periodAmount' => ($serviceData->period_amount ?: 0) + ($seedData->period_amount ?: 0),
+                'cumulativeAmount' => ($serviceData->cumulative_amount ?: 0) + ($seedData->cumulative_amount ?: 0)
+            ];
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in getStationChartDataOptimized: ' . $e->getMessage());
+            return [
+                'quantity' => 0,
+                'periodAmount' => 0,
+                'cumulativeAmount' => 0
+            ];
+        }
+    }
+
+    private function getFarmWorkerChartDataOptimized($maNhanVien, $dateRange)
+    {
+        try {
+            // Get service data using stored procedure
+            $serviceResult = $this->safeStoredProcedure('get_chart_farm_worker_service_data', [
+                $dateRange['start'],
+                $dateRange['end'],
+                $maNhanVien
+            ]);
+            
+            // Get seed data using stored procedure
+            $seedResult = $this->safeStoredProcedure('get_chart_farm_worker_seed_data', [
+                $dateRange['start'],
+                $dateRange['end'],
+                $maNhanVien
+            ]);
+            
+            $serviceData = !empty($serviceResult) ? $serviceResult[0] : (object)[
+                'period_quantity' => 0,
+                'period_amount' => 0,
+                'cumulative_amount' => 0
+            ];
+            
+            $seedData = !empty($seedResult) ? $seedResult[0] : (object)[
+                'period_quantity' => 0,
+                'period_amount' => 0,
+                'cumulative_amount' => 0
+            ];
+            
+            return [
+                'quantity' => ($serviceData->period_quantity ?: 0) + ($seedData->period_quantity ?: 0),
+                'periodAmount' => ($serviceData->period_amount ?: 0) + ($seedData->period_amount ?: 0),
+                'cumulativeAmount' => ($serviceData->cumulative_amount ?: 0) + ($seedData->cumulative_amount ?: 0)
+            ];
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in getFarmWorkerChartDataOptimized: ' . $e->getMessage());
+            return [
+                'quantity' => 0,
+                'periodAmount' => 0,
+                'cumulativeAmount' => 0
+            ];
+        }
+    }
 }

@@ -32,7 +32,12 @@ class User extends Authenticatable implements JWTSubject
   'status',
   'ma_nhan_vien',
   'image',
-  'manv_ttca'
+  'manv_ttca',
+      'device_id',         // เพิ่มบรรทัดนี้
+    'last_login_ip',     // เพิ่มบรรทัดนี้
+    'last_login_at',     // เพิ่มบรรทัดนี้
+        'device_id_pc',
+    'device_id_mobile',
     ];
 
     /**
@@ -55,6 +60,7 @@ class User extends Authenticatable implements JWTSubject
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+             'last_login_at' => 'datetime',
            
         ];
     }
