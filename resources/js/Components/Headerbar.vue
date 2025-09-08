@@ -2,7 +2,16 @@
     <!-- Header start -->
     <header class="header">
         <div class="toggle-btns">
-            <a id="toggle-sidebar" href="#" @click.prevent="toggleSidebar">
+            <!-- เพิ่ม listeners สำหรับ pointer/touch เพื่อรองรับมือถือบางรุ่น
+                 เปลี่ยน href เพื่อไม่ให้เกิดการสโครล -->
+            <a
+                id="toggle-sidebar"
+                href="javascript:void(0)"
+                role="button"
+                @click.prevent="toggleSidebar"
+                @pointerdown.prevent="toggleSidebar"
+                @touchend.prevent="toggleSidebar"
+            >
                 <i class="icon-list"></i>
             </a>
             <a id="pin-sidebar" href="#">
@@ -104,6 +113,9 @@ export default {
                 "https://img.icons8.com/?size=100&id=z-JBA_KtSkxG&format=png&color=000000", // default avatar
             defaultAvatar:
                 "https://img.icons8.com/?size=100&id=z-JBA_KtSkxG&format=png&color=000000",
+            // lock/time to prevent duplicate rapid toggles (helps against duplicate pointer+click events)
+            lastToggleAt: 0,
+            toggleLockMs: 300,
         };
     },
     async created() {
@@ -127,6 +139,31 @@ export default {
         Gotopath(path) {
             this.$router.push(path);
         },
+        toggleSidebar(event) {
+            // ป้องกันการเรียกซ้ำจาก event หลายชนิด (pointerdown + click)
+            const now = Date.now();
+            if (now - this.lastToggleAt < this.toggleLockMs) return;
+            this.lastToggleAt = now;
+
+            // fallback selector list: บาง layout ใช้ id/class ต่างกัน
+            const selector = ".page-wrapper, #page-wrapper, .wrapper";
+            const wrapper = document.querySelector(selector);
+            if (!wrapper) {
+                console.warn(
+                    "toggleSidebar: wrapper element not found:",
+                    selector
+                );
+                return;
+            }
+
+            // ใช้ requestAnimationFrame เพื่อให้แน่ใจว่า browser จะ apply change ได้ถูกต้องบนเว็บวิวมือถือ
+            window.requestAnimationFrame(() => {
+                wrapper.classList.toggle("toggled");
+                // force reflow
+                void wrapper.offsetWidth;
+            });
+        },
+
         async initializeUserData() {
             try {
                 // ตรวจสอบประเภทผู้ใช้จาก localStorage
@@ -211,14 +248,6 @@ export default {
             } catch (error) {
                 console.error("Error loading employee profile:", error);
                 this.setEmployeeDefaultData();
-            }
-        },
-
-        toggleSidebar() {
-            // หาตัว page-wrapper แล้ว toggle class 'toggled'
-            const wrapper = document.querySelector(".page-wrapper");
-            if (wrapper) {
-                wrapper.classList.toggle("toggled");
             }
         },
 
