@@ -780,143 +780,51 @@ onUnmounted(() => {
 
 // --- Geolocation ---
 function getLocation(type) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         if (!navigator.geolocation) {
-            // ถ้า browser ไม่รองรับ ให้ random เลย
+            // Browser ไม่รองรับ geolocation
             assignRandomLocation(type);
             locationMessage.value =
                 "Không thể truy cập vị trí, sử dụng vị trí mặc định";
-            setTimeout(() => {
-                locationMessage.value = "";
-            }, 4000);
+            setTimeout(() => (locationMessage.value = ""), 2000);
             resolve();
             return;
         }
 
-        let attempts = 0;
-        const maxAttempts = 3;
-        let bestPosition = null;
-
         locationMessage.value = "Đang tìm vị trí...";
 
-        function tryGetPosition() {
-            attempts++;
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 8000, // รอสูงสุด 8 วินาที
+            maximumAge: 0,
+        };
 
-            const options = {
-                enableHighAccuracy: attempts === 1,
-                timeout: attempts === 1 ? 15000 : 8000,
-                maximumAge: attempts === 1 ? 0 : 60000,
-            };
-
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    const { latitude, longitude, accuracy } = pos.coords;
-
-                    if (accuracy <= 2000) {
-                        if (type === "morning") {
-                            form.value.lat_morning = latitude.toFixed(6);
-                            form.value.lng_morning = longitude.toFixed(6);
-                        } else {
-                            form.value.lat_evening = latitude.toFixed(6);
-                            form.value.lng_evening = longitude.toFixed(6);
-                        }
-                        locationMessage.value = `Đã tìm thấy vị trí! (độ chính xác: ${Math.round(
-                            accuracy
-                        )}m)`;
-                        setTimeout(() => {
-                            locationMessage.value = "";
-                        }, 3000);
-                        resolve(pos);
-                        return;
-                    }
-
-                    if (
-                        !bestPosition ||
-                        accuracy < bestPosition.coords.accuracy
-                    ) {
-                        bestPosition = pos;
-                    }
-
-                    if (attempts < maxAttempts) {
-                        locationMessage.value = `Đang tìm vị trí... (Số lần ${attempts}/${maxAttempts})`;
-                        setTimeout(tryGetPosition, 1000);
-                        return;
-                    }
-
-                    if (bestPosition) {
-                        const { latitude, longitude, accuracy } =
-                            bestPosition.coords;
-                        if (type === "morning") {
-                            form.value.lat_morning = latitude.toFixed(6);
-                            form.value.lng_morning = longitude.toFixed(6);
-                        } else {
-                            form.value.lat_evening = latitude.toFixed(6);
-                            form.value.lng_evening = longitude.toFixed(6);
-                        }
-                        locationMessage.value = `Sử dụng vị trí tốt nhất tìm được (độ chính xác: ${Math.round(
-                            accuracy
-                        )}m)`;
-                        setTimeout(() => {
-                            locationMessage.value = "";
-                        }, 4000);
-                        resolve(bestPosition);
-                        return;
-                    }
-
-                    // ถ้าไม่มีตำแหน่งใดๆ เลย ให้ random
-                    assignRandomLocation(type);
-                    locationMessage.value =
-                        "Không thể truy cập vị trí, sử dụng vị trí mặc định";
-                    setTimeout(() => {
-                        locationMessage.value = "";
-                    }, 4000);
-                    resolve();
-                },
-                (err) => {
-                    if (
-                        attempts < maxAttempts &&
-                        err.code !== err.PERMISSION_DENIED
-                    ) {
-                        locationMessage.value = `Đang thử lại... (số lần ${attempts}/${maxAttempts})`;
-                        setTimeout(tryGetPosition, 1500);
-                        return;
-                    }
-
-                    // ถ้ามี bestPosition แม้จะ error ในครั้งสุดท้าย ก็ยังใช้ได้
-                    if (bestPosition) {
-                        const { latitude, longitude, accuracy } =
-                            bestPosition.coords;
-                        if (type === "morning") {
-                            form.value.lat_morning = latitude.toFixed(6);
-                            form.value.lng_morning = longitude.toFixed(6);
-                        } else {
-                            form.value.lat_evening = latitude.toFixed(6);
-                            form.value.lng_evening = longitude.toFixed(6);
-                        }
-                        locationMessage.value = `Sử dụng vị trí dự phòng (độ chính xác: ${Math.round(
-                            accuracy
-                        )}m)`;
-                        setTimeout(() => {
-                            locationMessage.value = "";
-                        }, 4000);
-                        resolve(bestPosition);
-                        return;
-                    }
-
-                    // ถ้าไม่มีตำแหน่งใดๆ เลย ให้ random
-                    assignRandomLocation(type);
-                    locationMessage.value =
-                        "Không thể truy cập vị trí, sử dụng vị trí mặc định";
-                    setTimeout(() => {
-                        locationMessage.value = "";
-                    }, 4000);
-                    resolve();
-                },
-                options
-            );
-        }
-
-        tryGetPosition();
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude, longitude, accuracy } = pos.coords;
+                if (type === "morning") {
+                    form.value.lat_morning = latitude.toFixed(6);
+                    form.value.lng_morning = longitude.toFixed(6);
+                } else {
+                    form.value.lat_evening = latitude.toFixed(6);
+                    form.value.lng_evening = longitude.toFixed(6);
+                }
+                locationMessage.value = `Đã tìm thấy vị trí! (độ chính xác: ${Math.round(
+                    accuracy
+                )}m)`;
+                setTimeout(() => (locationMessage.value = ""), 2000);
+                resolve();
+            },
+            (err) => {
+                // ถ้าไม่ได้ตำแหน่ง ให้สุ่ม
+                assignRandomLocation(type);
+                locationMessage.value =
+                    "Không thể truy cập vị trí, sử dụng vị trí mặc định";
+                setTimeout(() => (locationMessage.value = ""), 2000);
+                resolve();
+            },
+            options
+        );
     });
 }
 

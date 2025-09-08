@@ -214,6 +214,14 @@ export default {
             }
         },
 
+        toggleSidebar() {
+            // หาตัว page-wrapper แล้ว toggle class 'toggled'
+            const wrapper = document.querySelector(".page-wrapper");
+            if (wrapper) {
+                wrapper.classList.toggle("toggled");
+            }
+        },
+
         setFarmerDefaultData() {
             try {
                 const user = localStorage.getItem("web_user");
